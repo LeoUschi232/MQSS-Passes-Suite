@@ -177,9 +177,8 @@ int main(int argc, char *argv[]) {
   std::string quakeModulesString = getCudaqKernelsAsString(mlirModules);
 
   // Open the file in output mode (create or overwrite)
-  std::ofstream outFile(vm["output"].as<std::string>());
   // Check if the file was opened successfully
-  if (outFile.is_open()) {
+  if (std::ofstream outFile(vm["output"].as<std::string>()); outFile.is_open()) {
     // Write the content to the file
     outFile << quakeModulesString;
     // Close the file

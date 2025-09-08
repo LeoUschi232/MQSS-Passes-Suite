@@ -222,9 +222,8 @@ int main(int argc, char *argv[]) {
   mlirModule->print(stringStream);
 
   // Open the file in output mode (create or overwrite)
-  std::ofstream outFile(vm["output"].as<std::string>());
   // Check if the file was opened successfully
-  if (outFile.is_open()) {
+  if (std::ofstream outFile(vm["output"].as<std::string>()); outFile.is_open()) {
     // Write the content to the file
     outFile << moduleOutput;
     // Close the file
