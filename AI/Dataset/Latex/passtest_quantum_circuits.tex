@@ -1,0 +1,190 @@
+\documentclass{article}
+
+% Basic packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[
+    paperwidth=216mm,
+    paperheight=303mm,
+    margin=5mm
+]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{adjustbox}
+
+
+\title{Passtest Quantum Circuits}
+\date{}
+\author{}
+
+\newcommand{\passfigheight}{25mm}
+
+\newcommand{\includepassfigure}[1]{
+    \begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \adjustbox{max height=\passfigheight, max width=\linewidth}{
+        \includegraphics{Passtest/#1_input.png}
+    }
+    \caption{#1 Input}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \adjustbox{max height=\passfigheight, max width=\linewidth}{
+        \includegraphics{Passtest/#1_output.png}
+    }
+    \caption{#1 Output}
+    \end{subfigure}
+    \end{figure}
+}
+
+
+
+
+\begin{document}
+    \maketitle
+
+    \includepassfigure{ZeroRxToId}
+
+    \includepassfigure{ZeroRyToId}
+
+    \includepassfigure{ZeroRzToId}
+
+    \includepassfigure{CxCxToId}
+
+    \includepassfigure{CyCyToId}
+
+    \includepassfigure{CzCzToId}
+
+    \includepassfigure{XXToId}
+
+    \includepassfigure{YYToId}
+
+    \includepassfigure{ZZToId}
+
+    \includepassfigure{SSdgToId}
+
+    \includepassfigure{SdgSToId}
+
+    \includepassfigure{TTdgToId}
+
+    \includepassfigure{TdgTToId}
+
+    \includepassfigure{HHToId}
+
+    \includepassfigure{RxRxToRx}
+
+    \includepassfigure{RyRyToRy}
+
+    \includepassfigure{RzRzToRz}
+
+    \includepassfigure{HXHToZ}
+
+    \clearpage
+
+    \includepassfigure{HZHToX}
+
+    \includepassfigure{XHZToH}
+
+    \includepassfigure{ZHXToH}
+
+    \includepassfigure{HRxHToRz}
+
+    \includepassfigure{HRzHToRx}
+
+    \includepassfigure{HCxHToCz}
+
+    \includepassfigure{HCzHToCx}
+
+    \includepassfigure{HCrxHToCrz}
+
+    \includepassfigure{HCrzHToCrx}
+
+    \includepassfigure{XHToHZ}
+
+    \includepassfigure{HXToZH}
+
+    \includepassfigure{YHToHY}
+
+    \includepassfigure{HYToYH}
+
+    \includepassfigure{ZHToHX}
+
+    \includepassfigure{HZToXH}
+
+    \includepassfigure{SSSToSdg}
+
+    \includepassfigure{SdgSdgSdgToS}
+
+    \clearpage
+
+    \includepassfigure{SSToZ}
+
+    \includepassfigure{SdgSdgToZ}
+
+    \includepassfigure{SZToSdg}
+
+    \includepassfigure{ZSToSdg}
+
+    \includepassfigure{SdgZToS}
+
+    \includepassfigure{ZSdgToS}
+
+    \includepassfigure{TTToS}
+
+    \includepassfigure{CxCxCxToSwap}
+
+    \includepassfigure{CxZToZCx}
+
+    \includepassfigure{ZCxToCxZ}
+
+    \includepassfigure{CxXToXCx}
+
+    \includepassfigure{XCxToCxX}
+
+    \includepassfigure{CxRxToRxCx}
+
+    \includepassfigure{RxCxToCxRx}
+
+    \includepassfigure{ReverseCx}
+
+    \includepassfigure{XToHZH}
+
+    \clearpage
+
+    \includepassfigure{ZToHXH}
+
+    \includepassfigure{RxToHRzH}
+
+    \includepassfigure{RzToHRxH}
+
+    \includepassfigure{CxToUpperHCzH}
+
+    \includepassfigure{CxToLowerHCzH}
+
+    \includepassfigure{CzToUpperHCxH}
+
+    \includepassfigure{CzToLowerHCxH}
+
+    \includepassfigure{CrxToHCrzH}
+
+    \includepassfigure{CrzToHCrxH}
+
+    \includepassfigure{SdgToSSS}
+
+    \includepassfigure{SToSdgSdgSdg}
+
+    \includepassfigure{SToTT}
+
+    \includepassfigure{SwapToLowerCxCxCx}
+
+    \includepassfigure{SwapToUpperCxCxCx}
+
+\end{document}
