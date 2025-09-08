@@ -31,18 +31,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Support/CodeGen/Quake.hpp"
 
-#include "mlir/Support/LLVM.h"
 
-using mlir::isa;
-using mlir::cast;
-using mlir::dyn_cast;
+#include "llvm/Support/Casting.h"
 
+using llvm::isa;
+using llvm::cast;
+using llvm::dyn_cast;
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-
-#include "llvm/Support/Casting.h"
 
 
 // Given a OpBuilder and a double value, it inserts a double in the mlir

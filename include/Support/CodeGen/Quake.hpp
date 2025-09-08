@@ -33,16 +33,14 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
-#include "mlir/Support/LLVM.h"
+#include "llvm/Support/Casting.h"
 
-using mlir::isa;
-using mlir::cast;
-using mlir::dyn_cast;
+using llvm::isa;
+using llvm::cast;
+using llvm::dyn_cast;
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
-
-#include "llvm/Support/Casting.h"
 
 using namespace mlir;
 
