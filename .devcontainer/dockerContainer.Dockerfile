@@ -35,10 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 -m pip install --no-cache-dir numpy && \
     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update && apt-get install -y \
     build-essential \
-    libz3-dev \
     openssh-client \
     libgtest-dev \
     pkg-config \
@@ -46,11 +44,41 @@ RUN apt-get update && \
     flex \
     libeigen3-dev \
     libboost-program-options-dev \
-    libzip-dev && \
-    # Clean up cache to reduce image size
-    rm -rf /var/lib/apt/lists/*
+    libzip-dev \
+    texlive-latex-extra \
+    texlive-science \
+    texlive-pictures \
+    imagemagick \
+    # Clean up cache to reduce image size.
+    &&  rm -rf /var/lib/apt/lists/*
+
+
+# Add a dedicated Z3 build from source
+ENV Z3_INSTALL_PREFIX=/usr/local/z3
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git cmake build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+ && git clone https://github.com/Z3Prover/z3.git /tmp/z3 \
+ && cd /tmp/z3 \
+ && git fetch --tags \
+ && git checkout "$(git describe --tags "$(git rev-list --tags --max-count=1)")" \
+ && cmake -S . -B build -G "Unix Makefiles" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_TESTING=OFF \
+      -DZ3_BUILD_LIBZ3_SHARED=ON \
+ && cmake --build build -j"$(nproc)" \
+ && cmake --install build --prefix "${Z3_INSTALL_PREFIX}" \
+ && echo "${Z3_INSTALL_PREFIX}/lib" > /etc/ld.so.conf.d/z3.conf \
+ && ldconfig \
+ && rm -rf /tmp/z3
 
 RUN git config --global gc.auto 0
 RUN git clone https://github.com/NVIDIA/cuda-quantum.git /workspaces/cuda-quantum
 RUN LLVM_PROJECTS="clang;lld;mlir;python-bindings;runtimes;compiler-rt" bash /workspaces/cuda-quantum/scripts/install_prerequisites.sh -t clang16
 RUN rm -rf /root/.llvm-project
+
+# Allow convert to write PDF/PNG files.
+RUN sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+
+
+
