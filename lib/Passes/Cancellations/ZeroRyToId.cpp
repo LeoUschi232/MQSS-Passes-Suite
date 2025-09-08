@@ -22,7 +22,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Passes/BaseMQSSPass.hpp"
-#include "Passes/Decompositions.hpp"
+#include "Passes/Cancellations.hpp"
+#include "Support/CodeGen/Quake.hpp"
+#include "Support/Transforms/CancellationOperations.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
@@ -30,54 +32,57 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+#include <cmath>
+#include <numbers>
+
 // Include auto-generated pass registration
 namespace mqss::opt {
-#define GEN_PASS_DEF_REVERSECX
+#define GEN_PASS_DEF_ZERORYTOID
 
-#include "Passes/Decompositions.h.inc"
+#include "Passes/Cancellations.h.inc"
 
 } // namespace mqss::opt
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-
-void ReverseCNot(mlir::Operation *currentOp) {
-  auto cxOp = dyn_cast_or_null<quake::XOp>(*currentOp);
-  if (!cxOp || cxOp.getControls().size() != 1 ||
-      cxOp.getTargets().size() != 1) {
+void removeZeroRyToId(mlir::Operation *currentOp) {
+  if (!isa<quake::RyOp>(currentOp)) {
     return;
   }
-  Value control = cxOp.getControls()[0];
-  Value target = cxOp.getTargets()[0];
-  Location loc = cxOp.getLoc();
+  auto gate = dyn_cast<quake::OperatorInterface>(currentOp);
 
-  mlir::IRRewriter rewriter(cxOp->getContext());
-  rewriter.setInsertionPointAfter(cxOp);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, target, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.eraseOp(cxOp);
+  // Assume that parameters are all rotation angles
+  bool deleteGate = true;
+  for (auto parameter : gate.getParameters()) {
+    double param =
+        supportQuake::extractDoubleArgumentValue(parameter.getDefiningOp());
+    if (!isMultipleOfTwoPi(param) && param != 0) {
+      deleteGate = false;
+    }
+  }
+  if (deleteGate) {
+    mlir::IRRewriter rewriter(gate->getContext());
+    rewriter.eraseOp(gate);
+  }
 }
 
-class ReverseCx : public BaseMQSSPass<ReverseCx> {
+class ZeroRyToId : public BaseMQSSPass<ZeroRyToId> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRyToId)
 
-  llvm::StringRef getArgument() const override { return "ReverseCx"; }
+  llvm::StringRef getArgument() const override { return "ZeroRyToId"; }
 
   llvm::StringRef getDescription() const override {
-    return "Decomposition pass that reverses the control and targets of each "
-           "two-qubits CNot gate in a circuit";
+    return "Optimization pass that removes Ry rotations with zero angles";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReverseCNot(op); });
+    kernel.walk([&](Operation *op) { removeZeroRyToId(op); });
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss::opt::createReverseCxPass() {
-  return std::make_unique<ReverseCx>();
+std::unique_ptr<mlir::Pass> mqss::opt::createZeroRyToIdPass() {
+  return std::make_unique<ZeroRyToId>();
 }

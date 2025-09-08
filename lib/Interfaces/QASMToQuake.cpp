@@ -46,35 +46,25 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 using namespace mqss::support::quakeDialect;
 
 // Function to determine if a gate is a multi-qubit gate with implicit controls
-bool mqss::interfaces::isMultiQubitGate(const std::string &gateType) {
-  return gateType == "cx" || gateType == "cy" || gateType == "cz" ||
-         gateType == "ch" || gateType == "ccx" || gateType == "cswap" ||
-         gateType == "crx" || gateType == "cry" || gateType == "cp" ||
-         gateType == "cphase" || gateType == "CX" || gateType == "cu1" ||
-         gateType == "cu3";
+bool mqss::interfaces::isMultiQubitGate(const std::string &gate) {
+  return gate == "cx" || gate == "cy" || gate == "crx" || gate == "cry" ||
+         gate == "crz" || gate == "cp" || gate == "cphase" || gate == "cz" ||
+         gate == "cu1" || gate == "cu3" || gate == "ch" || gate == "cs" ||
+         gate == "csdg" || gate == "cswap" || gate == "ccx";
 }
 
 // Function to get the number of controls for a gate
-size_t mqss::interfaces::getNumControls(const std::string &gateType) {
-  if (gateType == "cx" || gateType == "CX")
-    return 1; // CNOT gate has 1 control
-  if (gateType == "cy")
-    return 1; // Cy gate has 1 control
-  if (gateType == "crx" || gateType == "cry")
-    return 1; // controlled rotations have 1 control
-  if (gateType == "cp" || gateType == "cphase")
-    return 1; // controlled phase have 1 control
-  if (gateType == "cz")
-    return 1; // Cz gate has 1 control
-  if (gateType == "cu1" || gateType == "cu3")
-    return 1; // Cu1 gate has 1 control
-  if (gateType == "ch")
-    return 1; // Ch gate has 1 control
-  if (gateType == "ccx")
-    return 2; // Toffoli gate has 2 controls
-  if (gateType == "cswap")
-    return 1; // CSWAP gate has 1 control
-  return 0;   // Single-qubit gates have no controls
+size_t mqss::interfaces::getNumControls(const std::string &gate) {
+  if (gate == "cx" || gate == "cy" || gate == "crx" || gate == "cry" ||
+      gate == "crz" || gate == "cp" || gate == "cphase" || gate == "cz" ||
+      gate == "cu1" || gate == "cu3" || gate == "ch" || gate == "cs" ||
+      gate == "csdg" || gate == "cswap") {
+    return 1;
+  }
+  if (gate == "ccx") {
+    return 2;
+  }
+  return 0;
 }
 
 // This function returns the set of quantum registers declared in a given QASM
@@ -244,7 +234,7 @@ void mqss::interfaces::insertGate(
         if (ctrlMod->expression) {
           if (auto constantExpr = std::dynamic_pointer_cast<qasm3::Constant>(
                   ctrlMod->expression)) {
-            int numControls = constantExpr->getSInt();
+            numControls = constantExpr->getSInt();
 #ifdef DEBUG
             std::cout << "numControls " << numControls << "\n";
 #endif
@@ -299,10 +289,14 @@ void mqss::interfaces::insertGate(
     }
   }
   std::regex pattern("dg"); // Case-sensitive regex
-  if (std::regex_search(std::string(gateCall->identifier), pattern))
+  if (std::regex_search(std::string(gateCall->identifier), pattern)) {
     isAdj = true;
-  insertQASMGateIntoQuakeModule(std::string(gateCall->identifier), builder, loc,
-                                parameters, controls, targets, isAdj);
+  }
+  std::string gateId = gateCall->identifier;
+  std::transform(gateId.begin(), gateId.end(), gateId.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  insertQASMGateIntoQuakeModule(gateId, builder, loc, parameters, controls,
+                                targets, isAdj);
 #ifdef DEBUG
   std::cout << "-------------------------" << std::endl;
 #endif

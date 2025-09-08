@@ -17,7 +17,7 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************
   author Martin Letras
-  date   January 2025
+  date   December 2024
   version 1.0
 *************************************************************************/
 
@@ -32,7 +32,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Include auto-generated pass registration
 namespace mqss::opt {
-#define GEN_PASS_DEF_REVERSECX
+#define GEN_PASS_DEF_CXTOUPPERHCZH
 
 #include "Passes/Decompositions.h.inc"
 
@@ -41,43 +41,50 @@ using namespace mlir;
 
 namespace {
 
-void ReverseCNot(mlir::Operation *currentOp) {
-  auto cxOp = dyn_cast_or_null<quake::XOp>(*currentOp);
-  if (!cxOp || cxOp.getControls().size() != 1 ||
-      cxOp.getTargets().size() != 1) {
-    return;
+struct ReplaceCxToUpperHCzH : public OpRewritePattern<quake::XOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(quake::XOp cxOp,
+                                PatternRewriter &rewriter) const override {
+    if (cxOp.getControls().size() != 1 || cxOp.getTargets().size() != 1) {
+      return success();
+    }
+    Value control = cxOp.getControls()[0];
+    Value target = cxOp.getTargets()[0];
+    Location loc = cxOp.getLoc();
+    rewriter.create<quake::HOp>(loc, target);
+    rewriter.create<quake::ZOp>(loc, control, target);
+    rewriter.create<quake::HOp>(loc, target);
+    rewriter.replaceOp(cxOp, {});
+    return success();
   }
-  Value control = cxOp.getControls()[0];
-  Value target = cxOp.getTargets()[0];
-  Location loc = cxOp.getLoc();
+};
 
-  mlir::IRRewriter rewriter(cxOp->getContext());
-  rewriter.setInsertionPointAfter(cxOp);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, target, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.eraseOp(cxOp);
-}
-
-class ReverseCx : public BaseMQSSPass<ReverseCx> {
+class CxToUpperHCzH : public BaseMQSSPass<CxToUpperHCzH> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxToUpperHCzH)
 
-  llvm::StringRef getArgument() const override { return "ReverseCx"; }
+  llvm::StringRef getArgument() const override { return "CxToUpperHCzH"; }
 
   llvm::StringRef getDescription() const override {
-    return "Decomposition pass that reverses the control and targets of each "
-           "two-qubits CNot gate in a circuit";
+    return "Decomposition pass of two-qubits cnot by H, Cz, and H";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReverseCNot(op); });
+    auto ctx = kernel.getContext();
+    RewritePatternSet patterns(ctx);
+    patterns.insert<ReplaceCxToUpperHCzH>(ctx);
+    ConversionTarget target(*ctx);
+    target.addLegalDialect<quake::QuakeDialect>();
+    target.addIllegalOp<quake::XOp>();
+    if (failed(applyPartialConversion(kernel, target, std::move(patterns)))) {
+      kernel.emitOpError("CxToUpperHCzH Decomposition failed");
+      signalPassFailure();
+    }
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss::opt::createReverseCxPass() {
-  return std::make_unique<ReverseCx>();
+std::unique_ptr<Pass> mqss::opt::createCxToUpperHCzHPass() {
+  return std::make_unique<CxToUpperHCzH>();
 }

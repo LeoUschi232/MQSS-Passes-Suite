@@ -28,7 +28,6 @@ architecture where Quantum kernels must execute and the settings to configure
 que MQT-QMAP mapper. The mapper modifies the input Quantum kernels to be
 correctly mapped to a given quantum device (Architecture) according to the
 mapping configurations.
-
 ******************************************************************************/
 
 #include "Passes/Transforms.hpp"
@@ -65,14 +64,18 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
                  << "\n";
 #endif
     assert(!(angle == -1.0 || qubit == -1) && "ill-formed rotation gate!");
-    if (isa<quake::RxOp>(op))
+    if (isa<quake::RxOp>(op)) {
       qc.rx(angle, qubit);
-    if (isa<quake::RyOp>(op))
+    }
+    if (isa<quake::RyOp>(op)) {
       qc.ry(angle, qubit);
-    if (isa<quake::RzOp>(op))
+    }
+    if (isa<quake::RzOp>(op)) {
       qc.rz(angle, qubit);
+    }
   }
 }
+
 // loading X, Y , Z
 // two bits X,Y and Z refers to controlled Cx, Cy, and Cz
 // single bits are just x,y,and z
@@ -124,6 +127,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     }
   }
 }
+
 // loading S,T,H single qubit gates
 void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::SOp>(op) || isa<quake::TOp>(op) || isa<quake::HOp>(op)) {
@@ -149,6 +153,7 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     }
   }
 }
+
 // loading measurements
 void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
                           std::map<int, int> measurements) {
@@ -183,7 +188,9 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>> {
+class QuakeQMap : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>>
+
+{
 private:
   Architecture &architecture;
   const Configuration &settings;
@@ -192,15 +199,26 @@ public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
 
   QuakeQMap(Architecture &architecture, const Configuration &settings)
-      : architecture(architecture), settings(settings) {}
+      :
 
-  llvm::StringRef getArgument() const override { return "quake-to-qmap-pass"; }
-  llvm::StringRef getDescription() const override {
+        architecture(architecture), settings(settings) {}
+
+  llvm::StringRef getArgument() const
+
+      override {
+    return "quake-to-qmap-pass";
+  }
+
+  llvm::StringRef getDescription() const
+
+      override {
     return "Pass that maps a given quake module respecting the constraints of "
            "a given quantum device, using mqt-qmap tool";
   }
 
-  void runOnOperation() override {
+  void runOnOperation()
+
+      override {
     // Getting the function
     auto circuit = getOperation();
     // Get the function name
@@ -246,8 +264,14 @@ public:
     mapper->dumpResult(qasm, qc::Format::OpenQASM3);
     qcMapped.import(qasm, qc::Format::OpenQASM3);
     // cleaning the mlir::funcOp corresponding to the quake circuit
-    for (auto &block : circuit.getBody()) {
-      block.clear(); // Clears all operations in the current block
+    for (auto &block : circuit.
+
+                       getBody()
+
+    ) {
+      block.
+
+          clear(); // Clears all operations in the current block
     }
     OpBuilder builder(&circuit.getBody());
     Location loc = circuit.getLoc();
@@ -257,7 +281,11 @@ public:
     // then traverse the mapped QuantumComputation and annotate it in the
     // mlir func
     for (const auto &op : qcMapped) {
-      if (op->getType() == qc::Barrier)
+      if (op->
+
+          getType()
+
+          == qc::Barrier)
         continue;
       auto &targets = op->getTargets();
       auto &controls = op->getControls();
@@ -267,7 +295,11 @@ public:
       SmallVector<Value> controlValues = {};
       SmallVector<Value> targetValues = {};
       // get the targets
-      for (int i = 0; i < targets.size(); i++) {
+      for (int i = 0; i < targets.
+
+                          size();
+
+           i++) {
         auto targetRef =
             builder.create<quake::ExtractRefOp>(loc, qubits, targets[i]);
         targetValues.push_back(targetRef);
@@ -289,7 +321,11 @@ public:
             loc, constantValue, floatType);
         parameterValues.push_back(constantOp);
       }
-      switch (op->getType()) {
+      switch (op->
+
+              getType()
+
+      ) {
       case qc::X:
         builder.create<quake::XOp>(loc, parameterValues, controlValues,
                                    targetValues);
@@ -332,11 +368,19 @@ public:
         break;
       case qc::Measure:
         Type measTy = quake::MeasureType::get(builder.getContext());
-        builder.create<quake::MzOp>(loc, measTy, targetValues).getMeasOut();
+        builder.create<quake::MzOp>(loc, measTy, targetValues)
+            .
+
+            getMeasOut();
+
         break;
       }
     }
-    builder.create<func::ReturnOp>(circuit.getLoc());
+    builder.create<func::ReturnOp>(circuit.
+
+                                   getLoc()
+
+    );
 #ifdef DEBUG
     std::cout << "Dumping QC after mapping:\n";
     qcMapped.print(std::cout);

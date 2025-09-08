@@ -22,62 +22,46 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Passes/BaseMQSSPass.hpp"
-#include "Passes/Decompositions.hpp"
+#include "Passes/Cancellations.hpp"
+#include "Support/Transforms/CancellationOperations.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
-#define GEN_PASS_DEF_REVERSECX
+#define GEN_PASS_DEF_CZCZTOID
 
-#include "Passes/Decompositions.h.inc"
+#include "Passes/Cancellations.h.inc"
 
 } // namespace mqss::opt
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
 
-void ReverseCNot(mlir::Operation *currentOp) {
-  auto cxOp = dyn_cast_or_null<quake::XOp>(*currentOp);
-  if (!cxOp || cxOp.getControls().size() != 1 ||
-      cxOp.getTargets().size() != 1) {
-    return;
-  }
-  Value control = cxOp.getControls()[0];
-  Value target = cxOp.getTargets()[0];
-  Location loc = cxOp.getLoc();
-
-  mlir::IRRewriter rewriter(cxOp->getContext());
-  rewriter.setInsertionPointAfter(cxOp);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, target, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.eraseOp(cxOp);
-}
-
-class ReverseCx : public BaseMQSSPass<ReverseCx> {
+class CzCzToId : public BaseMQSSPass<CzCzToId> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CzCzToId)
 
-  llvm::StringRef getArgument() const override { return "ReverseCx"; }
+  llvm::StringRef getArgument() const override { return "CzCzToId"; }
 
   llvm::StringRef getDescription() const override {
-    return "Decomposition pass that reverses the control and targets of each "
-           "two-qubits CNot gate in a circuit";
+    return "Remove consecutive identical CNOT gates.";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReverseCNot(op); });
+    kernel.walk([&](Operation *op) {
+      patternCancellation<quake::ZOp, quake::ZOp>(op, 1, 1, 1, 1);
+    });
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss::opt::createReverseCxPass() {
-  return std::make_unique<ReverseCx>();
+std::unique_ptr<Pass> mqss::opt::createCzCzToIdPass() {
+  return std::make_unique<CzCzToId>();
 }

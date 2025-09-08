@@ -48,9 +48,10 @@ Value mqss::support::quakeDialect::createFloatValue(OpBuilder &builder,
 double mqss::support::quakeDialect::extractDoubleArgumentValue(Operation *op) {
   if (auto constantOp = dyn_cast<mlir::arith::ConstantOp>(op))
     if (auto floatAttr = constantOp.getValue().dyn_cast<mlir::FloatAttr>())
-      return static_cast<float>(floatAttr.getValueAsDouble());
+      return floatAttr.getValueAsDouble();
   return -1.0;
 }
+
 // TODO: return -1 is not good idea
 // Given an ExtractRefOp, it extracts the integer of the index pointing that
 // reference (qubit index), returns -1 when fail
@@ -78,15 +79,15 @@ int mqss::support::quakeDialect::getNumberOfQubits(func::FuncOp circuit) {
 }
 
 // Function to get the number of classical bits allocated in a given
-// quantum kernel, it also stores information of the qiubit position
+// quantum kernel, it also stores information of the qubit position
 int mqss::support::quakeDialect::getNumberOfClassicalBits(
     func::FuncOp circuit, std::map<int, int> &measurements) {
   int numBits = 0;
   circuit.walk([&](mlir::Operation *op) {
     if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
       for (auto operand : op->getOperands()) {
-        if (operand.getType()
-                .isa<quake::RefType>()) { // Check if it's qubit reference
+        // Check if it's qubit reference
+        if (operand.getType().isa<quake::RefType>()) {
           int qubitIndex =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
           assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
@@ -94,8 +95,12 @@ int mqss::support::quakeDialect::getNumberOfClassicalBits(
           numBits += 1;
         } else if (operand.getType().isa<quake::VeqType>()) {
           auto qvecType = operand.getType().dyn_cast<quake::VeqType>();
+          int start = numBits;
           numBits += qvecType.getSize();
-          for (int i = 0; i < numBits; i++) {
+          // Assume Veq qubits are sequential indices matching global bit
+          // positions; may not hold for sliced/concatenated Veq
+          // TODO: compute actual global indices.
+          for (int i = start; i < numBits; i++) {
             measurements[i] = i;
           }
         }

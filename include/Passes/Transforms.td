@@ -1,96 +1,212 @@
+/* This code and any associated documentation is provided "as is"
+
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+*************************************************************************
+  author Martin Letras
+  date   February 2025
+  version 1.0
+*************************************************************************/
+
 include "mlir/Pass/PassBase.td"
 
-def CommuteCxRx : Pass<"CommuteCxRx"> {
-  let summary = "Apply commutation pass of pattern CNot-Rx";
-  let constructor = "mqss::opt::createCommuteCxRxPass()";
+def NormalizeArgAngle : Pass<"NormalizeArgAngle"> {
+  let summary =
+      "Optimization pass that normalizes the angle of Rx, Ry and Rz rotations";
+  let constructor = "mqss::opt::createNormalizeArgAnglePass()";
 }
 
-def  CommuteCxX : Pass<"CommuteCxX"> {
-  let summary = "Apply commutation pass to pattern CNot-X";
-  let constructor = "mqss::opt::createCommuteCxXPass()";
+def CxRxToRxCx : Pass<"CxRxToRxCx"> {
+  let summary = "Apply commutation pass of pattern Cx-Rx to Rx-Cx";
+  let constructor = "mqss::opt::createCxRxToRxCxPass()";
 }
 
-def CommuteCxZ : Pass<"CommuteCxZ"> {
-  let summary = "Apply commutation pass to pattern CNot-Z to Z-CNot";
-  let constructor = "mqss::opt::createCommuteCxZPass()";
+def CxXToXCx : Pass<"CxXToXCx"> {
+  let summary = "Apply commutation pass to pattern Cx-X to X-Cx";
+  let constructor = "mqss::opt::createCxXToXCxPass()";
 }
 
-def CommuteRxCx : Pass<"CommuteRxCx"> {
-  let summary = "Apply commutation pass to pattern Rx-CNot to CNot-Rx";
-  let constructor = "mqss::opt::createCommuteRxCxPass()";
+def CxZToZCx : Pass<"CxZToZCx"> {
+  let summary = "Apply commutation pass to pattern Cx-Z to Z-Cx";
+  let constructor = "mqss::opt::createCxZToZCxPass()";
 }
 
-def CommuteXCx : Pass<"CommuteXCx"> {
-  let summary = "Apply commutation pass to pattern X-CNot to CNot-X";
-  let constructor = "mqss::opt::createCommuteXCxPass()";
+def RxCxToCxRx : Pass<"RxCxToCxRx"> {
+  let summary = "Apply commutation pass to pattern Rx-Cx to Cx-Rx";
+  let constructor = "mqss::opt::createRxCxToCxRxPass()";
 }
 
-def CommuteZCx : Pass<"CommuteZCx"> {
-  let summary = "Apply commutation pass to pattern Z-CNot to CNot-Z";
-  let constructor = "mqss::opt::createCommuteZCxPass()";
+def XCxToCxX : Pass<"XCxToCxX"> {
+  let summary = "Apply commutation pass to pattern X-Cx to Cx-X";
+  let constructor = "mqss::opt::createXCxToCxXPass()";
 }
 
-def CancellationDoubleCx : Pass<"CancellationDoubleCx"> {
-  let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
-  let constructor = "mqss::opt::createCancellationDoubleCxPass()";
+def ZCxToCxZ : Pass<"ZCxToCxZ"> {
+  let summary = "Apply commutation pass to pattern Z-Cx to Cx-Z";
+  let constructor = "mqss::opt::createZCxToCxZPass()";
 }
 
-def ReductionPattern : Pass<"ReductionPattern"> {
-  let summary = "This pass removes the pattern Gate, Gate if both gates operates on the same control and targets. ";
-  let constructor = "mqss::opt::createReductionPatternPass()";
+def CxCxCxToSwap : Pass<"CxCxCxToSwap"> {
+  let summary = "Replace CX CX CX pattern by SWAP";
+  let constructor = "mqss::opt::createCxCxCxToSwapPass()";
 }
 
 def HXHToZ : Pass<"HXHToZ"> {
-  let summary = " Optimization pass that replaces a pattern composed of H, X, H by Z";
+  let summary =
+      " Optimization pass that replaces a pattern composed of H, X, H by Z";
   let constructor = "mqss::opt::createHXHToZPass()";
 }
 
 def HZHToX : Pass<"HZHToX"> {
-  let summary = "Optimization pass that replaces a pattern composed of H, Z, H by X";
+  let summary =
+      "Optimization pass that replaces a pattern composed of H, Z, H by X";
   let constructor = "mqss::opt::createHZHToXPass()";
 }
 
-def SwitchHX : Pass<"SwitchHX"> {
-  let summary = "Pass that switches a pattern composed Hadamard and X to Z and Hadamard";
-  let constructor = "mqss::opt::createSwitchHXPass()";
+def SdgZToS : Pass<"SdgZToS"> {
+  let summary = "Optimization pass that replaces a pattern composed of S "
+                "adjoint and Z by S";
+  let constructor = "mqss::opt::createSdgZToSPass()";
 }
 
-def SwitchHY : Pass<"SwitchHY"> {
-  let summary = "Pass that switches a pattern composed Hadamard and Y to Y and Hadamard";
-  let constructor = "mqss::opt::createSwitchHYPass()";
+def ZSdgToS : Pass<"ZSdgToS"> {
+  let summary = "Optimization pass that replaces a pattern composed of S "
+                "adjoint and Z by S";
+  let constructor = "mqss::opt::createZSdgToSPass()";
 }
 
-def SwitchHZ : Pass<"SwitchHZ"> {
-  let summary = "Pass that switches a pattern composed Hadamard and Z to X and Hadamard";
-  let constructor = "mqss::opt::createSwitchHZPass()";
+def SZToSdg : Pass<"SZToSdg"> {
+  let summary =
+      "Optimization pass that replaces a pattern composed of S and Z by Sdg";
+  let constructor = "mqss::opt::createSZToSdgPass()";
 }
 
-def NormalizeArgAngle : Pass<"NormalizeArgAngle"> {
-  let summary = "Optimization pass that normalizes the angle of Rx, Ry and Rz rotations";
-  let constructor = "mqss::opt::createNormalizeArgAnglePass()";
+def ZSToSdg : Pass<"ZSToSdg"> {
+  let summary =
+      "Optimization pass that replaces a pattern composed of S and Z by Sdg";
+  let constructor = "mqss::opt::createZSToSdgPass()";
 }
 
-def CancellationNullRotation : Pass<"CancellationNullRotation"> {
-  let summary = "Optimization pass that removes of Rx, Ry and Rz null rotations";
-  let constructor = "mqss::opt::createCancellationNullRotationPass()";
+def HCRxHToCrzPass : Pass<"HCrxHToCrz"> {
+  let summary = "Decomposition pass of H, Crx, H to Crz";
+  let constructor = "mqss::opt::createHCrxHToCrzPass()";
 }
 
-def SwitchPauliH : Pass<"SwitchPauliH"> {
-  let summary = "Pass that switches a pattern composed by {X,Y,Z} (Pauli) and Hadamard";
-  let constructor = "mqss::opt::createSwitchPauliHPass()";
+def HCRzHToCrxPass : Pass<"HCrzHToCrx"> {
+  let summary = "Decomposition pass of H, Crz, H to Crx";
+  let constructor = "mqss::opt::createHCrzHToCrxPass()";
 }
 
-def SwitchXH : Pass<"SwitchXH"> {
-  let summary = "Pass that switches a pattern composed by X and Hadamard to Hadamard and Z";
-  let constructor = "mqss::opt::createSwitchXHPass()";
+def HYToYH : Pass<"HYToYH"> {
+  let summary = "Transform the pattern HY to YH";
+  let constructor = "mqss::opt::createHYToYHPass()";
 }
 
-def SwitchYH : Pass<"SwitchYH"> {
-  let summary = "Pass that switches a pattern composed by Y and Hadamard to Hadamard and Y";
-  let constructor = "mqss::opt::createSwitchYHPass()";
+def YHToHY : Pass<"YHToHY"> {
+  let summary = "Transform the pattern YH to HY";
+  let constructor = "mqss::opt::createYHToHYPass()";
 }
 
-def SwitchZH : Pass<"SwitchZH"> {
-  let summary = "Pass that switches a pattern composed by Z and Hadamard to Hadamard and X";
-  let constructor = "mqss::opt::createSwitchZHPass()";
+def HCzHToCx : Pass<"HCzHToCx"> {
+  let summary = "Decomposition pass of H, Cz, H to Cx";
+  let constructor = "mqss::opt::createHCzHToCxPass()";
 }
+
+def HCxHToCz : Pass<"HCxHToCz"> {
+  let summary = "Decomposition pass of H, Cx, H to Cz";
+  let constructor = "mqss::opt::createHCxHToCzPass()";
+}
+
+def XHZToH : Pass<"XHZToH"> {
+  let summary = "Optimization pass that replaces a pattern composed of X, H, Z by H";
+  let constructor = "mqss::opt::createXHZToHPass()";
+}
+
+def ZHXToH : Pass<"ZHXToH"> {
+  let summary = "Optimization pass that replaces a pattern composed of Z, H, X by H";
+  let constructor = "mqss::opt::createZHXToHPass()";
+}
+
+def TTToS : Pass<"TTToS"> {
+  let summary = "Optimization pass that replaces a pattern composed of two T gates with an S gate";
+  let constructor = "mqss::opt::createTTToSPass()";
+}
+
+def RxRxToRx : Pass<"RxRxToRx"> {
+  let summary = "Collapse two consecutive Rx gates into one";
+  let constructor = "mqss::opt::createRxRxToRxPass()";
+}
+
+def RyRyToRy : Pass<"RyRyToRy"> {
+  let summary = "Collapse two consecutive Ry gates into one";
+  let constructor = "mqss::opt::createRyRyToRyPass()";
+}
+
+def RzRzToRz : Pass<"RzRzToRz"> {
+  let summary = "Collapse two consecutive Rz gates into one";
+  let constructor = "mqss::opt::createRzRzToRzPass()";
+}
+
+def HRxHToRz : Pass<"HRxHToRz"> {
+  let summary = "Fold H Rx H to Rz";
+  let constructor = "mqss::opt::createHRxHToRzPass()";
+}
+
+def HRzHToRx : Pass<"HRzHToRx"> {
+  let summary = "Fold H Rz H to Rx";
+  let constructor = "mqss::opt::createHRzHToRxPass()";
+}
+
+def SdgSdgSdgToS : Pass<"SdgSdgSdgToS"> {
+  let summary = "Replace Sdg Sdg Sdg with S";
+  let constructor = "mqss::opt::createSdgSdgSdgToSPass()";
+}
+
+def SdgSdgToZ : Pass<"SdgSdgToZ"> {
+  let summary = "Replace Sdg Sdg with Z";
+  let constructor = "mqss::opt::createSdgSdgToZPass()";
+}
+
+def SSSToSdg : Pass<"SSSToSdg"> {
+  let summary = "Replace S S S with Sdg";
+  let constructor = "mqss::opt::createSSSToSdgPass()";
+}
+
+def SSToZ : Pass<"SSToZ"> {
+  let summary = "Replace S S with Z";
+  let constructor = "mqss::opt::createSSToZPass()";
+}
+
+def HXToZH : Pass<"HXToZH"> {
+  let summary = "Switch the pattern H and X to Z and H";
+  let constructor = "mqss::opt::createHXToZHPass()";
+}
+
+def HZToXH : Pass<"HZToXH"> {
+  let summary = "Switch the pattern H and Z to X and H";
+  let constructor = "mqss::opt::createHZToXHPass()";
+}
+
+def XHToHZ : Pass<"XHToHZ"> {
+  let summary = "Switch the pattern X and H to H and Z";
+  let constructor = "mqss::opt::createXHToHZPass()";
+}
+
+def ZHToHX : Pass<"ZHToHX"> {
+  let summary = "Switch the pattern Z and H to H and X";
+  let constructor = "mqss::opt::createZHToHXPass()";
+}
+

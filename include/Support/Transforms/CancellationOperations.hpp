@@ -45,10 +45,19 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <cmath>
+#include <numbers>
+
 using namespace mlir;
 using namespace mqss::support::quakeDialect;
 
 namespace mqss::support::transforms {
+inline bool isMultipleOfTwoPi(double angle) {
+  const double pi = std::numbers::pi;
+  const double doublePi = 2 * pi;
+  const double epsilon = 1e-6;
+  return std::abs(std::fmod(angle, doublePi)) < epsilon;
+}
 
 /**
  * @brief Function that removes (cancel) a pattern of two quantum operations

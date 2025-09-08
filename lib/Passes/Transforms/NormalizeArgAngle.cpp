@@ -19,9 +19,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   author Martin Letras
   date   January 2025
   version 1.0
-
-Adapted from: https://dl.acm.org/doi/10.5555/1972505
-
 *************************************************************************/
 
 #include "Passes/BaseMQSSPass.hpp"

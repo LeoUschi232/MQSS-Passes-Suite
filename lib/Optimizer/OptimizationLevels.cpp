@@ -28,7 +28,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ******************************************************************************/
 
 #include "Optimizer/Pipelines.hpp"
-#include "Passes/Transforms.hpp"
+#include "Passes/Cancellations.hpp"
 
 using namespace mlir;
 
@@ -41,5 +41,5 @@ void mqss::opt::O2(PassManager &pm) {
 
 void mqss::opt::O3(PassManager &pm) {
   // more passes to be added here
-  pm.addPass(createCancellationDoubleCxPass());
+  pm.addPass(createCxCxToIdPass());
 }

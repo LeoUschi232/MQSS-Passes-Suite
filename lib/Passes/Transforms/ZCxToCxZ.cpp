@@ -30,10 +30,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
-#define GEN_PASS_DEF_HXHTOZ
+#define GEN_PASS_DEF_ZCXTOCXZ
 
 #include "Passes/Transforms.h.inc"
 
@@ -42,57 +43,54 @@ using namespace mlir;
 
 namespace {
 
-void ReplaceHXHToZ(mlir::Operation *currentOp) {
-  auto currentGate = dyn_cast_or_null<quake::HOp>(*currentOp);
-  if (!currentGate || currentGate.getControls().size() != 0 ||
+void commuteZCx(mlir::Operation *currentOp) {
+  auto currentGate = dyn_cast_or_null<quake::XOp>(*currentOp);
+  if (!currentGate || currentGate.getControls().size() != 1 ||
       currentGate.getTargets().size() != 1) {
     return;
   }
   auto prevOp = supportQuake::getPreviousOperationOnTarget(
-      currentGate, currentGate.getTargets()[0]);
+      currentGate, currentGate.getControls()[0]);
   if (!prevOp) {
     return;
   }
-  auto prevGate = dyn_cast_or_null<quake::XOp>(*prevOp);
-  if (!prevGate || prevGate.getControls().size() != 0 ||
-      prevGate.getTargets().size() != 1) {
+  auto previousGate = dyn_cast_or_null<quake::ZOp>(prevOp);
+  if (!previousGate || previousGate.getControls().size() != 0 ||
+      previousGate.getTargets().size() != 1) {
     return;
   }
-  auto prevPrevOp = supportQuake::getPreviousOperationOnTarget(
-      prevGate, currentGate.getTargets()[0]);
-  if (!prevPrevOp) {
+  int targetPrev = supportQuake::extractIndexFromQuakeExtractRefOp(
+      previousGate.getTargets()[0].getDefiningOp());
+  int controlCurr = supportQuake::extractIndexFromQuakeExtractRefOp(
+      currentGate.getControls()[0].getDefiningOp());
+  if (targetPrev == controlCurr) {
+    mlir::IRRewriter rewriter(currentGate->getContext());
+    rewriter.setInsertionPointAfter(currentGate);
+    rewriter.create<quake::ZOp>(previousGate.getLoc(), previousGate.isAdj(),
+                                previousGate.getParameters(),
+                                previousGate.getControls(),
+                                previousGate.getTargets());
+    rewriter.eraseOp(previousGate);
     return;
   }
-  auto prevPrevGate = dyn_cast_or_null<quake::HOp>(*prevPrevOp);
-  if (!prevPrevGate || prevPrevGate.getControls().size() != 0 ||
-      prevPrevGate.getTargets().size() != 1) {
-    return;
-  }
-  mlir::IRRewriter rewriter(currentGate->getContext());
-  rewriter.setInsertionPointAfter(currentGate);
-  rewriter.create<quake::ZOp>(currentGate.getLoc(), currentGate.getControls(),
-                              currentGate.getTargets());
-  rewriter.eraseOp(currentGate);
-  rewriter.eraseOp(prevGate);
-  rewriter.eraseOp(prevPrevGate);
 }
 
-class HXHToZ : public BaseMQSSPass<HXHToZ> {
+class ZCxToCxZ : public BaseMQSSPass<ZCxToCxZ> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HXHToZ)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZCxToCxZ)
 
-  llvm::StringRef getArgument() const override { return "HXHToZ"; }
+  llvm::StringRef getArgument() const override { return "ZCxToCxZ"; }
 
   llvm::StringRef getDescription() const override {
-    return "Optimization pass that replaces a pattern composed of H, X, H by Z";
+    return "Apply commutation pass to pattern Z-CNot to CNot-Z";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReplaceHXHToZ(op); });
+    kernel.walk([&](Operation *op) { commuteZCx(op); });
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss::opt::createHXHToZPass() {
-  return std::make_unique<HXHToZ>();
+std::unique_ptr<Pass> mqss::opt::createZCxToCxZPass() {
+  return std::make_unique<ZCxToCxZ>();
 }
