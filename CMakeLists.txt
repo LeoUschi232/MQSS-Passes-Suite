@@ -217,111 +217,10 @@ add_library(MQSS::SupportQuake ALIAS SupportQuake)
 add_library(MQSS::Optimizer ALIAS Optimizer)
 add_library(MQSS::Interfaces ALIAS Interfaces)
 
-# ------------------------- AI targets (inlined) -------------------------
+# add pass selector ai
 if (BUILD_MLIR_PASSES_AI)
-    message(STATUS "Building AI utilities (Torch / TensorFlow selectors, converters)")
-
-    set(AI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/AI")
-
-    # Vendored SDK discovery roots
-    list(APPEND CMAKE_PREFIX_PATH
-            "${AI_DIR}/external/tensorflow"
-            "${AI_DIR}/external/libtorch"
-    )
-
-    # Find each SDK (kept REQUIRED as in original AI/CMakeLists.txt)
-    find_package(TensorFlow CONFIG REQUIRED)
-    find_package(Torch REQUIRED)
-
-    # ---------------- Shared (SDK-agnostic!) ----------------
-    add_library(common_ai_props INTERFACE)
-    target_include_directories(common_ai_props INTERFACE
-            "${AI_DIR}/include"
-    )
-    target_compile_definitions(common_ai_props INTERFACE
-            AI_DATASET_DIR="${AI_DIR}/Dataset"
-            MQSS_BUILD_DIR="${CMAKE_BINARY_DIR}"
-    )
-    target_link_libraries(common_ai_props INTERFACE
-            MLIRIR
-            MLIRTransforms
-            cudaq-mlir-runtime
-            MLIRPasses
-            SupportQuake
-            Optimizer
-            Interfaces
-    )
-    if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(common_ai_props INTERFACE -Ofast)
-        if (NOT APPLE)
-            target_compile_options(common_ai_props INTERFACE -march=native)
-        endif ()
-    endif ()
-
-    # ---------------- Core utils (SDK-agnostic sources) ----------------
-    file(GLOB UTILS_HEADERS CONFIGURE_DEPENDS "${AI_DIR}/include/Utils/*.hpp")
-    file(GLOB UTILS_SOURCES CONFIGURE_DEPENDS "${AI_DIR}/src/Utils/*.cpp")
-
-    add_library(ai_core STATIC ${UTILS_SOURCES} ${UTILS_HEADERS})
-    target_link_libraries(ai_core PUBLIC common_ai_props)
-    target_include_directories(ai_core PUBLIC "${AI_DIR}/include")
-    target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-    set_property(TARGET ai_core PROPERTY CXX_STANDARD 17)
-
-    # ---------------- Torch-only targets ----------------
-    file(GLOB_RECURSE TORCH_HEADERS CONFIGURE_DEPENDS "${AI_DIR}/include/Torch/*.hpp")
-    file(GLOB_RECURSE TORCH_SOURCES CONFIGURE_DEPENDS "${AI_DIR}/src/Torch/*.cpp")
-
-    if (TORCH_SOURCES OR TORCH_HEADERS)
-        add_library(ai_torch STATIC ${TORCH_SOURCES} ${TORCH_HEADERS})
-        target_link_libraries(ai_torch PUBLIC ai_core)
-        if (TARGET Torch::Torch)
-            target_link_libraries(ai_torch PUBLIC Torch::Torch)
-        else ()
-            target_link_libraries(ai_torch PUBLIC "${TORCH_LIBRARIES}")
-            target_include_directories(ai_torch PUBLIC "${TORCH_INCLUDE_DIRS}")
-        endif ()
-        target_compile_options(ai_torch PRIVATE ${TORCH_CXX_FLAGS})
-        target_include_directories(ai_torch PUBLIC "${AI_DIR}/include")
-        target_include_directories(ai_torch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-        set_property(TARGET ai_torch PROPERTY CXX_STANDARD 17)
-    endif ()
-
-    add_executable(ai_pass_selector_torch "${AI_DIR}/ai_pass_selector_torch.cpp")
-    set_property(TARGET ai_pass_selector_torch PROPERTY CXX_STANDARD 17)
-    set_property(TARGET ai_pass_selector_torch PROPERTY CXX_STANDARD_REQUIRED ON)
-    target_link_libraries(ai_pass_selector_torch PRIVATE ai_torch)
-
-    # ---------------- TensorFlow-only targets ----------------
-    file(GLOB_RECURSE TENSORFLOW_HEADERS CONFIGURE_DEPENDS "${AI_DIR}/include/Tensorflow/*.hpp")
-    file(GLOB_RECURSE TENSORFLOW_SOURCES CONFIGURE_DEPENDS "${AI_DIR}/src/Tensorflow/*.cpp")
-
-    if (TENSORFLOW_SOURCES OR TENSORFLOW_HEADERS)
-        add_library(ai_tensorflow STATIC ${TENSORFLOW_SOURCES} ${TENSORFLOW_HEADERS})
-        target_link_libraries(ai_tensorflow PUBLIC ai_core)
-        target_link_libraries(ai_tensorflow PUBLIC TensorFlow::TensorFlow)
-        target_include_directories(ai_tensorflow PUBLIC "${AI_DIR}/include")
-        target_include_directories(ai_tensorflow PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-        set_property(TARGET ai_tensorflow PROPERTY CXX_STANDARD 17)
-    endif ()
-
-    add_executable(ai_pass_selector_tensorflow "${AI_DIR}/ai_pass_selector_tensorflow.cpp")
-    set_property(TARGET ai_pass_selector_tensorflow PROPERTY CXX_STANDARD 17)
-    set_property(TARGET ai_pass_selector_tensorflow PROPERTY CXX_STANDARD_REQUIRED ON)
-    target_link_libraries(ai_pass_selector_tensorflow PRIVATE ai_tensorflow)
-
-    # ---------------- Neutral executables (no TF/Torch) ----------------
-    add_executable(convert_qasm_dataset_to_quake "${AI_DIR}/convert_qasm_dataset_to_quake.cpp")
-    set_property(TARGET convert_qasm_dataset_to_quake PROPERTY CXX_STANDARD 17)
-    set_property(TARGET convert_qasm_dataset_to_quake PROPERTY CXX_STANDARD_REQUIRED ON)
-    target_link_libraries(convert_qasm_dataset_to_quake PRIVATE ai_core)
-
-    add_executable(convert_quake_passtest_to_tikz "${AI_DIR}/convert_quake_passtest_to_tikz.cpp")
-    set_property(TARGET convert_quake_passtest_to_tikz PROPERTY CXX_STANDARD 17)
-    set_property(TARGET convert_quake_passtest_to_tikz PROPERTY CXX_STANDARD_REQUIRED ON)
-    target_link_libraries(convert_quake_passtest_to_tikz PRIVATE ai_core)
+    add_subdirectory(AI)
 endif ()
-# -----------------------------------------------------------------------
 
 # add tests
 if (BUILD_MLIR_PASSES_TESTS)
@@ -338,6 +237,7 @@ endif ()
 if (BUILD_MLIR_PASSES_TOOLS)
     add_subdirectory(tools)
 endif ()
+
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
 
