@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Clear the terminal screen
+git config --global --add safe.directory '*'
 clear
 
 # Define directories

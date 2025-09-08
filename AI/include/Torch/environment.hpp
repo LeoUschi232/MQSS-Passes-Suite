@@ -1,13 +1,21 @@
 #ifndef ENVIRONMENT_HPP
 #define ENVIRONMENT_HPP
+//  Quake includes
+#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Transforms/Passes.h"
+
+// Passes includes
+#include "Passes/Cancellations.hpp"
 
 // Torch includes
 #include <torch/torch.h>
 
 // Standard library includes
+#include <string>
 #include <unordered_map>
 #include <utility>
 
@@ -22,7 +30,11 @@ class QuantumCircuitEnviorment {
 
 public:
   /// Constructor
-  QuantumCircuitEnviorment(int max_qubits, int max_instructions, int max_depth);
+  QuantumCircuitEnviorment(
+      int max_qubits, int max_instructions, int max_depth,
+      mlir::ModuleOp circuit);
+
+  std::unordered_map<std::string, int> get_circuit_info();
 
   /// Destructor
   ~QuantumCircuitEnviorment() = default;
@@ -46,6 +58,8 @@ public:
   std::pair<torch::Tensor, std::unordered_map<std::string, int> >
   reset(int seed = 0);
 
+  static int printOperation(mlir::Operation *op);
+
   /**
    *
    * @return
@@ -57,7 +71,6 @@ public:
    * @return
    */
   std::unordered_map<std::string, int> get_circuit_info() const;
-
 
 
 };

@@ -33,6 +33,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+#include "mlir/Support/LLVM.h"  // already indirectly included, include explicitly
+
+using mlir::isa;
+using mlir::cast;
+using mlir::dyn_cast;
+
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
@@ -41,9 +47,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
+
 
 namespace mqss::support::quakeDialect {
 
@@ -68,6 +74,7 @@ Value createFloatValue(OpBuilder &builder, Location loc, double value);
   @return a `double` with the numerical value of op.
 */
 double extractDoubleArgumentValue(Operation *op);
+
 // TODO: return -1 is not good idea
 /**
   @brief Function that extracts an index of a given `ExtractRefOp` operation.
