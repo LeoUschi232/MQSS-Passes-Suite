@@ -1,6 +1,8 @@
 #ifndef PROGRESS_BAR_HPP
 #define PROGRESS_BAR_HPP
 
+#include <string>
+
 namespace ai_pass_selector {
 /**
  * Function to display a tqdm-like progress bar in the console.

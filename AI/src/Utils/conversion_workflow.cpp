@@ -9,9 +9,9 @@
 #include "Passes/CodeGen.hpp"
 #include "Passes/Decompositions.hpp"
 #include "Passes/Transforms.hpp"
+#include "Support/mlir_utils.hpp"
 
-// AI Utils includes
-#include "Utils/mlir_utils.hpp"
+// Utils includes
 #include "Utils/progress_bar.hpp"
 
 // Stdandard library includes
@@ -272,7 +272,7 @@ int convertPasstestCircuitToTikz(std::string passname,
     return -1;
   }
 
-  std::string quakeModule = getQuake(quake_src.string());
+  std::string quakeModule = readFileToString(quake_src.string());
   auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
   mlir::MLIRContext &context = *contextPtr;
   mlir::PassManager pm(&context);

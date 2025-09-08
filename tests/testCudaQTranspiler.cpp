@@ -79,8 +79,8 @@ std::string readFileToString(const std::string &filename) {
   return fileContents.str();    // Convert the string stream to a string
 }
 
-std::tuple<std::string, std::string> getQuakeAndGolden(std::string inputFile,
-                                                       std::string goldenFile) {
+std::tuple<std::string, std::string> getQuakeAndGolden(const std::string &inputFile,
+                                                       const std::string &goldenFile) {
   std::string quakeModule = readFileToString(inputFile);
   std::string goldenOutput = readFileToString(goldenFile);
   return std::make_tuple(quakeModule, goldenOutput);

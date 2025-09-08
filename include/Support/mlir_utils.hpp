@@ -13,12 +13,11 @@
 #include <tuple>
 
 
-namespace ai_pass_selector {
 /**
  * @param op The operation to extract the name from.
  * @return The name of the operations as a std::string.
  */
-std::string getOperationName(mlir::Operation * op);
+std::string getOperationName(mlir::Operation *op);
 
 /**
  * Extracts a MLIR module operation and the MLIR context from the quake module
@@ -34,8 +33,14 @@ extractMLIRContext(const std::string &quakeModule);
  * @param filename The name of the quake file.
  * @return The string contents of the quake file.
  */
+std::string readFileToString(const std::string &filename);
+
+/**
+ * Extracts the string contents of a quake file.
+ * @param filename The name of the quake file.
+ * @return The string contents of the quake file.
+ */
 std::string getQuake(const std::string &filename);
 
-} // namespace ai_pass_selector
 
 #endif // MLIR_UTILS_HPP

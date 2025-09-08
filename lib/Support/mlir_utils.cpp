@@ -1,13 +1,10 @@
-#include "Utils/mlir_utils.hpp"
+#include "Support/mlir_utils.hpp"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
-
-// Cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
 
 // Runtime includes
 #include "common/RuntimeMLIR.h"
@@ -19,9 +16,6 @@
 #include <sstream>
 #include <string>
 #include <tuple>
-
-namespace ai_pass_selector {
-
 
 std::string getOperationName(mlir::Operation *op) {
   return op->getName().getIdentifier().getValue().str();
@@ -42,7 +36,7 @@ extractMLIRContext(const std::string &quakeModule) {
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::string getQuake(const std::string &filename) {
+std::string readFileToString(const std::string &filename) {
   std::ifstream file(filename);
   if (!file.is_open()) {
     std::cerr << "Error opening file: " << filename << std::endl;
@@ -52,4 +46,7 @@ std::string getQuake(const std::string &filename) {
   fileContents << file.rdbuf();
   return fileContents.str();
 }
-} // namespace ai_pass_selector
+
+std::string getQuake(const std::string &filename) {
+  return readFileToString(filename);
+}
