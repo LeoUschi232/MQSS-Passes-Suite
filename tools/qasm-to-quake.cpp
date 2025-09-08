@@ -114,7 +114,7 @@ std::string readFileToString(const std::string &filename) {
   }
   std::ostringstream fileContents;
   fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
+  return fileContents.str(); // Convert the string stream to a string
 }
 
 std::string lowerCppToQuake(std::string cppFile) {
@@ -165,14 +165,14 @@ int main(int argc, char *argv[]) {
   if (vm.count("input")) {
     if (!hasExtension(vm["input"].as<std::string>(), ".qasm")) {
       std::cout << "File " << vm["input"].as<std::string>()
-                << " is not a valid supported file!" << std::endl;
+          << " is not a valid supported file!" << std::endl;
       return 1;
     }
     // read the input file and stored into qasmProgram
     std::ifstream inputQASMFile(vm["input"].as<std::string>());
     buffer << inputQASMFile.rdbuf();
     std::cout << "Input file name " << vm["input"].as<std::string>()
-              << std::endl;
+        << std::endl;
   } else {
     std::cout << "Input file name was not set." << std::endl;
     return 1;
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
     std::cout << "Output file name " << vm["output"].as<std::string>()
-              << std::endl;
+        << std::endl;
   } else {
     std::cout << "Output file name was not set." << std::endl;
     return 1;
@@ -196,8 +196,9 @@ int main(int argc, char *argv[]) {
   std::string inputFileName = pathObj.filename().string();
   std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
   std::smatch match;
-  if (!std::regex_match(inputFileName, match, pattern))
+  if (!std::regex_match(inputFileName, match, pattern)) {
     throw std::runtime_error("Fatal error!");
+  }
   std::string kernelName = match[1];
   std::regex pattern2(R"([-_])");
   // Replace all occurrences of "-" and "_"
@@ -213,9 +214,17 @@ int main(int argc, char *argv[]) {
   // Adding custom pass
   pm.nest<mlir::func::FuncOp>().addPass(
       mqss::opt::createQASM3ToQuakePass(qasmStream));
+
+  // 2) Clean up
+  pm.addPass(mlir::createSCCPPass()); // fold constants & mark dead
+  pm.addPass(mlir::createSymbolDCEPass()); // drop dead symbols/globals
+  pm.addPass(mlir::createCSEPass()); // merge duplicate constants etc.
+  pm.addPass(mlir::createCanonicalizerPass()); // general canonicalization
+
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
+  if (mlir::failed(pm.run(mlirModule))) {
     std::runtime_error("The pass failed...");
+  }
   // Convert the module to a string
   std::string moduleOutput;
   llvm::raw_string_ostream stringStream(moduleOutput);
@@ -230,10 +239,10 @@ int main(int argc, char *argv[]) {
     // Close the file
     outFile.close();
     std::cout << "Content successfully written to "
-              << vm["output"].as<std::string>() << std::endl;
+        << vm["output"].as<std::string>() << std::endl;
   } else
     std::cerr << "Failed to open" << vm["output"].as<std::string>()
-              << " for writing" << std::endl;
+        << " for writing" << std::endl;
 
   return 0;
 }

@@ -1,6 +1,5 @@
 import os
 import sys
-import shutil
 
 def merge_files(file1_path, file2_path, output_path):
     """Merges two files and writes the merged content into the output file."""

@@ -63,6 +63,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // test includes
+#include "Passes/Cancellations.hpp"
 #include "Passes/CodeGen.hpp"
 #include "Passes/Decompositions.hpp"
 #include "Passes/Examples.hpp"
@@ -398,97 +399,61 @@ TEST_P(VerificationTestPassesMQSS, Run) {
 INSTANTIATE_TEST_SUITE_P(
     MQSSPassTests, VerificationTestPassesMQSS,
     ::testing::Values(
-        std::make_tuple("TestCxToHCzHDecompositionPass",
-                        "./quake/CxToHCzHDecompositionPass.qke",
-                        []() {
-                          return mqss::opt::createCxToHCzHDecompositionPass();
-                        }),
-        std::make_tuple("TestCzToHCxHDecompositionPass",
-                        "./quake/CzToHCxHDecompositionPass.qke",
-                        []() {
-                          return mqss::opt::createCzToHCxHDecompositionPass();
-                        }),
+        std::make_tuple("TestCxToUpperHCzHPass", "./quake/CxToHCzHPass.qke",
+                        []() { return mqss::opt::createCxToUpperHCzHPass(); }),
+        std::make_tuple("TestCxToLowerHCzHPass", "./quake/CxToHCzHPass.qke",
+                        []() { return mqss::opt::createCxToLowerHCzHPass(); }),
+        std::make_tuple("TestCzToUpperHCxHPass", "./quake/CzToHCxHPass.qke",
+                        []() { return mqss::opt::createCzToUpperHCxHPass(); }),
+        std::make_tuple("TestCzToLowerHCxHPass", "./quake/CzToHCxHPass.qke",
+                        []() { return mqss::opt::createCzToLowerHCxHPass(); }),
         std::make_tuple("TestCommuteCnotRxPass",
                         "./quake/CommuteCNotRxPass.qke",
-                        []() { return mqss::opt::createCommuteCxRxPass(); }),
+                        []() { return mqss::opt::createCxRxToRxCxPass(); }),
         std::make_tuple("TestCommuteCnotXPass", "./quake/CommuteCNotXPass.qke",
-                        []() { return mqss::opt::createCommuteCxXPass(); }),
+                        []() { return mqss::opt::createCxXToXCxPass(); }),
         std::make_tuple("TestCommuteCnotZPass01",
                         "./quake/CommuteCNotZPass-01.qke",
-                        []() { return mqss::opt::createCommuteCxZPass(); }),
-        // std::make_tuple("TestCommuteCnotZPass02",
-        //                 "./quake/CommuteCNotZPass-02.qke",
-        //                 []() { return mqss::opt::createCommuteCNotZPass();}),
+                        []() { return mqss::opt::createCxZToZCxPass(); }),
         std::make_tuple("TestCommuteCnotZPass", "./quake/CommuteCNotZPass.qke",
-                        []() { return mqss::opt::createCommuteCxZPass(); }),
+                        []() { return mqss::opt::createCxZToZCxPass(); }),
         std::make_tuple("TestCommuteRxCnotPass",
                         "./quake/CommuteRxCNotPass.qke",
-                        []() { return mqss::opt::createCommuteRxCxPass(); }),
+                        []() { return mqss::opt::createRxCxToCxRxPass(); }),
         std::make_tuple("TestCommuteXCNotPass", "./quake/CommuteXCNotPass.qke",
-                        []() { return mqss::opt::createCommuteXCxPass(); }),
+                        []() { return mqss::opt::createXCxToCxXPass(); }),
         std::make_tuple("TestCommuteZCnotPass", "./quake/CommuteZCNotPass.qke",
-                        []() { return mqss::opt::createCommuteZCxPass(); }),
+                        []() { return mqss::opt::createZCxToCxZPass(); }),
         std::make_tuple("TestCommuteZCnotPass01",
                         "./quake/CommuteZCNotPass-01.qke",
-                        []() { return mqss::opt::createCommuteZCxPass(); }),
-        std::make_tuple("DoubleCnotCancellationPass",
-                        "./quake/DoubleCnotCancellationPass.qke",
-                        []() {
-                          return mqss::opt::createCancellationDoubleCxPass();
-                        }),
+                        []() { return mqss::opt::createZCxToCxZPass(); }),
+        std::make_tuple("CxCxToIdPass", "./quake/CxCxToIdPass.qke",
+                        []() { return mqss::opt::createCxCxToIdPass(); }),
         std::make_tuple("ReverseCNotPass", "./quake/ReverseCNotPass.qke",
                         []() { return mqss::opt::createReverseCxPass(); }),
-        //    std::make_tuple("NormalizeArgAnglePass",
-        //                    "./quake/NormalizeArgAnglePass.qke",
-        //                    []() { return
-        //                    mqss::opt::createNormalizeArgAnglePass();}),
         std::make_tuple("HXHToZPass", "./quake/HXHToZPass.qke",
                         []() { return mqss::opt::createHXHToZPass(); }),
         std::make_tuple("XGateAndHadamardSwitchPass",
                         "./quake/XGateAndHadamardSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchXHPass(); }),
-        //    std::make_tuple("YGateAndHadamardSwitchPass",
-        //                    "./quake/YGateAndHadamardSwitchPass.qke",
-        //                    []() { return
-        //                    mqss::opt::createYGateAndHadamardSwitchPass();}),
-        std::make_tuple("ZGateAndHadamardSwitchPass",
-                        "./quake/ZGateAndHadamardSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchZHPass(); }),
-        std::make_tuple("PauliGateAndHadamardSwitchPassX",
-                        "./quake/XGateAndHadamardSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchPauliHPass(); }),
-        //    std::make_tuple("PauliGateAndHadamardSwitchPassY",
-        //                    "./quake/YGateAndHadamardSwitchPass.qke",
-        //                    []() { return
-        //                    mqss::opt::createPauliGateAndHadamardSwitchPass();}),
-        std::make_tuple("PauliGateAndHadamardSwitchPassZ",
-                        "./quake/ZGateAndHadamardSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchPauliHPass(); }),
+                        []() { return mqss::opt::createXHToHZPass(); }),
         std::make_tuple("HZHToXPass", "./quake/HZHToXPass.qke",
                         []() { return mqss::opt::createHZHToXPass(); }),
         std::make_tuple("HadamardAndXGateSwitchPass",
                         "./quake/HadamardAndXGateSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchHXPass(); }),
-        //    std::make_tuple("HadamardAndYGateSwitchPass",
-        //                    "./quake/HadamardAndYGateSwitchPass.qke",
-        //                    []() { return
-        //                    mqss::opt::createHadamardAndYGateSwitchPass();}),
+                        []() { return mqss::opt::createHXToZHPass(); }),
         std::make_tuple("HadamardAndZGateSwitchPass",
                         "./quake/HadamardAndZGateSwitchPass.qke",
-                        []() { return mqss::opt::createSwitchHZPass(); }),
-        //    std::make_tuple("NullRotationCancellationPass",
-        //                    "./quake/NullRotationCancellationPass.qke",
-        //                    []() { return
-        //                    mqss::opt::createNullRotationCancellationPass();})
-        std::make_tuple("SAdjZToSPass", "./quake/SAdjToSPass.qke",
-                        []() { return mqss::opt::createSAdjZToSPass(); }),
-        std::make_tuple("SZToSAdjPass", "./quake/SToSAdjPass.qke",
-                        []() { return mqss::opt::createSZToSAdjPass(); })
-        //    std::make_tuple("NormalizeArgAnglePass",
-        //                    "./quake/NormalizeArgAnglePass.qke",
-        //                    []() { return
-        //                    mqss::opt::createNormalizeArgAnglePass();})
-        ),
+                        []() { return mqss::opt::createHZToXHPass(); }),
+        std::make_tuple("ZeroRxToIdPass", "./quake/ZeroRxToIdPass.qke",
+                        []() { return mqss::opt::createZeroRxToIdPass(); }),
+        std::make_tuple("ZeroRyToIdPass", "./quake/ZeroRyToIdPass.qke",
+                        []() { return mqss::opt::createZeroRyToIdPass(); }),
+        std::make_tuple("ZeroRzToIdPass", "./quake/ZeroRzToIdPass.qke",
+                        []() { return mqss::opt::createZeroRzToIdPass(); }),
+        std::make_tuple("SdgZToSPass", "./quake/SAdjToSPass.qke",
+                        []() { return mqss::opt::createSdgZToSPass(); }),
+        std::make_tuple("SZToSdgPass", "./quake/SToSAdjPass.qke",
+                        []() { return mqss::opt::createSZToSdgPass(); })),
     [](const ::testing::TestParamInfo<VerificationTestPassesMQSS::ParamType>
            &info) {
       // Use the first element of the tuple (testName) as the custom test name
