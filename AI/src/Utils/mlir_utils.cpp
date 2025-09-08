@@ -6,9 +6,6 @@
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 
-// Cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-
 // Runtime includes
 #include "common/RuntimeMLIR.h"
 

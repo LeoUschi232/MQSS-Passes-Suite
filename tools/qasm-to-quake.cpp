@@ -26,11 +26,7 @@ input circuit
 ******************************************************************************/
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
@@ -39,16 +35,12 @@ input circuit
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "Passes/CodeGen.hpp"
 #include "common/RuntimeMLIR.h"
 
 #include <boost/program_options.hpp>
-#include <chrono>
 #include <cstdlib>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -57,12 +49,11 @@ input circuit
 #include <stdio.h>
 #include <string>
 #include <thread>
-#include <vector>
 
 namespace po = boost::program_options;
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
-                                std::string functionName) {
+std::string getEmptyQuakeKernel(const std::string &kernelName,
+                                const std::string &functionName) {
   std::string templateEmptyQuake =
       "module attributes {"
       "  llvm.data_layout = "
@@ -117,7 +108,7 @@ std::string readFileToString(const std::string &filename) {
   return fileContents.str(); // Convert the string stream to a string
 }
 
-std::string lowerCppToQuake(std::string cppFile) {
+std::string lowerCppToQuake(const std::string &cppFile) {
   int retCode = std::system(("cudaq-quake " + cppFile + " -o ./o.qke").c_str());
   if (retCode)
     throw std::runtime_error("Quake transformation failed!!!");
@@ -156,13 +147,13 @@ int main(int argc, char *argv[]) {
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
 
-  if (vm.count("help")) {
+  if (vm.contains("help")) {
     std::cout << desc << std::endl;
     return 1;
   }
 
   std::stringstream buffer;
-  if (vm.count("input")) {
+  if (vm.contains("input")) {
     if (!hasExtension(vm["input"].as<std::string>(), ".qasm")) {
       std::cout << "File " << vm["input"].as<std::string>()
           << " is not a valid supported file!" << std::endl;
@@ -177,7 +168,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Input file name was not set." << std::endl;
     return 1;
   }
-  if (vm.count("output")) {
+  if (vm.contains("output")) {
     if (!hasExtension(vm["output"].as<std::string>(), ".qke")) {
       std::cout << "Output file has not a correct qke extension!" << std::endl;
       return 1;
@@ -188,7 +179,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Output file name was not set." << std::endl;
     return 1;
   }
-  setbuf(stdout, NULL);
+  setbuf(stdout, nullptr);
   // loading qasm
   // Convert to istringstream
   std::istringstream qasmStream(buffer.str());
@@ -223,7 +214,7 @@ int main(int argc, char *argv[]) {
 
   // running the pass
   if (mlir::failed(pm.run(mlirModule))) {
-    std::runtime_error("The pass failed...");
+    throw std::runtime_error("The pass failed...");
   }
   // Convert the module to a string
   std::string moduleOutput;

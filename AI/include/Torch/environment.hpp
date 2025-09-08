@@ -2,7 +2,7 @@
 #define ENVIRONMENT_HPP
 
 // MLIR includes
-#include "mlir/Pass/Pass.h"
+#include "mlir/IR/BuiltinOps.h"
 
 // Torch includes
 #include <torch/torch.h>
@@ -17,6 +17,8 @@ class QuantumCircuitEnviorment {
   int max_qubits;
   int max_instructions;
   int max_depth;
+  mlir::ModuleOp original_circuit;
+  mlir::ModuleOp current_circuit;
 
 public:
   /// Constructor
@@ -44,6 +46,10 @@ public:
   std::pair<torch::Tensor, std::unordered_map<std::string, int> >
   reset(int seed = 0);
 
+  /**
+   *
+   * @return
+   */
   bool is_valid_circuit();
 
   /**
@@ -51,6 +57,8 @@ public:
    * @return
    */
   std::unordered_map<std::string, int> get_circuit_info() const;
+
+
 
 };
 
