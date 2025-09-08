@@ -35,78 +35,34 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // QCEC checker headers
 #include "EquivalenceCheckingManager.hpp"
 #include "EquivalenceCriterion.hpp"
-#include "checker/dd/applicationscheme/ApplicationScheme.hpp"
-#include "dd/DDDefinitions.hpp"
-#include "ir/operations/Control.hpp"
 
 #include <iostream>
 #include <string>
 // llvm includes
 #include "llvm/Support/raw_ostream.h"
 // mlir includes
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Import.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
-// cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // test includes
+#include "mlir_utils.hpp"
 #include "Passes/Cancellations.hpp"
-#include "Passes/CodeGen.hpp"
 #include "Passes/Decompositions.hpp"
-#include "Passes/Examples.hpp"
 #include "Passes/Transforms.hpp"
 
-#include <fstream>
 #include <gtest/gtest.h>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::string getQuake(std::string inputFile) {
-  std::string quakeModule = readFileToString(inputFile);
-  return quakeModule;
-}
-
 std::string normalize(const std::string &str) {
   std::string result;
-  for (char c : str) {
+  for (const char c : str) {
     if (c != '\t' && c != '\n' && c != '\\' && c != ' ') {
       result += c;
     }
@@ -114,27 +70,26 @@ std::string normalize(const std::string &str) {
   return result;
 }
 
-std::string lowerQuakeCodeToOpenQASM(std::string quantumTask) {
+std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
   auto [m_module, contextPtr] = extractMLIRContext(quantumTask);
 
-  mlir::MLIRContext &context = *contextPtr;
-  std::string postCodeGenPasses = "";
-  bool printIR = false;
-  bool enablePassStatistics = false;
-  bool enablePrintMLIREachPass = false;
+  const std::string postCodeGenPasses = "";
 
-  auto translation = cudaq::getTranslation("qasm2");
+  const auto translation = cudaq::getTranslation("qasm2");
   std::string codeStr;
   {
+    constexpr bool enablePrintMLIREachPass = false;
+    constexpr bool enablePassStatistics = false;
     llvm::raw_string_ostream outStr(codeStr);
     m_module.getContext()->disableMultithreading();
-    if (mlir::failed(translation(m_module, outStr, postCodeGenPasses, printIR,
-                                 enablePrintMLIREachPass,
-                                 enablePassStatistics)))
+    if (constexpr bool printIR = false; mlir::failed(translation(
+        m_module, outStr, postCodeGenPasses, printIR,
+        enablePrintMLIREachPass,
+        enablePassStatistics)))
       throw std::runtime_error("Could not successfully translate to OpenQASM2");
   }
   // Regular expression to match the gate definition
-  std::regex gatePattern(R"(gate\s+\S+\(param0\)\s*\{\n\})");
+  const std::regex gatePattern(R"(gate\s+\S+\(param0\)\s*\{\n\})");
   // Remove the matching part from the string
   codeStr = std::regex_replace(codeStr, gatePattern, "");
   return codeStr;
@@ -158,8 +113,8 @@ protected:
   ec::Configuration config{};
 
   std::tuple<std::string, std::string, std::string,
-             std::function<std::unique_ptr<mlir::Pass>()>>
-      passInfo;
+             std::function<std::unique_ptr<mlir::Pass>()> >
+  passInfo;
 };
 
 // TEST_F(EqualityTest, TestQuakeQMapPass01) {
@@ -321,8 +276,8 @@ protected:
 // Return QASM strings of the input module and the module after pass
 std::tuple<std::string, std::string>
 verificationTest(std::tuple<std::string, std::string,
-                            std::function<std::unique_ptr<mlir::Pass>()>>
-                     test) {
+                            std::function<std::unique_ptr<mlir::Pass>()> >
+    test) {
   std::string fileInputTest = std::get<1>(test);
   auto passMlir = std::get<2>(test);
   // Invoke the function to create the pass
@@ -347,8 +302,9 @@ verificationTest(std::tuple<std::string, std::string,
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createCSEPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Circuit after pass:\n";
   mlirModule->dump();
@@ -367,12 +323,13 @@ verificationTest(std::tuple<std::string, std::string,
 
 class VerificationTestPassesMQSS
     : public ::testing::TestWithParam<
-          std::tuple<std::string, std::string,
-                     std::function<std::unique_ptr<mlir::Pass>()>>> {};
+      std::tuple<std::string, std::string,
+                 std::function<std::unique_ptr<mlir::Pass>()> > > {
+};
 
 TEST_P(VerificationTestPassesMQSS, Run) {
   std::tuple<std::string, std::string,
-             std::function<std::unique_ptr<mlir::Pass>()>>
+             std::function<std::unique_ptr<mlir::Pass>()> >
       p = GetParam();
   std::string testName = std::get<0>(p);
   SCOPED_TRACE(testName);
@@ -380,7 +337,7 @@ TEST_P(VerificationTestPassesMQSS, Run) {
   // qcec objects required for verification
   qc::QuantumComputation qc1, qc2;
   ec::Configuration config{};
-  std::stringstream qasmStream = std::stringstream(qasmInput);
+  auto qasmStream = std::stringstream(qasmInput);
   qc1.import(qasmStream, qc::Format::OpenQASM2);
   qasmStream = std::stringstream(qasmOutput);
   qc2.import(qasmStream, qc::Format::OpenQASM2);
@@ -399,68 +356,68 @@ TEST_P(VerificationTestPassesMQSS, Run) {
 INSTANTIATE_TEST_SUITE_P(
     MQSSPassTests, VerificationTestPassesMQSS,
     ::testing::Values(
-        std::make_tuple("TestCxToUpperHCzHPass", "./quake/CxToHCzHPass.qke",
-                        []() { return mqss::opt::createCxToUpperHCzHPass(); }),
-        std::make_tuple("TestCxToLowerHCzHPass", "./quake/CxToHCzHPass.qke",
-                        []() { return mqss::opt::createCxToLowerHCzHPass(); }),
-        std::make_tuple("TestCzToUpperHCxHPass", "./quake/CzToHCxHPass.qke",
-                        []() { return mqss::opt::createCzToUpperHCxHPass(); }),
-        std::make_tuple("TestCzToLowerHCxHPass", "./quake/CzToHCxHPass.qke",
-                        []() { return mqss::opt::createCzToLowerHCxHPass(); }),
-        std::make_tuple("TestCommuteCnotRxPass",
-                        "./quake/CommuteCNotRxPass.qke",
-                        []() { return mqss::opt::createCxRxToRxCxPass(); }),
-        std::make_tuple("TestCommuteCnotXPass", "./quake/CommuteCNotXPass.qke",
-                        []() { return mqss::opt::createCxXToXCxPass(); }),
-        std::make_tuple("TestCommuteCnotZPass01",
-                        "./quake/CommuteCNotZPass-01.qke",
-                        []() { return mqss::opt::createCxZToZCxPass(); }),
-        std::make_tuple("TestCommuteCnotZPass", "./quake/CommuteCNotZPass.qke",
-                        []() { return mqss::opt::createCxZToZCxPass(); }),
-        std::make_tuple("TestCommuteRxCnotPass",
-                        "./quake/CommuteRxCNotPass.qke",
-                        []() { return mqss::opt::createRxCxToCxRxPass(); }),
-        std::make_tuple("TestCommuteXCNotPass", "./quake/CommuteXCNotPass.qke",
-                        []() { return mqss::opt::createXCxToCxXPass(); }),
-        std::make_tuple("TestCommuteZCnotPass", "./quake/CommuteZCNotPass.qke",
-                        []() { return mqss::opt::createZCxToCxZPass(); }),
-        std::make_tuple("TestCommuteZCnotPass01",
-                        "./quake/CommuteZCNotPass-01.qke",
-                        []() { return mqss::opt::createZCxToCxZPass(); }),
-        std::make_tuple("CxCxToIdPass", "./quake/CxCxToIdPass.qke",
-                        []() { return mqss::opt::createCxCxToIdPass(); }),
-        std::make_tuple("ReverseCNotPass", "./quake/ReverseCNotPass.qke",
-                        []() { return mqss::opt::createReverseCxPass(); }),
-        std::make_tuple("HXHToZPass", "./quake/HXHToZPass.qke",
-                        []() { return mqss::opt::createHXHToZPass(); }),
-        std::make_tuple("XGateAndHadamardSwitchPass",
-                        "./quake/XGateAndHadamardSwitchPass.qke",
-                        []() { return mqss::opt::createXHToHZPass(); }),
-        std::make_tuple("HZHToXPass", "./quake/HZHToXPass.qke",
-                        []() { return mqss::opt::createHZHToXPass(); }),
-        std::make_tuple("HadamardAndXGateSwitchPass",
-                        "./quake/HadamardAndXGateSwitchPass.qke",
-                        []() { return mqss::opt::createHXToZHPass(); }),
-        std::make_tuple("HadamardAndZGateSwitchPass",
-                        "./quake/HadamardAndZGateSwitchPass.qke",
-                        []() { return mqss::opt::createHZToXHPass(); }),
-        std::make_tuple("ZeroRxToIdPass", "./quake/ZeroRxToIdPass.qke",
-                        []() { return mqss::opt::createZeroRxToIdPass(); }),
-        std::make_tuple("ZeroRyToIdPass", "./quake/ZeroRyToIdPass.qke",
-                        []() { return mqss::opt::createZeroRyToIdPass(); }),
-        std::make_tuple("ZeroRzToIdPass", "./quake/ZeroRzToIdPass.qke",
-                        []() { return mqss::opt::createZeroRzToIdPass(); }),
-        std::make_tuple("SdgZToSPass", "./quake/SAdjToSPass.qke",
-                        []() { return mqss::opt::createSdgZToSPass(); }),
-        std::make_tuple("SZToSdgPass", "./quake/SToSAdjPass.qke",
-                        []() { return mqss::opt::createSZToSdgPass(); })),
+      std::make_tuple("TestCxToUpperHCzHPass", "./quake/CxToHCzHPass.qke",
+        []() { return mqss::opt::createCxToUpperHCzHPass(); }),
+      std::make_tuple("TestCxToLowerHCzHPass", "./quake/CxToHCzHPass.qke",
+        []() { return mqss::opt::createCxToLowerHCzHPass(); }),
+      std::make_tuple("TestCzToUpperHCxHPass", "./quake/CzToHCxHPass.qke",
+        []() { return mqss::opt::createCzToUpperHCxHPass(); }),
+      std::make_tuple("TestCzToLowerHCxHPass", "./quake/CzToHCxHPass.qke",
+        []() { return mqss::opt::createCzToLowerHCxHPass(); }),
+      std::make_tuple("TestCommuteCnotRxPass",
+        "./quake/CommuteCNotRxPass.qke",
+        []() { return mqss::opt::createCxRxToRxCxPass(); }),
+      std::make_tuple("TestCommuteCnotXPass", "./quake/CommuteCNotXPass.qke",
+        []() { return mqss::opt::createCxXToXCxPass(); }),
+      std::make_tuple("TestCommuteCnotZPass01",
+        "./quake/CommuteCNotZPass-01.qke",
+        []() { return mqss::opt::createCxZToZCxPass(); }),
+      std::make_tuple("TestCommuteCnotZPass", "./quake/CommuteCNotZPass.qke",
+        []() { return mqss::opt::createCxZToZCxPass(); }),
+      std::make_tuple("TestCommuteRxCnotPass",
+        "./quake/CommuteRxCNotPass.qke",
+        []() { return mqss::opt::createRxCxToCxRxPass(); }),
+      std::make_tuple("TestCommuteXCNotPass", "./quake/CommuteXCNotPass.qke",
+        []() { return mqss::opt::createXCxToCxXPass(); }),
+      std::make_tuple("TestCommuteZCnotPass", "./quake/CommuteZCNotPass.qke",
+        []() { return mqss::opt::createZCxToCxZPass(); }),
+      std::make_tuple("TestCommuteZCnotPass01",
+        "./quake/CommuteZCNotPass-01.qke",
+        []() { return mqss::opt::createZCxToCxZPass(); }),
+      std::make_tuple("CxCxToIdPass", "./quake/CxCxToIdPass.qke",
+        []() { return mqss::opt::createCxCxToIdPass(); }),
+      std::make_tuple("ReverseCNotPass", "./quake/ReverseCNotPass.qke",
+        []() { return mqss::opt::createReverseCxPass(); }),
+      std::make_tuple("HXHToZPass", "./quake/HXHToZPass.qke",
+        []() { return mqss::opt::createHXHToZPass(); }),
+      std::make_tuple("XGateAndHadamardSwitchPass",
+        "./quake/XGateAndHadamardSwitchPass.qke",
+        []() { return mqss::opt::createXHToHZPass(); }),
+      std::make_tuple("HZHToXPass", "./quake/HZHToXPass.qke",
+        []() { return mqss::opt::createHZHToXPass(); }),
+      std::make_tuple("HadamardAndXGateSwitchPass",
+        "./quake/HadamardAndXGateSwitchPass.qke",
+        []() { return mqss::opt::createHXToZHPass(); }),
+      std::make_tuple("HadamardAndZGateSwitchPass",
+        "./quake/HadamardAndZGateSwitchPass.qke",
+        []() { return mqss::opt::createHZToXHPass(); }),
+      std::make_tuple("ZeroRxToIdPass", "./quake/ZeroRxToIdPass.qke",
+        []() { return mqss::opt::createZeroRxToIdPass(); }),
+      std::make_tuple("ZeroRyToIdPass", "./quake/ZeroRyToIdPass.qke",
+        []() { return mqss::opt::createZeroRyToIdPass(); }),
+      std::make_tuple("ZeroRzToIdPass", "./quake/ZeroRzToIdPass.qke",
+        []() { return mqss::opt::createZeroRzToIdPass(); }),
+      std::make_tuple("SdgZToSPass", "./quake/SAdjToSPass.qke",
+        []() { return mqss::opt::createSdgZToSPass(); }),
+      std::make_tuple("SZToSdgPass", "./quake/SToSAdjPass.qke",
+        []() { return mqss::opt::createSZToSdgPass(); })),
     [](const ::testing::TestParamInfo<VerificationTestPassesMQSS::ParamType>
-           &info) {
-      // Use the first element of the tuple (testName) as the custom test name
-      return std::get<0>(info.param);
+      &info) {
+    // Use the first element of the tuple (testName) as the custom test name
+    return std::get<0>(info.param);
     });
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

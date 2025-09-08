@@ -28,16 +28,14 @@ input circuit
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR/Import.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
 // includes in runtime
+#include "mlir_utils.hpp"
 #include "Passes/CodeGen.hpp"
-#include "common/RuntimeMLIR.h"
 
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -81,31 +79,6 @@ std::string getEmptyQuakeKernel(const std::string &kernelName,
   templateEmptyQuake =
       std::regex_replace(templateEmptyQuake, functionNameRegex, functionName);
   return templateEmptyQuake;
-}
-
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str(); // Convert the string stream to a string
 }
 
 std::string lowerCppToQuake(const std::string &cppFile) {
@@ -223,7 +196,8 @@ int main(int argc, char *argv[]) {
 
   // Open the file in output mode (create or overwrite)
   // Check if the file was opened successfully
-  if (std::ofstream outFile(vm["output"].as<std::string>()); outFile.is_open()) {
+  if (std::ofstream outFile(vm["output"].as<std::string>()); outFile.
+    is_open()) {
     // Write the content to the file
     outFile << moduleOutput;
     // Close the file

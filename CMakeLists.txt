@@ -143,11 +143,9 @@ file(GLOB SRC_CANCELLATIONS
 # Then the other stuff.
 file(GLOB SRC_CODEGEN "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/CodeGen/*.cpp")
 file(GLOB SRC_EXAMPLES "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Examples/*.cpp")
-file(GLOB SRC_SUPPORT_QUAKE
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/CodeGen/Quake/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/DAG/*.cpp")
 file(GLOB SRC_OPTIMIZER "${CMAKE_CURRENT_SOURCE_DIR}/lib/Optimizer/*.cpp")
 file(GLOB SRC_INTERFACES "${CMAKE_CURRENT_SOURCE_DIR}/lib/Interfaces/*.cpp")
+file(GLOB_RECURSE SRC_SUPPORT_QUAKE "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/*.cpp")
 
 add_mlir_library(
         SupportQuake

@@ -40,10 +40,7 @@ matches.
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
@@ -52,8 +49,6 @@ matches.
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // includes mqss passes
@@ -63,8 +58,17 @@ matches.
 #include "Passes/Examples.hpp"
 #include "Passes/Transforms.hpp"
 // test includes
+#include "mlir_utils.hpp"
+
 #include <fstream>
 #include <gtest/gtest.h>
+#include <sc/Architecture.hpp>
+#include <sc/utils.hpp>
+#include <sc/configuration/Configuration.hpp>
+#include <sc/configuration/Heuristic.hpp>
+#include <sc/configuration/InitialLayout.hpp>
+#include <sc/configuration/Layering.hpp>
+#include <sc/configuration/LookaheadHeuristic.hpp>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
@@ -72,38 +76,14 @@ std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
   auto contextPtr = cudaq::initializeMLIR();
   mlir::MLIRContext &context = *contextPtr.get();
   // Create an empty MLIR module
-  mlir::OwningOpRef<mlir::ModuleOp> m_module =
+  mlir::OwningOpRef m_module =
       mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::tuple<std::string, std::string> getQuakeAndGolden(std::string inputFile,
-                                                       std::string goldenFile) {
+std::tuple<std::string, std::string> getQuakeAndGolden(
+    const std::string &inputFile,
+    const std::string &goldenFile) {
   std::string quakeModule = readFileToString(inputFile);
   std::string goldenOutput = readFileToString(goldenFile);
   return std::make_tuple(quakeModule, goldenOutput);
@@ -111,7 +91,7 @@ std::tuple<std::string, std::string> getQuakeAndGolden(std::string inputFile,
 
 std::string normalize(const std::string &str) {
   std::string result;
-  for (char c : str) {
+  for (const char c : str) {
     if (c != '\t' && c != '\n' && c != '\\' && c != ' ') {
       result += c;
     }
@@ -137,7 +117,7 @@ TEST(TestMQSSPasses, TestPrintQuakeGatesPass) {
   pm.addPass(mqss::opt::createPrintQuakeGatesPass(stringStream));
   // running the pass
   if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+    throw std::runtime_error("The pass failed...");
 #ifdef DEBUG
   std::cout << "Captured output from Pass:\n" << moduleOutput << std::endl;
 #endif
@@ -150,7 +130,7 @@ TEST(TestMQSSPasses, TestQuakeQMapPass01) {
       "./quake/QuakeQMapPass-01.qke", "./golden-cases/QuakeQMapPass-01.qke");
 #ifdef DEBUG
   std::cout << "Input Quake Module 01 " << std::endl
-            << quakeModule << std::endl;
+      << quakeModule << std::endl;
 #endif
   auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
   mlir::MLIRContext &context = *contextPtr;
@@ -189,8 +169,9 @@ TEST(TestMQSSPasses, TestQuakeQMapPass01) {
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createCSEPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Mapped Circuit:\n";
   mlirModule->dump();
@@ -208,7 +189,7 @@ TEST(TestMQSSPasses, TestQuakeQMapPass02) {
       "./quake/QuakeQMapPass-02.qke", "./golden-cases/QuakeQMapPass-02.qke");
 #ifdef DEBUG
   std::cout << "Input Quake Module 01 " << std::endl
-            << quakeModule << std::endl;
+      << quakeModule << std::endl;
 #endif
   auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
   mlir::MLIRContext &context = *contextPtr;
@@ -247,8 +228,9 @@ TEST(TestMQSSPasses, TestQuakeQMapPass02) {
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createCSEPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Mapped Circuit:\n";
   mlirModule->dump();
@@ -278,8 +260,9 @@ TEST(TestMQSSPasses, TestQuakeToTikzPass) {
   pm.nest<mlir::func::FuncOp>().addPass(
       mqss::opt::createQuakeToTikzPass(stringStream));
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Captured output from Pass:\n" << moduleOutput << std::endl;
 #endif
@@ -289,7 +272,7 @@ TEST(TestMQSSPasses, TestQuakeToTikzPass) {
 std::tuple<std::string, std::string>
 behaviouralTest(std::tuple<std::string, std::string, std::string,
                            std::function<std::unique_ptr<mlir::Pass>()>, bool>
-                    test) {
+    test) {
   std::string fileInputTest = std::get<1>(test);
   std::string fileGoldenCase = std::get<2>(test);
   auto passMlir = std::get<3>(test);
@@ -317,8 +300,9 @@ behaviouralTest(std::tuple<std::string, std::string, std::string,
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createCSEPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Circuit after pass:\n";
   mlirModule->dump();
@@ -332,14 +316,15 @@ behaviouralTest(std::tuple<std::string, std::string, std::string,
 
 class BehaviouralTestPassesMQSS
     : public ::testing::TestWithParam<
-          std::tuple<std::string, std::string, std::string,
-                     std::function<std::unique_ptr<mlir::Pass>()>, bool>> {};
+      std::tuple<std::string, std::string, std::string,
+                 std::function<std::unique_ptr<mlir::Pass>()>, bool> > {
+};
 
 TEST_P(BehaviouralTestPassesMQSS, Run) {
-  std::tuple<std::string, std::string, std::string,
+  const std::tuple<std::string, std::string, std::string,
              std::function<std::unique_ptr<mlir::Pass>()>, bool>
       p = GetParam();
-  std::string testName = std::get<0>(p);
+  const std::string testName = std::get<0>(p);
   SCOPED_TRACE(testName);
   auto [goldenOutput, moduleOutput] = behaviouralTest(p);
   EXPECT_EQ(goldenOutput, std::string(moduleOutput));
@@ -348,132 +333,132 @@ TEST_P(BehaviouralTestPassesMQSS, Run) {
 INSTANTIATE_TEST_SUITE_P(
     MQSSPassTests, BehaviouralTestPassesMQSS,
     ::testing::Values(
-        std::make_tuple(
-            "TestCustomExamplePass", "./quake/CustomExamplePass.qke",
-            "./golden-cases/CustomExamplePass.qke",
-            []() { return mqss::opt::createCustomExamplePass(); }, false),
-        std::make_tuple(
-            "TestCxToUpperHCzHPass", "./quake/CxToHCzHPass.qke",
-            "./golden-cases/CxToHCzHPass.qke",
-            []() { return mqss::opt::createCxToUpperHCzHPass(); }, false),
-        std::make_tuple(
-            "TestCxToLowerHCzHPass", "./quake/CxToHCzHPass.qke",
-            "./golden-cases/CxToHCzHPass.qke",
-            []() { return mqss::opt::createCxToLowerHCzHPass(); }, false),
-        std::make_tuple(
-            "TestCzToUpperHCxHPass", "./quake/CzToHCxHPass.qke",
-            "./golden-cases/CzToHCxHPass.qke",
-            []() { return mqss::opt::createCzToUpperHCxHPass(); }, false),
-        std::make_tuple(
-            "TestCzToLowerHCxHPass", "./quake/CzToHCxHPass.qke",
-            "./golden-cases/CzToHCxHPass.qke",
-            []() { return mqss::opt::createCzToLowerHCxHPass(); }, false),
-        std::make_tuple(
-            "TestCommuteCnotRxPass", "./quake/CommuteCNotRxPass.qke",
-            "./golden-cases/CommuteCNotRxPass.qke",
-            []() { return mqss::opt::createCxRxToRxCxPass(); }, false),
-        std::make_tuple(
-            "TestCommuteCnotXPass", "./quake/CommuteCNotXPass.qke",
-            "./golden-cases/CommuteCNotXPass.qke",
-            []() { return mqss::opt::createCxXToXCxPass(); }, false),
-        std::make_tuple(
-            "TestCommuteCnotZPass01", "./quake/CommuteCNotZPass-01.qke",
-            "./golden-cases/CommuteCNotZPass-01.qke",
-            []() { return mqss::opt::createCxZToZCxPass(); }, false),
-        std::make_tuple(
-            "TestCommuteCnotZPass", "./quake/CommuteCNotZPass.qke",
-            "./golden-cases/CommuteCNotZPass.qke",
-            []() { return mqss::opt::createCxZToZCxPass(); }, false),
-        std::make_tuple(
-            "TestCommuteRxCnotPass", "./quake/CommuteRxCNotPass.qke",
-            "./golden-cases/CommuteRxCNotPass.qke",
-            []() { return mqss::opt::createRxCxToCxRxPass(); }, false),
-        std::make_tuple(
-            "TestCommuteXCNotPass", "./quake/CommuteXCNotPass.qke",
-            "./golden-cases/CommuteXCNotPass.qke",
-            []() { return mqss::opt::createXCxToCxXPass(); }, false),
-        std::make_tuple(
-            "TestCommuteZCnotPass", "./quake/CommuteZCNotPass.qke",
-            "./golden-cases/CommuteZCNotPass.qke",
-            []() { return mqss::opt::createZCxToCxZPass(); }, false),
-        std::make_tuple(
-            "TestCommuteZCnotPass01", "./quake/CommuteZCNotPass-01.qke",
-            "./golden-cases/CommuteZCNotPass-01.qke",
-            []() { return mqss::opt::createZCxToCxZPass(); }, false),
-        std::make_tuple(
-            "CxCxToIdPass", "./quake/CxCxToIdPass.qke",
-            "./golden-cases/CxCxToIdPass.qke",
-            []() { return mqss::opt::createCxCxToIdPass(); }, false),
-        std::make_tuple(
-            "ReverseCNotPass", "./quake/ReverseCNotPass.qke",
-            "./golden-cases/ReverseCNotPass.qke",
-            []() { return mqss::opt::createReverseCxPass(); }, false),
-        std::make_tuple(
-            "HXHToZPass", "./quake/HXHToZPass.qke",
-            "./golden-cases/HXHToZPass.qke",
-            []() { return mqss::opt::createHXHToZPass(); }, false),
-        std::make_tuple(
-            "XGateAndHadamardSwitchPass",
-            "./quake/XGateAndHadamardSwitchPass.qke",
-            "./golden-cases/XGateAndHadamardSwitchPass.qke",
-            []() { return mqss::opt::createXHToHZPass(); }, false),
-        std::make_tuple(
-            "YGateAndHadamardSwitchPass",
-            "./quake/YGateAndHadamardSwitchPass.qke",
-            "./golden-cases/YGateAndHadamardSwitchPass.qke",
-            []() { return mqss::opt::createYHToHYPass(); }, false),
-        std::make_tuple(
-            "ZGateAndHadamardSwitchPass",
-            "./quake/ZGateAndHadamardSwitchPass.qke",
-            "./golden-cases/ZGateAndHadamardSwitchPass.qke",
-            []() { return mqss::opt::createZHToHXPass(); }, false),
-        std::make_tuple(
-            "HZHToXPass", "./quake/HZHToXPass.qke",
-            "./golden-cases/HZHToXPass.qke",
-            []() { return mqss::opt::createHZHToXPass(); }, false),
-        std::make_tuple(
-            "HadamardAndXGateSwitchPass",
-            "./quake/HadamardAndXGateSwitchPass.qke",
-            "./golden-cases/HadamardAndXGateSwitchPass.qke",
-            []() { return mqss::opt::createHXToZHPass(); }, false),
-        std::make_tuple(
-            "HadamardAndYGateSwitchPass",
-            "./quake/HadamardAndYGateSwitchPass.qke",
-            "./golden-cases/HadamardAndYGateSwitchPass.qke",
-            []() { return mqss::opt::createHYToYHPass(); }, false),
-        std::make_tuple(
-            "HadamardAndZGateSwitchPass",
-            "./quake/HadamardAndZGateSwitchPass.qke",
-            "./golden-cases/HadamardAndZGateSwitchPass.qke",
-            []() { return mqss::opt::createHZToXHPass(); }, false),
-        std::make_tuple(
-            "ZeroRxToIdPass", "./quake/ZeroRxToIdPass.qke",
-            "./golden-cases/ZeroRxToIdPass.qke",
-            []() { return mqss::opt::createZeroRxToIdPass(); }, false),
-        std::make_tuple(
-            "ZeroRyToIdPass", "./quake/ZeroRyToIdPass.qke",
-            "./golden-cases/ZeroRyToIdPass.qke",
-            []() { return mqss::opt::createZeroRyToIdPass(); }, false),
-        std::make_tuple(
-            "ZeroRzToIdPass", "./quake/ZeroRzToIdPass.qke",
-            "./golden-cases/ZeroRzToIdPass.qke",
-            []() { return mqss::opt::createZeroRzToIdPass(); }, false),
-        std::make_tuple(
-            "SdgZToSPass", "./quake/SAdjToSPass.qke",
-            "./golden-cases/SAdjToSPass.qke",
-            []() { return mqss::opt::createSdgZToSPass(); }, false),
-        std::make_tuple(
-            "SZToSdgPass", "./quake/SToSAdjPass.qke",
-            "./golden-cases/SToSAdjPass.qke",
-            []() { return mqss::opt::createSZToSdgPass(); }, false),
-        std::make_tuple(
-            "NormalizeArgAnglePass", "./quake/NormalizeArgAnglePass.qke",
-            "./golden-cases/NormalizeArgAnglePass.qke",
-            []() { return mqss::opt::createNormalizeArgAnglePass(); }, false)),
+      std::make_tuple(
+        "TestCustomExamplePass", "./quake/CustomExamplePass.qke",
+        "./golden-cases/CustomExamplePass.qke",
+        []() { return mqss::opt::createCustomExamplePass(); }, false),
+      std::make_tuple(
+        "TestCxToUpperHCzHPass", "./quake/CxToHCzHPass.qke",
+        "./golden-cases/CxToHCzHPass.qke",
+        []() { return mqss::opt::createCxToUpperHCzHPass(); }, false),
+      std::make_tuple(
+        "TestCxToLowerHCzHPass", "./quake/CxToHCzHPass.qke",
+        "./golden-cases/CxToHCzHPass.qke",
+        []() { return mqss::opt::createCxToLowerHCzHPass(); }, false),
+      std::make_tuple(
+        "TestCzToUpperHCxHPass", "./quake/CzToHCxHPass.qke",
+        "./golden-cases/CzToHCxHPass.qke",
+        []() { return mqss::opt::createCzToUpperHCxHPass(); }, false),
+      std::make_tuple(
+        "TestCzToLowerHCxHPass", "./quake/CzToHCxHPass.qke",
+        "./golden-cases/CzToHCxHPass.qke",
+        []() { return mqss::opt::createCzToLowerHCxHPass(); }, false),
+      std::make_tuple(
+        "TestCommuteCnotRxPass", "./quake/CommuteCNotRxPass.qke",
+        "./golden-cases/CommuteCNotRxPass.qke",
+        []() { return mqss::opt::createCxRxToRxCxPass(); }, false),
+      std::make_tuple(
+        "TestCommuteCnotXPass", "./quake/CommuteCNotXPass.qke",
+        "./golden-cases/CommuteCNotXPass.qke",
+        []() { return mqss::opt::createCxXToXCxPass(); }, false),
+      std::make_tuple(
+        "TestCommuteCnotZPass01", "./quake/CommuteCNotZPass-01.qke",
+        "./golden-cases/CommuteCNotZPass-01.qke",
+        []() { return mqss::opt::createCxZToZCxPass(); }, false),
+      std::make_tuple(
+        "TestCommuteCnotZPass", "./quake/CommuteCNotZPass.qke",
+        "./golden-cases/CommuteCNotZPass.qke",
+        []() { return mqss::opt::createCxZToZCxPass(); }, false),
+      std::make_tuple(
+        "TestCommuteRxCnotPass", "./quake/CommuteRxCNotPass.qke",
+        "./golden-cases/CommuteRxCNotPass.qke",
+        []() { return mqss::opt::createRxCxToCxRxPass(); }, false),
+      std::make_tuple(
+        "TestCommuteXCNotPass", "./quake/CommuteXCNotPass.qke",
+        "./golden-cases/CommuteXCNotPass.qke",
+        []() { return mqss::opt::createXCxToCxXPass(); }, false),
+      std::make_tuple(
+        "TestCommuteZCnotPass", "./quake/CommuteZCNotPass.qke",
+        "./golden-cases/CommuteZCNotPass.qke",
+        []() { return mqss::opt::createZCxToCxZPass(); }, false),
+      std::make_tuple(
+        "TestCommuteZCnotPass01", "./quake/CommuteZCNotPass-01.qke",
+        "./golden-cases/CommuteZCNotPass-01.qke",
+        []() { return mqss::opt::createZCxToCxZPass(); }, false),
+      std::make_tuple(
+        "CxCxToIdPass", "./quake/CxCxToIdPass.qke",
+        "./golden-cases/CxCxToIdPass.qke",
+        []() { return mqss::opt::createCxCxToIdPass(); }, false),
+      std::make_tuple(
+        "ReverseCNotPass", "./quake/ReverseCNotPass.qke",
+        "./golden-cases/ReverseCNotPass.qke",
+        []() { return mqss::opt::createReverseCxPass(); }, false),
+      std::make_tuple(
+        "HXHToZPass", "./quake/HXHToZPass.qke",
+        "./golden-cases/HXHToZPass.qke",
+        []() { return mqss::opt::createHXHToZPass(); }, false),
+      std::make_tuple(
+        "XGateAndHadamardSwitchPass",
+        "./quake/XGateAndHadamardSwitchPass.qke",
+        "./golden-cases/XGateAndHadamardSwitchPass.qke",
+        []() { return mqss::opt::createXHToHZPass(); }, false),
+      std::make_tuple(
+        "YGateAndHadamardSwitchPass",
+        "./quake/YGateAndHadamardSwitchPass.qke",
+        "./golden-cases/YGateAndHadamardSwitchPass.qke",
+        []() { return mqss::opt::createYHToHYPass(); }, false),
+      std::make_tuple(
+        "ZGateAndHadamardSwitchPass",
+        "./quake/ZGateAndHadamardSwitchPass.qke",
+        "./golden-cases/ZGateAndHadamardSwitchPass.qke",
+        []() { return mqss::opt::createZHToHXPass(); }, false),
+      std::make_tuple(
+        "HZHToXPass", "./quake/HZHToXPass.qke",
+        "./golden-cases/HZHToXPass.qke",
+        []() { return mqss::opt::createHZHToXPass(); }, false),
+      std::make_tuple(
+        "HadamardAndXGateSwitchPass",
+        "./quake/HadamardAndXGateSwitchPass.qke",
+        "./golden-cases/HadamardAndXGateSwitchPass.qke",
+        []() { return mqss::opt::createHXToZHPass(); }, false),
+      std::make_tuple(
+        "HadamardAndYGateSwitchPass",
+        "./quake/HadamardAndYGateSwitchPass.qke",
+        "./golden-cases/HadamardAndYGateSwitchPass.qke",
+        []() { return mqss::opt::createHYToYHPass(); }, false),
+      std::make_tuple(
+        "HadamardAndZGateSwitchPass",
+        "./quake/HadamardAndZGateSwitchPass.qke",
+        "./golden-cases/HadamardAndZGateSwitchPass.qke",
+        []() { return mqss::opt::createHZToXHPass(); }, false),
+      std::make_tuple(
+        "ZeroRxToIdPass", "./quake/ZeroRxToIdPass.qke",
+        "./golden-cases/ZeroRxToIdPass.qke",
+        []() { return mqss::opt::createZeroRxToIdPass(); }, false),
+      std::make_tuple(
+        "ZeroRyToIdPass", "./quake/ZeroRyToIdPass.qke",
+        "./golden-cases/ZeroRyToIdPass.qke",
+        []() { return mqss::opt::createZeroRyToIdPass(); }, false),
+      std::make_tuple(
+        "ZeroRzToIdPass", "./quake/ZeroRzToIdPass.qke",
+        "./golden-cases/ZeroRzToIdPass.qke",
+        []() { return mqss::opt::createZeroRzToIdPass(); }, false),
+      std::make_tuple(
+        "SdgZToSPass", "./quake/SAdjToSPass.qke",
+        "./golden-cases/SAdjToSPass.qke",
+        []() { return mqss::opt::createSdgZToSPass(); }, false),
+      std::make_tuple(
+        "SZToSdgPass", "./quake/SToSAdjPass.qke",
+        "./golden-cases/SToSAdjPass.qke",
+        []() { return mqss::opt::createSZToSdgPass(); }, false),
+      std::make_tuple(
+        "NormalizeArgAnglePass", "./quake/NormalizeArgAnglePass.qke",
+        "./golden-cases/NormalizeArgAnglePass.qke",
+        []() { return mqss::opt::createNormalizeArgAnglePass(); }, false)),
     [](const ::testing::TestParamInfo<BehaviouralTestPassesMQSS::ParamType>
-           &info) {
-      // Use the first element of the tuple (testName) as the custom test name
-      return std::get<0>(info.param);
+      &info) {
+    // Use the first element of the tuple (testName) as the custom test name
+    return std::get<0>(info.param);
     });
 
 int main(int argc, char **argv) {
