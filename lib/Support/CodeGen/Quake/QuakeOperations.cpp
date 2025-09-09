@@ -150,7 +150,7 @@ int getCircuitDepth(func::FuncOp circuit) {
       }
     }
   });
-  return *std::max_element(depths.begin(), depths.end());
+  return *std::ranges::max_element(depths);
 }
 
 // Function to get the number of classical bits allocated in a given

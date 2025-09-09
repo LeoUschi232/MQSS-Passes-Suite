@@ -11,35 +11,39 @@ using llvm::cast;
 using llvm::dyn_cast;
 ////////////////////////////////////////////////////////////////////////////////
 
-//  Quake includes
-#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+// Environment includes
+#include "Environment/quantum_circuit_tensor.hpp"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 
-// Torch includes
-#include <torch/torch.h>
+// Support includes
+#include "Support/CodeGen/Quake.hpp"
 
 // Standard library includes
 #include <string>
 #include <unordered_map>
 #include <utility>
 
+using namespace mqss::support::quakeDialect;
+
 
 namespace ai_pass_selector {
+
+
 class QuantumCircuitEnviorment {
   int max_qubits;
   int max_instructions;
   int max_depth;
-  mlir::ModuleOp original_circuit;
-  mlir::ModuleOp current_circuit;
+  ModuleOp original_circuit;
+  ModuleOp current_circuit;
 
 public:
   /// Constructor
   QuantumCircuitEnviorment(
       int max_qubits, int max_instructions, int max_depth,
-      mlir::ModuleOp circuit);
+      ModuleOp circuit);
 
   /// Destructor
   ~QuantumCircuitEnviorment() = default;
@@ -60,22 +64,35 @@ public:
    * @param seed
    * @return
    */
-  std::pair<torch::Tensor, std::unordered_map<std::string, int> >
+  std::pair<QuantumCircuitTensor<double>, std::unordered_map<std::string, int> >
   reset(int seed = 0);
-
-  static int printOperation(mlir::Operation *op);
 
   /**
    *
+   * @param circuit
    * @return
    */
-  bool is_valid_circuit();
+  static std::unordered_map<std::string, int>
+  get_circuit_info(ModuleOp circuit);
+
 
   /**
    *
    * @return
    */
   std::unordered_map<std::string, int> get_circuit_info() const;
+
+  /**
+   *
+   * @return
+   */
+  bool is_valid_circuit() const;
+
+  /**
+   *
+   * @return
+   */
+  QuantumCircuitTensor<double> get_observation();
 
 
 };
