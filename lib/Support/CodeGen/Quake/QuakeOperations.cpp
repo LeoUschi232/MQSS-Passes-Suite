@@ -31,21 +31,25 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Support/CodeGen/Quake.hpp"
 
-
+////////////////////////////////////////////////////////////////////////////////
+/// The includes of llvm Casting must be left here before the include of cudaq
+/// QuakeOps otherwise the comipler will complain that these operations do not
+/// exist in the header file.
 #include "llvm/Support/Casting.h"
-
 using llvm::isa;
 using llvm::cast;
 using llvm::dyn_cast;
+////////////////////////////////////////////////////////////////////////////////
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
 
+namespace mqss::support::quakeDialect {
 // Given a OpBuilder and a double value, it inserts a double in the mlir
 // module pointer by the OpBuilder and returns the inserted Value
-Value mqss::support::quakeDialect::createFloatValue(
+Value createFloatValue(
     OpBuilder &builder, const Location loc, const double value) {
   // Create a constant value (20.0 of type f64)
   auto valueAttr = builder.getFloatAttr(builder.getF64Type(), value);
@@ -56,7 +60,7 @@ Value mqss::support::quakeDialect::createFloatValue(
 // TODO: return -1 is not good idea
 // Given an argument value as Operation, it extracts a double, it the operation
 // is not double, returns -1.0 when fail
-double mqss::support::quakeDialect::extractDoubleArgumentValue(Operation *op) {
+double extractDoubleArgumentValue(Operation *op) {
   if (auto constantOp = dyn_cast<arith::ConstantOp>(op))
     if (auto floatAttr = constantOp.getValue().dyn_cast<FloatAttr>())
       return floatAttr.getValueAsDouble();
@@ -67,7 +71,7 @@ double mqss::support::quakeDialect::extractDoubleArgumentValue(Operation *op) {
 // Given an ExtractRefOp, it extracts the integer of the index pointing that
 // reference (qubit index), returns -1 when fail
 int64_t
-mqss::support::quakeDialect::extractIndexFromQuakeExtractRefOp(Operation *op) {
+extractIndexFromQuakeExtractRefOp(Operation *op) {
   if (auto extractRefOp = llvm::dyn_cast<quake::ExtractRefOp>(op)) {
     auto rawIndexAttr =
         extractRefOp->getAttrOfType<IntegerAttr>("rawIndex");
@@ -77,7 +81,7 @@ mqss::support::quakeDialect::extractIndexFromQuakeExtractRefOp(Operation *op) {
 }
 
 // function to get the number of qubits in a given quantum kernel
-int mqss::support::quakeDialect::getNumberOfQubits(func::FuncOp circuit) {
+int getNumberOfQubits(func::FuncOp circuit) {
   int numQubits = 0;
   circuit.walk([&](quake::AllocaOp allocOp) {
     if (allocOp.getType().dyn_cast<quake::RefType>()) {
@@ -89,9 +93,69 @@ int mqss::support::quakeDialect::getNumberOfQubits(func::FuncOp circuit) {
   return numQubits;
 }
 
+int getNumberOfGates(func::FuncOp circuit) {
+  if (getNumberOfQubits(circuit) == 0) {
+    return 0;
+  }
+  int nrGates = 0;
+  circuit.walk([&](Operation *op) {
+    if (op->getDialect()->getNamespace() == "quake"
+        && !isa<quake::AllocaOp>(op)
+        && !isa<quake::ExtractRefOp>(op)) {
+      nrGates++;
+    }
+  });
+  return nrGates;
+}
+
+int getCircuitDepth(func::FuncOp circuit) {
+  int nrQubits = getNumberOfQubits(circuit);
+  if (nrQubits == 0) {
+    return 0;
+  }
+  std::vector depths(nrQubits, 0);
+  circuit.walk([&](Operation *op) {
+    if (op->getDialect()->getNamespace() == "quake"
+        && !isa<quake::AllocaOp>(op)
+        && !isa<quake::ExtractRefOp>(op)) {
+      if (isa<quake::MxOp>(op)
+          || isa<quake::MyOp>(op)
+          || isa<quake::MzOp>(op)) {
+        for (auto operand : op->getOperands()) {
+          // Check if it's qubit reference
+          if (operand.getType().isa<quake::RefType>()) {
+            int qubitIndex =
+                extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+            if (0 <= qubitIndex && qubitIndex < nrQubits) {
+              depths[qubitIndex]++;
+            }
+          } else if (operand.getType().isa<quake::VeqType>()) {
+            for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
+              depths[qubitIndex]++;
+            }
+          }
+        }
+      } else {
+        auto gate = dyn_cast<quake::OperatorInterface>(op);
+        std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+        std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+        targets.insert(targets.end(), controls.begin(), controls.end());
+        int max_depth = 0;
+        for (int qubit : targets) {
+          max_depth = std::max(max_depth, depths[qubit]);
+        }
+        for (int qubit : targets) {
+          depths[qubit] = max_depth + 1;
+        }
+      }
+    }
+  });
+  return *std::max_element(depths.begin(), depths.end());
+}
+
 // Function to get the number of classical bits allocated in a given
 // quantum kernel, it also stores information of the qubit position
-int mqss::support::quakeDialect::getNumberOfClassicalBits(
+int getNumberOfClassicalBits(
     func::FuncOp circuit, std::map<int, int> &measurements) {
   int numBits = 0;
   circuit.walk([&](Operation *op) {
@@ -123,7 +187,7 @@ int mqss::support::quakeDialect::getNumberOfClassicalBits(
 
 // Function to get the number of classical bits allocated in
 // a given quantum kernel
-int mqss::support::quakeDialect::getNumberOfClassicalBits(
+int getNumberOfClassicalBits(
     func::FuncOp circuit) {
   int numBits = 0;
   circuit.walk([&](Operation *op) {
@@ -148,7 +212,7 @@ int mqss::support::quakeDialect::getNumberOfClassicalBits(
 
 // Function that get the indices of the Value objectes in array
 std::vector<int>
-mqss::support::quakeDialect::getIndicesOfValueRange(const ValueRange array) {
+getIndicesOfValueRange(const ValueRange array) {
   std::vector<int> indices;
   for (auto value : array) {
     int qubit_index = extractIndexFromQuakeExtractRefOp(value.getDefiningOp());
@@ -159,7 +223,7 @@ mqss::support::quakeDialect::getIndicesOfValueRange(const ValueRange array) {
 
 // At the moment, it is assumed that the parameters are of type Double
 std::vector<double>
-mqss::support::quakeDialect::getParametersValues(const ValueRange array) {
+getParametersValues(const ValueRange array) {
   std::vector<double> parameters;
   for (auto value : array) {
     double param = extractDoubleArgumentValue(value.getDefiningOp());
@@ -170,7 +234,7 @@ mqss::support::quakeDialect::getParametersValues(const ValueRange array) {
 
 // Get the previous operation on a given TargeQubit, starting from
 // currentOp
-Operation *mqss::support::quakeDialect::getPreviousOperationOnTarget(
+Operation *getPreviousOperationOnTarget(
     Operation *currentOp, Value targetQubit) {
   // Start from the previous operation
   Operation *prevOp = currentOp->getPrevNode();
@@ -201,7 +265,7 @@ Operation *mqss::support::quakeDialect::getPreviousOperationOnTarget(
 
 // Get the next operation on a given TargeQubit, starting from
 // currentOp
-Operation *mqss::support::quakeDialect::getNextOperationOnTarget(
+Operation *getNextOperationOnTarget(
     Operation *currentOp, Value targetQubit) {
   // Start from the next operation
   Operation *nextOp = currentOp->getNextNode();
@@ -229,3 +293,4 @@ Operation *mqss::support::quakeDialect::getNextOperationOnTarget(
   }
   return nullptr; // No matching previous operation found
 }
+} // namespace mqss::support::quakeDialect

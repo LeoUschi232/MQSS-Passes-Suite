@@ -48,19 +48,14 @@ int QuantumCircuitEnviorment::printOperation(Operation *op) {
 }
 
 std::unordered_map<std::string, int>
-QuantumCircuitEnviorment::get_circuit_info() {
+QuantumCircuitEnviorment::get_circuit_info() const {
   std::unordered_map<std::string, int> circuit_info;
-  this->current_circuit.walk([&](quake::AllocaOp allocOp) {
-    if (allocOp.getType().dyn_cast<quake::RefType>()) {
-      std::cout << "+1" << std::endl;
-    } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
-      std::cout << qvecType.getSize() << std::endl;
-    }
-  });
-  this->printOperation(this->current_circuit);
-  circuit_info["qubits"] = 0;
-  circuit_info["gates"] = 0;
-  circuit_info["depth"] = 0;
+  circuit_info["qubits"] = getNumberOfQubits(
+      func::FuncOp(this->current_circuit));
+  circuit_info["gates"] = getNumberOfGates(
+      func::FuncOp(this->current_circuit));
+  circuit_info["depth"] = getCircuitDepth(
+      func::FuncOp(this->current_circuit));
   return circuit_info;
 }
 

@@ -1,15 +1,22 @@
 #ifndef ENVIRONMENT_HPP
 #define ENVIRONMENT_HPP
+
+////////////////////////////////////////////////////////////////////////////////
+/// The includes of llvm Casting must be left here before the include of cudaq
+/// QuakeOps otherwise the comipler will complain that these operations do not
+/// exist in the header file.
+#include "llvm/Support/Casting.h"
+using llvm::isa;
+using llvm::cast;
+using llvm::dyn_cast;
+////////////////////////////////////////////////////////////////////////////////
+
 //  Quake includes
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/Transforms/Passes.h"
-
-// Passes includes
-#include "Passes/Cancellations.hpp"
 
 // Torch includes
 #include <torch/torch.h>
@@ -33,8 +40,6 @@ public:
   QuantumCircuitEnviorment(
       int max_qubits, int max_instructions, int max_depth,
       mlir::ModuleOp circuit);
-
-  std::unordered_map<std::string, int> get_circuit_info();
 
   /// Destructor
   ~QuantumCircuitEnviorment() = default;

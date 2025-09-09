@@ -33,11 +33,15 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+////////////////////////////////////////////////////////////////////////////////
+/// The includes of llvm Casting must be left here before the include of cudaq
+/// QuakeOps otherwise the comipler will complain that these operations do not
+/// exist in the header file.
 #include "llvm/Support/Casting.h"
-
 using llvm::isa;
 using llvm::cast;
 using llvm::dyn_cast;
+////////////////////////////////////////////////////////////////////////////////
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
@@ -46,6 +50,7 @@ using namespace mlir;
 
 
 namespace mqss::support::quakeDialect {
+
 
 /**
   @brief Function that creates an `mlir::Value` associated to a numeric value.
@@ -89,6 +94,21 @@ int64_t extractIndexFromQuakeExtractRefOp(Operation *op);
 */
 int getNumberOfQubits(func::FuncOp circuit);
 
+
+/**
+ * Returns the depth of a quantum circuit.
+ * @param circuit The quantum circuit to return the depth of.
+ * @return The depth of the quantum circuit passed as argument.
+ */
+int getCircuitDepth(func::FuncOp circuit);
+
+/**
+ * Returns the number of gates/instructions of a quantum circuit.
+ * @param circuit The quantum circuit to return the number of instructions of.
+ * @return The number of instructions of the quantum circuit passed as argument.
+ */
+int getNumberOfGates(func::FuncOp circuit);
+
 /**
   @brief Function that get the number of classical bits used by a given quantum
   kernel.
@@ -123,7 +143,7 @@ int getNumberOfClassicalBits(func::FuncOp circuit);
   @param[in]  array is the input `mlir::ValueRange`.
   @return a vector of indices stored in the input `mlir::ValueRange` object.
 */
-std::vector<int> getIndicesOfValueRange(mlir::ValueRange array);
+std::vector<int> getIndicesOfValueRange(ValueRange array);
 
 /**
   @brief Function that get a vector of numerical values associated with a given
@@ -134,7 +154,7 @@ std::vector<int> getIndicesOfValueRange(mlir::ValueRange array);
   @param[in]  array is the input `mlir::ValueRange` containing the parameters.
   @return a vector of double stored in the input `mlir::ValueRange` object.
 */
-std::vector<double> getParametersValues(mlir::ValueRange array);
+std::vector<double> getParametersValues(ValueRange array);
 
 /**
   @brief Function get the previous operation on a given target qubit.
@@ -145,8 +165,8 @@ std::vector<double> getParametersValues(mlir::ValueRange array);
   @return an mlir::Operation which is the previous operation on the given target
   qubit.
 */
-mlir::Operation *getPreviousOperationOnTarget(mlir::Operation *currentOp,
-                                              mlir::Value targetQubit);
+Operation *getPreviousOperationOnTarget(Operation *currentOp,
+                                        Value targetQubit);
 
 /**
   @brief Function get the next operation on a given target qubit.
@@ -157,8 +177,8 @@ mlir::Operation *getPreviousOperationOnTarget(mlir::Operation *currentOp,
   @return an mlir::Operation which is the next operation on the given target
   qubit.
 */
-mlir::Operation *getNextOperationOnTarget(mlir::Operation *currentOp,
-                                          mlir::Value targetQubit);
+Operation *getNextOperationOnTarget(Operation *currentOp,
+                                    Value targetQubit);
 } // namespace mqss::support::quakeDialect
 
 namespace supportQuake = mqss::support::quakeDialect;
