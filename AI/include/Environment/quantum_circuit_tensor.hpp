@@ -1,5 +1,5 @@
-#ifndef ABSTRACT_TENSOR_HPP
-#define ABSTRACT_TENSOR_HPP
+#ifndef QUANTUM_CIRCUIT_TENSOR_HPP
+#define QUANTUM_CIRCUIT_TENSOR_HPP
 
 #include <array>
 #include <cassert>
@@ -19,8 +19,8 @@ constexpr std::array<T, sizeof...(U)> make_array(U &&... u) {
 
 // ---- Supported gates must mirror the gate map ----
 constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
-    "x"sv, "y"sv, "z"sv, "h"sv, "s"sv, "t"sv, "sdg"sv, "tdg"sv,
-    "rx"sv, "ry"sv, "rz"sv, "swap"sv, "r1"sv, "u2"sv, "u3"sv
+    "x"sv, "y"sv, "z"sv, "h"sv, "s"sv, "t"sv, "sdg"sv, "tdg"sv, "rx"sv, "ry"sv,
+    "rz"sv, "swap"sv, "r1"sv, "u2"sv, "u3"sv, "phased_rx"sv
     );
 
 constexpr int MAX_GATE_PARAMS = 3;
@@ -36,16 +36,16 @@ struct InstructionBasedTensor {
   // triggered twice per instruction.
   // Qubits triggered in the first set are controls.
   // Qubits triggered in the second set are targets.
-  InstructionBasedTensor(int nrQubits, int nrInstructions)
-    : shape{nrInstructions, 2 * nrQubits + NR_GATES + MAX_GATE_PARAMS},
+  InstructionBasedTensor(int maxQubits, int maxInstructions)
+    : shape{maxInstructions, 2 * maxQubits + NR_GATES + MAX_GATE_PARAMS},
       quantum_circuit_data(
-          static_cast<std::size_t>(
-            nrInstructions * 2 * nrQubits + NR_GATES + MAX_GATE_PARAMS)) {
+          maxInstructions * (2 * maxQubits + NR_GATES + MAX_GATE_PARAMS)) {
   }
 
   T &operator()(int i, int j) {
-    assert(0<=i && i<shape[0] && 0<=j && j<shape[1]);
-    return quantum_circuit_data[static_cast<std::size_t>(i * shape[1] + j)];
+    assert(0<=i && i<shape[0]
+        && 0<=j && j<shape[1]);
+    return quantum_circuit_data[i * shape[1] + j];
   }
 
   const T &operator()(int i, int j) const {
@@ -64,25 +64,24 @@ struct DepthBasedTensor {
   std::array<int, 3> shape{};
   std::vector<T> quantum_circuit_data;
 
-  // Here a hypothetical grid is constructed of qubits x depth dimensions.
+  // Here a hypothetical grid is constructed of maxQubits x maxDepth dimensions.
   // Every block in this grid may be empty or may be a gate acting on a qubit.
   // This allow representing multiple gates/operations taking place at the same
-  // depth along a circuit on different qubits.
+  // maxDepth along a circuit on different qubits.
   // However, here multi-qubit gates need additional information such as
-  DepthBasedTensor(int nrQubits, int depth)
-    : shape{nrQubits, depth, NR_GATES + MAX_GATE_PARAMS},
-      quantum_circuit_data(static_cast<std::size_t>(
-        nrQubits * depth * (NR_GATES + MAX_GATE_PARAMS + IS_CONTROL + nrQubits)
-      )) {
+  DepthBasedTensor(int maxQubits, int maxDepth)
+    : shape{maxQubits, maxDepth,
+            NR_GATES + MAX_GATE_PARAMS + IS_CONTROL + maxQubits},
+      quantum_circuit_data(
+          maxQubits * maxDepth *
+          (NR_GATES + MAX_GATE_PARAMS + IS_CONTROL + maxQubits)) {
   }
 
   T &operator()(int i, int j, int k) {
-    assert(
-        0 <= i && i < shape[0] && 0 <= j && j < shape[1] && 0 <= k && k < shape[
-          2]);
-    const std::size_t idx
-        = static_cast<std::size_t>((i * shape[1] + j) * shape[2] + k);
-    return quantum_circuit_data[idx];
+    assert(0 <= i && i < shape[0]
+        && 0 <= j && j < shape[1]
+        && 0 <= k && k < shape[ 2]);
+    return quantum_circuit_data[(i * shape[1] + j) * shape[2] + k];
   }
 
   const T &operator()(int i, int j, int k) const {
@@ -95,4 +94,4 @@ struct DepthBasedTensor {
 };
 
 } // namespace ai_pass_selector
-#endif // ABSTRACT_TENSOR_HPP
+#endif // QUANTUM_CIRCUIT_TENSOR_HPP
