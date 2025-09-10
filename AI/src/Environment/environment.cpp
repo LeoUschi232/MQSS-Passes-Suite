@@ -19,6 +19,14 @@
 #include <unordered_map>
 #include <iostream>
 
+
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::ModuleOp;
+using mlir::func::FuncOp;
+////////////////////////////////////////////////////////////////////////////////
+
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
@@ -78,9 +86,9 @@ QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
     return {};
   }
   std::unordered_map<std::string, int> circuit_info;
-  circuit_info["qubits"] = getNumberOfQubits(func::FuncOp(circuit));
-  circuit_info["gates"] = getNumberOfGates(func::FuncOp(circuit));
-  circuit_info["depth"] = getCircuitDepth(func::FuncOp(circuit));
+  circuit_info["qubits"] = getNumberOfQubits(FuncOp(circuit));
+  circuit_info["gates"] = getNumberOfGates(FuncOp(circuit));
+  circuit_info["depth"] = getCircuitDepth(FuncOp(circuit));
   return circuit_info;
 }
 
@@ -99,7 +107,7 @@ int QuantumCircuitEnviorment::circuit_invalid_type(ModuleOp circuit) const {
   if (circuit_info["depth"] > this->max_depth) {
     return TOO_LARGE_DEPTH;
   }
-  int nrAllocations = getNumberOfAllocations(func::FuncOp(circuit));
+  int nrAllocations = getNumberOfAllocations(FuncOp(circuit));
   if (nrAllocations <= 0) {
     return NO_QUBIT_ALLOCATIONS;
   }
@@ -116,7 +124,10 @@ QuantumCircuitEnviorment::get_circuit_info() {
     return {};
   }
   this->current_circuit.walk([&](Operation *op) {
-    std::cout << getOperationName(op) << std::endl;
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    std::cout << getOnlyGateName(op) << std::endl;
   });
   return get_circuit_info(this->current_circuit);
 }
@@ -129,7 +140,7 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return observation;
   }
-  int nrQubits = getNumberOfQubits(func::FuncOp(this->current_circuit));
+  int nrQubits = getNumberOfQubits(FuncOp(this->current_circuit));
   if (nrQubits == 0) {
     return observation;
   }

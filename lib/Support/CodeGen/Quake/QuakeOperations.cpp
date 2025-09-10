@@ -47,20 +47,56 @@ using llvm::dyn_cast;
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
+////////////////////////////////////////////////////////////////////////////////
+/// If there was no ambiguity regarding all types defined in mlir namespace,
+/// one could just include the entire namespace.
+/// Unfortunately there is a type in the libtorch library of the AI subfolder
+/// called c10::ArrayRef.
+/// This conflicts with llvm::ArrayRef included in the mlir namespace.
+using mlir::Operation;
+using mlir::OpBuilder;
+using mlir::Value;
+using mlir::Location;
+using mlir::ValueRange;
+using mlir::FloatAttr;
+using mlir::IntegerAttr;
+using mlir::arith::ConstantOp;
+using mlir::func::FuncOp;
+////////////////////////////////////////////////////////////////////////////////
 
 namespace mqss::support::quakeDialect {
 
 bool isOperatingGate(Operation *op) {
-  return op->getDialect()->getNamespace() == "quake"
-         && !isa<quake::AllocaOp>(op)
-         && !isa<quake::ExtractRefOp>(op);
+  if (op->getDialect()->getNamespace() != "quake") {
+    return false;
+  }
+  return isa<quake::XOp>(op)
+         || isa<quake::YOp>(op)
+         || isa<quake::ZOp>(op)
+         || isa<quake::HOp>(op)
+         || isa<quake::SOp>(op)
+         || isa<quake::TOp>(op)
+         || isa<quake::RxOp>(op)
+         || isa<quake::RyOp>(op)
+         || isa<quake::RzOp>(op)
+         || isa<quake::SwapOp>(op)
+         || isa<quake::R1Op>(op)
+         || isa<quake::U2Op>(op)
+         || isa<quake::U3Op>(op)
+         || isa<quake::PhasedRxOp>(op)
+         || isa<quake::MxOp>(op)
+         || isa<quake::MyOp>(op)
+         || isa<quake::MzOp>(op);
 }
 
 bool isMeasurementGate(Operation *op) {
+  if (op->getDialect()->getNamespace() != "quake") {
+    return false;
+  }
   return isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op);
 }
 
-int getNumberOfAllocations(func::FuncOp circuit) {
+int getNumberOfAllocations(FuncOp circuit) {
   int nrAllocations = 0;
   circuit.walk([&](Operation *op) {
     // An allocation is allowed to be a single-qubit or multi-qubit (Veq)
@@ -80,7 +116,7 @@ Value createFloatValue(
     OpBuilder &builder, const Location loc, const double value) {
   // Create a constant value (20.0 of type f64)
   auto valueAttr = builder.getFloatAttr(builder.getF64Type(), value);
-  auto constantOp = builder.create<arith::ConstantOp>(loc, valueAttr);
+  auto constantOp = builder.create<ConstantOp>(loc, valueAttr);
   return constantOp.getResult();
 }
 
@@ -88,7 +124,7 @@ Value createFloatValue(
 // Given an argument value as Operation, it extracts a double, it the operation
 // is not double, returns -1.0 when fail
 double extractDoubleArgumentValue(Operation *op) {
-  if (auto constantOp = dyn_cast<arith::ConstantOp>(op))
+  if (auto constantOp = dyn_cast<ConstantOp>(op))
     if (auto floatAttr = constantOp.getValue().dyn_cast<FloatAttr>())
       return floatAttr.getValueAsDouble();
   return -1.0;
@@ -108,7 +144,7 @@ extractIndexFromQuakeExtractRefOp(Operation *op) {
 }
 
 // function to get the number of qubits in a given quantum kernel
-int getNumberOfQubits(func::FuncOp circuit) {
+int getNumberOfQubits(FuncOp circuit) {
   int numQubits = 0;
   circuit.walk([&](quake::AllocaOp allocOp) {
     if (allocOp.getType().dyn_cast<quake::RefType>()) {
@@ -120,7 +156,7 @@ int getNumberOfQubits(func::FuncOp circuit) {
   return numQubits;
 }
 
-int getCircuitDepth(func::FuncOp circuit) {
+int getCircuitDepth(FuncOp circuit) {
   int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
     return 0;
@@ -171,7 +207,7 @@ int getCircuitDepth(func::FuncOp circuit) {
   return *std::ranges::max_element(depths);
 }
 
-int getNumberOfGates(func::FuncOp circuit) {
+int getNumberOfGates(FuncOp circuit) {
   int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
     return 0;
@@ -203,7 +239,7 @@ int getNumberOfGates(func::FuncOp circuit) {
 // Function to get the number of classical bits allocated in a given
 // quantum kernel, it also stores information of the qubit position
 int getNumberOfClassicalBits(
-    func::FuncOp circuit, std::map<int, int> &measurements) {
+    FuncOp circuit, std::map<int, int> &measurements) {
   if (getNumberOfAllocations(circuit) != 1) {
     std::cerr
         << "Function getNumberOfClassicalBits not implemented for multiple allocations"
@@ -240,7 +276,7 @@ int getNumberOfClassicalBits(
 
 // Function to get the number of classical bits allocated in
 // a given quantum kernel
-int getNumberOfClassicalBits(func::FuncOp circuit) {
+int getNumberOfClassicalBits(FuncOp circuit) {
   if (getNumberOfAllocations(circuit) != 1) {
     std::cerr
         << "Function getNumberOfClassicalBits not implemented for multiple allocations"

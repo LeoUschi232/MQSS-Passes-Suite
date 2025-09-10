@@ -4,10 +4,12 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
-#include "mlir/Pass/Pass.h"
 
 // Runtime includes
 #include "common/RuntimeMLIR.h"
+
+// Support includes
+#include "Quake.hpp"
 
 // Stdandard library includes
 #include <fstream>
@@ -17,9 +19,18 @@
 #include <string>
 #include <tuple>
 
-std::string getOperationName(mlir::Operation *op) {
+std::string getOperationName(Operation *op) {
   return op->getName().getIdentifier().getValue().str();
 }
+
+std::string getOnlyGateName(Operation *op) {
+  if (!mqss::support::quakeDialect::isOperatingGate(op)) {
+    return "";
+  }
+  auto [_, gateName] = op->getName().getStringRef().split('.');
+  return std::string(gateName);
+}
+
 
 std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
 extractMLIRContext(const std::string &quakeModule) {

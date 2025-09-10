@@ -46,8 +46,20 @@ using llvm::dyn_cast;
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 
-using namespace mlir;
-
+////////////////////////////////////////////////////////////////////////////////
+/// If there was no ambiguity regarding all types defined in mlir namespace,
+/// one could just include the entire namespace.
+/// Unfortunately there is a type in the libtorch library of the AI subfolder
+/// called c10::ArrayRef.
+/// This conflicts with llvm::ArrayRef included in the mlir namespace.
+using mlir::Operation;
+using mlir::OpBuilder;
+using mlir::Value;
+using mlir::Location;
+using mlir::ValueRange;
+// NOLINTNEXTLINE
+using mlir::func::FuncOp;
+////////////////////////////////////////////////////////////////////////////////
 
 namespace mqss::support::quakeDialect {
 
@@ -57,6 +69,7 @@ namespace mqss::support::quakeDialect {
  * @return
  */
 bool isOperatingGate(Operation *op);
+
 /**
  *
  * @param op
@@ -66,14 +79,14 @@ bool isMeasurementGate(Operation *op);
 
 
 /**
-  @brief Function that creates an `mlir::Value` associated to a numeric value.
-  @details This functions appends an `mlir::Value` into an MLIR module
+  @brief Function that creates an `Value` associated to a numeric value.
+  @details This functions appends an `Value` into an MLIR module
  associated to the input `OpBuilder`.
   @param[out] builder is an `OpBuilder` object associated with a MLIR module.
  It is used to insert new instructions to the corresponding MLIR module.
   @param[in] loc is the location of the new inserted instruction.
   @param[in] value is the numeric value to be defined into the MLIR module.
-  @return an `mlir::Value` object of the inserted numerical value.
+  @return an `Value` object of the inserted numerical value.
 */
 Value createFloatValue(OpBuilder &builder, Location loc, double value);
 
@@ -99,13 +112,13 @@ int64_t extractIndexFromQuakeExtractRefOp(Operation *op);
 
 /**
   @brief Function that get the number of qubits used by a given quantum kernel.
-  @details Given a `func::FuncOp` that stores a quantum kernel in Quake. This
+  @details Given a `FuncOp` that stores a quantum kernel in Quake. This
   function returns the number of declared qubits within the given quantum
   kernel.
   @param[in] circuit is the input quantum kernel
   @return a `int` with the number of declared qubits.
 */
-int getNumberOfQubits(func::FuncOp circuit);
+int getNumberOfQubits(FuncOp circuit);
 
 
 /**
@@ -113,26 +126,26 @@ int getNumberOfQubits(func::FuncOp circuit);
  * @param circuit
  * @return
  */
-int getNumberOfAllocations(func::FuncOp circuit);
+int getNumberOfAllocations(FuncOp circuit);
 
 /**
  * Returns the depth of a quantum circuit.
  * @param circuit The quantum circuit to return the depth of.
  * @return The depth of the quantum circuit passed as argument.
  */
-int getCircuitDepth(func::FuncOp circuit);
+int getCircuitDepth(FuncOp circuit);
 
 /**
  * Returns the number of gates/instructions of a quantum circuit.
  * @param circuit The quantum circuit to return the number of instructions of.
  * @return The number of instructions of the quantum circuit passed as argument.
  */
-int getNumberOfGates(func::FuncOp circuit);
+int getNumberOfGates(FuncOp circuit);
 
 /**
   @brief Function that get the number of classical bits used by a given quantum
   kernel.
-  @details Given a `func::FuncOp` that stores a quantum kernel in Quake. This
+  @details Given a `FuncOp` that stores a quantum kernel in Quake. This
   function returns the number of declared classical bits within the given
   quantum kernel.
   @param[in] circuit is the input quantum kernel
@@ -141,48 +154,48 @@ int getNumberOfGates(func::FuncOp circuit);
   is the classical bit index.
   @return the number of classical bits declared in the given quantum kernel.
 */
-int getNumberOfClassicalBits(func::FuncOp circuit,
+int getNumberOfClassicalBits(FuncOp circuit,
                              std::map<int, int> &measurements);
 
 /**
   @brief Function that get the number of classical bits used by a given quantum
   kernel.
-  @details Given a `func::FuncOp` that stores a quantum kernel in Quake. This
+  @details Given a `FuncOp` that stores a quantum kernel in Quake. This
   function returns the number of declared classical bits within the given
   quantum kernel.
   @param[in] circuit is the input quantum kernel
   @return the number of classical bits declared in the given quantum kernel.
 */
-int getNumberOfClassicalBits(func::FuncOp circuit);
+int getNumberOfClassicalBits(FuncOp circuit);
 
 /**
   @brief Function that get a vector of indices associated with a given
-  `mlir::ValueRange`.
-  @details Given a `mlir::ValueRange` that stores a list of indices. This
-  function converts the `mlir::ValueRange` to a vector of `int`.
-  @param[in]  array is the input `mlir::ValueRange`.
-  @return a vector of indices stored in the input `mlir::ValueRange` object.
+  `ValueRange`.
+  @details Given a `ValueRange` that stores a list of indices. This
+  function converts the `ValueRange` to a vector of `int`.
+  @param[in]  array is the input `ValueRange`.
+  @return a vector of indices stored in the input `ValueRange` object.
 */
 std::vector<int> getIndicesOfValueRange(ValueRange array);
 
 /**
   @brief Function that get a vector of numerical values associated with a given
-  `mlir::ValueRange`.
-  @details Given a `mlir::ValueRange` that stores a list of parameters, i.e.,
-  rotation angles. This function converts the `mlir::ValueRange` to a vector of
+  `ValueRange`.
+  @details Given a `ValueRange` that stores a list of parameters, i.e.,
+  rotation angles. This function converts the `ValueRange` to a vector of
   `double`.
-  @param[in]  array is the input `mlir::ValueRange` containing the parameters.
-  @return a vector of double stored in the input `mlir::ValueRange` object.
+  @param[in]  array is the input `ValueRange` containing the parameters.
+  @return a vector of double stored in the input `ValueRange` object.
 */
 std::vector<double> getParametersValues(ValueRange array);
 
 /**
   @brief Function get the previous operation on a given target qubit.
-  @details Given a `mlir::Operation` and a target qubit. This function get the
+  @details Given a `Operation` and a target qubit. This function get the
   previous operation on the given target qubit, starting from `currentOp`.
   @param[in] currentOp is current quantum gate.
   @param[in] targetQubit is the target qubit to be used as reference.
-  @return an mlir::Operation which is the previous operation on the given target
+  @return an Operation which is the previous operation on the given target
   qubit.
 */
 Operation *getPreviousOperationOnTarget(Operation *currentOp,
@@ -190,11 +203,11 @@ Operation *getPreviousOperationOnTarget(Operation *currentOp,
 
 /**
   @brief Function get the next operation on a given target qubit.
-  @details Given a `mlir::Operation` and a target qubit. This function get the
+  @details Given a `Operation` and a target qubit. This function get the
   next operation on the given target qubit, starting from `currentOp`.
   @param[in] currentOp is current quantum gate.
   @param[in] targetQubit is the target qubit to be used as reference.
-  @return an mlir::Operation which is the next operation on the given target
+  @return an Operation which is the next operation on the given target
   qubit.
 */
 Operation *getNextOperationOnTarget(Operation *currentOp,

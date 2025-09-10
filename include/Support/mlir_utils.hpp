@@ -5,8 +5,8 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 
-// Runtime includes
-#include "common/RuntimeMLIR.h"
+// Support includes
+#include "Quake.hpp"
 
 // Stdandard library includes
 #include <string>
@@ -17,7 +17,14 @@
  * @param op The operation to extract the name from.
  * @return The name of the operations as a std::string.
  */
-std::string getOperationName(mlir::Operation *op);
+std::string getOperationName(Operation *op);
+
+/**
+ *
+ * @param op
+ * @return
+ */
+std::string getOnlyGateName(Operation *op);
 
 /**
  * Extracts a MLIR module operation and the MLIR context from the quake module

@@ -24,6 +24,12 @@ using llvm::dyn_cast;
 #include <string>
 #include <unordered_map>
 
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::ModuleOp;
+////////////////////////////////////////////////////////////////////////////////
+
 using namespace mqss::support::quakeDialect;
 
 
