@@ -15,6 +15,9 @@
 #include "Utils/progress_bar.hpp"
 
 // Stdandard library includes
+#include "Environment/environment.hpp"
+#include "Utils/tensor_utils.hpp"
+
 #include <vector>
 #include <cstdlib>
 #include <filesystem>
@@ -26,6 +29,7 @@
 
 namespace fs = std::filesystem;
 using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
 void convertAllQasmDatasetsToQuake() {
@@ -46,6 +50,10 @@ void convertAllQasmDatasetsToQuake() {
     if (convertQasmDatasetToQuake("Passtest") != 0) {
       throw std::runtime_error(
           "Failed to convert Passtest Qasm dataset to Quake.");
+    }
+    if (convertQasmDatasetToQuake("Tensortest") != 0) {
+      throw std::runtime_error(
+          "Failed to convert Tensortest Qasm dataset to Quake.");
     }
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
@@ -369,5 +377,199 @@ int convertPasstestCircuitToTikz(std::string passname,
     return -1;
   }
   return 0;
+}
+
+
+void convertAllTensortestCircuitsToTikz() {
+
+}
+
+int convertTensortestCircuitToTikz(std::string circuit_name) {
+  fs::path quake_src =
+      fs::path(AI_DATASET_DIR) / "Quake/Tensortest" / (
+        circuit_name + "_input.qke");
+  fs::path latex_qke_input =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_input.qke");
+  fs::path latex_qke_output1 =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_output1.qke");
+  fs::path latex_qke_output2 =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_output2.qke");
+  fs::path latex_tikz_input =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_input.tikz");
+  fs::path latex_tikz_output1 =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_output1.tikz");
+  fs::path latex_tikz_output2 =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest" / (
+        circuit_name + "_output2.tikz");
+  fs::path quake_to_tikz_path =
+      fs::path(MQSS_BUILD_DIR) / "tools/quake-to-tikz";
+
+  if (!fs::copy_file(quake_src, latex_qke_input,
+                     fs::copy_options::overwrite_existing)) {
+    std::cerr << "\nFailed to copy " << quake_src.string() << " to "
+        << latex_qke_input.string() << std::endl;
+    return -1;
+  }
+  std::string cmd = quake_to_tikz_path.string() + " --input " +
+                    latex_qke_input.string() + " --output " +
+                    latex_tikz_input.string() +
+                    " >> ./logs/tensortest_to_tikz_before.log";
+  int ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nConversion failed for " << latex_qke_input
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+
+  std::string quakeModule = readFileToString(quake_src.string());
+  auto [inputModule, _] = extractMLIRContext(quakeModule);
+  QuantumCircuitEnviorment quantum_circuit_enviorment(
+      TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS,
+      TENSORTEST_MAX_DEPTH, inputModule);
+  InstructionBasedTensor<double> instruction_based_observation
+      = quantum_circuit_enviorment.get_instruction_based_observation();
+  DepthBasedTensor<double> depth_based_observation
+      = quantum_circuit_enviorment.get_depth_based_observation();
+  ModuleOp outputModule1 = recreateQuantumCircuitFromInstructionBasedTensor(
+      instruction_based_observation);
+  ModuleOp outputModule2 = recreateQuantumCircuitFromDepthBasedTensor(
+      depth_based_observation);
+
+  std::string moduleOutput1;
+  llvm::raw_string_ostream stringStream1(moduleOutput1);
+  outputModule1->print(stringStream1);
+  std::ofstream outputFile1(latex_qke_output1.string());
+  if (!outputFile1) {
+    std::cerr << "\nFailed to open " << latex_qke_output1.string() << std::endl;
+    return -1;
+  }
+  outputFile1 << moduleOutput1;
+  outputFile1.close();
+  std::string moduleOutput2;
+  llvm::raw_string_ostream stringStream2(moduleOutput2);
+  outputModule2->print(stringStream2);
+  std::ofstream outputFile2(latex_qke_output2.string());
+  if (!outputFile2) {
+    std::cerr << "\nFailed to open " << latex_qke_output2.string() << std::endl;
+    return -1;
+  }
+  outputFile2 << moduleOutput2;
+  outputFile2.close();
+
+  cmd = quake_to_tikz_path.string() + " --input " + latex_qke_output1.string() +
+        " --output " + latex_tikz_output1.string() +
+        " >> ./logs/tensortest_to_tikz_after1.log";
+  ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nConversion failed for " << latex_qke_output1
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+  cmd = quake_to_tikz_path.string() + " --input " + latex_qke_output2.string() +
+        " --output " + latex_tikz_output2.string() +
+        " >> ./logs/tensortest_to_tikz_after2.log";
+  ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nConversion failed for " << latex_qke_output2
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+
+  // Convert input quake circuit into circuit PNG.
+  std::string temp_tex_content = "\\documentclass{standalone}\n"
+                                 "\\usepackage{tikz}\n"
+                                 "\\usetikzlibrary{quantikz}\n"
+                                 "\\begin{document}\n"
+                                 "\\input{" +
+                                 latex_tikz_input.string() +
+                                 "}\n"
+                                 "\\end{document}\n";
+  std::ofstream tempFile("temp.tex");
+  if (!tempFile) {
+    std::cerr << "\nFailed to create temp.tex for " << latex_tikz_input
+        << std::endl;
+    return -1;
+  }
+  tempFile << temp_tex_content;
+  tempFile.close();
+  cmd = "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
+        "convert -density 300 -strip temp.pdf -trim -quality 90 " +
+        latex_tikz_input.string().substr(
+            0, latex_tikz_input.string().find(".tikz")) +
+        ".png > /dev/null 2>&1 && "
+        "rm temp.* > /dev/null 2>&1";
+  ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nPNG conversion failed for " << latex_tikz_input
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+
+  // Convert output1 quake circuit into circuit PNG.
+  temp_tex_content = "\\documentclass{standalone}\n"
+                     "\\usepackage{tikz}\n"
+                     "\\usetikzlibrary{quantikz}\n"
+                     "\\begin{document}\n"
+                     "\\input{" +
+                     latex_tikz_output1.string() +
+                     "}\n"
+                     "\\end{document}\n";
+  tempFile.open("temp.tex");
+  if (!tempFile) {
+    std::cerr << "\nFailed to create temp.tex for " << latex_tikz_output1
+        << std::endl;
+    return -1;
+  }
+  tempFile << temp_tex_content;
+  tempFile.close();
+  cmd = "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
+        "convert -density 300 -strip temp.pdf -trim -quality 90 " +
+        latex_tikz_output1.string().substr(
+            0, latex_tikz_output1.string().find(".tikz")) +
+        ".png > /dev/null 2>&1 && "
+        "rm temp.* > /dev/null 2>&1";
+  ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nPNG conversion failed for " << latex_tikz_output1
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+
+  // Convert output2 quake circuit into circuit PNG.
+  temp_tex_content = "\\documentclass{standalone}\n"
+                     "\\usepackage{tikz}\n"
+                     "\\usetikzlibrary{quantikz}\n"
+                     "\\begin{document}\n"
+                     "\\input{" +
+                     latex_tikz_output2.string() +
+                     "}\n"
+                     "\\end{document}\n";
+  tempFile.open("temp.tex");
+  if (!tempFile) {
+    std::cerr << "\nFailed to create temp.tex for " << latex_tikz_output2
+        << std::endl;
+    return -1;
+  }
+  tempFile << temp_tex_content;
+  tempFile.close();
+  cmd = "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
+        "convert -density 300 -strip temp.pdf -trim -quality 90 " +
+        latex_tikz_output2.string().substr(
+            0, latex_tikz_output2.string().find(".tikz")) +
+        ".png > /dev/null 2>&1 && "
+        "rm temp.* > /dev/null 2>&1";
+  ret = std::system(cmd.c_str());
+  if (ret != 0) {
+    std::cerr << "\nPNG conversion failed for " << latex_tikz_output2
+        << " (return code: " << ret << ")" << std::endl;
+    return -1;
+  }
+  return 0;
+
 }
 } // namespace ai_pass_selector

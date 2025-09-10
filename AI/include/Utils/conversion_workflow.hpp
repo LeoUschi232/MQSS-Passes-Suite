@@ -43,6 +43,22 @@ void convertAllPasstestCircuitsToTikz();
  */
 int convertPasstestCircuitToTikz(std::string passname,
                                  std::unique_ptr<mlir::Pass> pass);
+
+constexpr int TENSORTEST_MAX_QUBITS = 5;
+constexpr int TENSORTEST_MAX_INSTRUCTIONS = 10;
+constexpr int TENSORTEST_MAX_DEPTH = 10;
+
+/**
+ *
+ */
+void convertAllTensortestCircuitsToTikz();
+
+/**
+ *
+ * @param circuit_name
+ * @return
+ */
+int convertTensortestCircuitToTikz(std::string circuit_name);
 } // namespace ai_pass_selector
 
 #endif // CONVERSION_WORKFLOW_HPP
