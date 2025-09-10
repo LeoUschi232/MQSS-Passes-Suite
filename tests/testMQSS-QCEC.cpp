@@ -60,6 +60,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
+
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
+
+
 std::string normalize(const std::string &str) {
   std::string result;
   for (const char c : str) {

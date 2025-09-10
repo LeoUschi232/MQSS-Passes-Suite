@@ -73,7 +73,7 @@ matches.
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
+std::string getEmptyQuakeKernel(const std::string &kernelName,
                                 std::string functionName) {
   std::string templateEmptyQuake =
       "module {"
@@ -120,7 +120,7 @@ std::string readFileToString(const std::string &filename) {
   return fileContents.str();    // Convert the string stream to a string
 }
 
-std::string lowerQuakeCodeToOpenQASM(std::string quantumTask) {
+std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
   // auto [m_module, contextPtr] =
   //     extractMLIRContext(quantumTask);
   mlir::OwningOpRef<mlir::ModuleOp> m_module;

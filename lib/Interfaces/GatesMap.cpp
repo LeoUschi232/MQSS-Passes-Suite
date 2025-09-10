@@ -24,6 +24,7 @@ control and target qubits.
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
 
+#include "Interfaces/Constants.hpp"
 #include "Interfaces/QASMToQuake.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"

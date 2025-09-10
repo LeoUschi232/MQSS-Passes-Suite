@@ -47,6 +47,9 @@ input circuit
 
 namespace po = boost::program_options;
 
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
+
 
 std::string lowerCppToQuake(const std::string &cppFile) {
   int retCode = std::system(("cudaq-quake " + cppFile + " -o ./o.qke").c_str());
@@ -68,8 +71,8 @@ bool hasExtension(const std::string &filename,
   // Check if the filename ends with .cpp
   if (filename.length() >= fileExtension.length()) {
     // Check for .cpp extension
-    if (filename.substr(filename.length() - fileExtension.length()) ==
-        fileExtension)
+    if (filename.substr(filename.length() - fileExtension.length())
+        == fileExtension)
       return true;
   }
   return false;
@@ -133,8 +136,7 @@ int main(int argc, char *argv[]) {
   // Adding custom pass
   std::string moduleOutput;
   llvm::raw_string_ostream stringStream(moduleOutput);
-  pm.nest<mlir::func::FuncOp>().addPass(
-      mqss::opt::createQuakeToTikzPass(stringStream));
+  pm.nest<FuncOp>().addPass(createQuakeToTikzPass(stringStream));
   // running the pass
   if (mlir::failed(pm.run(mlirModule)))
     throw std::runtime_error("The pass failed...");

@@ -49,6 +49,8 @@ input circuit
 #include <thread>
 
 namespace po = boost::program_options;
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
 
 std::string getEmptyQuakeKernel(const std::string &kernelName,
                                 const std::string &functionName) {

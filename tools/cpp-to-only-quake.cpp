@@ -26,7 +26,6 @@ input circuit
 ******************************************************************************/
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Import.h"
@@ -46,9 +45,12 @@ input circuit
 
 namespace po = boost::program_options;
 
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
+
 // Function to check if a `func.func` operation has the `"cudaq-kernel"`
 // attribute
-bool isCudaqKernel(const mlir::func::FuncOp funcOp) {
+bool isCudaqKernel(const FuncOp funcOp) {
   const auto attrs = funcOp->getAttrDictionary();
   return attrs.get("cudaq-kernel") != nullptr;
 }
@@ -58,7 +60,7 @@ bool isCudaqKernel(const mlir::func::FuncOp funcOp) {
 std::string getCudaqKernelsAsString(mlir::ModuleOp moduleOp) {
   std::string outputStream;
   llvm::raw_string_ostream ss(outputStream);
-  moduleOp.walk([&](mlir::func::FuncOp funcOp) {
+  moduleOp.walk([&](FuncOp funcOp) {
     if (isCudaqKernel(funcOp)) {
       // Print the `func.func` operation to the string stream
       funcOp.print(ss);
