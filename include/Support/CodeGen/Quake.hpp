@@ -57,6 +57,12 @@ namespace mqss::support::quakeDialect {
  * @return
  */
 bool isOperatingGate(Operation *op);
+/**
+ *
+ * @param op
+ * @return
+ */
+bool isMeasurementGate(Operation *op);
 
 
 /**
@@ -101,6 +107,13 @@ int64_t extractIndexFromQuakeExtractRefOp(Operation *op);
 */
 int getNumberOfQubits(func::FuncOp circuit);
 
+
+/**
+ *
+ * @param circuit
+ * @return
+ */
+int getNumberOfAllocations(func::FuncOp circuit);
 
 /**
  * Returns the depth of a quantum circuit.

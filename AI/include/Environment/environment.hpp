@@ -29,6 +29,14 @@ using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
 
+constexpr int CIRCUIT_VALID = 0;
+constexpr int NO_CIRCUIT = 1;
+constexpr int TOO_MANY_QUBITS = 2;
+constexpr int TOO_MANY_INSTRUCTIONS = 3;
+constexpr int TOO_LARGE_DEPTH = 4;
+constexpr int NO_QUBIT_ALLOCATIONS = 5;
+constexpr int MULTIPLE_QUBIT_ALLOCATIONS = 6;
+
 
 class QuantumCircuitEnviorment {
   int max_qubits;
@@ -83,20 +91,14 @@ public:
    * @param circuit
    * @return
    */
-  bool is_valid_circuit(ModuleOp circuit) const;
+  int circuit_invalid_type(ModuleOp circuit) const;
 
 
   /**
    *
    * @return
    */
-  std::unordered_map<std::string, int> get_circuit_info() const;
-
-  /**
-   *
-   * @return
-   */
-  bool is_valid_circuit() const;
+  std::unordered_map<std::string, int> get_circuit_info();
 
   /**
    *

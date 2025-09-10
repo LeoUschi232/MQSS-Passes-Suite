@@ -23,6 +23,11 @@ constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
     "rz"sv, "swap"sv, "r1"sv, "u2"sv, "u3"sv, "phased_rx"sv, "mx"sv, "my"sv,
     "mz"sv
     );
+
+// The gate parameters are whether the gate is adjoint up to three possible
+// angles of unitary and rotation gates, making up to four parameters.
+constexpr int MAX_GATE_PARAMS = 4;
+constexpr int IS_CONTROL = 1;
 constexpr int NR_GATES = SUPPORTED_GATES.size();
 
 constexpr int GATE_INDEX(std::string_view gate) {
@@ -42,11 +47,24 @@ constexpr std::array<double, NR_GATES> GATE_ONE_HOT(std::string_view gate) {
   return one_hot;
 }
 
+inline std::vector<double> index_to_one_hot(int size, int index) {
+  std::vector one_hot(size, 0.0);
+  if (0 <= index && index < size) {
+    one_hot[index] = 1.0;
+  }
+  return one_hot;
+}
 
-// The gate parameters are whether the gate is adjoint up to three possible
-// angles of unitary and rotation gates, making up to four parameters.
-constexpr int MAX_GATE_PARAMS = 4;
-constexpr int IS_CONTROL = 1;
+inline std::vector<double> indexes_to_multi_hot(
+    int size, const std::vector<int> &indexes) {
+  std::vector multi_hot(size, 0.0);
+  for (int index : indexes) {
+    if (0 <= index && index < size) {
+      multi_hot[index] = 1.0;
+    }
+  }
+  return multi_hot;
+}
 
 
 template <class T>

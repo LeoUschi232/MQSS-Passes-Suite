@@ -13,6 +13,8 @@
 #include "Support/CodeGen/Quake.hpp"
 
 // Standard library includes
+#include "mlir_utils.hpp"
+
 #include <string>
 #include <unordered_map>
 #include <iostream>
@@ -20,6 +22,8 @@
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+
+
 QuantumCircuitEnviorment::QuantumCircuitEnviorment(
     const int max_qubits, const int max_instructions, const int max_depth,
     ModuleOp circuit)
@@ -30,14 +34,34 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
 }
 
 void QuantumCircuitEnviorment::register_quantum_circuit(ModuleOp circuit) {
-  if (!is_valid_circuit(circuit)) {
-    std::cerr << "Invalid circuit passed to env." << std::endl;
+  switch (circuit_invalid_type(circuit)) {
+  case CIRCUIT_VALID:
+    break;
+  case NO_CIRCUIT:
+    std::cerr << "No circuit provided to the environment." << std::endl;
+    return;
+  case TOO_MANY_QUBITS:
+    std::cerr << "Passed circuit has too many qubits." << std::endl;
+    return;
+  case TOO_MANY_INSTRUCTIONS:
+    std::cerr << "Passed circuit has too many instructions." << std::endl;
+    return;
+  case TOO_LARGE_DEPTH:
+    std::cerr << "Passed circuit has too large depth." << std::endl;
+    return;
+  case NO_QUBIT_ALLOCATIONS:
+    std::cerr << "Passed circuit has no qubit allocations." << std::endl;
+    return;
+  case MULTIPLE_QUBIT_ALLOCATIONS:
+    std::cerr << "Passed circuit has multiple qubit allocations." << std::endl;
+    return;
+  default:
+    std::cerr << "Unkown circuit validation error." << std::endl;
     return;
   }
   this->original_circuit = ModuleOp(circuit);
   this->current_circuit = ModuleOp(circuit);
 }
-
 
 std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
            std::unordered_map<std::string, int> >
@@ -50,6 +74,9 @@ QuantumCircuitEnviorment::reset() {
 
 std::unordered_map<std::string, int>
 QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
+  if (circuit == nullptr) {
+    return {};
+  }
   std::unordered_map<std::string, int> circuit_info;
   circuit_info["qubits"] = getNumberOfQubits(func::FuncOp(circuit));
   circuit_info["gates"] = getNumberOfGates(func::FuncOp(circuit));
@@ -57,72 +84,78 @@ QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
   return circuit_info;
 }
 
-bool QuantumCircuitEnviorment::is_valid_circuit(ModuleOp circuit) const {
-  std::unordered_map<std::string, int> circuit_info
-      = this->get_circuit_info(circuit);
-  return circuit_info["qubits"] <= this->max_qubits
-         && circuit_info["gates"] <= this->max_instructions
-         && circuit_info["depth"] <= this->max_depth;
+int QuantumCircuitEnviorment::circuit_invalid_type(ModuleOp circuit) const {
+  if (circuit == nullptr) {
+    return NO_CIRCUIT;
+  }
+  std::unordered_map<std::string, int> circuit_info = this->
+      get_circuit_info(circuit);
+  if (circuit_info["qubits"] > this->max_qubits) {
+    return TOO_MANY_QUBITS;
+  }
+  if (circuit_info["gates"] > this->max_instructions) {
+    return TOO_MANY_INSTRUCTIONS;
+  }
+  if (circuit_info["depth"] > this->max_depth) {
+    return TOO_LARGE_DEPTH;
+  }
+  int nrAllocations = getNumberOfAllocations(func::FuncOp(circuit));
+  if (nrAllocations <= 0) {
+    return NO_QUBIT_ALLOCATIONS;
+  }
+  if (nrAllocations >= 2) {
+    return MULTIPLE_QUBIT_ALLOCATIONS;
+  }
+  return CIRCUIT_VALID;
 }
 
-
 std::unordered_map<std::string, int>
-QuantumCircuitEnviorment::get_circuit_info() const {
+QuantumCircuitEnviorment::get_circuit_info() {
   if (this->current_circuit == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
+  this->current_circuit.walk([&](Operation *op) {
+    std::cout << getOperationName(op) << std::endl;
+  });
   return get_circuit_info(this->current_circuit);
-}
-
-bool QuantumCircuitEnviorment::is_valid_circuit() const {
-  if (this->current_circuit == nullptr) {
-    std::cerr << "No circuit registered in the environment." << std::endl;
-    return false;
-  }
-  return this->is_valid_circuit(this->current_circuit);
 }
 
 InstructionBasedTensor<double>
 QuantumCircuitEnviorment::get_instruction_based_observation() {
-  if (this->current_circuit == nullptr) {
-    std::cerr << "No circuit registered in the environment." << std::endl;
-    return {this->max_qubits, this->max_instructions};
-  }
   InstructionBasedTensor<double> observation(
       this->max_qubits, this->max_instructions);
+  if (this->current_circuit == nullptr) {
+    std::cerr << "No circuit registered in the environment." << std::endl;
+    return observation;
+  }
+  int nrQubits = getNumberOfQubits(func::FuncOp(this->current_circuit));
+  if (nrQubits == 0) {
+    return observation;
+  }
 
+  int instruction_index = 0;
   this->current_circuit.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
-      return;
-    }
-    if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
+    if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
-        // Check if it's qubit reference
         if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
-              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
-          if (0 <= qubitIndex && qubitIndex < nrQubits) {
-            depths[qubitIndex]++;
+          int qubitIndex
+              = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (qubitIndex < 0 || nrQubits <= qubitIndex) {
+            continue;
           }
-        } else if (operand.getType().isa<quake::VeqType>()) {
-          for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
-            depths[qubitIndex]++;
+          std::vector<double> no_controls
+              = index_to_one_hot(this->max_qubits, -1);
+          std::vector<double> target_one_hot
+              = index_to_one_hot(this->max_qubits, qubitIndex);
+          std::array gate_one_hot
+              = GATE_ONE_HOT(getOperationName(op));
+          if (isa<quake::MxOp>(op)) {
           }
+
         }
       }
     } else {
-      auto gate = dyn_cast<quake::OperatorInterface>(op);
-      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
-      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
-      targets.insert(targets.end(), controls.begin(), controls.end());
-      int max_depth = 0;
-      for (int qubit : targets) {
-        max_depth = std::max(max_depth, depths[qubit]);
-      }
-      for (int qubit : targets) {
-        depths[qubit] = max_depth + 1;
-      }
     }
 
   });

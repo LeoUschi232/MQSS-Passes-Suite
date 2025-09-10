@@ -36,6 +36,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
 #include "llvm/Support/Casting.h"
+
+#include <iostream>
 using llvm::isa;
 using llvm::cast;
 using llvm::dyn_cast;
@@ -52,6 +54,23 @@ bool isOperatingGate(Operation *op) {
   return op->getDialect()->getNamespace() == "quake"
          && !isa<quake::AllocaOp>(op)
          && !isa<quake::ExtractRefOp>(op);
+}
+
+bool isMeasurementGate(Operation *op) {
+  return isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op);
+}
+
+int getNumberOfAllocations(func::FuncOp circuit) {
+  int nrAllocations = 0;
+  circuit.walk([&](Operation *op) {
+    // An allocation is allowed to be a single-qubit or multi-qubit (Veq)
+    // allocation. However, each specific allocation, even the veq allocation
+    // is just one allocation operation.
+    if (isa<quake::AllocaOp>(op)) {
+      nrAllocations++;
+    }
+  });
+  return nrAllocations;
 }
 
 
@@ -101,34 +120,25 @@ int getNumberOfQubits(func::FuncOp circuit) {
   return numQubits;
 }
 
-int getNumberOfGates(func::FuncOp circuit) {
-  if (getNumberOfQubits(circuit) == 0) {
-    return 0;
-  }
-  int nrGates = 0;
-  circuit.walk([&](Operation *op) {
-    if (isOperatingGate(op)) {
-      nrGates++;
-    }
-  });
-  return nrGates;
-}
-
 int getCircuitDepth(func::FuncOp circuit) {
   int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
     return 0;
   }
+  if (getNumberOfAllocations(circuit) != 1) {
+    std::cerr
+        << "Function getCircuitDepth not implemented for multiple allocations"
+        << std::endl;
+    return -1;
+  }
+
   std::vector depths(nrQubits, 0);
   circuit.walk([&](Operation *op) {
     if (!isOperatingGate(op)) {
       return;
     }
-    if (isa<quake::MxOp>(op)
-        || isa<quake::MyOp>(op)
-        || isa<quake::MzOp>(op)) {
+    if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
-        // Check if it's qubit reference
         if (operand.getType().isa<quake::RefType>()) {
           int qubitIndex =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
@@ -136,6 +146,9 @@ int getCircuitDepth(func::FuncOp circuit) {
             depths[qubitIndex]++;
           }
         } else if (operand.getType().isa<quake::VeqType>()) {
+          // Because this function only works for a single allocation, the
+          // reference to a Veq will reference all allocated qubits in the
+          // range [0, nrQubits-1].
           for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
             depths[qubitIndex]++;
           }
@@ -158,13 +171,48 @@ int getCircuitDepth(func::FuncOp circuit) {
   return *std::ranges::max_element(depths);
 }
 
+int getNumberOfGates(func::FuncOp circuit) {
+  int nrQubits = getNumberOfQubits(circuit);
+  if (nrQubits == 0) {
+    return 0;
+  }
+  int nrGates = 0;
+  circuit.walk([&](Operation *op) {
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    if (isMeasurementGate(op)) {
+      for (auto operand : op->getOperands()) {
+        if (operand.getType().isa<quake::RefType>()) {
+          int qubitIndex =
+              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+            nrGates++;
+          }
+        } else if (operand.getType().isa<quake::VeqType>()) {
+          nrGates += operand.getType().dyn_cast<quake::VeqType>().getSize();
+        }
+      }
+    } else {
+      nrGates++;
+    }
+  });
+  return nrGates;
+}
+
 // Function to get the number of classical bits allocated in a given
 // quantum kernel, it also stores information of the qubit position
 int getNumberOfClassicalBits(
     func::FuncOp circuit, std::map<int, int> &measurements) {
+  if (getNumberOfAllocations(circuit) != 1) {
+    std::cerr
+        << "Function getNumberOfClassicalBits not implemented for multiple allocations"
+        << std::endl;
+    return -1;
+  }
   int numBits = 0;
   circuit.walk([&](Operation *op) {
-    if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
+    if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
         // Check if it's qubit reference
         if (operand.getType().isa<quake::RefType>()) {
@@ -192,8 +240,13 @@ int getNumberOfClassicalBits(
 
 // Function to get the number of classical bits allocated in
 // a given quantum kernel
-int getNumberOfClassicalBits(
-    func::FuncOp circuit) {
+int getNumberOfClassicalBits(func::FuncOp circuit) {
+  if (getNumberOfAllocations(circuit) != 1) {
+    std::cerr
+        << "Function getNumberOfClassicalBits not implemented for multiple allocations"
+        << std::endl;
+    return -1;
+  }
   int numBits = 0;
   circuit.walk([&](Operation *op) {
     if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
