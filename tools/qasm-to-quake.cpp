@@ -90,7 +90,8 @@ std::string lowerCppToQuake(const std::string &cppFile) {
   if (retCode)
     throw std::runtime_error("Quake transformation failed!!!");
   // loading the generated mlir kernel of the given cpp
-  std::string quakeModule = readFileToString("./kernel.qke");
+  std::string quakeModule = mqss::support::quakeDialect::readFileToString(
+      "./kernel.qke");
   std::remove("./o.qke");
   std::remove("./kernel.qke");
   return quakeModule;
@@ -170,13 +171,14 @@ int main(int argc, char *argv[]) {
   std::cout << "kernelName " << kernelName << std::endl;
   std::string templateEmptyQuake = getEmptyQuakeKernel(kernelName, "_function");
   // continue loading mlir module and context
-  auto [mlirModule, contextPtr] = extractMLIRContext(templateEmptyQuake);
+  auto [mlirModule, contextPtr] =
+      mqss::support::quakeDialect::extractMLIRContext(templateEmptyQuake);
   mlir::MLIRContext &context = *contextPtr;
   mlirModule->getContext()->disableMultithreading();
   // creating pass manager
   mlir::PassManager pm(&context);
   // Adding custom pass
-  pm.nest<mlir::func::FuncOp>().addPass(
+  pm.nest<FuncOp>().addPass(
       mqss::opt::createQASM3ToQuakePass(qasmStream));
 
   // 2) Clean up

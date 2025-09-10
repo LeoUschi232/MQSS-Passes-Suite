@@ -34,6 +34,8 @@ using namespace mqss::support::quakeDialect;
 
 
 namespace ai_pass_selector {
+constexpr double PI = 3.14159265358979323846;
+constexpr double TWO_PI = 6.28318530717958647692;
 
 constexpr int CIRCUIT_VALID = 0;
 constexpr int NO_CIRCUIT = 1;
@@ -42,6 +44,17 @@ constexpr int TOO_MANY_INSTRUCTIONS = 3;
 constexpr int TOO_LARGE_DEPTH = 4;
 constexpr int NO_QUBIT_ALLOCATIONS = 5;
 constexpr int MULTIPLE_QUBIT_ALLOCATIONS = 6;
+
+inline std::vector<double> params_to_angles(std::vector<double> params) {
+  for (int i = 0; i < params.size(); i++) {
+    double angle = std::fmod(params[i] + PI, TWO_PI);
+    if (angle < 0) {
+      angle += TWO_PI;
+    }
+    params[i] = angle - PI;
+  }
+  return params;
+}
 
 
 class QuantumCircuitEnviorment {
@@ -104,7 +117,7 @@ public:
    *
    * @return
    */
-  std::unordered_map<std::string, int> get_circuit_info();
+  std::unordered_map<std::string, int> get_circuit_info() const;
 
   /**
    *

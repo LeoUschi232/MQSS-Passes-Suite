@@ -33,12 +33,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include "Support/DAG/Quake-DAG.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-#include "mlir/Support/LLVM.h"
 
 using namespace mlir;
 
@@ -56,16 +52,15 @@ namespace mqss::interfaces {
     @param[in] quakeFunction is the quantum kernel to be converted.
     @param[in] builder is an `OpBuilder` object associated with a MLIR module.
  It is used to insert new instructions to the corresponding MLIR module.
+    @param gpuFunction
     @param[in] tensorType is the datatype associated to the state vector
     @param[in] matrixType is the datatype associated to the gate matrices
     @param[in] numberOfQubits is the number of qubits utilized by the quantum
  kernel
 */
-mlir::Value convertQuakeToLinAlg(mlir::ModuleOp module,
-                                 mlir::func::FuncOp quakeFunction,
-                                 OpBuilder &builder, func::FuncOp gpuFunction,
-                                 mlir::RankedTensorType tensorType,
-                                 mlir::RankedTensorType matrixType,
-                                 int numberOfQubits);
+Value convertQuakeToLinAlg(
+    ModuleOp module, FuncOp quakeFunction, OpBuilder &builder,
+    FuncOp gpuFunction, RankedTensorType tensorType,
+    RankedTensorType matrixType, int numberOfQubits);
 
 } // namespace mqss::interfaces

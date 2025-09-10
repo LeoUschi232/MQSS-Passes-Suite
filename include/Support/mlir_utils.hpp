@@ -13,6 +13,7 @@
 #include <tuple>
 
 
+namespace mqss::support::quakeDialect {
 /**
  * @param op The operation to extract the name from.
  * @return The name of the operations as a std::string.
@@ -48,6 +49,5 @@ std::string readFileToString(const std::string &filename);
  * @return The string contents of the quake file.
  */
 std::string getQuake(const std::string &filename);
-
-
+} // namespace mqss::support::quakeDialect
 #endif // MLIR_UTILS_HPP

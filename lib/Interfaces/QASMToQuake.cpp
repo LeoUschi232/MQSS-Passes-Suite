@@ -29,19 +29,30 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Interfaces/QASMToQuake.hpp"
 
+#include "Interfaces/Constants.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
-#include "cudaq/Optimizer/Dialect/CC/CCTypes.h"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Transforms/DialectConversion.h"
 
 #include <iomanip>
+#include <ranges>
 #include <regex>
 #include <unordered_map>
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::ModuleOp;
+using mlir::Value;
+using mlir::OpBuilder;
+using mlir::Location;
+using mlir::Operation;
+using mlir::SmallVector;
+using mlir::Type;
+////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
 
@@ -69,17 +80,17 @@ size_t mqss::interfaces::getNumControls(const std::string &gate) {
 
 // This function returns the set of quantum registers declared in a given QASM
 // program.
-std::tuple<QASMVectorToQuakeVector, std::vector<std::pair<std::string, int>>>
+std::tuple<QASMVectorToQuakeVector, std::vector<std::pair<std::string, int> > >
 mqss::interfaces::insertAllocatedQubits(
-    const std::vector<std::shared_ptr<qasm3::Statement>> &program,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp) {
+    const std::vector<std::shared_ptr<qasm3::Statement> > &program,
+    OpBuilder &builder, Location loc, Operation *inOp) {
   // I have to do it like this to preserve the order they are declared
-  std::vector<std::pair<std::string, int>> orderVectors = {};
+  std::vector<std::pair<std::string, int> > orderVectors = {};
   int totalQubits = 0;
   for (const auto &statement : program) {
     // Check if the statement is a DeclarationStatement
     if (auto declStmt =
-            std::dynamic_pointer_cast<qasm3::DeclarationStatement>(statement)) {
+        std::dynamic_pointer_cast<qasm3::DeclarationStatement>(statement)) {
       //        std::cout << "type name " <<  typeid(*statement).name()  <<
       //        "\n";
 #ifdef DEBUG
@@ -89,11 +100,11 @@ mqss::interfaces::insertAllocatedQubits(
       // Checking the type contained in the variant
       auto &variantType = declStmt->type;
       if (auto designatedPtr = std::get_if<
-              std::shared_ptr<qasm3::Type<std::shared_ptr<qasm3::Expression>>>>(
-              &variantType)) {
+        std::shared_ptr<qasm3::Type<std::shared_ptr<qasm3::Expression> > > >(
+          &variantType)) {
         // If we successfully got the Type<std::shared_ptr<Expression>>, handle
         // it
-        std::shared_ptr<qasm3::Type<std::shared_ptr<qasm3::Expression>>>
+        std::shared_ptr<qasm3::Type<std::shared_ptr<qasm3::Expression> > >
             typeExpr = *designatedPtr;
         // std::cout << "Type expression to string " << typeExpr->toString() <<
         // "\n"; std::cout << "Successfully cast to
@@ -103,7 +114,7 @@ mqss::interfaces::insertAllocatedQubits(
           continue; // error code
         if (auto designator = typeExpr->getDesignator()) {
           if (auto constant =
-                  std::dynamic_pointer_cast<qasm3::Constant>(designator)) {
+              std::dynamic_pointer_cast<qasm3::Constant>(designator)) {
             orderVectors.push_back(std::make_pair(
                 std::string(declStmt->identifier), constant->getSInt()));
             totalQubits += constant->getSInt(); // Access the variant
@@ -145,8 +156,9 @@ double mqss::interfaces::evaluateExpression(
     else
       val = constantExpr->getFP();
     return val;
-  } else if (auto unaryExpr =
-                 std::dynamic_pointer_cast<qasm3::UnaryExpression>(expr)) {
+  }
+  if (auto unaryExpr =
+      std::dynamic_pointer_cast<qasm3::UnaryExpression>(expr)) {
     // Handle unary expressions like -pi
     double operandValue = evaluateExpression(unaryExpr->operand);
     switch (unaryExpr->op) {
@@ -156,8 +168,9 @@ double mqss::interfaces::evaluateExpression(
     default:
       assert(false && "Unsupported unary operation");
     }
-  } else if (auto binaryExpr =
-                 std::dynamic_pointer_cast<qasm3::BinaryExpression>(expr)) {
+  }
+  if (auto binaryExpr =
+      std::dynamic_pointer_cast<qasm3::BinaryExpression>(expr)) {
     // Handle binary expressions like pi/2
     double lhsValue = evaluateExpression(binaryExpr->lhs);
     double rhsValue = evaluateExpression(binaryExpr->rhs);
@@ -174,29 +187,29 @@ double mqss::interfaces::evaluateExpression(
     default:
       assert(false && "Unsupported binary operation");
     }
-  } else if (auto identifierExpr =
-                 std::dynamic_pointer_cast<qasm3::IdentifierExpression>(expr)) {
+  }
+  if (auto identifierExpr =
+      std::dynamic_pointer_cast<qasm3::IdentifierExpression>(expr)) {
     // Handle identifiers like pi
     if (identifierExpr->identifier == "pi") {
       return PI; // Use the value of pi from <cmath>
     }
     assert(false &&
-           ("Unsupported identifier: " + identifierExpr->identifier).c_str());
-  } else {
-    assert(false && "Unsupported expression type");
+        ("Unsupported identifier: " + identifierExpr->identifier).c_str());
   }
+  assert(false && "Unsupported expression type");
 }
 
 // Function that inserts a QASM gate into a MLIR/Quake module
 void mqss::interfaces::insertGate(
     const std::shared_ptr<qasm3::GateCallStatement> &gateCall,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp,
-    QASMVectorToQuakeVector QASMToVectors) {
-  // mlir::Value qubits, IDQASMMLIR mlirQubits) {
+    OpBuilder &builder, Location loc, Operation *inOp,
+    const QASMVectorToQuakeVector &QASMToVectors) {
+  // Value qubits, IDQASMMLIR mlirQubits) {
   bool isAdj = false;
-  std::vector<mlir::Value> parameters = {};
-  std::vector<mlir::Value> controls = {};
-  std::vector<mlir::Value> targets = {};
+  std::vector<Value> parameters = {};
+  std::vector<Value> controls = {};
+  std::vector<Value> targets = {};
   // Defining the builder
   builder.setInsertionPoint(inOp); // Set insertion before return
   // Print the gate type (identifier)
@@ -211,7 +224,7 @@ void mqss::interfaces::insertGate(
 #endif
     for (const auto &arg : gateCall->arguments) {
       double argVal = evaluateExpression(arg);
-      mlir::Value argMlirVal = createFloatValue(builder, loc, argVal);
+      Value argMlirVal = createFloatValue(builder, loc, argVal);
       parameters.push_back(argMlirVal);
 #ifdef DEBUG
       std::cout << argVal << " ";
@@ -230,10 +243,10 @@ void mqss::interfaces::insertGate(
     size_t numControls = 0;
     for (const auto &modifier : gateCall->modifiers) {
       if (auto ctrlMod =
-              std::dynamic_pointer_cast<qasm3::CtrlGateModifier>(modifier)) {
+          std::dynamic_pointer_cast<qasm3::CtrlGateModifier>(modifier)) {
         if (ctrlMod->expression) {
           if (auto constantExpr = std::dynamic_pointer_cast<qasm3::Constant>(
-                  ctrlMod->expression)) {
+              ctrlMod->expression)) {
             numControls = constantExpr->getSInt();
 #ifdef DEBUG
             std::cout << "numControls " << numControls << "\n";
@@ -257,10 +270,10 @@ void mqss::interfaces::insertGate(
       // get the qubit index
       int qubitOp = -1;
       if (auto constantExprOp =
-              std::dynamic_pointer_cast<qasm3::Constant>(operand->expression))
+          std::dynamic_pointer_cast<qasm3::Constant>(operand->expression))
         qubitOp = constantExprOp->getSInt();
       assert(qubitOp != -1 && "Fatal error, this must not happen!");
-      mlir::Value selectedVector =
+      Value selectedVector =
           QASMToVectors.at(std::string(operand->identifier));
       int selectedQubit = qubitOp;
 #ifdef DEBUG
@@ -288,13 +301,12 @@ void mqss::interfaces::insertGate(
 #endif
     }
   }
-  std::regex pattern("dg"); // Case-sensitive regex
-  if (std::regex_search(std::string(gateCall->identifier), pattern)) {
+  if (std::regex pattern("dg"); std::regex_search(std::string(gateCall->identifier), pattern)) {
     isAdj = true;
   }
   std::string gateId = gateCall->identifier;
-  std::transform(gateId.begin(), gateId.end(), gateId.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+  std::ranges::transform(gateId, gateId.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
   insertQASMGateIntoQuakeModule(gateId, builder, loc, parameters, controls,
                                 targets, isAdj);
 #ifdef DEBUG
@@ -305,11 +317,11 @@ void mqss::interfaces::insertGate(
 // Function that parses a given AST/QASM and inserts measurements into a
 // MLIR/Quake
 void mqss::interfaces::parseAndInsertMeasurements(
-    const std::vector<std::shared_ptr<qasm3::Statement>> &statements,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp,
-    QASMVectorToQuakeVector QASMToVectors) {
-  std::map<int, std::pair<std::string, int>> ClassicalRegToQVector = {};
-  // mlir::Value allocatedQubits, IDQASMMLIR mlirQubits) {
+    const std::vector<std::shared_ptr<qasm3::Statement> > &statements,
+    OpBuilder &builder, Location loc, Operation *inOp,
+    const QASMVectorToQuakeVector &QASMToVectors) {
+  std::map<int, std::pair<std::string, int> > ClassicalRegToQVector = {};
+  // Value allocatedQubits, IDQASMMLIR mlirQubits) {
   // Defining the builder
   builder.setInsertionPoint(inOp); // Set insertion before return
   // llvm::outs() << "Printing measurements!\n";
@@ -317,14 +329,14 @@ void mqss::interfaces::parseAndInsertMeasurements(
     // llvm::outs() << "Statement Type: " << typeid(*statement).name() << "\n";
     //   Check if the statement is a MeasureStatement
     if (auto assignmentStmt =
-            std::dynamic_pointer_cast<qasm3::AssignmentStatement>(statement)) {
+        std::dynamic_pointer_cast<qasm3::AssignmentStatement>(statement)) {
       // llvm::outs() << "Found AssignmentStatement\n";
       std::string classicalRegister;
       size_t classicalIndex = 0;
       if (assignmentStmt->identifier)
         classicalRegister = assignmentStmt->identifier->getName();
       if (auto idxExpr = std::dynamic_pointer_cast<qasm3::Constant>(
-              assignmentStmt->indexExpression)) {
+          assignmentStmt->indexExpression)) {
         classicalIndex = idxExpr->getSInt();
       } else {
         llvm::errs() << "Error: indexExpression is not a Constant.\n";
@@ -332,27 +344,27 @@ void mqss::interfaces::parseAndInsertMeasurements(
       }
 #ifdef DEBUG
       llvm::outs() << "Measurement result goes to: " << classicalRegister << "["
-                   << classicalIndex << "]\n";
+          << classicalIndex << "]\n";
 #endif
       if (assignmentStmt->expression) {
         // llvm::outs() << "Expression Type: " <<
         // typeid(assignmentStmt->expression).name() << "\n";
         //  Check if it's a DeclarationExpression (which holds the initializer)
         if (auto declExpr =
-                std::dynamic_pointer_cast<qasm3::DeclarationExpression>(
-                    assignmentStmt->expression)) {
+            std::dynamic_pointer_cast<qasm3::DeclarationExpression>(
+                assignmentStmt->expression)) {
           // llvm::outs() << "Found DeclarationExpression\n";
           //  Check if the initializer is a MeasureExpression
           if (auto measureExpr =
-                  std::dynamic_pointer_cast<qasm3::MeasureExpression>(
-                      declExpr->expression)) {
+              std::dynamic_pointer_cast<qasm3::MeasureExpression>(
+                  declExpr->expression)) {
             if (measureExpr->gate) {
               std::string qVector = measureExpr->gate->identifier;
               // llvm::outs() << "Measured Qubit: " << qubit << "\n";
               if (measureExpr->gate->expression) {
                 // llvm::outs() << "Has expression\n";
                 if (auto operand = std::dynamic_pointer_cast<qasm3::Constant>(
-                        measureExpr->gate->expression)) {
+                    measureExpr->gate->expression)) {
                   size_t localQubit = operand->getSInt();
                   ClassicalRegToQVector.emplace(
                       classicalIndex, std::make_pair(qVector, localQubit));
@@ -367,12 +379,9 @@ void mqss::interfaces::parseAndInsertMeasurements(
       }
     }
   }
-  for (const auto &pair : ClassicalRegToQVector) {
-    int classicalIndex = pair.first;
-    auto innerPair = pair.second;
-    std::string qVector = innerPair.first;
-    int qubit = innerPair.second;
-    mlir::Value selectedQuakeVector = QASMToVectors.at(qVector);
+  for (const auto &qVectorPair : ClassicalRegToQVector | std::views::values) {
+    auto [qVector, qubit] = qVectorPair;
+    Value selectedQuakeVector = QASMToVectors.at(qVector);
 
     // insert measurement
     auto measRef =

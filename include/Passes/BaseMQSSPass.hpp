@@ -28,26 +28,24 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 * This source code and the accompanying materials are made available under    *
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
+#pragma once
 
-#include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
 
 // Base class extending PassWrapper with a common method
 template <typename DerivedT>
 class BaseMQSSPass
-    : public PassWrapper<DerivedT, OperationPass<mlir::ModuleOp>> {
+    : public PassWrapper<DerivedT, OperationPass<ModuleOp> > {
 public:
   virtual void operationsOnQuantumKernel(
       func::FuncOp kernel) = 0; // this has to be re-written by each pass
 private:
-  std::tuple<SmallVector<Operation *, 16>, mlir::WalkResult>
-  getQuakeKernels(mlir::ModuleOp module) {
+  std::tuple<SmallVector<Operation *, 16>, WalkResult>
+  getQuakeKernels(ModuleOp module) {
     SmallVector<Operation *, 16> kernels;
     auto walkResult = module.walk([&kernels](Operation *op) {
       // Check if it is a quantum kernel

@@ -60,33 +60,29 @@ tensor<8xcomplex<f64>>) -> tensor<8xcomplex<f64>> return %2
 #include "Interfaces/QuakeToLinAlg.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
-#include "cudaq/Optimizer/Dialect/CC/CCTypes.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/Complex/IR/Complex.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <complex>
 #include <iostream>
 
 using namespace mlir;
-using namespace mlir::complex;
-using namespace mlir::utils;
+using namespace complex;
+using namespace utils;
 using namespace mqss::support::quakeDialect;
 
-bool hasFunc(mlir::ModuleOp module, llvm::StringRef name) {
-  return static_cast<bool>(module.lookupSymbol<mlir::func::FuncOp>(name));
+bool hasFunc(ModuleOp module, StringRef name) {
+  return static_cast<bool>(module.lookupSymbol<FuncOp>(name));
 }
 
-mlir::func::FuncOp getFuncOp(mlir::ModuleOp module, llvm::StringRef name) {
-  return module.lookupSymbol<mlir::func::FuncOp>(name);
+FuncOp getFuncOp(ModuleOp module, StringRef name) {
+  return module.lookupSymbol<FuncOp>(name);
 }
 
 /// Two‑operand multiply helper.
@@ -104,11 +100,11 @@ Value insertMul(OpBuilder &builder, Location loc, ArrayRef<Value> ops) {
   auto rank1 = rt1.getRank();
   auto eltType = rt0.getElementType().dyn_cast<ComplexType>();
   assert(eltType && eltType == rt1.getElementType().dyn_cast<ComplexType>() &&
-         "Element types must match and be complex");
+      "Element types must match and be complex");
 
   // --- Case A: Scalar (rank0 == 0 && rank1 == 0) ---
   if (rank0 == 0 && rank1 == 0) {
-    return builder.create<mlir::complex::MulOp>(loc, eltType, ops[0], ops[1])
+    return builder.create<MulOp>(loc, eltType, ops[0], ops[1])
         .getResult();
   }
 
@@ -116,25 +112,24 @@ Value insertMul(OpBuilder &builder, Location loc, ArrayRef<Value> ops) {
   if (rank0 == 1 && rank1 == 1 && rt0.getShape() == rt1.getShape()) {
     // Create empty output tensor
     Value resultTensor =
-        builder.create<mlir::tensor::EmptyOp>(loc, rt0.getShape(), eltType);
+        builder.create<tensor::EmptyOp>(loc, rt0.getShape(), eltType);
 
     auto ctx = builder.getContext();
-    auto dimExpr = mlir::getAffineDimExpr(0, ctx);
+    auto dimExpr = getAffineDimExpr(0, ctx);
     auto map =
-        mlir::AffineMap::get(/*dimCount=*/1, /*symbolCount=*/0, {dimExpr});
-    SmallVector<mlir::AffineMap> indexingMaps = {map, map, map};
-    SmallVector<mlir::utils::IteratorType> iterTypes = {
-        mlir::utils::IteratorType::parallel};
+        AffineMap::get(/*dimCount=*/1, /*symbolCount=*/0, {dimExpr});
+    SmallVector indexingMaps = {map, map, map};
+    SmallVector iterTypes = {IteratorType::parallel};
 
-    auto genericOp = builder.create<mlir::linalg::GenericOp>(
+    auto genericOp = builder.create<linalg::GenericOp>(
         loc, TypeRange{rt0}, ValueRange{ops[0], ops[1]},
         ValueRange{resultTensor}, indexingMaps, iterTypes,
         /*doc=*/"",
         /*libraryCall=*/"",
         [&](OpBuilder &nestedBuilder, Location nestedLoc, ValueRange args) {
-          Value prod = nestedBuilder.create<mlir::complex::MulOp>(
+          Value prod = nestedBuilder.create<MulOp>(
               nestedLoc, eltType, args[0], args[1]);
-          nestedBuilder.create<mlir::linalg::YieldOp>(nestedLoc, prod);
+          nestedBuilder.create<linalg::YieldOp>(nestedLoc, prod);
         });
 
     return genericOp.getResult(0);
@@ -145,8 +140,8 @@ Value insertMul(OpBuilder &builder, Location loc, ArrayRef<Value> ops) {
     // Init result tensor< M x complex >
     int64_t M = rt0.getDimSize(0);
     auto resultType = RankedTensorType::get({M}, eltType);
-    Value init = builder.create<mlir::tensor::EmptyOp>(
-        loc, ArrayRef<int64_t>{M}, eltType);
+    Value init = builder.create<tensor::EmptyOp>(
+        loc, ArrayRef{M}, eltType);
     return builder
         .create<linalg::MatvecOp>(loc, resultType, ValueRange{ops[0], ops[1]},
                                   ValueRange{init})
@@ -155,14 +150,13 @@ Value insertMul(OpBuilder &builder, Location loc, ArrayRef<Value> ops) {
 
   // --- Case D: Matrix × Matrix → Matmul (rank0==2, rank1==2) ---
   if (rank0 == 2 && rank1 == 2 && rt0.getDimSize(1) == rt1.getDimSize(0)) {
-    int64_t M = rt0.getDimSize(0), K = rt0.getDimSize(1), N = rt1.getDimSize(1);
+    int64_t M = rt0.getDimSize(0), N = rt1.getDimSize(1);
     auto resultType = RankedTensorType::get({M, N}, eltType);
-    Value init = builder.create<mlir::tensor::EmptyOp>(
-        loc, ArrayRef<int64_t>{M, N}, eltType);
-    return builder
-        .create<linalg::MatmulOp>(loc, resultType, ValueRange{ops[0], ops[1]},
-                                  ValueRange{init})
-        .getResult(0);
+    Value init = builder.create<tensor::EmptyOp>(
+        loc, ArrayRef{M, N}, eltType);
+    return builder.create<linalg::MatmulOp>(
+        loc, resultType, ValueRange{ops[0], ops[1]},
+        ValueRange{init}).getResult(0);
   }
 
   llvm_unreachable("Unsupported operand shapes for insertMul");
@@ -187,89 +181,88 @@ Value insertMulN(OpBuilder &builder, Location loc, ArrayRef<Value> ops) {
   return acc;
 }
 
-mlir::Value initializeQubits(mlir::func::FuncOp gpuFunction,
-                             mlir::OpBuilder &builder, int numberOfQubits,
-                             mlir::RankedTensorType tensorType) {
-  mlir::Block &entryBlock = gpuFunction.getBody().front();
+Value initializeQubits(
+    FuncOp gpuFunction, OpBuilder &builder, int numberOfQubits,
+    RankedTensorType tensorType) {
+  Block &entryBlock = gpuFunction.getBody().front();
   builder.setInsertionPointToStart(&entryBlock);
 
-  std::vector<std::complex<double>> data;
+  std::vector<std::complex<double> > data;
   for (int i = 0; i < std::pow(2, numberOfQubits); i++)
     data.push_back({0.0, 0.0});
 
-  mlir::DenseElementsAttr initAttr =
-      mlir::DenseElementsAttr::get(tensorType, llvm::makeArrayRef(data));
-  mlir::Location loc = builder.getUnknownLoc();
+  DenseElementsAttr initAttr =
+      DenseElementsAttr::get(tensorType, ArrayRef(data));
+  Location loc = builder.getUnknownLoc();
 
   auto constantOp =
-      builder.create<mlir::arith::ConstantOp>(loc, tensorType, initAttr);
+      builder.create<arith::ConstantOp>(loc, tensorType, initAttr);
   return constantOp;
 }
 
-mlir::func::FuncOp inlineFunction(mlir::ModuleOp &module,
-                                  std::string operationName,
-                                  mlir::RankedTensorType matrixType,
-                                  size_t numberParameters) {
+FuncOp inlineFunction(
+    ModuleOp &module, std::string operationName, RankedTensorType matrixType,
+    const long numberParameters) {
   // if the function is already in the module,
   // then return it
   if (hasFunc(module, operationName))
     return getFuncOp(module, operationName);
-  mlir::OpBuilder builder(module.getBodyRegion());
-  mlir::Location loc = builder.getUnknownLoc();
+  OpBuilder builder(module.getBodyRegion());
+  Location loc = builder.getUnknownLoc();
   // if the gate has parameters the signature function has to
   // accept a vector of size of the parameters
-  mlir::FunctionType funcType;
+  FunctionType funcType;
   if (numberParameters > 0) {
     auto elementType = builder.getF64Type();
-    mlir::RankedTensorType tensorType =
-        mlir::RankedTensorType::get({numberParameters}, elementType);
+    RankedTensorType tensorType =
+        RankedTensorType::get({numberParameters}, elementType);
     funcType = builder.getFunctionType({tensorType}, {matrixType});
   } else {
     funcType = builder.getFunctionType({}, {matrixType});
   }
 
   auto operationFunction =
-      builder.create<mlir::func::FuncOp>(loc, operationName, funcType);
+      builder.create<FuncOp>(loc, operationName, funcType);
   operationFunction.setPrivate(); // Optional: make it private visibility
-  operationFunction.setVisibility(mlir::SymbolTable::Visibility::Private);
+  operationFunction.setVisibility(SymbolTable::Visibility::Private);
   // Erase the body to make it external (opaque)
   operationFunction.eraseBody();
   return operationFunction;
 }
 
-mlir::Value createDoubleTensor(mlir::OpBuilder &builder, mlir::Location loc,
-                               const std::vector<double> &dataVec) {
+Value createDoubleTensor(OpBuilder &builder, Location loc,
+                         const std::vector<double> &dataVec) {
   // Create the tensor type: tensor<Nxf64>
   auto elementType = builder.getF64Type();
-  auto tensorType = mlir::RankedTensorType::get(
+  auto tensorType = RankedTensorType::get(
       {static_cast<int64_t>(dataVec.size())}, elementType);
 
   // Convert to APFloat and build a DenseElementsAttr
-  llvm::SmallVector<mlir::APFloat, 4> apValues;
+  SmallVector<APFloat, 4> apValues;
   for (double val : dataVec)
-    apValues.emplace_back(mlir::APFloat(val));
+    apValues.emplace_back(APFloat(val));
 
-  auto attr = mlir::DenseElementsAttr::get(tensorType, apValues);
+  auto attr = DenseElementsAttr::get(tensorType, apValues);
 
   // Create the constant operation
-  return builder.create<mlir::arith::ConstantOp>(loc, tensorType, attr)
+  return builder.create<arith::ConstantOp>(loc, tensorType, attr)
       .getResult();
 }
 
-mlir::Value mqss::interfaces::convertQuakeToLinAlg(
-    mlir::ModuleOp module, mlir::func::FuncOp quakeFunction, OpBuilder &builder,
-    func::FuncOp gpuFunction, mlir::RankedTensorType tensorType,
-    mlir::RankedTensorType matrixType, int numberOfQubits) {
+Value mqss::interfaces::convertQuakeToLinAlg(
+    ModuleOp module, FuncOp quakeFunction, OpBuilder &builder,
+    FuncOp gpuFunction, RankedTensorType tensorType,
+    RankedTensorType matrixType, int numberOfQubits) {
   // insert the initial state of the circuit
   Value state =
       initializeQubits(gpuFunction, builder, numberOfQubits, tensorType);
   // iterate the function to see if it is quake
-  quakeFunction.walk([&](mlir::Operation *op) {
+  quakeFunction.walk([&](Operation *op) {
     auto gate = dyn_cast<quake::OperatorInterface>(op);
     if (!gate)
       return;
     // then, the operation is a quake gate
-    llvm::StringRef opName = op->getName().getStringRef();
+    StringRef opName = op->getName().getStringRef();
     std::regex pattern("^quake\\.");
     std::string gateName = std::regex_replace(opName.str(), pattern, "");
     // get the target and get the controls
@@ -288,23 +281,18 @@ mlir::Value mqss::interfaces::convertQuakeToLinAlg(
                                "qubits_" + "control" + controlString +
                                "_target" + targetString;
     // inline the function
-    mlir::Location loc = builder.getUnknownLoc();
-    mlir::func::FuncOp operationFunction =
-        inlineFunction(module, functionName, matrixType, params.size());
+    Location loc = builder.getUnknownLoc();
     // Emit func.call to the private function
-    mlir::Value matrixValue;
+    Value matrixValue;
     if (params.size() > 0) {
-      mlir::Value arguments = createDoubleTensor(builder, loc, params);
-      matrixValue =
-          builder.create<func::CallOp>(loc, functionName, matrixType, arguments)
-              .getResult(0);
+      Value arguments = createDoubleTensor(builder, loc, params);
+      matrixValue = builder.create<func::CallOp>(
+          loc, functionName, matrixType, arguments).getResult(0);
     } else {
-      matrixValue =
-          builder
-              .create<func::CallOp>(loc, functionName, matrixType, ValueRange{})
-              .getResult(0);
+      matrixValue = builder.create<func::CallOp>(
+          loc, functionName, matrixType, ValueRange{}).getResult(0);
     }
-    SmallVector<mlir::Value> operands;
+    SmallVector<Value> operands;
     operands.push_back(matrixValue);
     operands.push_back(state);
     state = insertMulN(builder, loc, operands);

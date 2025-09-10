@@ -19,12 +19,13 @@
 #include <string>
 #include <tuple>
 
+namespace mqss::support::quakeDialect {
 std::string getOperationName(Operation *op) {
   return op->getName().getIdentifier().getValue().str();
 }
 
 std::string getOnlyGateName(Operation *op) {
-  if (!mqss::support::quakeDialect::isOperatingGate(op)) {
+  if (!isOperatingGate(op)) {
     return "";
   }
   auto [_, gateName] = op->getName().getStringRef().split('.');
@@ -61,3 +62,4 @@ std::string readFileToString(const std::string &filename) {
 std::string getQuake(const std::string &filename) {
   return readFileToString(filename);
 }
+} // namespace mqss::support::quakeDialect

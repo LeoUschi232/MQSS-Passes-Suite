@@ -32,15 +32,26 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
-#include "Constants.hpp"
+
+// MLIR includes
+#include "mlir/IR/BuiltinOps.h"
+
 #include "ir/parsers/qasm3_parser/Parser.hpp"
 #include "ir/parsers/qasm3_parser/Statement.hpp"
-#include "ir/parsers/qasm3_parser/Types.hpp"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
 
-using namespace mlir;
+
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::ModuleOp;
+using mlir::Value;
+using mlir::OpBuilder;
+using mlir::Location;
+using mlir::Operation;
+////////////////////////////////////////////////////////////////////////////////
+///
 /**
  * @typedef QASMVectorToQuakeVector
  * @brief The `QASMVectorToQuakeVector` is a map of type
@@ -49,7 +60,7 @@ using namespace mlir;
  * `value` corresponds to an `mlir::Value` associated to a created and inserted
  * `quake::veq`.
  */
-using QASMVectorToQuakeVector = std::unordered_map<std::string, mlir::Value>;
+using QASMVectorToQuakeVector = std::unordered_map<std::string, Value>;
 
 /**
  * @typedef QuantumVectorsOrder
@@ -79,28 +90,28 @@ namespace mqss::interfaces {
 */
 void insertQASMGateIntoQuakeModule(std::string gateId, OpBuilder &builder,
                                    Location loc,
-                                   std::vector<mlir::Value> vecParams,
-                                   std::vector<mlir::Value> vecControls,
-                                   std::vector<mlir::Value> vecTargets,
+                                   std::vector<Value> vecParams,
+                                   std::vector<Value> vecControls,
+                                   std::vector<Value> vecTargets,
                                    bool adj);
 
 /**
  * @brief Given a gate type as a string, this functions checks if the given gate
  type has control outputs.
    @details
-    @param[in] gateType is a string specifying the type of a quantum gate.
+    @param[in] gate is a string specifying the type of a quantum gate.
     @return `true` if a gate is a multi-qubit gate with implicit controls.
 */
-bool isMultiQubitGate(const std::string &gateType);
+bool isMultiQubitGate(const std::string &gate);
 
 /**
  * @brief Given a gate type as a string, this functions returns the number of
  control outputs associated with the given gate type.
    @details
-    @param[in] gateType is a string specifying the type a quantum gate.
+    @param[in] gate is a string specifying the type a quantum gate.
     @return the number of control outputs of the give gate type.
 */
-size_t getNumControls(const std::string &gateType);
+size_t getNumControls(const std::string &gate);
 
 /**
  * @brief Function that evaluates a numeric expression in the AST.
@@ -127,7 +138,7 @@ double evaluateExpression(const std::shared_ptr<qasm3::Expression> &expr);
 */
 void insertGate(const std::shared_ptr<qasm3::GateCallStatement> &gateCall,
                 OpBuilder &builder, Location loc, mlir::Operation *inOp,
-                QASMVectorToQuakeVector QASMToVectors);
+                const QASMVectorToQuakeVector &QASMToVectors);
 
 /**
  * @brief This function inserts measurements into a MLIR/Quake module.
@@ -146,8 +157,8 @@ void insertGate(const std::shared_ptr<qasm3::GateCallStatement> &gateCall,
 */
 void parseAndInsertMeasurements(
     const std::vector<std::shared_ptr<qasm3::Statement>> &statements,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp,
-    QASMVectorToQuakeVector QASMToVectors);
+    OpBuilder &builder, Location loc, Operation *inOp,
+    const QASMVectorToQuakeVector &QASMToVectors);
 
 /**
  * @brief This function return the quantum vectors and its order, given a
@@ -174,5 +185,5 @@ void parseAndInsertMeasurements(
 */
 std::tuple<QASMVectorToQuakeVector, QuantumVectorsOrder> insertAllocatedQubits(
     const std::vector<std::shared_ptr<qasm3::Statement>> &program,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp);
+    OpBuilder &builder, Location loc, Operation *inOp);
 } // namespace mqss::interfaces

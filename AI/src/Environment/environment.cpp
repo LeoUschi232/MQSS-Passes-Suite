@@ -118,17 +118,11 @@ int QuantumCircuitEnviorment::circuit_invalid_type(ModuleOp circuit) const {
 }
 
 std::unordered_map<std::string, int>
-QuantumCircuitEnviorment::get_circuit_info() {
+QuantumCircuitEnviorment::get_circuit_info() const {
   if (this->current_circuit == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  this->current_circuit.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
-      return;
-    }
-    std::cout << getOnlyGateName(op) << std::endl;
-  });
   return get_circuit_info(this->current_circuit);
 }
 
@@ -137,42 +131,59 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
   InstructionBasedTensor<double> observation(
       this->max_qubits, this->max_instructions);
   if (this->current_circuit == nullptr) {
-    std::cerr << "No circuit registered in the environment." << std::endl;
     return observation;
   }
-  int nrQubits = getNumberOfQubits(FuncOp(this->current_circuit));
-  if (nrQubits == 0) {
+  if (getNumberOfQubits(FuncOp(this->current_circuit)) == 0) {
     return observation;
   }
+
+  const int MAX_QUBITS = this->max_qubits;
+  const int GATE_OFFSET = 2 * MAX_QUBITS;
+  const int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
 
   int instruction_index = 0;
   this->current_circuit.walk([&](Operation *op) {
-    if (isMeasurementGate(op)) {
-      for (auto operand : op->getOperands()) {
-        if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex
-              = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
-          if (qubitIndex < 0 || nrQubits <= qubitIndex) {
-            continue;
-          }
-          std::vector<double> no_controls
-              = index_to_one_hot(this->max_qubits, -1);
-          std::vector<double> target_one_hot
-              = index_to_one_hot(this->max_qubits, qubitIndex);
-          std::array gate_one_hot
-              = GATE_ONE_HOT(getOperationName(op));
-          if (isa<quake::MxOp>(op)) {
-          }
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    auto gateOp = dyn_cast<quake::OperatorInterface>(op);
+    double *row = observation.row_ptr(instruction_index);
+    std::fill_n(row, observation.shape[1], 0.0);
 
-        }
+    // Controls
+    for (int qubit : getIndicesOfValueRange(gateOp.getControls())) {
+      if (0 <= qubit && qubit < MAX_QUBITS) {
+        row[qubit] = 1.0;
       }
-    } else {
     }
 
-  });
+    // Targets
+    for (int qubit : getIndicesOfValueRange(gateOp.getTargets())) {
+      if (0 <= qubit && qubit < MAX_QUBITS) {
+        row[MAX_QUBITS + qubit] = 1.0;
+      }
+    }
 
+    // Gate
+    if (int gate_index = GATE_INDEX(getOnlyGateName(op)); gate_index >= 0) {
+      row[GATE_OFFSET + gate_index] = 1.0;
+    }
+
+    // params: [adjoint, angle1, angle2, angle3]
+    row[PARAM_OFFSET] = gateOp.isAdj() ? 1.0 : 0.0;
+    auto param_values = getParametersValues(gateOp.getParameters());
+    if (param_values.size() > MAX_GATE_ANGLES) {
+      throw std::runtime_error("Detected gate with too many angles.");
+    }
+    auto angles = params_to_angles(param_values);
+    for (std::size_t i = 0; i < angles.size() && i < MAX_GATE_ANGLES; ++i) {
+      row[PARAM_OFFSET + 1 + i] = angles[i];
+    }
+    instruction_index++;
+  });
   return observation;
 }
+
 
 DepthBasedTensor<double>
 QuantumCircuitEnviorment::get_depth_based_observation() {
@@ -180,7 +191,126 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {this->max_qubits, this->max_depth};
   }
+
   DepthBasedTensor<double> observation(this->max_qubits, this->max_depth);
+
+  int number_of_qubits = getNumberOfQubits(FuncOp(this->current_circuit));
+  if (number_of_qubits == 0) {
+    return observation;
+  }
+
+  constexpr int feature_gate_offset = 0;
+  constexpr int feature_param_offset = feature_gate_offset + NR_GATES;
+  constexpr int feature_control_info_offset =
+      feature_param_offset + MAX_GATE_PARAMS;
+  constexpr int feature_targets_offset =
+      feature_control_info_offset + CONTROL_PARAMS;
+
+  // Greedy ASAP schedule: track next free depth per qubit.
+  std::vector next_free_depth(number_of_qubits, 0);
+
+  this->current_circuit.walk([&](Operation *op) {
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    auto gate_op = dyn_cast<quake::OperatorInterface>(op);
+
+    std::vector<int> control_indices = getIndicesOfValueRange(
+        gate_op.getControls());
+    std::vector<int> target_indices = getIndicesOfValueRange(
+        gate_op.getTargets());
+
+    // Filter invalid indices just in case
+    control_indices.erase(
+        std::remove_if(
+            control_indices.begin(),
+            control_indices.end(),
+            [&](int q) { return q < 0 || q >= number_of_qubits; }),
+        control_indices.end());
+    target_indices.erase(
+        std::remove_if(
+            target_indices.begin(),
+            target_indices.end(),
+            [&](int q) { return q < 0 || q >= number_of_qubits; }),
+        target_indices.end());
+
+    // Determine layer = depth cross-section
+    int scheduled_depth = 0;
+    for (int qubit : control_indices) {
+      scheduled_depth = std::max(scheduled_depth, next_free_depth[qubit]);
+    }
+    for (int qubit : target_indices) {
+      scheduled_depth = std::max(scheduled_depth, next_free_depth[qubit]);
+    }
+
+    if (scheduled_depth >= this->max_depth) {
+      throw std::runtime_error(
+          "Depth Based Observation exceeds configured max_depth.");
+    }
+
+    // Common gate features
+    int gate_index = GATE_INDEX(getOnlyGateName(op));
+    auto param_values = getParametersValues(gate_op.getParameters());
+    if (param_values.size() > MAX_GATE_ANGLES) {
+      throw std::runtime_error("Detected gate with too many angles.");
+    }
+    auto angles = params_to_angles(param_values);
+
+    // Populate features for every involved qubit at this depth
+    auto write_cell = [&](int qubit_index, bool is_control_qubit) {
+      double *cell = observation.cell_ptr(scheduled_depth, qubit_index);
+
+      // The tensor storage is value-initialized to 0.0; write only non-zeros.
+      if (gate_index >= 0) {
+        cell[feature_gate_offset + gate_index] = 1.0;
+      }
+
+      // params: [adjoint, angle1, angle2, angle3]
+      cell[feature_param_offset] = gate_op.isAdj() ? 1.0 : 0.0;
+      for (int i = 0; i < static_cast<int>(angles.size()); i++) {
+        cell[feature_param_offset + 1 + i] = angles[i];
+      }
+
+      // control info: [is_control_qubit, is_target_qubit]
+      cell[feature_control_info_offset] = is_control_qubit ? 1.0 : 0.0;
+      cell[feature_control_info_offset + 1] = is_control_qubit ? 0.0 : 1.0;
+
+      // targets (only if gate is controlled)
+      if (is_control_qubit) {
+        for (int t : target_indices) {
+          cell[feature_targets_offset + t] = 1.0;
+        }
+      } else {
+        for (int c : control_indices) {
+          cell[feature_targets_offset + c] = 1.0;
+        }
+      }
+    };
+    std::vector<char> touched(number_of_qubits, 0);
+    for (int qubit : target_indices) {
+      if (!touched[qubit]) {
+        write_cell(qubit, false);
+        touched[qubit] = 1;
+      }
+    }
+    for (int qubit : control_indices) {
+      if (!touched[qubit]) {
+        write_cell(qubit, true);
+        touched[qubit] = 1;
+      }
+    }
+
+    // Advance next free depth for all qubits touched by this op
+    int new_depth = scheduled_depth + 1;
+    for (int q : target_indices) {
+      next_free_depth[q] = std::max(next_free_depth[q], new_depth);
+    }
+    for (int q : control_indices) {
+      next_free_depth[q] = std::max(next_free_depth[q], new_depth);
+    }
+  });
+
   return observation;
 }
+
 } // namespace ai_pass_selector

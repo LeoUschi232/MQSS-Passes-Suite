@@ -4,6 +4,7 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -26,9 +27,10 @@ constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
 
 // The gate parameters are whether the gate is adjoint up to three possible
 // angles of unitary and rotation gates, making up to four parameters.
-constexpr int MAX_GATE_PARAMS = 4;
-constexpr int IS_CONTROL = 1;
 constexpr int NR_GATES = SUPPORTED_GATES.size();
+constexpr int MAX_GATE_ANGLES = 3;
+constexpr int MAX_GATE_PARAMS = 4;
+constexpr int CONTROL_PARAMS = 2;
 
 constexpr int GATE_INDEX(std::string_view gate) {
   for (int i = 0; i < NR_GATES; ++i) {
@@ -55,9 +57,12 @@ inline std::vector<double> index_to_one_hot(int size, int index) {
   return one_hot;
 }
 
-inline std::vector<double> indexes_to_multi_hot(
+inline std::vector<double> index_to_one_hot(
     int size, const std::vector<int> &indexes) {
   std::vector multi_hot(size, 0.0);
+  if (indexes.size() <= 0) {
+    return multi_hot;
+  }
   for (int index : indexes) {
     if (0 <= index && index < size) {
       multi_hot[index] = 1.0;
@@ -92,6 +97,27 @@ struct InstructionBasedTensor {
     return const_cast<InstructionBasedTensor &>(*this)(i, j);
   }
 
+  void fillInstructionFeature(
+      int instruction_index, const std::vector<T> &values) {
+    if (values.size() != static_cast<size_t>(shape[1])
+        || instruction_index < 0 || instruction_index >= shape[0]) {
+      throw std::runtime_error(
+          "Instruction feature size does not match tensor shape.");
+    }
+    const int offset = instruction_index * shape[1];
+    std::copy(values.begin(), values.end(),
+              quantum_circuit_data.begin() + offset);
+  }
+
+  T *row_ptr(int i) {
+    assert(0 <= i && i < shape[0]);
+    return quantum_circuit_data.data() + i * shape[1];
+  }
+
+  void clear_row(int i) {
+    std::fill_n(row_ptr(i), shape[1], T{});
+  }
+
   T *raw() { return quantum_circuit_data.data(); }
   const T *raw() const { return quantum_circuit_data.data(); }
   std::size_t size() const { return quantum_circuit_data.size(); }
@@ -109,11 +135,11 @@ struct DepthBasedTensor {
   // maxDepth along a circuit on different qubits.
   // However, here multi-qubit gates need additional information such as
   DepthBasedTensor(int maxQubits, int maxDepth)
-    : shape{maxQubits, maxDepth,
-            NR_GATES + MAX_GATE_PARAMS + IS_CONTROL + maxQubits},
+    : shape{maxDepth, maxQubits,
+            NR_GATES + MAX_GATE_PARAMS + CONTROL_PARAMS + maxQubits},
       quantum_circuit_data(
-          maxQubits * maxDepth *
-          (NR_GATES + MAX_GATE_PARAMS + IS_CONTROL + maxQubits)) {
+          maxDepth * maxQubits *
+          (NR_GATES + MAX_GATE_PARAMS + CONTROL_PARAMS + maxQubits)) {
   }
 
   T &operator()(int i, int j, int k) {
@@ -126,6 +152,14 @@ struct DepthBasedTensor {
   const T &operator()(int i, int j, int k) const {
     return const_cast<DepthBasedTensor &>(*this)(i, j, k);
   }
+
+  T *cell_ptr(int depth_index, int qubit_index) {
+    assert(0 <= depth_index && depth_index < shape[0]
+        && 0 <= qubit_index && qubit_index < shape[1]);
+    return quantum_circuit_data.data()
+           + (depth_index * shape[1] + qubit_index) * shape[2];
+  }
+
 
   T *raw() { return quantum_circuit_data.data(); }
   const T *raw() const { return quantum_circuit_data.data(); }
