@@ -57,9 +57,8 @@ Operation *findReturn(ModuleOp m) {
   return ret;
 }
 
-std::string gateIdFor(const std::string &base,
-                      int numControls,
-                      bool isAdjoint) {
+std::string gateIdFor(
+    const std::string &base, int numControls, bool isAdjoint) {
   // Measurements (no controls)
   if (base == "mx" || base == "my" || base == "mz")
     return base;
