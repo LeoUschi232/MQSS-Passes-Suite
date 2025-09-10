@@ -47,6 +47,14 @@ using llvm::dyn_cast;
 
 
 namespace mqss::support::quakeDialect {
+
+bool isOperatingGate(Operation *op) {
+  return op->getDialect()->getNamespace() == "quake"
+         && !isa<quake::AllocaOp>(op)
+         && !isa<quake::ExtractRefOp>(op);
+}
+
+
 // Given a OpBuilder and a double value, it inserts a double in the mlir
 // module pointer by the OpBuilder and returns the inserted Value
 Value createFloatValue(
@@ -99,9 +107,7 @@ int getNumberOfGates(func::FuncOp circuit) {
   }
   int nrGates = 0;
   circuit.walk([&](Operation *op) {
-    if (op->getDialect()->getNamespace() == "quake"
-        && !isa<quake::AllocaOp>(op)
-        && !isa<quake::ExtractRefOp>(op)) {
+    if (isOperatingGate(op)) {
       nrGates++;
     }
   });
@@ -115,38 +121,37 @@ int getCircuitDepth(func::FuncOp circuit) {
   }
   std::vector depths(nrQubits, 0);
   circuit.walk([&](Operation *op) {
-    if (op->getDialect()->getNamespace() == "quake"
-        && !isa<quake::AllocaOp>(op)
-        && !isa<quake::ExtractRefOp>(op)) {
-      if (isa<quake::MxOp>(op)
-          || isa<quake::MyOp>(op)
-          || isa<quake::MzOp>(op)) {
-        for (auto operand : op->getOperands()) {
-          // Check if it's qubit reference
-          if (operand.getType().isa<quake::RefType>()) {
-            int qubitIndex =
-                extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
-            if (0 <= qubitIndex && qubitIndex < nrQubits) {
-              depths[qubitIndex]++;
-            }
-          } else if (operand.getType().isa<quake::VeqType>()) {
-            for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
-              depths[qubitIndex]++;
-            }
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    if (isa<quake::MxOp>(op)
+        || isa<quake::MyOp>(op)
+        || isa<quake::MzOp>(op)) {
+      for (auto operand : op->getOperands()) {
+        // Check if it's qubit reference
+        if (operand.getType().isa<quake::RefType>()) {
+          int qubitIndex =
+              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+            depths[qubitIndex]++;
+          }
+        } else if (operand.getType().isa<quake::VeqType>()) {
+          for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
+            depths[qubitIndex]++;
           }
         }
-      } else {
-        auto gate = dyn_cast<quake::OperatorInterface>(op);
-        std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
-        std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
-        targets.insert(targets.end(), controls.begin(), controls.end());
-        int max_depth = 0;
-        for (int qubit : targets) {
-          max_depth = std::max(max_depth, depths[qubit]);
-        }
-        for (int qubit : targets) {
-          depths[qubit] = max_depth + 1;
-        }
+      }
+    } else {
+      auto gate = dyn_cast<quake::OperatorInterface>(op);
+      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+      targets.insert(targets.end(), controls.begin(), controls.end());
+      int max_depth = 0;
+      for (int qubit : targets) {
+        max_depth = std::max(max_depth, depths[qubit]);
+      }
+      for (int qubit : targets) {
+        depths[qubit] = max_depth + 1;
       }
     }
   });

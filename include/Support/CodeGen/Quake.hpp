@@ -51,6 +51,13 @@ using namespace mlir;
 
 namespace mqss::support::quakeDialect {
 
+/**
+ *
+ * @param op
+ * @return
+ */
+bool isOperatingGate(Operation *op);
+
 
 /**
   @brief Function that creates an `mlir::Value` associated to a numeric value.

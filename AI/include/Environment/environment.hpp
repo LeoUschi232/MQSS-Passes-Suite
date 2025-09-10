@@ -16,7 +16,6 @@ using llvm::dyn_cast;
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/Pass.h"
 
 // Support includes
 #include "Support/CodeGen/Quake.hpp"
@@ -24,7 +23,6 @@ using llvm::dyn_cast;
 // Standard library includes
 #include <string>
 #include <unordered_map>
-#include <utility>
 
 using namespace mqss::support::quakeDialect;
 
@@ -61,11 +59,16 @@ public:
 
   /**
    *
-   * @param seed
+   * @param circuit
+   */
+  void register_quantum_circuit(ModuleOp circuit);
+
+  /**
+   *
    * @return
    */
-  std::pair<QuantumCircuitTensor<double>, std::unordered_map<std::string, int> >
-  reset(int seed = 0);
+  std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
+             std::unordered_map<std::string, int> > reset();
 
   /**
    *
@@ -73,7 +76,14 @@ public:
    * @return
    */
   static std::unordered_map<std::string, int>
-  get_circuit_info(ModuleOp circuit);
+  get_circuit_info(const ModuleOp &circuit);
+
+  /**
+   *
+   * @param circuit
+   * @return
+   */
+  bool is_valid_circuit(ModuleOp circuit) const;
 
 
   /**
@@ -92,7 +102,13 @@ public:
    *
    * @return
    */
-  QuantumCircuitTensor<double> get_observation();
+  InstructionBasedTensor<double> get_instruction_based_observation();
+
+  /**
+   *
+   * @return
+   */
+  DepthBasedTensor<double> get_depth_based_observation();
 
 
 };

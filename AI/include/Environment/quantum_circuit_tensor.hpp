@@ -19,12 +19,34 @@ constexpr std::array<T, sizeof...(U)> make_array(U &&... u) {
 
 // ---- Supported gates must mirror the gate map ----
 constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
-    "x"sv, "y"sv, "z"sv, "h"sv, "s"sv, "t"sv, "sdg"sv, "tdg"sv, "rx"sv, "ry"sv,
-    "rz"sv, "swap"sv, "r1"sv, "u2"sv, "u3"sv, "phased_rx"sv
+    "x"sv, "y"sv, "z"sv, "h"sv, "s"sv, "t"sv, "rx"sv, "ry"sv,
+    "rz"sv, "swap"sv, "r1"sv, "u2"sv, "u3"sv, "phased_rx"sv, "mx"sv, "my"sv,
+    "mz"sv
     );
-
-constexpr int MAX_GATE_PARAMS = 3;
 constexpr int NR_GATES = SUPPORTED_GATES.size();
+
+constexpr int GATE_INDEX(std::string_view gate) {
+  for (int i = 0; i < NR_GATES; ++i) {
+    if (SUPPORTED_GATES[i] == gate) {
+      return i;
+    }
+  }
+  return -1; // not found
+}
+
+constexpr std::array<double, NR_GATES> GATE_ONE_HOT(std::string_view gate) {
+  std::array<double, NR_GATES> one_hot{};
+  if (const int idx = GATE_INDEX(gate); idx >= 0) {
+    one_hot[static_cast<std::size_t>(idx)] = 1.0;
+  }
+  return one_hot;
+}
+
+
+// The gate parameters are whether the gate is adjoint up to three possible
+// angles of unitary and rotation gates, making up to four parameters.
+constexpr int MAX_GATE_PARAMS = 4;
+constexpr int IS_CONTROL = 1;
 
 
 template <class T>
@@ -57,7 +79,6 @@ struct InstructionBasedTensor {
   std::size_t size() const { return quantum_circuit_data.size(); }
 };
 
-constexpr int IS_CONTROL = 1;
 
 template <class T>
 struct DepthBasedTensor {
