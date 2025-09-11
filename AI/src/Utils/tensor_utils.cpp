@@ -2,29 +2,30 @@
 #include "Utils/tensor_utils.hpp"
 
 // Quake + helpers
-#include "Support/CodeGen/Quake.hpp"
 #include "Interfaces/QASMToQuake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+#include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCTypes.h"
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
 // Core MLIR
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"
 
-#include <queue>
 #include <common/RuntimeMLIR.h>
+#include <queue>
+#include <string_view>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
 /// namespace, so every mlir type has to be included seperately.
-using mlir::ModuleOp;
-using mlir::Value;
-using mlir::OpBuilder;
 using mlir::Location;
+using mlir::MLIRContext;
+using mlir::ModuleOp;
+using mlir::OpBuilder;
 using mlir::Operation;
 using mlir::SmallVector;
 using mlir::Type;
-using mlir::MLIRContext;
+using mlir::Value;
 using mlir::func::FuncOp;
 using mlir::func::ReturnOp;
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,8 +58,8 @@ Operation *findReturn(ModuleOp m) {
   return ret;
 }
 
-std::string gateIdFor(
-    const std::string &base, int numControls, bool isAdjoint) {
+std::string gateIdFor(const std::string &base, int numControls,
+                      bool isAdjoint) {
   // Measurements (no controls)
   if (base == "mx" || base == "my" || base == "mz")
     return base;
@@ -74,15 +75,12 @@ std::string gateIdFor(
     return numControls == 1 ? "ch" : "h";
 
   if (base == "s")
-    return numControls == 1
-             ? (isAdjoint ? "csdg" : "cs")
-             : isAdjoint
-             ? "sdg"
-             : "s";
+    return numControls == 1 ? (isAdjoint ? "csdg" : "cs")
+           : isAdjoint      ? "sdg"
+                            : "s";
   if (base == "t")
-    return numControls == 1
-             ? (isAdjoint ? "ctdg" : "ct")
-             : (isAdjoint ? "tdg" : "t");
+    return numControls == 1 ? (isAdjoint ? "ctdg" : "ct")
+                            : (isAdjoint ? "tdg" : "t");
 
   if (base == "rx")
     return numControls == 1 ? "crx" : "rx";
@@ -111,13 +109,26 @@ std::string gateIdFor(
 }
 
 // Turn angles[] (double) -> MLIR Value list (f64 constants).
-std::vector<Value>
-anglesToValues(OpBuilder &b, Location loc, llvm::ArrayRef<double> angles) {
+std::vector<Value> anglesToValues(OpBuilder &b, Location loc,
+                                  llvm::ArrayRef<double> angles) {
   std::vector<Value> vals;
   vals.reserve(angles.size());
   for (double a : angles)
     vals.push_back(mqss::support::quakeDialect::createFloatValue(b, loc, a));
   return vals;
+}
+
+// Return the number of angle parameters expected for a given base gate.
+static int expectedAngleCountForBase(std::string_view base) {
+  if (base == "rx" || base == "ry" || base == "rz" || base == "r1")
+    return 1;
+  if (base == "u2")
+    return 2;
+  if (base == "u3" || base == "u")
+    return 3;
+  if (base == "phased_rx" || base == "r")
+    return 2;
+  return 0;
 }
 
 // Read which gate is active in an instruction row/cell.
@@ -128,15 +139,13 @@ static int activeGateIndex(const double *base) {
   return -1;
 }
 
-} // namespace
+} // namespace ai_pass_selector
 
 // ------------------------ Instruction-based ------------------------
 ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
-    const InstructionBasedTensor<double> &tensor) {
-  auto ctxPtr = cudaq::initializeMLIR(); // keep the owner alive
-  auto &ctx = *ctxPtr; // safe reference
-  ModuleOp module = makeEmptyModuleWithKernel(
-      ctx, "__nvqpp__mlirgen__FromTensor");
+    MLIRContext &ctx, const InstructionBasedTensor<double> &tensor) {
+  ModuleOp module =
+      makeEmptyModuleWithKernel(ctx, "__nvqpp__mlirgen__FromTensor");
   OpBuilder builder(&ctx);
   Location loc = builder.getUnknownLoc();
 
@@ -188,24 +197,51 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
 
     // Params
     bool isAdjoint = (row[paramOffset] != 0.0);
+    int need = expectedAngleCountForBase(baseGate);
     std::vector<double> angles;
-    for (int i = 0; i < MAX_GATE_ANGLES; ++i)
-      if (row[paramOffset + 1 + i] != 0.0)
-        angles.push_back(row[paramOffset + 1 + i]);
+    angles.reserve(need);
+    for (int i = 0; i < need; ++i)
+      angles.push_back(row[paramOffset + 1 + i]);
 
     // Build refs
     std::vector<Value> controlRefs, targetRefs;
     controlRefs.reserve(controlsIdx.size());
     targetRefs.reserve(targetsIdx.size());
     for (int c : controlsIdx)
-      controlRefs.push_back(
-          builder.create<quake::ExtractRefOp>(loc, veq,
-                                              static_cast<std::size_t>(c)));
+      controlRefs.push_back(builder.create<quake::ExtractRefOp>(
+          loc, veq, static_cast<std::size_t>(c)));
     for (int t : targetsIdx)
-      targetRefs.push_back(
-          builder.create<quake::ExtractRefOp>(loc, veq,
-                                              static_cast<std::size_t>(t)));
+      targetRefs.push_back(builder.create<quake::ExtractRefOp>(
+          loc, veq, static_cast<std::size_t>(t)));
     std::vector<Value> paramVals = anglesToValues(builder, loc, angles);
+
+    // Measurements are handled directly since the QASM gate map lacks mx/my/mz
+    if ((baseGate == "mx" || baseGate == "my" || baseGate == "mz") &&
+        controlRefs.empty() && targetRefs.size() == 1) {
+      Value qref = targetRefs[0];
+      std::vector<Value> empty;
+      std::vector<Value> tRef{qref};
+      if (baseGate == "mx") {
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "h", builder, loc, empty, empty, tRef, false);
+        builder.create<quake::MzOp>(loc, qref);
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "h", builder, loc, empty, empty, tRef, false);
+      } else if (baseGate == "my") {
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "sdg", builder, loc, empty, empty, tRef, false);
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "h", builder, loc, empty, empty, tRef, false);
+        builder.create<quake::MzOp>(loc, qref);
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "h", builder, loc, empty, empty, tRef, false);
+        mqss::interfaces::insertQASMGateIntoQuakeModule(
+            "s", builder, loc, empty, empty, tRef, false);
+      } else {
+        builder.create<quake::MzOp>(loc, qref);
+      }
+      continue;
+    }
 
     // Choose concrete gate id
     std::string gateId =
@@ -219,26 +255,23 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
   return module;
 }
 
-
 // ------------------------ Depth-based ------------------------
 ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
-    const DepthBasedTensor<double> &tensor) {
+    MLIRContext &ctx, const DepthBasedTensor<double> &tensor) {
   const int maxDepth = tensor.shape[0];
   const int maxQubits = tensor.shape[1];
   const int features = tensor.shape[2];
 
-  const int expectedFeatures = NR_GATES + MAX_GATE_PARAMS + CONTROL_PARAMS +
-                               maxQubits;
+  const int expectedFeatures =
+      NR_GATES + MAX_GATE_PARAMS + CONTROL_PARAMS + maxQubits;
   if (features != expectedFeatures) {
     throw std::runtime_error("Depth tensor feature width mismatch: features=" +
-                             std::to_string(features) + " expected=" +
-                             std::to_string(expectedFeatures));
+                             std::to_string(features) +
+                             " expected=" + std::to_string(expectedFeatures));
   }
 
-  auto ctxPtr = cudaq::initializeMLIR();
-  auto &ctx = *ctxPtr;
-  ModuleOp module = makeEmptyModuleWithKernel(
-      ctx, "__nvqpp__mlirgen__FromTensor");
+  ModuleOp module =
+      makeEmptyModuleWithKernel(ctx, "__nvqpp__mlirgen__FromTensor");
   OpBuilder builder(&ctx);
   Location loc = builder.getUnknownLoc();
 
@@ -260,7 +293,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
 
   // Scratch to avoid re-extracting the same ref many times
   std::vector refCache(maxQubits, Value{});
-  auto getRef = [&](int q)-> Value {
+  auto getRef = [&](int q) -> Value {
     if (!refCache[q])
       refCache[q] = builder.create<quake::ExtractRefOp>(
           loc, veq, static_cast<std::size_t>(q));
@@ -282,8 +315,8 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
 
     bool anyAtThisDepth = false;
     for (int q = 0; q < maxQubits; ++q) {
-      const double *base = tensor.raw() + (depth * tensor.shape[1] + q) *
-                           features;
+      const double *base =
+          tensor.raw() + (depth * tensor.shape[1] + q) * features;
       int g = activeGateIndex(base + feature_gate_offset);
       if (g < 0) {
         continue;
@@ -295,10 +328,10 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       cells[q].isTarget = base[feature_control_info_offset + 1] != 0.0;
       cells[q].isAdjoint = base[feature_param_offset + 0] != 0.0;
 
-      for (int i = 0; i < MAX_GATE_ANGLES; ++i) {
-        if (double v = base[feature_param_offset + 1 + i]; v != 0.0)
-          cells[q].angles.push_back(v);
-      }
+      int need = expectedAngleCountForBase(SUPPORTED_GATES[g]);
+      cells[q].angles.reserve(need);
+      for (int i = 0; i < need; ++i)
+        cells[q].angles.push_back(base[feature_param_offset + 1 + i]);
       for (int t = 0; t < maxQubits; ++t) {
         if (base[feature_targets_offset + t] != 0.0)
           cells[q].linkedQubits.push_back(t);
@@ -308,7 +341,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       continue;
 
     // Group qubits by gate index
-    std::unordered_map<int, std::vector<int> > qubitsByGate;
+    std::unordered_map<int, std::vector<int>> qubitsByGate;
     for (int q = 0; q < maxQubits; ++q) {
       if (cells[q].gateIndex >= 0) {
         qubitsByGate[cells[q].gateIndex].push_back(q);
@@ -351,8 +384,8 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
           for (int v : members) {
             if (!visited[v] && cells[v].gateIndex == gate) {
               if (std::find(cells[v].linkedQubits.begin(),
-                            cells[v].linkedQubits.end(), u)
-                  != cells[v].linkedQubits.end()) {
+                            cells[v].linkedQubits.end(),
+                            u) != cells[v].linkedQubits.end()) {
                 visited[v] = 1;
                 q.push(v);
               }
@@ -383,8 +416,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
         // Special-case: two-target, no-control gates like SWAP
         if (baseGate == "swap" && controls.empty() && targets.size() == 2) {
           std::vector<Value> emptyParams, emptyCtrls;
-          std::vector tRefs = {getRef(targets[0]),
-                               getRef(targets[1])};
+          std::vector<Value> tRefs{getRef(targets[0]), getRef(targets[1])};
           mqss::interfaces::insertQASMGateIntoQuakeModule(
               "swap", builder, loc, emptyParams, emptyCtrls, tRefs, false);
           continue;
@@ -401,9 +433,8 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
         }
 
         // Controlled ops (support common 1c/1t, and some known 2c/1t X)
-        std::string gateId = gateIdFor(baseGate,
-                                       static_cast<int>(controls.size()),
-                                       isAdjoint);
+        std::string gateId =
+            gateIdFor(baseGate, static_cast<int>(controls.size()), isAdjoint);
         auto params = anglesToValues(builder, loc, angles);
 
         // If multiple targets exist (e.g., separate CXs at same depth),
@@ -415,19 +446,19 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
             std::vector<Value> ctrlsForThisTarget;
             for (int c : controls) {
               bool linked = std::find(cells[c].linkedQubits.begin(),
-                                      cells[c].linkedQubits.end(), t)
-                            != cells[c].linkedQubits.end();
+                                      cells[c].linkedQubits.end(),
+                                      t) != cells[c].linkedQubits.end();
               // also accept symmetric link from target back to control
               linked = linked || std::find(cells[t].linkedQubits.begin(),
-                                           cells[t].linkedQubits.end(), c)
-                       != cells[t].linkedQubits.end();
+                                           cells[t].linkedQubits.end(),
+                                           c) != cells[t].linkedQubits.end();
               if (linked)
                 ctrlsForThisTarget.push_back(getRef(c));
             }
             if (ctrlsForThisTarget.empty())
               continue;
 
-            std::vector tRef = {getRef(t)};
+            std::vector<Value> tRef{getRef(t)};
             mqss::interfaces::insertQASMGateIntoQuakeModule(
                 gateId, builder, loc, params, ctrlsForThisTarget, tRef,
                 isAdjoint);
@@ -436,15 +467,31 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
         }
 
         // Measurements: emit one op per target qubit
-        if ((baseGate == "mx" || baseGate == "my" || baseGate == "mz")
-            && controls.empty() && !targets.empty()) {
+        if ((baseGate == "mx" || baseGate == "my" || baseGate == "mz") &&
+            controls.empty() && !targets.empty()) {
           for (int t : targets) {
-            std::vector<Value> emptyParams, emptyCtrls;
-            std::vector tRef = {getRef(t)};
-            mqss::interfaces::insertQASMGateIntoQuakeModule(
-                baseGate, builder, loc,
-                emptyParams, emptyCtrls, tRef,
-                /*isAdjoint*/false);
+            Value qref = getRef(t);
+            std::vector<Value> empty;
+            std::vector<Value> tRef{qref};
+            if (baseGate == "mx") {
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "h", builder, loc, empty, empty, tRef, false);
+              builder.create<quake::MzOp>(loc, qref);
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "h", builder, loc, empty, empty, tRef, false);
+            } else if (baseGate == "my") {
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "sdg", builder, loc, empty, empty, tRef, false);
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "h", builder, loc, empty, empty, tRef, false);
+              builder.create<quake::MzOp>(loc, qref);
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "h", builder, loc, empty, empty, tRef, false);
+              mqss::interfaces::insertQASMGateIntoQuakeModule(
+                  "s", builder, loc, empty, empty, tRef, false);
+            } else {
+              builder.create<quake::MzOp>(loc, qref);
+            }
           }
           continue;
         }
