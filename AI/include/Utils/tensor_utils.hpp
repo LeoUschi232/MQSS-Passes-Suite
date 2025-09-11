@@ -5,20 +5,19 @@
 #include "Environment/quantum_circuit_tensor.hpp"
 
 // MLIR includes
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-
+#include "mlir/IR/BuiltinOps.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
 /// namespace, so every mlir type has to be included seperately.
-using mlir::ModuleOp;
-using mlir::func::FuncOp;
+using mlir::Location;
 using mlir::MLIRContext;
+using mlir::ModuleOp;
+using mlir::OpBuilder;
 using mlir::Operation;
 using mlir::Value;
-using mlir::OpBuilder;
-using mlir::Location;
+using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace ai_pass_selector {
@@ -46,8 +45,7 @@ Operation *findReturn(ModuleOp m);
  * @param isAdjoint
  * @return
  */
-std::string gateIdFor(
-    const std::string &base, int numControls, bool isAdjoint);
+std::string gateIdFor(const std::string &base, int numControls, bool isAdjoint);
 
 /**
  *
@@ -56,8 +54,8 @@ std::string gateIdFor(
  * @param angles
  * @return
  */
-std::vector<Value>
-anglesToValues(OpBuilder &b, Location loc, llvm::ArrayRef<double> angles);
+std::vector<Value> anglesToValues(OpBuilder &b, Location loc,
+                                  llvm::ArrayRef<double> angles);
 
 /**
  *
@@ -66,14 +64,13 @@ anglesToValues(OpBuilder &b, Location loc, llvm::ArrayRef<double> angles);
  */
 static int activeGateIndex(const double *base);
 
-
 /**
  *
  * @param tensor
  * @return
  */
 ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(
-    const InstructionBasedTensor<double> &tensor);
+    MLIRContext &ctx, const InstructionBasedTensor<double> &tensor);
 
 /**
  *
@@ -81,7 +78,7 @@ ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(
  * @return
  */
 ModuleOp recreateQuantumCircuitFromDepthBasedTensor(
-    const DepthBasedTensor<double> &tensor);
+    MLIRContext &ctx, const DepthBasedTensor<double> &tensor);
 
 } // namespace ai_pass_selector
 
