@@ -6,7 +6,6 @@
 
 // Passes includes
 #include "Passes/Cancellations.hpp"
-#include "Passes/CodeGen.hpp"
 #include "Passes/Decompositions.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/mlir_utils.hpp"
@@ -337,7 +336,7 @@ void convertAllPasstestCircuitsToTikz() {
     int status;
     waitpid(child_pid, &status, 0);
     if (WIFSIGNALED(status)) {
-      std::cerr << "Pass: " << passname << " crashed with signal "
+      std::cerr << "\nPass: " << passname << " crashed with signal "
           << strsignal(WTERMSIG(status)) << std::endl;
       break;
     }
@@ -433,12 +432,65 @@ int convertPasstestCircuitToTikz(std::string passname,
 // ------------------------------------------------------------
 // Tensortest → TikZ PNGs (refactored, same behavior)
 // ------------------------------------------------------------
-void convertAllTensortestCircuitsToTikz() {
-  throw std::runtime_error(
-      "convertAllTensortestCircuitsToTikz not implemented yet");
+void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
+  std::cout << "Converting " << nrTensortestCircuits
+      << " quake tensortest circuits to tikz." << std::endl;
+  if (nrTensortestCircuits == 0) {
+    std::cout << "No circuits found for conversion to TikZ." << std::endl;
+    return;
+  }
+  try {
+    fs::create_directories("./logs");
+    std::string cmd =
+        "echo \"tensortest_to_tikz_before.log:\n\" > ./logs/tensortest_to_tikz_before.log";
+    std::system(cmd.c_str());
+    cmd =
+        "echo \"tensortest_to_tikz_after1.log:\n\" > ./logs/tensortest_to_tikz_after1.log";
+    std::system(cmd.c_str());
+    cmd =
+        "echo \"tensortest_to_tikz_after2.log:\n\" > ./logs/tensortest_to_tikz_after2.log";
+    std::system(cmd.c_str());
+  } catch (const fs::filesystem_error &e) {
+    std::cerr << "\nError creating directory: " << e.what() << std::endl;
+    return;
+  }
+
+  for (int current = 1; current <= nrTensortestCircuits; current++) {
+    updateProgress(current, nrTensortestCircuits,
+                   "tensortest" + std::to_string(current));
+    const pid_t child_pid = fork();
+    if (child_pid == 0) {
+      exit(convertTensortestCircuitToTikz(current));
+    }
+    int status;
+    waitpid(child_pid, &status, 0);
+    if (WIFSIGNALED(status)) {
+      std::cerr << "\nCircuit: tensortest" << current
+          << " crashed with signal " << strsignal(WTERMSIG(status))
+          << std::endl;
+      break;
+    }
+    updateProgress(current + 1, nrTensortestCircuits, "");
+  }
+
+  const fs::path latex_dir = fs::path(AI_DATASET_DIR) / "Latex";
+  const fs::path tex_file = latex_dir / "tensortest_quantum_circuits.tex";
+  const std::string compile_pdf =
+      "pdflatex --shell-escape -output-directory=" + latex_dir.string() + " " +
+      tex_file.string() + " > /dev/null 2>&1";
+  std::cout << "Compiling LaTeX file to PDF." << std::endl;
+  if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
+    std::cerr << "\nPDF generation failed for tensortest_quantum_circuits.tex "
+        << "(return code: " << ret << ")" << std::endl;
+    return;
+  }
+  std::cout << "PDF generated successfully at "
+      << (latex_dir / "tensortest_quantum_circuits.pdf").string()
+      << std::endl;
 }
 
-int convertTensortestCircuitToTikz(std::string circuit_name) {
+int convertTensortestCircuitToTikz(int index) {
+  std::string circuit_name = "tensortest" + std::to_string(index);
   const fs::path quake_source_input_file =
       fs::path(AI_DATASET_DIR) / "Quake/Tensortest" / (
         circuit_name + "_input.qke");

@@ -99,15 +99,16 @@ constexpr int TENSORTEST_MAX_DEPTH = 10;
 
 /**
  *
+ * @param nrTensortestCircuits
  */
-void convertAllTensortestCircuitsToTikz();
+void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits = 100);
 
 /**
  *
- * @param circuit_name
+ * @param index
  * @return
  */
-int convertTensortestCircuitToTikz(std::string circuit_name);
+int convertTensortestCircuitToTikz(int index);
 } // namespace ai_pass_selector
 
 #endif // CONVERSION_WORKFLOW_HPP

@@ -3,10 +3,11 @@
 cmake-build-mqss-dev
 cmake-build-debug
 
-# Passtest pdf compilation files.
+# Test pdf compilation files.
 *.log
 *.aux
 *.tikz
+*.png
 
 # Garbage suggested by Github Copilot.
 *.bbl
