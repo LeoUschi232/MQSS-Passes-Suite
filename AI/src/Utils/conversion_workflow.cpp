@@ -31,8 +31,6 @@ using namespace mqss::opt;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
-
-
 // -----------------------------
 // Small, file-local utilities.
 // -----------------------------
@@ -67,10 +65,9 @@ bool copy_file_and_report(const fs::path &source, const fs::path &destination) {
   return true;
 }
 
-int convert_quake_to_tikz(const fs::path &quake_to_tikz_tool_path,
-                          const fs::path &quake_input_path,
-                          const fs::path &tikz_output_path,
-                          const std::string &append_to_log_file) {
+int convert_quake_to_tikz(
+    const fs::path &quake_to_tikz_tool_path, const fs::path &quake_input_path,
+    const fs::path &tikz_output_path, const std::string &append_to_log_file) {
   const std::string command_line =
       quake_to_tikz_tool_path.string() +
       " --input " + quake_input_path.string() +
@@ -347,8 +344,8 @@ void convertAllPasstestCircuitsToTikz() {
   const fs::path latex_dir = fs::path(AI_DATASET_DIR) / "Latex";
   const fs::path tex_file = latex_dir / "passtest_quantum_circuits.tex";
   const std::string compile_pdf =
-      "pdflatex --shell-escape -output-directory=" + latex_dir.string() + " " +
-      tex_file.string() + " > /dev/null 2>&1";
+      "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape -output-directory="
+      + latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
   std::cout << "Compiling LaTeX file to PDF." << std::endl;
   if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
     std::cerr << "\nPDF generation failed for passtest_quantum_circuits.tex "
@@ -456,7 +453,7 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
   }
 
   for (int current = 1; current <= nrTensortestCircuits; current++) {
-    updateProgress(current, nrTensortestCircuits,
+    updateProgress(current - 1, nrTensortestCircuits,
                    "tensortest" + std::to_string(current));
     const pid_t child_pid = fork();
     if (child_pid == 0) {
@@ -470,14 +467,14 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
           << std::endl;
       break;
     }
-    updateProgress(current + 1, nrTensortestCircuits, "");
+    updateProgress(current, nrTensortestCircuits, "");
   }
 
   const fs::path latex_dir = fs::path(AI_DATASET_DIR) / "Latex";
   const fs::path tex_file = latex_dir / "tensortest_quantum_circuits.tex";
   const std::string compile_pdf =
-      "pdflatex --shell-escape -output-directory=" + latex_dir.string() + " " +
-      tex_file.string() + " > /dev/null 2>&1";
+      "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape -output-directory="
+      + latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
   std::cout << "Compiling LaTeX file to PDF." << std::endl;
   if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
     std::cerr << "\nPDF generation failed for tensortest_quantum_circuits.tex "
@@ -529,34 +526,42 @@ int convertTensortestCircuitToTikz(int index) {
   // Build instruction/depth observations and reconstruct two modules
   std::string quake_module_text = readFileToString(
       quake_source_input_file.string());
-  auto [input_module, _] = extractMLIRContext(quake_module_text);
+  auto [input_module, ctx_ptr] = extractMLIRContext(quake_module_text);
 
   QuantumCircuitEnviorment quantum_circuit_enviorment(
       TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS,
       TENSORTEST_MAX_DEPTH, input_module);
+  std::cout << "\nBlock 1" << std::endl;
 
   InstructionBasedTensor<double> instruction_based_observation
       = quantum_circuit_enviorment.get_instruction_based_observation();
+  std::cout << "\nBlock 2" << std::endl;
 
   DepthBasedTensor<double> depth_based_observation
       = quantum_circuit_enviorment.get_depth_based_observation();
+  std::cout << "\nBlock 3" << std::endl;
 
   ModuleOp reconstructed_from_instruction_tensor =
       recreateQuantumCircuitFromInstructionBasedTensor(
           instruction_based_observation);
+  std::cout << "\nBlock 4" << std::endl;
 
   ModuleOp reconstructed_from_depth_tensor =
       recreateQuantumCircuitFromDepthBasedTensor(depth_based_observation);
+  std::cout << "\nBlock 5" << std::endl;
 
   if (int rc = write_module_to_file(
       reconstructed_from_instruction_tensor,
       latex_quake_output_file1); rc != 0) {
     return -1;
   }
+  std::cout << "\nBlock 6" << std::endl;
+
   if (int rc = write_module_to_file(
       reconstructed_from_depth_tensor, latex_quake_output_file2); rc != 0) {
     return -1;
   }
+  std::cout << "\nBlock 7" << std::endl;
 
   // Reconstructed quake → tikz (two variants)
   if (int rc = convert_quake_to_tikz(

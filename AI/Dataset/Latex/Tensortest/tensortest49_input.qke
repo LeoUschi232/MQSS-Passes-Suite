@@ -1,0 +1,33 @@
+module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__tensortest49input = "_function"}} {
+  func.func @__nvqpp__mlirgen__tensortest49input() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant -1.5079802719666666 : f64
+    %cst_0 = arith.constant -1.0973341914278572 : f64
+    %cst_1 = arith.constant 2.2647582676432618 : f64
+    %cst_2 = arith.constant -0.77363755864167416 : f64
+    %cst_3 = arith.constant 3.0358963002923725 : f64
+    %cst_4 = arith.constant 1.5707963267948966 : f64
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    %2 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    quake.s %1 : (!quake.ref) -> ()
+    quake.rx (%cst_4) %2 : (f64, !quake.ref) -> ()
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    quake.x %1 : (!quake.ref) -> ()
+    %3 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %4 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    quake.ry (%cst_3) [%3] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.phased_rx (%cst_2, %cst_1) %3 : (f64, f64, !quake.ref) -> ()
+    quake.phased_rx (%cst_0, %cst) %3 : (f64, f64, !quake.ref) -> ()
+    quake.h %2 : (!quake.ref) -> ()
+    %5 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+    %measOut = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_8 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    return
+  }
+  func.func @_function(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}

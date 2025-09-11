@@ -62,4 +62,32 @@ std::string readFileToString(const std::string &filename) {
 std::string getQuake(const std::string &filename) {
   return readFileToString(filename);
 }
+
+
+std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits) {
+  if (!isMeasurementGate(op)) {
+    return {};
+  }
+  std::vector<int> targets = {};
+  if (op->getOpOperands().size() != 1) {
+    throw std::runtime_error("Measurement gate op is ambiguous.");
+  }
+  if (auto operand = op->getOpOperands().front().get();
+    operand.getType().isa<quake::RefType>()) {
+    targets.push_back(
+        extractIndexFromQuakeExtractRefOp(operand.getDefiningOp()));
+  } else if (operand.getType().isa<quake::VeqType>()) {
+    // Because this function only works for a single allocation, the
+    // reference to a Veq will reference all allocated qubits in the
+    // range [0, nr_qubits-1].
+    for (int qubitIndex = 0; qubitIndex < nr_qubits; qubitIndex++) {
+      targets.push_back(qubitIndex);
+    }
+  } else {
+    throw std::runtime_error("Measurement gate op has unsupported operand.");
+  }
+  return targets;
+}
+
+
 } // namespace mqss::support::quakeDialect

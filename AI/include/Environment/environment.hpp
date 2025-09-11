@@ -44,6 +44,7 @@ constexpr int TOO_MANY_INSTRUCTIONS = 3;
 constexpr int TOO_LARGE_DEPTH = 4;
 constexpr int NO_QUBIT_ALLOCATIONS = 5;
 constexpr int MULTIPLE_QUBIT_ALLOCATIONS = 6;
+constexpr int AMBIGUOUS_MEASUREMENT = 7;
 
 inline std::vector<double> params_to_angles(std::vector<double> params) {
   for (int i = 0; i < params.size(); i++) {
@@ -55,7 +56,6 @@ inline std::vector<double> params_to_angles(std::vector<double> params) {
   }
   return params;
 }
-
 
 class QuantumCircuitEnviorment {
   int max_qubits;
@@ -131,6 +131,14 @@ public:
    */
   DepthBasedTensor<double> get_depth_based_observation();
 
+
+  /**
+   *
+   * @param op
+   * @return
+   */
+  static std::tuple<std::vector<int>, std::vector<int>, std::vector<double> >
+  getOperatingControlsTargetsParams(Operation *op);
 
 };
 

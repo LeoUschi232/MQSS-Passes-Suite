@@ -49,5 +49,16 @@ std::string readFileToString(const std::string &filename);
  * @return The string contents of the quake file.
  */
 std::string getQuake(const std::string &filename);
+
+/**
+ *
+ * @param op
+ * @param nr_qubits
+ * @return
+ */
+std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits);
+
+std::tuple<std::vector<int>, std::vector<int>, std::vector<double> >
+getNoneMeasurementControlsTargetsParams(Operation *op, int nr_qubits);
 } // namespace mqss::support::quakeDialect
 #endif // MLIR_UTILS_HPP

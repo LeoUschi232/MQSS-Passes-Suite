@@ -65,7 +65,7 @@ std::string gateIdFor(
 
   // One-qubit Clifford/rotations
   if (base == "x")
-    return numControls == 2 ? "ccx" : (numControls == 1 ? "cx" : "x");
+    return numControls == 2 ? "ccx" : numControls == 1 ? "cx" : "x";
   if (base == "y")
     return numControls == 1 ? "cy" : "y";
   if (base == "z")
@@ -76,7 +76,9 @@ std::string gateIdFor(
   if (base == "s")
     return numControls == 1
              ? (isAdjoint ? "csdg" : "cs")
-             : (isAdjoint ? "sdg" : "s");
+             : isAdjoint
+             ? "sdg"
+             : "s";
   if (base == "t")
     return numControls == 1
              ? (isAdjoint ? "ctdg" : "ct")
@@ -131,7 +133,8 @@ static int activeGateIndex(const double *base) {
 // ------------------------ Instruction-based ------------------------
 ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
     const InstructionBasedTensor<double> &tensor) {
-  auto &ctx = *cudaq::initializeMLIR();
+  auto ctxPtr = cudaq::initializeMLIR(); // keep the owner alive
+  auto &ctx = *ctxPtr; // safe reference
   ModuleOp module = makeEmptyModuleWithKernel(
       ctx, "__nvqpp__mlirgen__FromTensor");
   OpBuilder builder(&ctx);
@@ -220,7 +223,8 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
 // ------------------------ Depth-based ------------------------
 ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
     const DepthBasedTensor<double> &tensor) {
-  auto &ctx = *cudaq::initializeMLIR();
+  auto ctxPtr = cudaq::initializeMLIR();
+  auto &ctx = *ctxPtr;
   ModuleOp module = makeEmptyModuleWithKernel(
       ctx, "__nvqpp__mlirgen__FromTensor");
   OpBuilder builder(&ctx);
