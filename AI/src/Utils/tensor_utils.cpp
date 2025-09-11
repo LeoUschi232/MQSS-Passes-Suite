@@ -223,6 +223,18 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
 // ------------------------ Depth-based ------------------------
 ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
     const DepthBasedTensor<double> &tensor) {
+  const int maxDepth = tensor.shape[0];
+  const int maxQubits = tensor.shape[1];
+  const int features = tensor.shape[2];
+
+  const int expectedFeatures = NR_GATES + MAX_GATE_PARAMS + CONTROL_PARAMS +
+                               maxQubits;
+  if (features != expectedFeatures) {
+    throw std::runtime_error("Depth tensor feature width mismatch: features=" +
+                             std::to_string(features) + " expected=" +
+                             std::to_string(expectedFeatures));
+  }
+
   auto ctxPtr = cudaq::initializeMLIR();
   auto &ctx = *ctxPtr;
   ModuleOp module = makeEmptyModuleWithKernel(
@@ -234,10 +246,6 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
   if (!ret)
     throw std::runtime_error("No return in synthesized kernel.");
   builder.setInsertionPoint(ret);
-
-  const int maxDepth = tensor.shape[0];
-  const int maxQubits = tensor.shape[1];
-  const int features = tensor.shape[2];
 
   constexpr int feature_gate_offset = 0;
   constexpr int feature_param_offset = feature_gate_offset + NR_GATES;
@@ -277,8 +285,9 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       const double *base = tensor.raw() + (depth * tensor.shape[1] + q) *
                            features;
       int g = activeGateIndex(base + feature_gate_offset);
-      if (g < 0)
+      if (g < 0) {
         continue;
+      }
 
       anyAtThisDepth = true;
       cells[q].gateIndex = g;
@@ -300,9 +309,11 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
 
     // Group qubits by gate index
     std::unordered_map<int, std::vector<int> > qubitsByGate;
-    for (int q = 0; q < maxQubits; ++q)
-      if (cells[q].gateIndex >= 0)
+    for (int q = 0; q < maxQubits; ++q) {
+      if (cells[q].gateIndex >= 0) {
         qubitsByGate[cells[q].gateIndex].push_back(q);
+      }
+    }
 
     // For each gate kind, build instances
     for (auto &[gate, members] : qubitsByGate) {
@@ -313,8 +324,9 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       std::vector<char> visited(maxQubits, 0);
 
       for (int seed : members) {
-        if (visited[seed])
+        if (visited[seed]) {
           continue;
+        }
 
         // BFS over this gate’s subgraph
         std::vector<int> component;
@@ -327,8 +339,9 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
           component.push_back(u);
           // traverse symmetric links
           for (int v : cells[u].linkedQubits) {
-            if (cells[v].gateIndex != gate)
+            if (cells[v].gateIndex != gate) {
               continue; // only within same gate kind
+            }
             if (!visited[v]) {
               visited[v] = 1;
               q.push(v);
@@ -422,15 +435,17 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
           continue;
         }
 
-        // Measurements (mx/my/mz) on multiple qubits in same layer
+        // Measurements: emit one op per target qubit
         if ((baseGate == "mx" || baseGate == "my" || baseGate == "mz")
             && controls.empty() && !targets.empty()) {
-          std::string gate_id = baseGate;
-          std::vector<Value> emptyParams, emptyCtrls, tRefs;
-          for (int t : targets)
-            tRefs.push_back(getRef(t));
-          mqss::interfaces::insertQASMGateIntoQuakeModule(
-              gate_id, builder, loc, emptyParams, emptyCtrls, tRefs, false);
+          for (int t : targets) {
+            std::vector<Value> emptyParams, emptyCtrls;
+            std::vector tRef = {getRef(t)};
+            mqss::interfaces::insertQASMGateIntoQuakeModule(
+                baseGate, builder, loc,
+                emptyParams, emptyCtrls, tRef,
+                /*isAdjoint*/false);
+          }
           continue;
         }
 
