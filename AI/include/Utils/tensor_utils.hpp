@@ -66,6 +66,7 @@ static int activeGateIndex(const double *base);
 
 /**
  *
+ * @param ctx
  * @param tensor
  * @return
  */
@@ -74,6 +75,7 @@ ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(
 
 /**
  *
+ * @param ctx
  * @param tensor
  * @return
  */

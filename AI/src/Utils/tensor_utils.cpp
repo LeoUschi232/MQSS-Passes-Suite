@@ -75,12 +75,15 @@ std::string gateIdFor(const std::string &base, int numControls,
     return numControls == 1 ? "ch" : "h";
 
   if (base == "s")
-    return numControls == 1 ? (isAdjoint ? "csdg" : "cs")
-           : isAdjoint      ? "sdg"
-                            : "s";
+    return numControls == 1
+             ? (isAdjoint ? "csdg" : "cs")
+             : isAdjoint
+             ? "sdg"
+             : "s";
   if (base == "t")
-    return numControls == 1 ? (isAdjoint ? "ctdg" : "ct")
-                            : (isAdjoint ? "tdg" : "t");
+    return numControls == 1
+             ? (isAdjoint ? "ctdg" : "ct")
+             : (isAdjoint ? "tdg" : "t");
 
   if (base == "rx")
     return numControls == 1 ? "crx" : "rx";
@@ -220,7 +223,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
         controlRefs.empty() && targetRefs.size() == 1) {
       Value qref = targetRefs[0];
       std::vector<Value> empty;
-      std::vector<Value> tRef{qref};
+      std::vector tRef{qref};
       if (baseGate == "mx") {
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "h", builder, loc, empty, empty, tRef, false);
@@ -341,7 +344,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       continue;
 
     // Group qubits by gate index
-    std::unordered_map<int, std::vector<int>> qubitsByGate;
+    std::unordered_map<int, std::vector<int> > qubitsByGate;
     for (int q = 0; q < maxQubits; ++q) {
       if (cells[q].gateIndex >= 0) {
         qubitsByGate[cells[q].gateIndex].push_back(q);
