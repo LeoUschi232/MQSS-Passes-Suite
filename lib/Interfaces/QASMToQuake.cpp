@@ -58,24 +58,27 @@ using namespace mqss::support::quakeDialect;
 
 // Function to determine if a gate is a multi-qubit gate with implicit controls
 bool mqss::interfaces::isMultiQubitGate(const std::string &gate) {
-  return gate == "cx" || gate == "cy" || gate == "crx" || gate == "cry" ||
-         gate == "crz" || gate == "cp" || gate == "cphase" || gate == "cz" ||
-         gate == "cu1" || gate == "cu3" || gate == "ch" || gate == "cs" ||
-         gate == "csdg" || gate == "cswap" || gate == "ccx";
+  std::string gatename = gate;
+  std::ranges::transform(
+      gatename, gatename.begin(),
+      [](unsigned char c) { return std::tolower(c); });
+  return gatename[0] == 'c';
 }
 
 // Function to get the number of controls for a gate
 size_t mqss::interfaces::getNumControls(const std::string &gate) {
-  if (gate == "cx" || gate == "cy" || gate == "crx" || gate == "cry" ||
-      gate == "crz" || gate == "cp" || gate == "cphase" || gate == "cz" ||
-      gate == "cu1" || gate == "cu3" || gate == "ch" || gate == "cs" ||
-      gate == "csdg" || gate == "cswap") {
-    return 1;
+  std::string gatename = gate;
+  std::ranges::transform(
+      gatename, gatename.begin(),
+      [](unsigned char c) { return std::tolower(c); });
+  size_t n = 0;
+  while (n < gatename.size()) {
+    if (gate[n] != 'c') {
+      break;
+    }
+    n++;
   }
-  if (gate == "ccx") {
-    return 2;
-  }
-  return 0;
+  return n;
 }
 
 // This function returns the set of quantum registers declared in a given QASM
@@ -109,9 +112,10 @@ mqss::interfaces::insertAllocatedQubits(
         // std::cout << "Type expression to string " << typeExpr->toString() <<
         // "\n"; std::cout << "Successfully cast to
         // Type<std::shared_ptr<Expression>>!" << std::endl;
-        std::regex pattern("qubit"); // Case-sensitive regex
-        if (!std::regex_search(typeExpr->toString(), pattern))
+        if (std::regex pattern("qubit");
+          !std::regex_search(typeExpr->toString(), pattern)) {
           continue; // error code
+        }
         if (auto designator = typeExpr->getDesignator()) {
           if (auto constant =
               std::dynamic_pointer_cast<qasm3::Constant>(designator)) {
@@ -134,14 +138,14 @@ mqss::interfaces::insertAllocatedQubits(
   // return totalQubits;
   builder.setInsertionPoint(inOp); // Set insertion before return
   // create the different mlir vectors in the QASM program
-  for (const auto &pair : orderVectors) {
+  for (const auto &[order, totalQubits] : orderVectors) {
 #ifdef DEBUG
-    std::cout << "order " << pair.first << "\n";
+    std::cout << "order " << order << "\n";
 #endif
     // Define the type for a vector of totalQubits qubits
-    auto qubitVecType = quake::VeqType::get(builder.getContext(), pair.second);
+    auto qubitVecType = quake::VeqType::get(builder.getContext(), totalQubits);
     auto qubitReg = builder.create<quake::AllocaOp>(loc, qubitVecType);
-    mlirQubitVectors.emplace(pair.first, qubitReg);
+    mlirQubitVectors.emplace(order, qubitReg);
   }
   return std::make_tuple(mlirQubitVectors, orderVectors);
 }
@@ -301,7 +305,8 @@ void mqss::interfaces::insertGate(
 #endif
     }
   }
-  if (std::regex pattern("dg"); std::regex_search(std::string(gateCall->identifier), pattern)) {
+  if (std::regex pattern("dg"); std::regex_search(
+      std::string(gateCall->identifier), pattern)) {
     isAdj = true;
   }
   std::string gateId = gateCall->identifier;

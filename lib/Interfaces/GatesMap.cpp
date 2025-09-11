@@ -38,13 +38,9 @@ using namespace mqss::support::quakeDialect;
 /*
 Suggested Missing Gates (Only Suggest, Do Not Implement)
 Based on common QASM/OpenQASM3 gates and Quake dialect:
-    xxminusyy, xxplusyy: For variational circuits (e.g., QAOA).
-    rzx: Already discussed, but full impl.
-    c3x, c4x: Higher controlled-X for multi-control Toffoli variants.
     ms: Mølmer–Sørensen gate for ion traps.
     fswap: Fermionic SWAP.
     givens: Givens rotation for chemistry sims.
-    r1: Arbitrary phase on |1> (as in Quake).
     barrier: For compilation hints (no-op).
  */
 
@@ -274,8 +270,8 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
    {"cr",
     [&] {
       assert(
-          params.size() == 2 && controls.size() == 1 && !adj && targets.size()
-          == 1 && "ill-formed cr gate");
+          params.size() == 2 && controls.size() == 1 && !adj
+          && targets.size() == 1 && "ill-formed cr gate");
       builder.create<quake::PhasedRxOp>(loc, false, params, controls, targets);
     }},
    {"cp",
@@ -445,13 +441,13 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
       auto q1 = targets[0];
       auto q2 = targets[1];
       auto theta = params[0];
-      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{},
-                                 targets);
+      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{}, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
       builder.create<quake::RzOp>(loc, false, theta, ValueRange{}, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
-      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{},
-                                 targets);
+      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::HOp>(loc, false, ValueRange{}, ValueRange{}, q1);
     }},
    {"ryy",
     // Ryy(θ) q1, q2:
@@ -471,11 +467,18 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
       auto param2 = params[0];
       auto param3 = minusHalfPi;
 
-      builder.create<quake::RxOp>(loc, false, param1, ValueRange{}, targets);
+      // Optimally, one would want to pass the targets to the Rx gate in one go
+      // like this:
+      // builder.create<quake::RxOp>(loc, false, param1, ValueRange{}, targets);
+      // But if you do that, it throws the error:
+      // 'quake.rx' op failed to verify that the number of targets is equal to 1
+      builder.create<quake::RxOp>(loc, false, param1, ValueRange{}, q1);
+      builder.create<quake::RxOp>(loc, false, param1, ValueRange{}, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
       builder.create<quake::RzOp>(loc, false, param2, ValueRange{}, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
-      builder.create<quake::RxOp>(loc, false, param3, ValueRange{}, targets);
+      builder.create<quake::RxOp>(loc, false, param3, ValueRange{}, q2);
+      builder.create<quake::RxOp>(loc, false, param3, ValueRange{}, q1);
     }},
    {"rzz",
     // Rzz(θ) q1, q2:
@@ -493,7 +496,7 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
     }},
    {"rzx",
-    // Rzz(θ) q1, q2:
+    // Rzx(θ) q1, q2:
     //  H q1
     //  Cx q1, q2
     //  Rx(θ) q2
@@ -539,6 +542,101 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
       builder.create<quake::RxOp>(loc, false, param1, ValueRange{}, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
       builder.create<quake::XOp>(loc, false, ValueRange{}, ValueRange{}, q1);
+    }},
+   {"xx_plus_yy",
+    // gate xx_plus_yy(param0,param1) q1,q2 {
+    //   rz(param1) q1;
+    //   sdg q2;
+    //   sx q2;
+    //   s q2;
+    //   s q1;
+    //   cx q2,q1;
+    //   ry((-0.5)*param0) q2;
+    //   ry((-0.5)*param0) q1;
+    //   cx q2,q1;
+    //   sdg q1;
+    //   sdg q2;
+    //   sxdg q2;
+    //   s q2;
+    //   rz(-param1) q1;
+    // }
+    [&] {
+      assert(params.size() == 2 && controls.empty() && targets.size() == 2 &&
+          !adj && "ill-formed xx_plus_yy gate");
+      auto q1 = targets[0];
+      auto q2 = targets[1];
+      auto param1 = params[1];
+      auto param2 = plusHalfPi;
+      auto param3 = createFloatValue(
+          builder, loc,
+          -0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+      auto param4 = minusHalfPi;
+      auto param5 = createFloatValue(
+          builder, loc,
+          -extractDoubleArgumentValue(params[1].getDefiningOp()));
+      builder.create<quake::RzOp>(loc, false, param1, ValueRange{}, q1);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::RxOp>(loc, false, param2, ValueRange{}, q2);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::XOp>(loc, false, ValueRange{}, q2, q1);
+      builder.create<quake::RyOp>(loc, false, param3, ValueRange{}, q2);
+      builder.create<quake::RyOp>(loc, false, param3, ValueRange{}, q1);
+      builder.create<quake::XOp>(loc, false, ValueRange{}, q2, q1);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::RxOp>(loc, false, param4, ValueRange{}, q2);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::RzOp>(loc, false, param5, ValueRange{}, q1);
+    }},
+   {"xx_minus_yy",
+    // gate xx_minus_yy(param0,param1) q1,q2 {
+    //   rz(-param1) q2;
+    //   sdg q1;
+    //   sx q1;
+    //   s q1;
+    //   s q2;
+    //   cx q1,q2;
+    //   ry(0.5*param0) q1;
+    //   ry((-0.5)*param0) q2;
+    //   cx q1,q2;
+    //   sdg q2;
+    //   sdg q1;
+    //   sxdg q1;
+    //   s q1;
+    //   rz(param1) q2;
+    // }
+    [&] {
+      assert(params.size() == 2 && controls.empty() && targets.size() == 2 &&
+          !adj && "ill-formed xx_minus_yy gate");
+      auto q1 = targets[0];
+      auto q2 = targets[1];
+      auto param1 = createFloatValue(
+          builder, loc,
+          -extractDoubleArgumentValue(params[1].getDefiningOp()));
+      auto param2 = plusHalfPi;
+      auto param3 = createFloatValue(
+          builder, loc,
+          0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+      auto param4 = createFloatValue(
+          builder, loc,
+          -0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+      auto param5 = minusHalfPi;
+      auto param6 = params[1];
+      builder.create<quake::RzOp>(loc, false, param1, ValueRange{}, q2);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::RxOp>(loc, false, param2, ValueRange{}, q1);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
+      builder.create<quake::RyOp>(loc, false, param3, ValueRange{}, q1);
+      builder.create<quake::RyOp>(loc, false, param4, ValueRange{}, q2);
+      builder.create<quake::XOp>(loc, false, ValueRange{}, q1, q2);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q2);
+      builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::RxOp>(loc, false, param5, ValueRange{}, q1);
+      builder.create<quake::SOp>(loc, false, ValueRange{}, ValueRange{}, q1);
+      builder.create<quake::RzOp>(loc, false, param6, ValueRange{}, q2);
     }}};
   if (auto it = gateMap.find(gateId); it != gateMap.end()) {
     it->second();

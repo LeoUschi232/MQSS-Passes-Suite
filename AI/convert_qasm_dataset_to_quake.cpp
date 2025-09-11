@@ -1,7 +1,14 @@
 // Include the header relative to the include directory.
 #include "Utils/conversion_workflow.hpp"
+#include <filesystem>
 
-int main() {
-  ai_pass_selector::convertAllQasmDatasetsToQuake();
+namespace fs = std::filesystem;
+
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    ai_pass_selector::convertAllQasmDatasetsToQuake();
+  } else {
+    ai_pass_selector::convertQasmDatasetToQuake(std::string(argv[1]));
+  }
   return 0;
 }

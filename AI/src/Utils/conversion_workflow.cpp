@@ -38,9 +38,16 @@ namespace ai_pass_selector {
 // Small, file-local utilities.
 // -----------------------------
 
-int run_shell_command(const std::string &command,
-                      const std::string &task) {
-  if (const int return_code = std::system(command.c_str()); return_code != 0) {
+int run_shell_command(const std::string &command, const std::string &task) {
+  int return_code = 0;
+  try {
+    return_code = std::system(command.c_str());
+  } catch (const std::exception &e) {
+    std::cerr << "\nException running " << task << ": " << e.what() <<
+        std::endl;
+    return -1;
+  }
+  if (return_code != 0) {
     std::cerr << "\n" << task
         << " failed (return code: " << return_code << ")\n";
     return return_code;
@@ -94,7 +101,6 @@ int write_module_to_file(ModuleOp module,
 
 int build_png_from_tikz_file(const fs::path &tikz_file_path) {
   // Minimal wrapper document (standalone) that \input{sometikz.tikz}
-
   // Write temp.tex next to CWD (consistent with existing workflow).
   {
     const std::string latex_wrapper =
@@ -200,11 +206,17 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
       std::string circuit_name = input.stem().string();
       fs::path output = quake_dir / (circuit_name + ".qke");
       updateProgress(current, total, circuit_name);
-
       std::string cmd = tool_path.string() + " --input " + input.string() +
                         " --output " + output.string() +
                         " >> ./logs/qasm_to_quake.log";
-      if (const int ret = std::system(cmd.c_str()); ret != 0) {
+      int ret = 0;
+      try {
+        ret = std::system(cmd.c_str());
+      } catch (const std::exception &e) {
+        std::cerr << "\nException on " << input << ": " << e.what()
+            << std::endl;
+      }
+      if (ret != 0) {
         std::cerr << "\nConversion failed for " << input
             << " (return code: " << ret << ")" << std::endl;
         return -1;
