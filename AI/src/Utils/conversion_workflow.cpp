@@ -346,7 +346,7 @@ void convertAllPasstestCircuitsToTikz() {
       "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape "
       "-output-directory=" +
       latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
-  std::cout << "Compiling LaTeX file to PDF." << std::endl;
+  std::cout << "\nCompiling LaTeX file to PDF." << std::endl;
   if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
     std::cerr << "\nPDF generation failed for passtest_quantum_circuits.tex "
         << "(return code: " << ret << ")" << std::endl;
@@ -452,9 +452,16 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
   for (int current = 1; current <= nrTensortestCircuits; current++) {
     updateProgress(current - 1, nrTensortestCircuits,
                    "tensortest" + std::to_string(current));
-    if (int rc = convertTensortestCircuitToTikz(current); rc != 0) {
+    const pid_t child_pid = fork();
+    if (child_pid == 0) {
+      exit(convertTensortestCircuitToTikz(current));
+    }
+    int status;
+    waitpid(child_pid, &status, 0);
+    if (WIFSIGNALED(status)) {
       std::cerr << "\nCircuit: tensortest" << current
-          << " failed with rc=" << rc << std::endl;
+          << " crashed with signal " << strsignal(WTERMSIG(status)) <<
+          std::endl;
       break;
     }
     updateProgress(current, nrTensortestCircuits, "");
@@ -466,7 +473,7 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
       "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape "
       "-output-directory=" +
       latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
-  std::cout << "Compiling LaTeX file to PDF." << std::endl;
+  std::cout << "\nCompiling LaTeX file to PDF." << std::endl;
   if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
     std::cerr << "\nPDF generation failed for tensortest_quantum_circuits.tex "
         << "(return code: " << ret << ")" << std::endl;
@@ -479,10 +486,9 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
 
 int convertTensortestCircuitToTikz(int index) {
   std::string circuit_name = "tensortest" + std::to_string(index);
-  const fs::path quake_source_input_file = fs::path(AI_DATASET_DIR) /
-                                           "Quake/Tensortest" /
-                                           (circuit_name + "_input.qke");
-
+  const fs::path quake_source_input_file
+      = fs::path(AI_DATASET_DIR)
+        / "Quake/Tensortest" / (circuit_name + "_input.qke");
   const fs::path latex_tensortest_dir =
       fs::path(AI_DATASET_DIR) / "Latex/Tensortest";
   const fs::path latex_quake_input_file =
@@ -491,7 +497,6 @@ int convertTensortestCircuitToTikz(int index) {
       latex_tensortest_dir / (circuit_name + "_output1.qke");
   const fs::path latex_quake_output_file2 =
       latex_tensortest_dir / (circuit_name + "_output2.qke");
-
   const fs::path latex_tikz_input_file =
       latex_tensortest_dir / (circuit_name + "_input.tikz");
   const fs::path latex_tikz_output_file1 =
@@ -536,14 +541,14 @@ int convertTensortestCircuitToTikz(int index) {
       = recreateQuantumCircuitFromDepthBasedTensorWithContext(
           depth_based_observation);
 
-  if (int rc = write_module_to_file(reconstructed_from_instruction_tensor,
-                                    latex_quake_output_file1);
+  if (int rc = write_module_to_file(
+        reconstructed_from_instruction_tensor, latex_quake_output_file1);
     rc != 0) {
     return -1;
   }
 
-  if (int rc = write_module_to_file(reconstructed_from_depth_tensor,
-                                    latex_quake_output_file2);
+  if (int rc = write_module_to_file(
+        reconstructed_from_depth_tensor, latex_quake_output_file2);
     rc != 0) {
     return -1;
   }

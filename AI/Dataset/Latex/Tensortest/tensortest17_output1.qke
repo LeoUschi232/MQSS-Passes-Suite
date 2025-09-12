@@ -1,0 +1,33 @@
+module {
+  func.func @__nvqpp__mlirgen__FromTensor() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    %cst = arith.constant 1.5707963267948966 : f64
+    quake.rx (%cst) %1 : (f64, !quake.ref) -> ()
+    %2 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    %cst_0 = arith.constant 1.5707963267948966 : f64
+    quake.rx (%cst_0) %2 : (f64, !quake.ref) -> ()
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst_1 = arith.constant 1.5669883325875604 : f64
+    quake.rz (%cst_1) %2 : (f64, !quake.ref) -> ()
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst_2 = arith.constant -1.5707963267948966 : f64
+    quake.rx (%cst_2) %2 : (f64, !quake.ref) -> ()
+    %cst_3 = arith.constant -1.5707963267948966 : f64
+    quake.rx (%cst_3) %1 : (f64, !quake.ref) -> ()
+    %3 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+    quake.t<adj> %3 : (!quake.ref) -> ()
+    %cst_4 = arith.constant -1.4945506201628271 : f64
+    quake.rx (%cst_4) %1 : (f64, !quake.ref) -> ()
+    quake.x %3 : (!quake.ref) -> ()
+    quake.z [%3] %1 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %4 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    %measOut_5 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %5 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %measOut_8 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    return
+  }
+}

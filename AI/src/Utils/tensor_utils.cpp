@@ -170,8 +170,16 @@ void insertMeasurements(
 
 void insertGate(
     RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
-    ValueRange controls, ValueRange targets,
+    const std::vector<int> &controlIndexes,
+    const std::vector<int> &targetIndexes,
     const std::vector<double> &angles) {
+  // HOLD the storage for the whole iteration.
+  std::vector<Value> controlVals = rebuildSetup.getRefs(controlIndexes);
+  std::vector<Value> targetVals = rebuildSetup.getRefs(targetIndexes);
+
+  // Create ranges that view the storage above.
+  ValueRange controls(controlVals);
+  ValueRange targets(targetVals);
   std::vector<Value> paramsVector;
   switch (gateIndex) {
   case X:
@@ -264,6 +272,13 @@ void insertGate(
         ValueRange(paramsVector), controls, targets);
     break;
   case PHASED_RX:
+    paramsVector = {
+        createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
+        createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1])
+    };
+    rebuildSetup.builder.create<quake::PhasedRxOp>(
+        rebuildSetup.loc, isAdj,
+        ValueRange(paramsVector), controls, targets);
     break;
   case MX:
     if (!controls.empty()) {
@@ -297,11 +312,7 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
   // Decide maxQubits from tensor shape
   const int maxInstructions = tensor.shape[0];
   const int featuresPerRow = tensor.shape[1];
-  int maxQubits = featuresPerRow - NR_GATES - MAX_GATE_PARAMS;
-  if (maxQubits % 2 != 0) {
-    throw std::runtime_error("InstructionBasedTensor maxQubits % 2 != 0.");
-  }
-  maxQubits /= 2;
+  const int maxQubits = featuresPerRow - NR_GATES - MAX_GATE_PARAMS;
 
   auto rebuildSetup = beginReconstruction(
       "__nvqpp__mlirgen__FromTensor", maxQubits);
@@ -310,26 +321,27 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
     std::vector<int> controlIndexes, targetIndexes;
     int j = 0;
     for (; j < maxQubits; j++) {
-      if (double value = tensor(instr, j); value == 1.0) {
+      if (double value = tensor(instr, j); value == -1.0) {
         controlIndexes.push_back(j);
+      } else if (value == 1.0) {
+        targetIndexes.push_back(j);
       } else if (value != 0.0) {
         throw std::runtime_error("Control trigger: " + std::to_string(value));
       }
     }
-    for (; j < 2 * maxQubits; j++) {
-      if (double value = tensor(instr, j); value == 1.0) {
-        targetIndexes.push_back(j - maxQubits);
-      } else if (value != 0.0) {
-        throw std::runtime_error("Target trigger: " + std::to_string(value));
-      }
+    if (targetIndexes.empty()) {
+      // Empty targets means the circuit reached its end.
+      // All further rows MUST be empty too.
+      break;
     }
+
     int gateIndex = -1;
-    for (; j < 2 * maxQubits + NR_GATES; j++) {
+    for (; j < maxQubits + NR_GATES; j++) {
       if (double value = tensor(instr, j); value == 1.0) {
         if (gateIndex >= 0) {
           throw std::runtime_error("Multiple gates triggered in one row.");
         }
-        gateIndex = j - 2 * maxQubits;
+        gateIndex = j - maxQubits;
       } else if (value != 0.0) {
         throw std::runtime_error("Gate trigger: " + std::to_string(value));
       }
@@ -354,15 +366,8 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
       throw std::runtime_error(
           "Nr gate angles: " + std::to_string(angles.size()));
     }
-
-    // HOLD the storage for the whole iteration.
-    auto controlVals = rebuildSetup.getRefs(controlIndexes);
-    auto targetVals = rebuildSetup.getRefs(targetIndexes);
-
-    // Create ranges that view the storage above.
-    ValueRange controls(controlVals);
-    ValueRange targets(targetVals);
-    insertGate(rebuildSetup, gateIndex, isAdj, controls, targets, angles);
+    insertGate(rebuildSetup, gateIndex, isAdj,
+               controlIndexes, targetIndexes, angles);
   }
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
 }
@@ -377,7 +382,13 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
       "__nvqpp__mlirgen__FromTensor", maxQubits);
 
   for (int depth = 0; depth < maxDepth; depth++) {
+    std::vector qubitsHandled(maxQubits, false);
+
     for (int qubit = 0; qubit < maxQubits; qubit++) {
+      if (qubitsHandled[qubit]) {
+        continue;
+      }
+
       int j = 0;
       int gateIndex = -1;
       for (; j < NR_GATES; j++) {
@@ -411,53 +422,48 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
       }
       bool isControl = false;
       bool isTarget = false;
-      if (double value = tensor(depth, qubit, j++); value == 1.0) {
+      if (double value = tensor(depth, qubit, j++); value == -1.0) {
         isControl = true;
-      } else if (value != 0.0) {
-        throw std::runtime_error("IsControl trigger: " + std::to_string(value));
-      }
-      if (double value = tensor(depth, qubit, j++); value == 1.0) {
+      } else if (value == 1.0) {
         isTarget = true;
       } else if (value != 0.0) {
-        throw std::runtime_error("IsTarget trigger: " + std::to_string(value));
-      }
-      if (isControl && isTarget) {
-        throw std::runtime_error("Qubit cannot be both control and target.");
+        throw std::runtime_error("IsControl trigger: " + std::to_string(value));
       }
       if (!isControl && !isTarget) {
         throw std::runtime_error("Qubit must be either control or target.");
       }
 
-      constexpr int extraBase = NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE_PARAMS;
-      std::vector<int> extraIndexes;
-      for (; j < extraBase + maxQubits;
-             j++) {
-        if (double value = tensor(depth, qubit, j); value == 1.0) {
-          const int extraQubit = j - extraBase;
-          if (extraQubit == qubit) {
-            throw std::runtime_error("Qubit sees itself in its extras.");
-          }
-          extraIndexes.push_back(extraQubit);
+      constexpr int rolesBase = NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE;
+      std::vector<int> controlIndexes;
+      std::vector<int> targetIndexes;
+      for (int extraQubit = 0;
+           extraQubit < maxQubits && j < rolesBase + maxQubits;
+           extraQubit++, j++) {
+        if (j >= rolesBase + maxQubits) {
+          throw std::runtime_error("Iterator exceeded qubit roles.");
+        }
+        if (double value = tensor(depth, qubit, j); value == -1.0) {
+          controlIndexes.push_back(extraQubit);
+        } else if (value == 1.0) {
+          targetIndexes.push_back(extraQubit);
         } else if (value != 0.0) {
-          throw std::runtime_error("Extra trigger: " + std::to_string(value));
+          throw std::runtime_error("Role trigger: " + std::to_string(value));
         }
       }
-
-      // HOLD the storage for the whole iteration.
-      std::vector<Value> controlVals;
-      std::vector<Value> targetVals;
-      if (isControl) {
-        controlVals = {rebuildSetup.getRef(qubit)};
-        targetVals = rebuildSetup.getRefs(extraIndexes);
-      } else {
-        controlVals = rebuildSetup.getRefs(extraIndexes);
-        targetVals = {rebuildSetup.getRef(qubit)};
+      if (targetIndexes.empty()) {
+        // There will probably be a lot of empty targets.
+        continue;
       }
 
-      // Create ranges that view the storage above.
-      ValueRange controls(controlVals);
-      ValueRange targets(targetVals);
-      insertGate(rebuildSetup, gateIndex, isAdj, controls, targets, angles);
+      for (int control : controlIndexes) {
+        qubitsHandled[control] = true;
+      }
+      for (int target : targetIndexes) {
+        qubitsHandled[target] = true;
+      }
+
+      insertGate(rebuildSetup, gateIndex, isAdj,
+                 controlIndexes, targetIndexes, angles);
     }
   }
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};

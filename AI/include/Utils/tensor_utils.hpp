@@ -114,13 +114,15 @@ static void insertMeasurements(
  * @param rebuildSetup
  * @param gateIndex
  * @param isAdj
- * @param controls
- * @param targets
+ * @param controlIndexes
+ * @param targetIndexes
  * @param angles
  */
 void insertGate(
     RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
-    ValueRange controls, ValueRange targets, const std::vector<double> &angles);
+    const std::vector<int> &controlIndexes,
+    const std::vector<int> &targetIndexes,
+    const std::vector<double> &angles);
 
 /**
  *
@@ -145,16 +147,14 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
  * @param ctx
  * @return
  */
-ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(
-    MLIRContext &ctx);
+ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(MLIRContext &ctx);
 
 /**
  * (Legacy signatures kept if you still need them somewhere else.)
  * @param ctx
  * @return
  */
-ModuleOp recreateQuantumCircuitFromDepthBasedTensor(
-    MLIRContext &ctx);
+ModuleOp recreateQuantumCircuitFromDepthBasedTensor(MLIRContext &ctx);
 
 } // namespace ai_pass_selector
 

@@ -151,7 +151,7 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
   }
 
   const int MAX_QUBITS = this->max_qubits;
-  const int GATE_OFFSET = 2 * MAX_QUBITS;
+  const int GATE_OFFSET = MAX_QUBITS;
   const int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
 
   int instruction_index = 0;
@@ -185,14 +185,14 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
     // Controls
     for (int qubit : controls) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        row[qubit] = 1.0;
+        row[qubit] = -1.0;
       }
     }
 
     // Targets
     for (int qubit : targets) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        row[MAX_QUBITS + qubit] = 1.0;
+        row[qubit] = 1.0;
       }
     }
 
@@ -226,7 +226,7 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
   constexpr int GATE_OFFSET = 0;
   constexpr int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
   constexpr int CONTROL_INFO_OFFSET = PARAM_OFFSET + MAX_GATE_PARAMS;
-  constexpr int AUXILIARY_OFFSET = CONTROL_INFO_OFFSET + QUBIT_ROLE_PARAMS;
+  constexpr int EXTRAS_OFFSET = CONTROL_INFO_OFFSET + QUBIT_ROLE;
 
   // Greedy ASAP schedule: track next free depth per qubit.
   std::vector next_free_depth(NR_QUBITS, 0);
@@ -251,20 +251,6 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
       std::tie(controls, targets, params)
           = getOperatingControlsTargetsParams(op);
     }
-
-    // Filter invalid indices just in case
-    controls.erase(
-        std::remove_if(
-            controls.begin(),
-            controls.end(),
-            [&](int q) { return q < 0 || q >= NR_QUBITS; }),
-        controls.end());
-    targets.erase(
-        std::remove_if(
-            targets.begin(),
-            targets.end(),
-            [&](int q) { return q < 0 || q >= NR_QUBITS; }),
-        targets.end());
 
     // Determine layer = depth cross-section
     int scheduled_depth = 0;
@@ -295,18 +281,12 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
       }
 
       // control info: [is_control_qubit, is_target_qubit]
-      cell[CONTROL_INFO_OFFSET] = is_control_qubit ? 1.0 : 0.0;
-      cell[CONTROL_INFO_OFFSET + 1] = is_control_qubit ? 0.0 : 1.0;
-
-      // targets (only if gate is controlled)
-      if (is_control_qubit) {
-        for (int t : targets) {
-          cell[AUXILIARY_OFFSET + t] = 1.0;
-        }
-      } else {
-        for (int c : controls) {
-          cell[AUXILIARY_OFFSET + c] = 1.0;
-        }
+      cell[CONTROL_INFO_OFFSET] = is_control_qubit ? -1.0 : 1.0;
+      for (int t : targets) {
+        cell[EXTRAS_OFFSET + t] = 1.0;
+      }
+      for (int c : controls) {
+        cell[EXTRAS_OFFSET + c] = -1.0;
       }
     };
     std::vector<char> touched(NR_QUBITS, 0);

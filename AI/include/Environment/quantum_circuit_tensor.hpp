@@ -32,7 +32,7 @@ constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
 constexpr int NR_GATES = SUPPORTED_GATES.size();
 constexpr int MAX_GATE_ANGLES = 3;
 constexpr int MAX_GATE_PARAMS = 4;
-constexpr int QUBIT_ROLE_PARAMS = 2;
+constexpr int QUBIT_ROLE = 1;
 
 constexpr int GATE_INDEX(std::string_view gate) {
   for (int i = 0; i < NR_GATES; ++i) {
@@ -79,14 +79,12 @@ struct InstructionBasedTensor {
   std::array<int, 2> shape{};
   std::vector<T> quantum_circuit_data;
 
-  // Number of qubits if multiplied by two because each qubit mut be able to be
-  // triggered twice per instruction.
-  // Qubits triggered in the first set are controls.
-  // Qubits triggered in the second set are targets.
+  // Controls qubits triggered negative.
+  // Target qubits triggered positive.
   InstructionBasedTensor(int maxQubits, int maxInstructions)
-    : shape{maxInstructions, 2 * maxQubits + NR_GATES + MAX_GATE_PARAMS},
+    : shape{maxInstructions, maxQubits + NR_GATES + MAX_GATE_PARAMS},
       quantum_circuit_data(
-          maxInstructions * (2 * maxQubits + NR_GATES + MAX_GATE_PARAMS)) {
+          maxInstructions * (maxQubits + NR_GATES + MAX_GATE_PARAMS)) {
   }
 
   T &operator()(int i, int j) {
@@ -137,10 +135,10 @@ struct DepthBasedTensor {
   // However, here multi-qubit gates need additional information such as
   DepthBasedTensor(int maxQubits, int maxDepth)
     : shape{maxDepth, maxQubits,
-            NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE_PARAMS + maxQubits},
+            NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + maxQubits},
       quantum_circuit_data(
           maxDepth * maxQubits *
-          (NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE_PARAMS + maxQubits)) {
+          (NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + maxQubits)) {
   }
 
   T &operator()(int i, int j, int k) {
