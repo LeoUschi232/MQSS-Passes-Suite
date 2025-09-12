@@ -1,0 +1,60 @@
+\documentclass{article}
+
+% Basic packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[
+    paperwidth=216mm,
+    paperheight=303mm,
+    margin=5mm
+]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{adjustbox}
+\usepackage{pgffor} % <-- for \foreach
+
+\title{Tensortest Quantum Circuits}
+\date{}
+\author{}
+
+\newcommand{\tensortestfigheight}{40mm}
+
+\newcommand{\includetensortestfigure}[1]{%
+    \begin{figure}[htbp]
+    \centering
+    \adjustbox{max height=\tensortestfigheight, max width=\linewidth}{%
+        \includegraphics{Tensortest/tensortest#1_input.png}%
+    }%
+    \caption{Main tensortest#1 input}
+    \end{figure}
+    \vspace*{5mm}
+    \begin{figure}[htbp]
+    \centering
+    \adjustbox{max height=\tensortestfigheight, max width=\linewidth}{%
+        \includegraphics{Tensortest/tensortest#1_output1.png}%
+    }%
+    \caption{Instruction-based tensortest#1 output}
+    \end{figure}
+    \vspace*{5mm}
+    \begin{figure}[htbp]
+    \centering
+    \adjustbox{max height=\tensortestfigheight, max width=\linewidth}{%
+        \includegraphics{Tensortest/tensortest#1_output2.png}%
+    }%
+    \caption{Depth-based tensortest#1 output}
+    \end{figure}
+    \vspace*{5mm}
+}
+
+\begin{document}
+    \maketitle
+
+% Loop from 1 to 100
+    \foreach \i in {1,...,100}{\includetensortestfigure{\i}}
+
+\end{document}
