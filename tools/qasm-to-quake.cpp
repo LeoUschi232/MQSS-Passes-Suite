@@ -49,6 +49,8 @@ input circuit
 #include <thread>
 
 namespace po = boost::program_options;
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
 
 std::string getEmptyQuakeKernel(const std::string &kernelName,
                                 const std::string &functionName) {
@@ -90,7 +92,8 @@ std::string lowerCppToQuake(const std::string &cppFile) {
   if (retCode)
     throw std::runtime_error("Quake transformation failed!!!");
   // loading the generated mlir kernel of the given cpp
-  std::string quakeModule = readFileToString("./kernel.qke");
+  std::string quakeModule = readFileToString(
+      "./kernel.qke");
   std::remove("./o.qke");
   std::remove("./kernel.qke");
   return quakeModule;
@@ -176,8 +179,7 @@ int main(int argc, char *argv[]) {
   // creating pass manager
   mlir::PassManager pm(&context);
   // Adding custom pass
-  pm.nest<mlir::func::FuncOp>().addPass(
-      mqss::opt::createQASM3ToQuakePass(qasmStream));
+  pm.nest<FuncOp>().addPass(createQASM3ToQuakePass(qasmStream));
 
   // 2) Clean up
   pm.addPass(mlir::createSCCPPass()); // fold constants & mark dead
@@ -187,7 +189,7 @@ int main(int argc, char *argv[]) {
 
   // running the pass
   if (mlir::failed(pm.run(mlirModule))) {
-    throw std::runtime_error("The pass failed...");
+    throw std::runtime_error("The pass failed.");
   }
   // Convert the module to a string
   std::string moduleOutput;

@@ -35,11 +35,7 @@ matches.
 
 // QCEC checker headers
 #include "EquivalenceCheckingManager.hpp"
-#include "EquivalenceCriterion.hpp"
-#include "checker/dd/applicationscheme/ApplicationScheme.hpp"
 #include "circuit_optimizer/CircuitOptimizer.hpp"
-#include "dd/DDDefinitions.hpp"
-#include "ir/operations/Control.hpp"
 
 #include <iostream>
 #include <string>
@@ -48,10 +44,7 @@ matches.
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
@@ -59,9 +52,6 @@ matches.
 #include "mlir/Target/LLVMIR/Import.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
-// cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // test includes
@@ -74,8 +64,8 @@ matches.
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
-                                std::string functionName) {
+std::string getEmptyQuakeKernel(const std::string &kernelName,
+                                const std::string &functionName) {
   std::string templateEmptyQuake =
       "module attributes {"
       "  llvm.data_layout = "
@@ -106,7 +96,7 @@ std::string getEmptyQuakeKernel(const std::string kernelName,
 }
 
 std::tuple<std::unique_ptr<mlir::MLIRContext>,
-           mlir::OwningOpRef<mlir::ModuleOp>>
+           mlir::OwningOpRef<mlir::ModuleOp> >
 extractMLIRContext(const std::string &quakeModule) {
   auto contextPtr = cudaq::initializeMLIR();
   mlir::MLIRContext &context = *contextPtr.get();
@@ -129,30 +119,25 @@ std::string readFileToString(const std::string &filename) {
   }
   std::ostringstream fileContents;
   fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
+  return fileContents.str(); // Convert the string stream to a string
 }
 
-std::string lowerQuakeCodeToOpenQASM(std::string quantumTask) {
-  // auto [m_module, contextPtr] =
-  //     extractMLIRContext(quantumTask);
-  mlir::OwningOpRef<mlir::ModuleOp> m_module;
-  std::unique_ptr<mlir::MLIRContext> contextPtr;
-  std::tie(contextPtr, m_module) = extractMLIRContext(quantumTask);
+std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
+  auto [contextPtr, m_module] = extractMLIRContext(quantumTask);
 
-  mlir::MLIRContext &context = *contextPtr;
   std::string postCodeGenPasses = "";
-  bool printIR = false;
-  bool enablePassStatistics = false;
-  bool enablePrintMLIREachPass = false;
 
   auto translation = cudaq::getTranslation("qasm2");
   std::string codeStr;
   {
+    bool enablePrintMLIREachPass = false;
+    bool enablePassStatistics = false;
     llvm::raw_string_ostream outStr(codeStr);
     m_module->getContext()->disableMultithreading();
-    if (mlir::failed(translation(m_module.get(), outStr, postCodeGenPasses,
-                                 printIR, enablePrintMLIREachPass,
-                                 enablePassStatistics)))
+    if (bool printIR = false; mlir::failed(translation(
+        m_module.get(), outStr, postCodeGenPasses,
+        printIR, enablePrintMLIREachPass,
+        enablePassStatistics)))
       throw std::runtime_error("Could not successfully translate to OpenQASM2");
   }
   // Regular expression to match the gate definition
@@ -180,8 +165,8 @@ std::vector<std::string> extractQASMFiles(const std::string &zipFilePath,
     const char *fileName = zip_get_name(archive, i, ZIP_FL_ENC_GUESS);
     if (!fileName)
       continue;
-    std::string fileStr(fileName);
-    if (fileStr.size() >= 5 && fileStr.substr(fileStr.size() - 5) == ".qasm") {
+    if (std::string fileStr(fileName);
+      fileStr.size() >= 5 && fileStr.substr(fileStr.size() - 5) == ".qasm") {
       // Extract the file
       zip_file *zFile = zip_fopen_index(archive, i, 0);
       if (!zFile) {
@@ -257,8 +242,9 @@ std::string convertQASMToQuake(std::string qasmFile) {
   pm.nest<mlir::func::FuncOp>().addPass(
       mqss::opt::createQASM3ToQuakePass(qasmStream, false));
   // running the pass
-  if (mlir::failed(pm.run(mlirModule.get())))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule.get()))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Parsed Circuit from QASM:\n";
   mlirModule->dump();
@@ -267,7 +253,7 @@ std::string convertQASMToQuake(std::string qasmFile) {
   std::string moduleOutput;
   llvm::raw_string_ostream stringStream(moduleOutput);
   mlirModule->print(stringStream);
-// mlirModule.release();
+  // mlirModule.release();
 #ifdef DEBUG
   std::cout << "Quake output module " << std::endl << moduleOutput << std::endl;
 #endif
@@ -281,7 +267,8 @@ std::string convertQASMToQuake(std::string qasmFile) {
 //  string containing the qasm file obtained by the parser
 //  The parser first converts the QASM file into quake, thenk the quake code is
 //  lowered again to QASM
-std::tuple<std::string, std::string> verificationTest(std::string qasmFile) {
+std::tuple<std::string, std::string> verificationTest(
+    const std::string &qasmFile) {
   // assign the kernel name and the function name
   std::string quakeCode = convertQASMToQuake(qasmFile);
   // dump output to qasm
@@ -293,7 +280,8 @@ std::tuple<std::string, std::string> verificationTest(std::string qasmFile) {
 }
 
 class VerificationTestPassesMQSS
-    : public ::testing::TestWithParam<std::string> {};
+    : public ::testing::TestWithParam<std::string> {
+};
 
 TEST_P(VerificationTestPassesMQSS, Run) {
   std::string fileName = GetParam();
@@ -314,9 +302,9 @@ TEST_P(VerificationTestPassesMQSS, Run) {
   // qcec objects required for verification
   qc::QuantumComputation qc1, qc2;
   ec::Configuration config{};
-  std::stringstream qasmStream = std::stringstream(qasmInput);
+  auto qasmStream = std::stringstream(qasmInput);
   qc1.import(qasmStream, qc::Format::OpenQASM2);
-  std::stringstream qasmStream2 = std::stringstream(qasmOutput);
+  auto qasmStream2 = std::stringstream(qasmOutput);
   qc2.import(qasmStream2, qc::Format::OpenQASM2);
   // since the final measurements seem to be the problem, lets try to remove
   // them
@@ -347,27 +335,27 @@ TEST_P(VerificationTestPassesMQSS, Run) {
 INSTANTIATE_TEST_SUITE_P(
     MQSSPassTests, VerificationTestPassesMQSS,
     ::testing::ValuesIn(
-        extractQASMFiles("./qasm/MQTBench-qasm-parser-testbed.zip", "./qasm/")),
+      extractQASMFiles("./qasm/MQTBench-qasm-parser-testbed.zip", "./qasm/")),
     [](const ::testing::TestParamInfo<VerificationTestPassesMQSS::ParamType>
-           &info) {
-      // Assign the test name
-      std::filesystem::path pathObj(info.param);
-      std::string inputFileName = pathObj.filename().string();
-      std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
-      std::smatch match;
-      if (!std::regex_match(inputFileName, match, pattern))
-        throw std::runtime_error("Fatal error!");
-      std::string testName = match[1];
-      std::regex pattern2(R"([-_])");
-      // Replace all occurrences of "-" and "_"
-      testName = std::regex_replace(testName, pattern2, "");
+      &info) {
+    // Assign the test name
+    std::filesystem::path pathObj(info.param);
+    std::string inputFileName = pathObj.filename().string();
+    std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
+    std::smatch match;
+    if (!std::regex_match(inputFileName, match, pattern))
+    throw std::runtime_error("Fatal error!");
+    std::string testName = match[1];
+    std::regex pattern2(R"([-_])");
+    // Replace all occurrences of "-" and "_"
+    testName = std::regex_replace(testName, pattern2, "");
 
-      // Use the first element of the tuple (testName) as the custom test name
-      return testName;
+    // Use the first element of the tuple (testName) as the custom test name
+    return testName;
     });
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleTest(&argc, argv);
   // Stop execution on first failure
   testing::FLAGS_gtest_break_on_failure = false;
   return RUN_ALL_TESTS();

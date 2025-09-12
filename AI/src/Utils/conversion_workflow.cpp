@@ -1,12 +1,12 @@
 #include "Utils/conversion_workflow.hpp"
 
 // MLIR includes
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/Passes.h"
 
 // Passes includes
 #include "Passes/Cancellations.hpp"
-#include "Passes/CodeGen.hpp"
 #include "Passes/Decompositions.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/mlir_utils.hpp"
@@ -15,19 +15,126 @@
 #include "Utils/progress_bar.hpp"
 
 // Stdandard library includes
-#include <vector>
+#include "Environment/environment.hpp"
+#include "Utils/tensor_utils.hpp"
+
 #include <cstdlib>
 #include <filesystem>
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <string.h>
 #include <sys/wait.h>
+#include <vector>
+#include <common/RuntimeMLIR.h>
 
 namespace fs = std::filesystem;
 using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+// -----------------------------
+// Small, file-local utilities.
+// -----------------------------
+
+int run_shell_command(const std::string &command, const std::string &task) {
+  int return_code = 0;
+  try {
+    return_code = std::system(command.c_str());
+  } catch (const std::exception &e) {
+    std::cerr << "\nException running " << task << ": " << e.what()
+        << std::endl;
+    return -1;
+  }
+  if (return_code != 0) {
+    std::cerr << "\n"
+        << task << " failed (return code: " << return_code << ")\n";
+    return return_code;
+  }
+  return 0;
+}
+
+bool copy_file_and_report(const fs::path &source, const fs::path &destination) {
+  std::error_code error_code;
+  fs::create_directories(destination.parent_path(), error_code);
+  if (!fs::copy_file(source, destination, fs::copy_options::overwrite_existing,
+                     error_code)) {
+    std::cerr << "\nFailed to copy " << source.string() << " to "
+        << destination.string()
+        << (error_code ? ": " + error_code.message() : "") << std::endl;
+    return false;
+  }
+  return true;
+}
+
+int convert_quake_to_tikz(const fs::path &quake_to_tikz_tool_path,
+                          const fs::path &quake_input_path,
+                          const fs::path &tikz_output_path,
+                          const std::string &append_to_log_file) {
+  const std::string command_line = quake_to_tikz_tool_path.string() +
+                                   " --input " + quake_input_path.string() +
+                                   " --output " + tikz_output_path.string() +
+                                   " >> " + append_to_log_file;
+  return run_shell_command(command_line, "Conversion qke → tikz for " +
+                                         quake_input_path.string());
+}
+
+int write_module_to_file(ModuleOp module,
+                         const fs::path &destination_file_path) {
+  std::string module_serialized_text;
+  llvm::raw_string_ostream string_stream(module_serialized_text);
+  module->print(string_stream);
+
+  std::ofstream output_file(destination_file_path.string());
+  if (!output_file) {
+    std::cerr << "\nFailed to open " << destination_file_path.string()
+        << std::endl;
+    return -1;
+  }
+  output_file << module_serialized_text;
+  output_file.close();
+  return 0;
+}
+
+int build_png_from_tikz_file(const fs::path &tikz_file_path) {
+  // Minimal wrapper document (standalone) that \input{sometikz.tikz}
+  // Write temp.tex next to CWD (consistent with existing workflow).
+  {
+    const std::string latex_wrapper = "\\documentclass{standalone}\n"
+                                      "\\usepackage{tikz}\n"
+                                      "\\usetikzlibrary{quantikz}\n"
+                                      "\\begin{document}\n"
+                                      "\\input{" +
+                                      tikz_file_path.string() +
+                                      "}\n"
+                                      "\\end{document}\n";
+    std::ofstream temp_tex_file("temp.tex");
+    if (!temp_tex_file) {
+      std::cerr << "\nFailed to create temp.tex for " << tikz_file_path
+          << std::endl;
+      return -1;
+    }
+    temp_tex_file << latex_wrapper;
+  }
+
+  const std::string png_output_base =
+      tikz_file_path.string().substr(0, tikz_file_path.string().find(".tikz"));
+
+  // Compile LaTeX and convert to PNG (trimmed). Preserve your flags & quieting.
+  const std::string command_line =
+      "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
+      "convert -density 300 -strip temp.pdf -trim -quality 90 " +
+      png_output_base +
+      ".png > /dev/null 2>&1 && "
+      "rm temp.* > /dev/null 2>&1";
+
+  return run_shell_command(command_line,
+                           "PNG conversion for " + tikz_file_path.string());
+}
+
+// ------------------------------------------------------------
+// Dataset-wide QASM → Quake conversion (unchanged in behavior)
+// ------------------------------------------------------------
 void convertAllQasmDatasetsToQuake() {
   try {
     fs::create_directories("./logs");
@@ -47,6 +154,10 @@ void convertAllQasmDatasetsToQuake() {
       throw std::runtime_error(
           "Failed to convert Passtest Qasm dataset to Quake.");
     }
+    if (convertQasmDatasetToQuake("Tensortest") != 0) {
+      throw std::runtime_error(
+          "Failed to convert Tensortest Qasm dataset to Quake.");
+    }
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
   }
@@ -57,7 +168,6 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
   const fs::path quake_dir = fs::path(AI_DATASET_DIR) / "Quake" / subdirectory;
   const fs::path tool_path = fs::path(MQSS_BUILD_DIR) / "tools/qasm-to-quake";
 
-  // Create output dir if it doesn't exist.
   fs::create_directories(quake_dir);
   if (!fs::exists(qasm_dir)) {
     std::cerr << "Input directory does not exist: " << qasm_dir.string()
@@ -65,7 +175,6 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
     return -1;
   }
 
-  // First pass: count the number of .qasm files.
   int total = 0;
   for (const auto &entry : fs::directory_iterator(qasm_dir)) {
     if (!entry.is_regular_file()) {
@@ -88,7 +197,6 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
   std::cout << "Converting " << total << " Qasm circuits to Quake from "
       << quake_dir.string() << " dataset." << std::endl;
 
-  // Second pass: process files and update progress.
   int current = 0;
   for (const auto &entry : fs::directory_iterator(qasm_dir)) {
     if (entry.is_regular_file() && entry.path().extension() == ".qasm") {
@@ -96,11 +204,17 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
       std::string circuit_name = input.stem().string();
       fs::path output = quake_dir / (circuit_name + ".qke");
       updateProgress(current, total, circuit_name);
-
       std::string cmd = tool_path.string() + " --input " + input.string() +
                         " --output " + output.string() +
                         " >> ./logs/qasm_to_quake.log";
-      if (const int ret = std::system(cmd.c_str()); ret != 0) {
+      int ret = 0;
+      try {
+        ret = std::system(cmd.c_str());
+      } catch (const std::exception &e) {
+        std::cerr << "\nException on " << input << ": " << e.what()
+            << std::endl;
+      }
+      if (ret != 0) {
         std::cerr << "\nConversion failed for " << input
             << " (return code: " << ret << ")" << std::endl;
         return -1;
@@ -109,15 +223,16 @@ int convertQasmDatasetToQuake(const std::string &subdirectory) {
       updateProgress(++current, total, "");
     }
   }
-  // Move to next line after progress bar completes.
   std::cout << std::endl;
   return 0;
 }
 
+// ------------------------------------------------------------
+// Passtest → TikZ PNGs
+// ------------------------------------------------------------
 void convertAllPasstestCircuitsToTikz() {
   std::vector<
-        std::tuple<std::string, std::function<std::unique_ptr<mlir::Pass>()> >
-      >
+        std::tuple<std::string, std::function<std::unique_ptr<mlir::Pass>()> > >
       passes = {
           {"ZeroRxToId", [] { return createZeroRxToIdPass(); }},
           {"ZeroRyToId", [] { return createZeroRyToIdPass(); }},
@@ -183,9 +298,9 @@ void convertAllPasstestCircuitsToTikz() {
           {"SToSdgSdgSdg", [] { return createSToSdgSdgSdgPass(); }},
           {"SToTT", [] { return createSToTTPass(); }},
           {"SwapToLowerCxCxCx", [] { return createSwapToLowerCxCxCxPass(); }},
-          {"SwapToUpperCxCxCx",
-           [] { return createSwapToUpperCxCxCxPass(); }}};
-  int total = passes.size();
+          {"SwapToUpperCxCxCx", [] { return createSwapToUpperCxCxCxPass(); }}};
+
+  const int total = static_cast<int>(passes.size());
   std::cout << "Converting " << total << " quake passtest circuits to tikz."
       << std::endl;
 
@@ -196,41 +311,43 @@ void convertAllPasstestCircuitsToTikz() {
 
   try {
     fs::create_directories("./logs");
-    std::string cmd =
-        "echo \"passtest_to_tikz_before.log:\n\" > ./logs/passtest_to_tikz_before.log";
+    std::string cmd = "echo \"passtest_to_tikz_before.log:\n\" > "
+        "./logs/passtest_to_tikz_before.log";
     std::system(cmd.c_str());
-    cmd =
-        "echo \"passtest_to_tikz_after.log:\n\" > ./logs/passtest_to_tikz_after.log";
+    cmd = "echo \"passtest_to_tikz_after.log:\n\" > "
+        "./logs/passtest_to_tikz_after.log";
     std::system(cmd.c_str());
   } catch (const fs::filesystem_error &e) {
     std::cerr << "\nError creating directory: " << e.what() << std::endl;
     return;
   }
+
   int current = 0;
-  for (const auto &[passname, creator] : passes) {
+  for (const auto &[passname, pass_creator] : passes) {
     updateProgress(current, total, passname);
-    const pid_t pid = fork();
-    if (pid == 0) {
-      exit(convertPasstestCircuitToTikz(passname, creator()));
+    const pid_t child_pid = fork();
+    if (child_pid == 0) {
+      exit(convertPasstestCircuitToTikz(passname, pass_creator()));
     }
     int status;
-    waitpid(pid, &status, 0);
+    waitpid(child_pid, &status, 0);
     if (WIFSIGNALED(status)) {
-      std::cerr << "Pass: " << passname << " crashed with signal "
+      std::cerr << "\nPass: " << passname << " crashed with signal "
           << strsignal(WTERMSIG(status)) << std::endl;
       break;
     }
     updateProgress(++current, total, "");
   }
-  // Move to next line after progress bar completes.
   std::cout << std::endl;
+
   const fs::path latex_dir = fs::path(AI_DATASET_DIR) / "Latex";
   const fs::path tex_file = latex_dir / "passtest_quantum_circuits.tex";
-  const std::string cmd =
-      "pdflatex --shell-escape -output-directory=" + latex_dir.string() + " " +
-      tex_file.string() + " > /dev/null 2>&1";
+  const std::string compile_pdf =
+      "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape "
+      "-output-directory=" +
+      latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
   std::cout << "Compiling LaTeX file to PDF." << std::endl;
-  if (const int ret = std::system(cmd.c_str()); ret != 0) {
+  if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
     std::cerr << "\nPDF generation failed for passtest_quantum_circuits.tex "
         << "(return code: " << ret << ")" << std::endl;
     return;
@@ -242,132 +359,220 @@ void convertAllPasstestCircuitsToTikz() {
 
 int convertPasstestCircuitToTikz(std::string passname,
                                  std::unique_ptr<mlir::Pass> pass) {
-  fs::path quake_src =
+  const fs::path quake_source_input_file =
       fs::path(AI_DATASET_DIR) / "Quake/Passtest" / (passname + "_input.qke");
-  fs::path latex_qke_input =
-      fs::path(AI_DATASET_DIR) / "Latex/Passtest" / (passname + "_input.qke");
-  fs::path latex_qke_output =
-      fs::path(AI_DATASET_DIR) / "Latex/Passtest" / (passname + "_output.qke");
-  fs::path latex_tikz_input =
-      fs::path(AI_DATASET_DIR) / "Latex/Passtest" / (passname + "_input.tikz");
-  fs::path latex_tikz_output =
-      fs::path(AI_DATASET_DIR) / "Latex/Passtest" / (passname + "_output.tikz");
-  fs::path quake_to_tikz_path =
+
+  const fs::path latex_passtest_dir =
+      fs::path(AI_DATASET_DIR) / "Latex/Passtest";
+  const fs::path latex_quake_input_file =
+      latex_passtest_dir / (passname + "_input.qke");
+  const fs::path latex_quake_output_file =
+      latex_passtest_dir / (passname + "_output.qke");
+  const fs::path latex_tikz_input_file =
+      latex_passtest_dir / (passname + "_input.tikz");
+  const fs::path latex_tikz_output_file =
+      latex_passtest_dir / (passname + "_output.tikz");
+
+  const fs::path quake_to_tikz_tool_path =
       fs::path(MQSS_BUILD_DIR) / "tools/quake-to-tikz";
 
-  if (!fs::copy_file(quake_src, latex_qke_input,
-                     fs::copy_options::overwrite_existing)) {
-    std::cerr << "\nFailed to copy " << quake_src.string() << " to "
-        << latex_qke_input.string() << std::endl;
-    return -1;
-  }
-  std::string cmd = quake_to_tikz_path.string() + " --input " +
-                    latex_qke_input.string() + " --output " +
-                    latex_tikz_input.string() +
-                    " >> ./logs/passtest_to_tikz_before.log";
-  int ret = std::system(cmd.c_str());
-  if (ret != 0) {
-    std::cerr << "\nConversion failed for " << latex_qke_input
-        << " (return code: " << ret << ")" << std::endl;
+  if (!copy_file_and_report(quake_source_input_file, latex_quake_input_file)) {
     return -1;
   }
 
-  std::string quakeModule = readFileToString(quake_src.string());
-  auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
-  mlir::MLIRContext &context = *contextPtr;
-  mlir::PassManager pm(&context);
-  pm.addPass(std::move(pass));
-  pm.addPass(mlir::createCanonicalizerPass());
-  pm.addPass(mlir::createCSEPass());
-  if (mlir::failed(pm.run(mlirModule))) {
-    std::cerr << "\nThe pass failed for " << quake_src.string() << std::endl;
+  if (int rc = convert_quake_to_tikz(
+        quake_to_tikz_tool_path, latex_quake_input_file,
+        latex_tikz_input_file, "./logs/passtest_to_tikz_before.log");
+    rc != 0) {
     return -1;
   }
 
-  std::string moduleOutput;
-  llvm::raw_string_ostream stringStream(moduleOutput);
-  mlirModule->print(stringStream);
-  std::ofstream outputFile(latex_qke_output.string());
-  if (!outputFile) {
-    std::cerr << "\nFailed to open " << latex_qke_output.string() << std::endl;
-    return -1;
-  }
-  outputFile << moduleOutput;
-  outputFile.close();
-
-  cmd = quake_to_tikz_path.string() + " --input " + latex_qke_output.string() +
-        " --output " + latex_tikz_output.string() +
-        " >> ./logs/passtest_to_tikz_after.log";
-  ret = std::system(cmd.c_str());
-  if (ret != 0) {
-    std::cerr << "\nConversion failed for " << latex_qke_output
-        << " (return code: " << ret << ")" << std::endl;
-    return -1;
-  }
-
-  // Create temp.tex for input
-  std::string temp_tex_content = "\\documentclass{standalone}\n"
-                                 "\\usepackage{tikz}\n"
-                                 "\\usetikzlibrary{quantikz}\n"
-                                 "\\begin{document}\n"
-                                 "\\input{" +
-                                 latex_tikz_input.string() +
-                                 "}\n"
-                                 "\\end{document}\n";
-  std::ofstream tempFile("temp.tex");
-  if (!tempFile) {
-    std::cerr << "\nFailed to create temp.tex for " << latex_tikz_input
+  // Load, run pass pipeline, write out
+  std::string quake_module_text =
+      readFileToString(quake_source_input_file.string());
+  auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
+  MLIRContext &context = *context_ptr;
+  mlir::PassManager pass_manager(&context);
+  pass_manager.addPass(std::move(pass));
+  pass_manager.addPass(mlir::createCanonicalizerPass());
+  pass_manager.addPass(mlir::createCSEPass());
+  if (mlir::failed(pass_manager.run(mlir_module))) {
+    std::cerr << "\nThe pass failed for " << quake_source_input_file.string()
         << std::endl;
     return -1;
   }
-  tempFile << temp_tex_content;
-  tempFile.close();
-
-  // Compile and convert input
-  cmd = "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
-        "convert -density 300 -strip temp.pdf -trim -quality 90 " +
-        latex_tikz_input.string().substr(
-            0, latex_tikz_input.string().find(".tikz")) +
-        ".png > /dev/null 2>&1 && "
-        "rm temp.* > /dev/null 2>&1";
-  ret = std::system(cmd.c_str());
-  if (ret != 0) {
-    std::cerr << "\nPNG conversion failed for " << latex_tikz_input
-        << " (return code: " << ret << ")" << std::endl;
+  if (int rc = write_module_to_file(mlir_module, latex_quake_output_file);
+    rc != 0) {
     return -1;
   }
 
-  // Create temp.tex for output
-  temp_tex_content = "\\documentclass{standalone}\n"
-                     "\\usepackage{tikz}\n"
-                     "\\usetikzlibrary{quantikz}\n"
-                     "\\begin{document}\n"
-                     "\\input{" +
-                     latex_tikz_output.string() +
-                     "}\n"
-                     "\\end{document}\n";
-  tempFile.open("temp.tex");
-  if (!tempFile) {
-    std::cerr << "\nFailed to create temp.tex for " << latex_tikz_output
-        << std::endl;
+  if (int rc = convert_quake_to_tikz(
+        quake_to_tikz_tool_path, latex_quake_output_file,
+        latex_tikz_output_file, "./logs/passtest_to_tikz_after.log");
+    rc != 0) {
     return -1;
   }
-  tempFile << temp_tex_content;
-  tempFile.close();
 
-  // Compile and convert output
-  cmd = "pdflatex -interaction=nonstopmode temp.tex > /dev/null 2>&1 && "
-        "convert -density 300 -strip temp.pdf -trim -quality 90 " +
-        latex_tikz_output.string().substr(
-            0, latex_tikz_output.string().find(".tikz")) +
-        ".png > /dev/null 2>&1 && "
-        "rm temp.* > /dev/null 2>&1";
-  ret = std::system(cmd.c_str());
-  if (ret != 0) {
-    std::cerr << "\nPNG conversion failed for " << latex_tikz_output
-        << " (return code: " << ret << ")" << std::endl;
+  // Produce PNGs
+  if (int rc = build_png_from_tikz_file(latex_tikz_input_file); rc != 0) {
+    return -1;
+  }
+  if (int rc = build_png_from_tikz_file(latex_tikz_output_file); rc != 0) {
     return -1;
   }
   return 0;
 }
+
+// ------------------------------------------------------------
+// Tensortest → TikZ PNGs (refactored, same behavior)
+// ------------------------------------------------------------
+void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
+  std::cout << "Converting " << nrTensortestCircuits
+      << " quake tensortest circuits to tikz." << std::endl;
+  if (nrTensortestCircuits == 0) {
+    std::cout << "No circuits found for conversion to TikZ." << std::endl;
+    return;
+  }
+  try {
+    fs::create_directories("./logs");
+    std::string cmd = "echo \"tensortest_to_tikz_before.log:\n\" > "
+        "./logs/tensortest_to_tikz_before.log";
+    std::system(cmd.c_str());
+    cmd = "echo \"tensortest_to_tikz_after1.log:\n\" > "
+        "./logs/tensortest_to_tikz_after1.log";
+    std::system(cmd.c_str());
+    cmd = "echo \"tensortest_to_tikz_after2.log:\n\" > "
+        "./logs/tensortest_to_tikz_after2.log";
+    std::system(cmd.c_str());
+  } catch (const fs::filesystem_error &e) {
+    std::cerr << "\nError creating directory: " << e.what() << std::endl;
+    return;
+  }
+
+  for (int current = 1; current <= nrTensortestCircuits; current++) {
+    updateProgress(current - 1, nrTensortestCircuits,
+                   "tensortest" + std::to_string(current));
+    if (int rc = convertTensortestCircuitToTikz(current); rc != 0) {
+      std::cerr << "\nCircuit: tensortest" << current
+          << " failed with rc=" << rc << std::endl;
+      break;
+    }
+    updateProgress(current, nrTensortestCircuits, "");
+  }
+
+  const fs::path latex_dir = fs::path(AI_DATASET_DIR) / "Latex";
+  const fs::path tex_file = latex_dir / "tensortest_quantum_circuits.tex";
+  const std::string compile_pdf =
+      "pdflatex -interaction=nonstopmode -halt-on-error --shell-escape "
+      "-output-directory=" +
+      latex_dir.string() + " " + tex_file.string() + " > /dev/null 2>&1";
+  std::cout << "Compiling LaTeX file to PDF." << std::endl;
+  if (const int ret = std::system(compile_pdf.c_str()); ret != 0) {
+    std::cerr << "\nPDF generation failed for tensortest_quantum_circuits.tex "
+        << "(return code: " << ret << ")" << std::endl;
+    return;
+  }
+  std::cout << "PDF generated successfully at "
+      << (latex_dir / "tensortest_quantum_circuits.pdf").string()
+      << std::endl;
+}
+
+int convertTensortestCircuitToTikz(int index) {
+  std::string circuit_name = "tensortest" + std::to_string(index);
+  const fs::path quake_source_input_file = fs::path(AI_DATASET_DIR) /
+                                           "Quake/Tensortest" /
+                                           (circuit_name + "_input.qke");
+
+  const fs::path latex_tensortest_dir =
+      fs::path(AI_DATASET_DIR) / "Latex/Tensortest";
+  const fs::path latex_quake_input_file =
+      latex_tensortest_dir / (circuit_name + "_input.qke");
+  const fs::path latex_quake_output_file1 =
+      latex_tensortest_dir / (circuit_name + "_output1.qke");
+  const fs::path latex_quake_output_file2 =
+      latex_tensortest_dir / (circuit_name + "_output2.qke");
+
+  const fs::path latex_tikz_input_file =
+      latex_tensortest_dir / (circuit_name + "_input.tikz");
+  const fs::path latex_tikz_output_file1 =
+      latex_tensortest_dir / (circuit_name + "_output1.tikz");
+  const fs::path latex_tikz_output_file2 =
+      latex_tensortest_dir / (circuit_name + "_output2.tikz");
+
+  const fs::path quake_to_tikz_tool_path =
+      fs::path(MQSS_BUILD_DIR) / "tools/quake-to-tikz";
+
+  // Input quake → tikz
+  if (!copy_file_and_report(quake_source_input_file, latex_quake_input_file)) {
+    return -1;
+  }
+  if (int rc = convert_quake_to_tikz(
+        quake_to_tikz_tool_path, latex_quake_input_file,
+        latex_tikz_input_file, "./logs/tensortest_to_tikz_before.log");
+    rc != 0) {
+    return -1;
+  }
+
+  // Build instruction/depth observations and reconstruct two modules
+  std::string quake_module_text =
+      readFileToString(quake_source_input_file.string());
+  auto [input_module, ctx_ptr] = extractMLIRContext(quake_module_text);
+
+  QuantumCircuitEnviorment quantum_circuit_enviorment(
+      TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS, TENSORTEST_MAX_DEPTH,
+      input_module);
+
+  InstructionBasedTensor<double> instruction_based_observation =
+      quantum_circuit_enviorment.get_instruction_based_observation();
+
+  DepthBasedTensor<double> depth_based_observation =
+      quantum_circuit_enviorment.get_depth_based_observation();
+
+  auto [reconstructed_from_instruction_tensor, ctx_instr]
+      = recreateQuantumCircuitFromInstructionBasedTensorWithContext(
+          instruction_based_observation);
+
+  auto [reconstructed_from_depth_tensor, ctx_depth]
+      = recreateQuantumCircuitFromDepthBasedTensorWithContext(
+          depth_based_observation);
+
+  if (int rc = write_module_to_file(reconstructed_from_instruction_tensor,
+                                    latex_quake_output_file1);
+    rc != 0) {
+    return -1;
+  }
+
+  if (int rc = write_module_to_file(reconstructed_from_depth_tensor,
+                                    latex_quake_output_file2);
+    rc != 0) {
+    return -1;
+  }
+
+  // Reconstructed quake → tikz (two variants)
+  if (int rc = convert_quake_to_tikz(
+        quake_to_tikz_tool_path, latex_quake_output_file1,
+        latex_tikz_output_file1, "./logs/tensortest_to_tikz_after1.log");
+    rc != 0) {
+    return -1;
+  }
+  if (int rc = convert_quake_to_tikz(
+        quake_to_tikz_tool_path, latex_quake_output_file2,
+        latex_tikz_output_file2, "./logs/tensortest_to_tikz_after2.log");
+    rc != 0) {
+    return -1;
+  }
+
+  // Produce PNGs for input and two outputs
+  if (int rc = build_png_from_tikz_file(latex_tikz_input_file); rc != 0) {
+    return -1;
+  }
+  if (int rc = build_png_from_tikz_file(latex_tikz_output_file1); rc != 0) {
+    return -1;
+  }
+  if (int rc = build_png_from_tikz_file(latex_tikz_output_file2); rc != 0) {
+    return -1;
+  }
+  return 0;
+}
+
 } // namespace ai_pass_selector

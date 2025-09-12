@@ -72,6 +72,9 @@ matches.
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
+
 std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
   auto contextPtr = cudaq::initializeMLIR();
   mlir::MLIRContext &context = *contextPtr.get();
@@ -322,7 +325,7 @@ class BehaviouralTestPassesMQSS
 
 TEST_P(BehaviouralTestPassesMQSS, Run) {
   const std::tuple<std::string, std::string, std::string,
-             std::function<std::unique_ptr<mlir::Pass>()>, bool>
+                   std::function<std::unique_ptr<mlir::Pass>()>, bool>
       p = GetParam();
   const std::string testName = std::get<0>(p);
   SCOPED_TRACE(testName);

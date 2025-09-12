@@ -76,7 +76,7 @@ matches.
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
+std::string getEmptyQuakeKernel(const std::string &kernelName,
                                 std::string functionName) {
   std::string templateEmptyQuake =
       "module attributes {"
@@ -134,7 +134,7 @@ std::string readFileToString(const std::string &filename) {
   return fileContents.str();    // Convert the string stream to a string
 }
 
-std::string lowerQuakeCodeToOpenQASM(std::string quantumTask) {
+std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
   // auto [m_module, contextPtr] =
   //     extractMLIRContext(quantumTask);
   mlir::OwningOpRef<mlir::ModuleOp> m_module;
@@ -281,7 +281,7 @@ std::string convertQASMToQuake(std::string qasmFile) {
 //  string containing the qasm file obtained by the parser
 //  The parser first converts the QASM file into quake, thenk the quake code is
 //  lowered again to QASM
-std::tuple<std::string, std::string> verificationTest(std::string qasmFile) {
+std::tuple<std::string, std::string> verificationTest(const std::string &qasmFile) {
   // assign the kernel name and the function name
   std::string quakeCode = convertQASMToQuake(qasmFile);
   // dump output to qasm
