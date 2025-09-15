@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -42,7 +41,7 @@ using namespace mlir;
 
 namespace {
 
-void ReplaceSZToSdg(mlir::Operation *currentOp) {
+void ReplaceSZToSdg(Operation *currentOp) {
   auto currentGate = dyn_cast_or_null<quake::ZOp>(*currentOp);
   if (!currentGate || currentGate.getControls().size() != 0 ||
       currentGate.getTargets().size() != 1) {
@@ -63,25 +62,25 @@ void ReplaceSZToSdg(mlir::Operation *currentOp) {
   auto ctrls = prevGate.getControls();
   auto targs = prevGate.getTargets();
 
-  mlir::IRRewriter rewriter(currentGate->getContext());
+  IRRewriter rewriter(currentGate->getContext());
   rewriter.setInsertionPointAfter(currentGate);
   rewriter.create<quake::SOp>(loc, true, params, ctrls, targs);
   rewriter.eraseOp(currentGate);
   rewriter.eraseOp(prevGate);
 }
 
-class SZToSdg : public BaseMQSSPass<SZToSdg> {
+class SZToSdg final : public BaseMQSSPass<SZToSdg> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SZToSdg)
 
-  llvm::StringRef getArgument() const override { return "SZToSdg"; }
+  StringRef getArgument() const override { return "SZToSdg"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Optimization pass that replaces a pattern composed of S and Z by "
            "Sdg";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { ReplaceSZToSdg(op); });
   }
 };

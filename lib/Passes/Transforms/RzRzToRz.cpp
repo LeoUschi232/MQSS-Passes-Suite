@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -38,7 +37,7 @@ void foldRzRz(Operation *op, OpBuilder &builder) {
     params.push_back(
         supportQuake::createFloatValue(builder, rz2.getLoc(), p1[i] + p2[i]));
   }
-  mlir::IRRewriter rewriter(rz2->getContext());
+  IRRewriter rewriter(rz2->getContext());
   rewriter.setInsertionPointAfter(rz2);
   rewriter.create<quake::RzOp>(rz2.getLoc(), rz2.isAdj(), params,
                                rz2.getControls(), rz2.getTargets());
@@ -46,17 +45,17 @@ void foldRzRz(Operation *op, OpBuilder &builder) {
   rewriter.eraseOp(rz1);
 }
 
-class RzRzToRz : public BaseMQSSPass<RzRzToRz> {
+class RzRzToRz final : public BaseMQSSPass<RzRzToRz> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RzRzToRz)
 
-  llvm::StringRef getArgument() const override { return "RzRzToRz"; }
+  StringRef getArgument() const override { return "RzRzToRz"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Collapse consecutive Rz gates";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     OpBuilder builder(&kernel.getBody());
     kernel.walk([&](Operation *op) { foldRzRz(op, builder); });
   }

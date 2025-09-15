@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -11,6 +10,7 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_HRZHTORX
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 
 } // namespace mqss::opt
@@ -36,26 +36,27 @@ void foldHRzH(Operation *op) {
   auto h1 = dyn_cast_or_null<quake::HOp>(prev2);
   if (!h1 || h1.getControls().size() != 0 || h1.getTargets().size() != 1)
     return;
-  mlir::IRRewriter rewriter(rz->getContext());
+  IRRewriter rewriter(rz->getContext());
   rewriter.setInsertionPointAfter(rz);
-  rewriter.create<quake::RxOp>(rz.getLoc(), rz.isAdj(), rz.getParameters(),
-                               rz.getControls(), rz.getTargets());
+  rewriter.create<quake::RxOp>(
+      rz.getLoc(), rz.isAdj(), rz.getParameters(),
+      rz.getControls(), rz.getTargets());
   rewriter.eraseOp(h2);
   rewriter.eraseOp(rz);
   rewriter.eraseOp(h1);
 }
 
-class HRzHToRx : public BaseMQSSPass<HRzHToRx> {
+class HRzHToRx final : public BaseMQSSPass<HRzHToRx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HRzHToRx)
 
-  llvm::StringRef getArgument() const override { return "HRzHToRx"; }
+  StringRef getArgument() const override { return "HRzHToRx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Fold H Rz H to Rx";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { foldHRzH(op); });
   }
 };

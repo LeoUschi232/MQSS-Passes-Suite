@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -38,7 +37,7 @@ void foldRyRy(Operation *op, OpBuilder &builder) {
     params.push_back(
         supportQuake::createFloatValue(builder, ry2.getLoc(), p1[i] + p2[i]));
   }
-  mlir::IRRewriter rewriter(ry2->getContext());
+  IRRewriter rewriter(ry2->getContext());
   rewriter.setInsertionPointAfter(ry2);
   rewriter.create<quake::RyOp>(ry2.getLoc(), ry2.isAdj(), params,
                                ry2.getControls(), ry2.getTargets());
@@ -46,17 +45,17 @@ void foldRyRy(Operation *op, OpBuilder &builder) {
   rewriter.eraseOp(ry1);
 }
 
-class RyRyToRy : public BaseMQSSPass<RyRyToRy> {
+class RyRyToRy final : public BaseMQSSPass<RyRyToRy> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RyRyToRy)
 
-  llvm::StringRef getArgument() const override { return "RyRyToRy"; }
+  StringRef getArgument() const override { return "RyRyToRy"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Collapse consecutive Ry gates";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     OpBuilder builder(&kernel.getBody());
     kernel.walk([&](Operation *op) { foldRyRy(op, builder); });
   }

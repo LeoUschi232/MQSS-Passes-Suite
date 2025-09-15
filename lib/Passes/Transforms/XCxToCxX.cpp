@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/CommutateOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -44,17 +43,17 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class XCxToCxX : public BaseMQSSPass<XCxToCxX> {
+class XCxToCxX final : public BaseMQSSPass<XCxToCxX> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(XCxToCxX)
 
-  llvm::StringRef getArgument() const override { return "XCxToCxX"; }
+  StringRef getArgument() const override { return "XCxToCxX"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Apply commutation pass to pattern X-CNot to CNot-X";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       commuteOperation<quake::XOp, quake::XOp>(op, 0, 1, 1, 1);
       // CommuteXCNot(op);

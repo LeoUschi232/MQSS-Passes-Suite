@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -28,22 +27,22 @@ void foldTT(Operation *op) {
   auto t2 = dyn_cast_or_null<quake::TOp>(prev);
   if (!t2 || t2.getControls().size() != 0 || t2.getTargets().size() != 1)
     return;
-  mlir::IRRewriter rewriter(t->getContext());
+  IRRewriter rewriter(t->getContext());
   rewriter.setInsertionPointAfter(t);
   rewriter.create<quake::SOp>(t.getLoc(), t.getTargets()[0]);
   rewriter.eraseOp(t);
   rewriter.eraseOp(t2);
 }
 
-class TTToS : public BaseMQSSPass<TTToS> {
+class TTToS final : public BaseMQSSPass<TTToS> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(TTToS)
 
-  llvm::StringRef getArgument() const override { return "TTToS"; }
+  StringRef getArgument() const override { return "TTToS"; }
 
-  llvm::StringRef getDescription() const override { return "Replace T T by S"; }
+  StringRef getDescription() const override { return "Replace T T by S"; }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { foldTT(op); });
   }
 };

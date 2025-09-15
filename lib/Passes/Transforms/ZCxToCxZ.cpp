@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -43,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-void commuteZCx(mlir::Operation *currentOp) {
+void commuteZCx(Operation *currentOp) {
   auto currentGate = dyn_cast_or_null<quake::XOp>(*currentOp);
   if (!currentGate || currentGate.getControls().size() != 1 ||
       currentGate.getTargets().size() != 1) {
@@ -64,7 +63,7 @@ void commuteZCx(mlir::Operation *currentOp) {
   int controlCurr = supportQuake::extractIndexFromQuakeExtractRefOp(
       currentGate.getControls()[0].getDefiningOp());
   if (targetPrev == controlCurr) {
-    mlir::IRRewriter rewriter(currentGate->getContext());
+    IRRewriter rewriter(currentGate->getContext());
     rewriter.setInsertionPointAfter(currentGate);
     rewriter.create<quake::ZOp>(previousGate.getLoc(), previousGate.isAdj(),
                                 previousGate.getParameters(),
@@ -75,17 +74,17 @@ void commuteZCx(mlir::Operation *currentOp) {
   }
 }
 
-class ZCxToCxZ : public BaseMQSSPass<ZCxToCxZ> {
+class ZCxToCxZ final : public BaseMQSSPass<ZCxToCxZ> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZCxToCxZ)
 
-  llvm::StringRef getArgument() const override { return "ZCxToCxZ"; }
+  StringRef getArgument() const override { return "ZCxToCxZ"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Apply commutation pass to pattern Z-CNot to CNot-Z";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { commuteZCx(op); });
   }
 };

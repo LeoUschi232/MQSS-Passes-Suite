@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -42,7 +41,7 @@ using namespace mlir;
 
 namespace {
 
-void ReplaceZSToSdg(mlir::Operation *op) {
+void ReplaceZSToSdg(Operation *op) {
   auto s = dyn_cast_or_null<quake::SOp>(*op);
   if (!s || !s.getControls().empty() || s.getTargets().size() != 1 ||
       s.isAdj()) {
@@ -57,7 +56,7 @@ void ReplaceZSToSdg(mlir::Operation *op) {
   if (!z || !z.getControls().empty() || z.getTargets().size() != 1) {
     return;
   }
-  mlir::IRRewriter rewriter(s->getContext());
+  IRRewriter rewriter(s->getContext());
   rewriter.setInsertionPointAfter(s);
   rewriter.create<quake::SOp>(s.getLoc(), true, s.getParameters(),
                               s.getControls(), s.getTargets());
@@ -65,18 +64,18 @@ void ReplaceZSToSdg(mlir::Operation *op) {
   rewriter.eraseOp(z);
 }
 
-class ZSToSdg : public BaseMQSSPass<ZSToSdg> {
+class ZSToSdg final : public BaseMQSSPass<ZSToSdg> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZSToSdg)
 
-  llvm::StringRef getArgument() const override { return "ZSToSdg"; }
+  StringRef getArgument() const override { return "ZSToSdg"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Optimization pass that replaces a pattern composed of S and Z by "
            "Sdg";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { ReplaceZSToSdg(op); });
   }
 };

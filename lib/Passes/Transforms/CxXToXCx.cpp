@@ -24,18 +24,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/CommutateOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_CXXTOXCX
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 
 } // namespace mqss::opt
@@ -44,17 +42,17 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class CxXToXCx : public BaseMQSSPass<CxXToXCx> {
+class CxXToXCx final : public BaseMQSSPass<CxXToXCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxXToXCx)
 
-  llvm::StringRef getArgument() const override { return "CxXToXCx"; }
+  StringRef getArgument() const override { return "CxXToXCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Apply commutation pass to pattern CNot-X to X-CNot";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       commuteOperation<quake::XOp, quake::XOp>(op, 1, 1, 0, 1);
     });

@@ -32,7 +32,6 @@ mapping configurations.
 
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -40,8 +39,6 @@ mapping configurations.
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-// #include "qdmi.h"
-// #include "sc/heuristic/HeuristicMapper.hpp"
 
 using namespace mlir;
 
@@ -188,7 +185,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>>
+class QuakeQMap final : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>>
 
 {
 private:
@@ -203,13 +200,13 @@ public:
 
         architecture(architecture), settings(settings) {}
 
-  llvm::StringRef getArgument() const
+  StringRef getArgument() const
 
       override {
     return "quake-to-qmap-pass";
   }
 
-  llvm::StringRef getDescription() const
+  StringRef getDescription() const
 
       override {
     return "Pass that maps a given quake module respecting the constraints of "
@@ -238,7 +235,7 @@ public:
     // Defining the mqt-qmap input object
     auto qc = qc::QuantumComputation(numQubits, numBits);
     // Traversing input QUAKE MLIR
-    circuit.walk([&](mlir::Operation *op) {
+    circuit.walk([&](Operation *op) {
       // TODO: Assumed at the moment to work only on a single qubit
       loadRotationGatesToQC(op, qc);
       // TODO: Cover only the case of single qubit and 2 qubit controlled
@@ -368,11 +365,7 @@ public:
         break;
       case qc::Measure:
         Type measTy = quake::MeasureType::get(builder.getContext());
-        builder.create<quake::MzOp>(loc, measTy, targetValues)
-            .
-
-            getMeasOut();
-
+        builder.create<quake::MzOp>(loc, measTy, targetValues).getMeasOut();
         break;
       }
     }
@@ -389,7 +382,7 @@ public:
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass>
+std::unique_ptr<Pass>
 mqss::opt::createQuakeQMapPass(Architecture &architecture,
                                const Configuration &settings) {
   return std::make_unique<QuakeQMap>(architecture, settings);

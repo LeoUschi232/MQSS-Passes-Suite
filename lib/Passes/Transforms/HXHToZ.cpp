@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -35,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_HXHTOZ
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 
 } // namespace mqss::opt
@@ -42,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-void ReplaceHXHToZ(mlir::Operation *currentOp) {
+void ReplaceHXHToZ(Operation *currentOp) {
   auto currentGate = dyn_cast_or_null<quake::HOp>(*currentOp);
   if (!currentGate || currentGate.getControls().size() != 0 ||
       currentGate.getTargets().size() != 1) {
@@ -68,26 +68,27 @@ void ReplaceHXHToZ(mlir::Operation *currentOp) {
       prevPrevGate.getTargets().size() != 1) {
     return;
   }
-  mlir::IRRewriter rewriter(currentGate->getContext());
+  IRRewriter rewriter(currentGate->getContext());
   rewriter.setInsertionPointAfter(currentGate);
-  rewriter.create<quake::ZOp>(currentGate.getLoc(), currentGate.getControls(),
-                              currentGate.getTargets());
+  rewriter.create<quake::ZOp>(
+      currentGate.getLoc(), currentGate.getControls(),
+      currentGate.getTargets());
   rewriter.eraseOp(currentGate);
   rewriter.eraseOp(prevGate);
   rewriter.eraseOp(prevPrevGate);
 }
 
-class HXHToZ : public BaseMQSSPass<HXHToZ> {
+class HXHToZ final : public BaseMQSSPass<HXHToZ> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HXHToZ)
 
-  llvm::StringRef getArgument() const override { return "HXHToZ"; }
+  StringRef getArgument() const override { return "HXHToZ"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Optimization pass that replaces a pattern composed of H, X, H by Z";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { ReplaceHXHToZ(op); });
   }
 };

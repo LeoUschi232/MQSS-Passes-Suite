@@ -2,7 +2,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -36,7 +35,7 @@ void foldSSS(Operation *op) {
   auto s3 = dyn_cast_or_null<quake::SOp>(prev2);
   if (!s3 || s3.getControls().size() != 0 || s3.getTargets().size() != 1)
     return;
-  mlir::IRRewriter rewriter(s->getContext());
+  IRRewriter rewriter(s->getContext());
   rewriter.setInsertionPointAfter(s);
   rewriter.create<quake::SOp>(s.getLoc(), /*isAdj=*/true, s.getTargets()[0]);
   rewriter.eraseOp(s);
@@ -44,17 +43,17 @@ void foldSSS(Operation *op) {
   rewriter.eraseOp(s3);
 }
 
-class SSSToSDG : public BaseMQSSPass<SSSToSDG> {
+class SSSToSDG final : public BaseMQSSPass<SSSToSDG> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSSToSDG)
 
-  llvm::StringRef getArgument() const override { return "SSSToSDG"; }
+  StringRef getArgument() const override { return "SSSToSDG"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Replace S S S by SDG";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { foldSSS(op); });
   }
 };
