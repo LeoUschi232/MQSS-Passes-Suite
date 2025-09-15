@@ -217,16 +217,6 @@ add_library(MQSS::SupportQuake ALIAS SupportQuake)
 add_library(MQSS::Optimizer ALIAS Optimizer)
 add_library(MQSS::Interfaces ALIAS Interfaces)
 
-########################################################################################################################
-# Mock macro to make IDEs recognize the existence of generated h.inc files.
-set(PASSES_REGISTRY_DIR "" CACHE PATH "Path to generated Passes headers")
-if (PASSES_REGISTRY_DIR)
-    message(STATUS "Using PASSES_REGISTRY_DIR='${PASSES_REGISTRY_DIR}'")
-    include_directories(BEFORE "${PASSES_REGISTRY_DIR}")
-endif ()
-########################################################################################################################
-
-
 # add pass selector ai
 if (BUILD_MLIR_PASSES_AI)
     add_subdirectory(AI)

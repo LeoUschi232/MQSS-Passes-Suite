@@ -32,4 +32,19 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
   }
 }
 
+
+std::pair<std::string, std::unique_ptr<mlir::Pass> >
+getPassByIndex(unsigned int index) {
+  if (index >= getNrOfPasses()) {
+    std::cerr << "In getPassByIndex: " << index << std::endl;
+    return {"", nullptr};
+  }
+  std::unique_ptr<mlir::Pass> pass = passFunctions[index]();
+  return {std::string(pass.get()->getArgument()), std::move(pass)};
+}
+
+unsigned int getNrOfPasses() {
+  return passFunctions.size();
+}
+
 } // namespace ai_pass_selector

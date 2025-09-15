@@ -57,8 +57,8 @@ int run_shell_command(const std::string &command, const std::string &task) {
 bool copy_file_and_report(const fs::path &source, const fs::path &destination) {
   std::error_code error_code;
   fs::create_directories(destination.parent_path(), error_code);
-  if (!fs::copy_file(source, destination, fs::copy_options::overwrite_existing,
-                     error_code)) {
+  if (!fs::copy_file(source, destination,
+                     fs::copy_options::overwrite_existing, error_code)) {
     std::cerr << "\nFailed to copy " << source.string() << " to "
         << destination.string()
         << (error_code ? ": " + error_code.message() : "") << std::endl;
