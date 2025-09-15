@@ -34,8 +34,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZSTOSDG
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 using namespace mlir;
 
@@ -58,8 +58,9 @@ void ReplaceZSToSdg(Operation *op) {
   }
   IRRewriter rewriter(s->getContext());
   rewriter.setInsertionPointAfter(s);
-  rewriter.create<quake::SOp>(s.getLoc(), true, s.getParameters(),
-                              s.getControls(), s.getTargets());
+  rewriter.create<quake::SOp>(
+      s.getLoc(), true, s.getParameters(),
+      s.getControls(), s.getTargets());
   rewriter.eraseOp(s);
   rewriter.eraseOp(z);
 }
@@ -71,8 +72,7 @@ public:
   StringRef getArgument() const override { return "ZSToSdg"; }
 
   StringRef getDescription() const override {
-    return "Optimization pass that replaces a pattern composed of S and Z by "
-           "Sdg";
+    return "Replaces a pattern composed of S Z by Sdg";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
