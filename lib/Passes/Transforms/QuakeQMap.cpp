@@ -259,14 +259,8 @@ public:
     mapper->dumpResult(qasm, qc::Format::OpenQASM3);
     qcMapped.import(qasm, qc::Format::OpenQASM3);
     // cleaning the mlir::funcOp corresponding to the quake circuit
-    for (auto &block : circuit.
-
-         getBody()
-
-    ) {
-      block.
-
-          clear(); // Clears all operations in the current block
+    for (auto &block : circuit.getBody()) {
+      block.clear(); // Clears all operations in the current block
     }
     OpBuilder builder(&circuit.getBody());
     Location loc = circuit.getLoc();
@@ -276,11 +270,7 @@ public:
     // then traverse the mapped QuantumComputation and annotate it in the
     // mlir func
     for (const auto &op : qcMapped) {
-      if (op->
-
-          getType()
-
-          == qc::Barrier)
+      if (op->getType() == qc::Barrier)
         continue;
       auto &targets = op->getTargets();
       auto &controls = op->getControls();
