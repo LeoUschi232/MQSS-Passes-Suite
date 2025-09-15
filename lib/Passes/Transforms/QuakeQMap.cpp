@@ -160,8 +160,8 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
     llvm::errs() << "\n";
 #endif
     assert(op->getOperands().size() == 1 && "ill-formed measurement gate!");
-    Value operand = op->getOperands()[0];
-    if (operand.getType().isa<quake::RefType>()) {
+    if (Value operand = op->getOperands()[0];
+      operand.getType().isa<quake::RefType>()) {
       int qubitIndex = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand.getDefiningOp());
       assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
