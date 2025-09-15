@@ -36,8 +36,9 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceH : public OpRewritePattern<quake::HOp> {
+struct ReplaceH final : OpRewritePattern<quake::HOp> {
   using OpRewritePattern::OpRewritePattern;
+
   LogicalResult matchAndRewrite(quake::HOp hOp,
                                 PatternRewriter &rewriter) const override {
     rewriter.replaceOpWithNewOp<quake::SOp>(
@@ -47,16 +48,17 @@ struct ReplaceH : public OpRewritePattern<quake::HOp> {
   }
 };
 
-class CustomExamplePassPlugin
-    : public PassWrapper<CustomExamplePassPlugin,
-                         OperationPass<mlir::ModuleOp>> {
+class CustomExamplePassPlugin final
+    : public PassWrapper<CustomExamplePassPlugin, OperationPass<ModuleOp> > {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CustomExamplePassPlugin)
 
-  llvm::StringRef getArgument() const override { return "cudaq-custom-pass"; }
-  llvm::StringRef getDescription() const override {
+  StringRef getArgument() const override { return "cudaq-custom-pass"; }
+
+  StringRef getDescription() const override {
     return "Apply dummy example pass that replaces each H gate by a S gate";
   }
+
   void runOnOperation() override {
     auto circuit = getOperation();
     auto ctx = circuit.getContext();
