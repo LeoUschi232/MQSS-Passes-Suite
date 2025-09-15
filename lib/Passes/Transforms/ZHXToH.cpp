@@ -11,8 +11,8 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZHXTOH
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 
 using namespace mlir;

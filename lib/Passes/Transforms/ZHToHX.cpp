@@ -31,12 +31,13 @@ Z⋅H = H⋅X
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZHTOHX
+
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 using namespace mlir;
