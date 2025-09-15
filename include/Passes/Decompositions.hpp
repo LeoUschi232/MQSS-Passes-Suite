@@ -33,12 +33,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-
-#include "llvm/Support/raw_ostream.h"
-
-#include <stdexcept>
 
 /**
  * @def CUDAQ_PREFIX_FUNCTION
@@ -49,29 +43,66 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 namespace mqss::opt {
 
-// Current count:
-// 16 passes
+/// 1
 std::unique_ptr<mlir::Pass> createReverseCxPass();
+
+/// 2
 std::unique_ptr<mlir::Pass> createCxToLowerHCzHPass();
+
+/// 3
 std::unique_ptr<mlir::Pass> createCxToUpperHCzHPass();
+
+/// 4
 std::unique_ptr<mlir::Pass> createCzToLowerHCxHPass();
+
+/// 5
 std::unique_ptr<mlir::Pass> createCzToUpperHCxHPass();
+
+/// 6
 std::unique_ptr<mlir::Pass> createRxToHRzHPass();
+
+/// 7
 std::unique_ptr<mlir::Pass> createRzToHRxHPass();
+
+/// 8
 std::unique_ptr<mlir::Pass> createCrxToHCrzHPass();
+
+/// 9
 std::unique_ptr<mlir::Pass> createCrzToHCrxHPass();
+
+/// 10
 std::unique_ptr<mlir::Pass> createSdgToSSSPass();
+
+/// 11
 std::unique_ptr<mlir::Pass> createSToSdgSdgSdgPass();
+
+/// 12
 std::unique_ptr<mlir::Pass> createSToTTPass();
+
+/// 13
 std::unique_ptr<mlir::Pass> createXToHZHPass();
+
+/// 14
 std::unique_ptr<mlir::Pass> createZToHXHPass();
+
+/// 15
 std::unique_ptr<mlir::Pass> createSwapToLowerCxCxCxPass();
+
+/// 16
 std::unique_ptr<mlir::Pass> createSwapToUpperCxCxCxPass();
 
 } // namespace mqss::opt
 
-// declarative passes
+// Declarative passes
+/**
+ * @def GEN_PASS_DECL
+ * @brief Macro for declaring passes for registration.
+ */
 #define GEN_PASS_DECL
-
+/**
+ * @def GEN_PASS_REGISTRATION
+ * @brief Macro for pass registration.
+ */
 #define GEN_PASS_REGISTRATION
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"

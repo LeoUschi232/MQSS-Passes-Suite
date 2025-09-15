@@ -20,6 +20,8 @@ BaseA2CAgent::BaseA2CAgent(
     const int max_qubits,
     const int max_instructions,
     const int max_depth,
+    int nr_input_values,
+    int nr_output_values,
     const torch::nn::Sequential &critic,
     const torch::nn::Sequential &actor,
     int critic_optimizer_type,
@@ -31,6 +33,8 @@ BaseA2CAgent::BaseA2CAgent(
     ) : max_qubits(max_qubits),
         max_instructions(max_instructions),
         max_depth(max_depth),
+        nr_input_values(nr_input_values),
+        nr_output_values(nr_output_values),
         critic_learning_rate(critic_learning_rate),
         actor_learning_rate(actor_learning_rate),
         nr_parallel_environments(nr_parallel_environments),
@@ -39,7 +43,6 @@ BaseA2CAgent::BaseA2CAgent(
         device(device) {
   register_module("critic", this->critic);
   register_module("actor", this->actor);
-
   this->critic->to(this->device);
   this->actor->to(this->device);
   this->critic_optimizer = makeOptimizer(

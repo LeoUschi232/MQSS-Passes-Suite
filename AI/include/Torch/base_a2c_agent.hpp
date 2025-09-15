@@ -15,6 +15,8 @@ class BaseA2CAgent : public torch::nn::Module {
   const int max_qubits;
   const int max_instructions;
   const int max_depth;
+  const int nr_input_values;
+  const int nr_output_values;
   const double critic_learning_rate;
   const double actor_learning_rate;
   const int nr_parallel_environments;
@@ -30,6 +32,8 @@ public:
       int max_qubits,
       int max_instructions,
       int max_depth,
+      int nr_input_values,
+      int nr_output_values,
       const torch::nn::Sequential &critic,
       const torch::nn::Sequential &actor,
       int critic_optimizer_type,
