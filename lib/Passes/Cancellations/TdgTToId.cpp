@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -10,13 +9,15 @@
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_TDGTTOID
+
+// NOLINTNEXTLINE
 #include "Passes/Cancellations.h.inc"
 } // namespace mqss::opt
 
 using namespace mlir;
 
 namespace {
-void cancelTdgTToId(mlir::Operation *op) {
+void cancelTdgTToId(Operation *op) {
   auto t = dyn_cast_or_null<quake::TOp>(*op);
   if (!t || t.isAdj() || !t.getControls().empty() ||
       t.getTargets().size() != 1) {
@@ -32,28 +33,24 @@ void cancelTdgTToId(mlir::Operation *op) {
       prevGate.getTargets().size() != 1) {
     return;
   }
-  auto loc = prevGate.getLoc();
-  auto params = prevGate.getParameters();
-  auto ctrls = prevGate.getControls();
-  auto targs = prevGate.getTargets();
 
-  mlir::IRRewriter rewriter(t->getContext());
+  IRRewriter rewriter(t->getContext());
   rewriter.setInsertionPointAfter(t);
   rewriter.eraseOp(t);
   rewriter.eraseOp(prevGate);
 }
 
-class TdgTToId : public BaseMQSSPass<TdgTToId> {
+class TdgTToId final : public BaseMQSSPass<TdgTToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(TdgTToId)
 
-  llvm::StringRef getArgument() const override { return "TdgTToId"; }
+  StringRef getArgument() const override { return "TdgTToId"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Remove Tdg followed by T.";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { cancelTdgTToId(op); });
   }
 };
