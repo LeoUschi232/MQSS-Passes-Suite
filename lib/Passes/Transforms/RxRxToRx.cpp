@@ -9,6 +9,8 @@
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_RXRXTORX
+
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 
@@ -18,20 +20,24 @@ namespace {
 
 void foldRxRx(Operation *op, OpBuilder &builder) {
   auto rx2 = dyn_cast_or_null<quake::RxOp>(*op);
-  if (!rx2 || !rx2.getControls().empty() || rx2.getTargets().size() != 1)
+  if (!rx2 || !rx2.getControls().empty() || rx2.getTargets().size() != 1) {
     return;
+  }
   auto prev =
       supportQuake::getPreviousOperationOnTarget(rx2, rx2.getTargets()[0]);
-  if (!prev)
+  if (!prev) {
     return;
+  }
   auto rx1 = dyn_cast_or_null<quake::RxOp>(prev);
-  if (!rx1 || !rx1.getControls().empty() || rx1.getTargets().size() != 1)
+  if (!rx1 || !rx1.getControls().empty() || rx1.getTargets().size() != 1) {
     return;
+  }
   builder.setInsertionPoint(rx2);
   auto p1 = supportQuake::getParametersValues(rx1.getParameters());
   auto p2 = supportQuake::getParametersValues(rx2.getParameters());
-  if (p1.size() != p2.size())
+  if (p1.size() != p2.size()) {
     return;
+  }
   SmallVector<Value> params;
   for (size_t i = 0; i < p1.size(); ++i) {
     params.push_back(
