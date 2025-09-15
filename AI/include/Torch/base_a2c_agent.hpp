@@ -20,8 +20,8 @@ class BaseA2CAgent : public torch::nn::Module {
   const int nr_parallel_environments;
   torch::nn::Sequential critic;
   torch::nn::Sequential actor;
-  std::unique_ptr<torch::optim::Adam> actor_optimizer;
-  std::unique_ptr<torch::optim::Adam> critic_optimizer;
+  std::unique_ptr<torch::optim::Optimizer> actor_optimizer;
+  std::unique_ptr<torch::optim::Optimizer> critic_optimizer;
   torch::Device device;
 
 public:
@@ -30,8 +30,10 @@ public:
       int max_qubits,
       int max_instructions,
       int max_depth,
-      torch::nn::Sequential critic,
-      torch::nn::Sequential actor,
+      const torch::nn::Sequential &critic,
+      const torch::nn::Sequential &actor,
+      int critic_optimizer_type,
+      int actor_optimizer_type,
       double critic_learning_rate = 0.005,
       double actor_learning_rate = 0.001,
       int nr_parallel_environments = 10,

@@ -3,7 +3,11 @@
 // Torch includes
 #include <torch/torch.h>
 
+// Utils includes
+#include "Torch/agent_utils..hpp"
+
 // Standard library includes
+
 #include <utility>
 #include <tuple>
 #include <cmath>
@@ -16,8 +20,10 @@ BaseA2CAgent::BaseA2CAgent(
     const int max_qubits,
     const int max_instructions,
     const int max_depth,
-    torch::nn::Sequential critic,
-    torch::nn::Sequential actor,
+    const torch::nn::Sequential &critic,
+    const torch::nn::Sequential &actor,
+    int critic_optimizer_type,
+    int actor_optimizer_type,
     const double critic_learning_rate,
     const double actor_learning_rate,
     const int nr_parallel_environments,
@@ -28,29 +34,18 @@ BaseA2CAgent::BaseA2CAgent(
         critic_learning_rate(critic_learning_rate),
         actor_learning_rate(actor_learning_rate),
         nr_parallel_environments(nr_parallel_environments),
-        critic(critic),
-        actor(actor),
+        critic(std::move(critic)),
+        actor(std::move(actor)),
         device(device) {
+  register_module("critic", this->critic);
+  register_module("actor", this->actor);
 
-  // this->critic = torch::nn::Sequential(
-  //     torch::nn::Linear(nr_input_values, critic_layer1_size),
-  //     torch::nn::LeakyReLU(),
-  //     torch::nn::Linear(critic_layer1_size, critic_layer2_size),
-  //     torch::nn::LeakyReLU(),
-  //     torch::nn::Linear(critic_layer2_size, 1));
   this->critic->to(this->device);
-  // this->actor = torch::nn::Sequential(
-  //     torch::nn::Linear(nr_input_values, actor_layer1_size),
-  //     torch::nn::LeakyReLU(),
-  //     torch::nn::Linear(actor_layer1_size, actor_layer2_size),
-  //     torch::nn::LeakyReLU(),
-  //     torch::nn::Linear(actor_layer2_size, nr_actions),
-  //     torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/-1)));
   this->actor->to(this->device);
-  this->critic_optimizer = std::make_unique<torch::optim::Adam>(
-      critic->parameters(), torch::optim::AdamOptions(critic_learning_rate));
-  this->actor_optimizer = std::make_unique<torch::optim::Adam>(
-      actor->parameters(), torch::optim::AdamOptions(actor_learning_rate));
+  this->critic_optimizer = makeOptimizer(
+      critic_optimizer_type, this->critic, this->critic_learning_rate);
+  this->actor_optimizer = makeOptimizer(
+      actor_optimizer_type, this->actor, this->actor_learning_rate);
 }
 
 
