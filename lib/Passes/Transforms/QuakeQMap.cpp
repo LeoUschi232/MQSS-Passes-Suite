@@ -45,13 +45,11 @@ using namespace mlir;
 // loading rotation gates
 void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::RxOp>(op) || isa<quake::RyOp>(op) || isa<quake::RzOp>(op)) {
-    int qubit = -1;
-    double angle = -1.0;
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
-    angle = supportQuake::extractDoubleArgumentValue(operand1.getDefiningOp());
+    double angle = supportQuake::extractDoubleArgumentValue(operand1.getDefiningOp());
     Value operand2 = op->getOperands()[1];
-    qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+    int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
 #ifdef DEBUG
     llvm::errs() << "Operation ";
@@ -80,12 +78,11 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::XOp>(op) || isa<quake::YOp>(op) || isa<quake::ZOp>(op)) {
     // controlled operations
     if (op->getOperands().size() == 2) {
-      int qubit_ctrl, qubit_target;
       Value operand1 = op->getOperands()[0];
-      qubit_ctrl = supportQuake::extractIndexFromQuakeExtractRefOp(
+      int qubit_ctrl = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
       Value operand2 = op->getOperands()[1];
-      qubit_target = supportQuake::extractIndexFromQuakeExtractRefOp(
+      int qubit_target = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand2.getDefiningOp());
 #ifdef DEBUG
       llvm::errs() << "Operation ";
