@@ -128,7 +128,6 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
 // loading S,T,H single qubit gates
 void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::SOp>(op) || isa<quake::TOp>(op) || isa<quake::HOp>(op)) {
-    int qubit_ctrl, qubit_target;
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
@@ -153,8 +152,7 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
 
 // loading measurements
 void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
-                          std::map<int, int> measurements) {
-  int qubit = -1, result = -1;
+                          const std::map<int, int> &measurements) {
   if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
 #ifdef DEBUG
     llvm::errs() << "Operation ";
@@ -201,7 +199,7 @@ public:
     return "quake-to-qmap-pass";
   }
 
-  StringRef getDescription() const  override {
+  StringRef getDescription() const override {
     return "Pass that maps a given quake module respecting the constraints of "
         "a given quantum device, using mqt-qmap tool";
   }
