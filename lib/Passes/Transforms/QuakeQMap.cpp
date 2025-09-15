@@ -293,6 +293,7 @@ public:
             loc, constantValue, floatType);
         parameterValues.push_back(constantOp);
       }
+      // NOLINTNEXTLINE
       switch (op->getType()) {
       case qc::X:
         builder.create<quake::XOp>(
