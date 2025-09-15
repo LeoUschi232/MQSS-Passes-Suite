@@ -186,8 +186,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 namespace {
 
 class QuakeQMap final : public PassWrapper<
-      QuakeQMap, OperationPass<func::FuncOp> > {
-private:
+      QuakeQMap, OperationPass<FuncOp> > {
   Architecture &architecture;
   const Configuration &settings;
 
@@ -198,15 +197,11 @@ public:
     : architecture(architecture), settings(settings) {
   }
 
-  StringRef getArgument() const
-
-  override {
+  StringRef getArgument() const override {
     return "quake-to-qmap-pass";
   }
 
-  StringRef getDescription() const
-
-  override {
+  StringRef getDescription() const  override {
     return "Pass that maps a given quake module respecting the constraints of "
         "a given quantum device, using mqt-qmap tool";
   }
@@ -218,8 +213,8 @@ public:
     auto circuit = getOperation();
     // Get the function name
     StringRef funcName = circuit.getName();
-    if (!(funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) !=
-          std::string::npos))
+    if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION))
+        == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
 
     std::map<int, int> measurements; // key: qubit, value register index
