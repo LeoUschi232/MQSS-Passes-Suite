@@ -6,6 +6,7 @@
 
 namespace ai_pass_selector {
     class InstructionBasedA2CAgent : public BaseA2CAgent {
+    public:
         InstructionBasedA2CAgent(
             unsigned int max_qubits,
             unsigned int max_instructions,
@@ -15,7 +16,13 @@ namespace ai_pass_selector {
             double critic_learning_rate,
             double actor_learning_rate,
             unsigned int nr_parallel_environments,
-            torch::Device device);
+            torch::Device device)
+            : BaseA2CAgent(
+                max_qubits, max_instructions, max_depth,
+                critic_optimizer_type, actor_optimizer_type,
+                critic_learning_rate, actor_learning_rate,
+                nr_parallel_environments, device) {
+        }
 
         std::unordered_map<std::string, std::string> train(
             std::string dataset,
@@ -32,7 +39,7 @@ namespace ai_pass_selector {
     /// CONV = Convolutional
     /// LSM = Layer Size Maintaining
     /// LSD = Layer Size Decreasing
-    class IB_FC_LSD_A2C final : public BaseA2CAgent {
+    class IB_FC_LSD_A2C final : public InstructionBasedA2CAgent {
     public:
         IB_FC_LSD_A2C(
             unsigned int max_qubits,
@@ -48,7 +55,7 @@ namespace ai_pass_selector {
         std::string model_name() const override;
     };
 
-    class IB_FC_LSM_A2C final : public BaseA2CAgent {
+    class IB_FC_LSM_A2C final : public InstructionBasedA2CAgent {
     public:
         IB_FC_LSM_A2C(
             unsigned int max_qubits,

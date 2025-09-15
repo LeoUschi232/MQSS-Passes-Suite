@@ -1,4 +1,4 @@
-#include "Torch/base_a2c_agent.hpp"
+#include "Torch/A2C/base_a2c_agent.hpp"
 
 // Torch includes
 #include <torch/torch.h>

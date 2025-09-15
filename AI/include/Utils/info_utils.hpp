@@ -4,9 +4,20 @@
 #include <string>
 #include <filesystem>
 #include <optional>
+#include <random>
+
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+static std::mt19937 rng(std::random_device{}());
+
+/**
+ *
+ * @param start
+ * @param end
+ * @return
+ */
+int random_int(int start, int end);
 
 /**
  * Given a circuit name or its full filepath, search for the circuit and
@@ -59,6 +70,13 @@ void print_dataset_info(const std::string &dataset_name);
  * @param agent_name
  */
 void print_agent_info(const std::string &agent_name);
+
+/**
+ *
+ * @param dataset_name
+ * @return
+ */
+std::vector<fs::path> get_dataset_files(const std::string &dataset_name);
 
 
 } // namespace ai_pass_selector
