@@ -171,11 +171,12 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
     std::vector<int> controls = {};
     std::vector<int> targets = {};
     std::vector params(MAX_GATE_PARAMS, 0.0);
+    bool isAdj = false;
 
     if (isMeasurementGate(op)) {
       targets = getMeasurementTargets(op, NR_QUBITS);
     } else {
-      std::tie(controls, targets, params)
+      std::tie(controls, targets, params, isAdj)
           = getOperatingControlsTargetsParams(op);
     }
 
@@ -197,9 +198,9 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
     }
 
     // Gate
-    row[GATE_OFFSET + gate_index] = 1.0;
+    row[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
 
-    // params: [adjoint, angle1, angle2, angle3]
+    // params: [angle1, angle2, angle3]
     for (int i = 0; i < MAX_GATE_PARAMS; i++) {
       row[PARAM_OFFSET + i] = params[i];
     }
@@ -244,11 +245,12 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
     std::vector<int> controls = {};
     std::vector<int> targets = {};
     std::vector params(MAX_GATE_PARAMS, 0.0);
+    bool isAdj = false;
 
     if (isMeasurementGate(op)) {
       targets = getMeasurementTargets(op, NR_QUBITS);
     } else {
-      std::tie(controls, targets, params)
+      std::tie(controls, targets, params, isAdj)
           = getOperatingControlsTargetsParams(op);
     }
 
@@ -272,7 +274,7 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
 
       // The tensor storage is value-initialized to 0.0; write only non-zeros.
       if (gate_index >= 0) {
-        cell[GATE_OFFSET + gate_index] = 1.0;
+        cell[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
       }
 
       // params: [adjoint, angle1, angle2, angle3]
@@ -317,10 +319,10 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
 }
 
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<double> >
+std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
 QuantumCircuitEnviorment::getOperatingControlsTargetsParams(Operation *op) {
   if (isMeasurementGate(op) || !isOperatingGate(op)) {
-    return {{}, {}, {}};
+    return {{}, {}, {}, false};
   }
   std::vector params(MAX_GATE_PARAMS, 0.0);
   std::string gate_name = getOnlyGateName(op);
@@ -330,16 +332,15 @@ QuantumCircuitEnviorment::getOperatingControlsTargetsParams(Operation *op) {
   }
   std::vector<int> targets = getIndicesOfValueRange(gateOp.getTargets());
   std::vector<int> controls = getIndicesOfValueRange(gateOp.getControls());
-  params[0] = gateOp.isAdj() ? 1.0 : 0.0;
   auto param_values = getParametersValues(gateOp.getParameters());
   auto angles = params_to_angles(param_values);
-  if (angles.size() > MAX_GATE_ANGLES) {
+  if (angles.size() > MAX_GATE_PARAMS) {
     throw std::runtime_error("Detected gate with too many angles.");
   }
-  for (std::size_t i = 0; i < angles.size(); ++i) {
-    params[1 + i] = angles[i];
+  for (std::size_t i = 0; i < angles.size(); i++) {
+    params[i] = angles[i];
   }
-  return {controls, targets, params};
+  return {controls, targets, params, gateOp.isAdj()};
 }
 
 

@@ -30,8 +30,7 @@ constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
 // The gate parameters are whether the gate is adjoint up to three possible
 // angles of unitary and rotation gates, making up to four parameters.
 constexpr int NR_GATES = SUPPORTED_GATES.size();
-constexpr int MAX_GATE_ANGLES = 3;
-constexpr int MAX_GATE_PARAMS = 4;
+constexpr int MAX_GATE_PARAMS = 3;
 constexpr int QUBIT_ROLE = 1;
 
 constexpr int GATE_INDEX(std::string_view gate) {

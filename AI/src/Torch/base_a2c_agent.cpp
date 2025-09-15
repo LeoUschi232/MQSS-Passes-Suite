@@ -1,4 +1,4 @@
-#include "Torch/a2c_agent.hpp"
+#include "Torch/base_a2c_agent.hpp"
 
 // Torch includes
 #include <torch/torch.h>
@@ -8,53 +8,44 @@
 #include <tuple>
 #include <cmath>
 #include <memory>
-#include <sstream>
 
 namespace ai_pass_selector {
 
 
-A2CAgent::A2CAgent(
-    const int nr_input_values,
-    const int nr_actions,
+BaseA2CAgent::BaseA2CAgent(
     const int max_qubits,
     const int max_instructions,
     const int max_depth,
+    torch::nn::Sequential critic,
+    torch::nn::Sequential actor,
     const double critic_learning_rate,
     const double actor_learning_rate,
     const int nr_parallel_environments,
     const torch::Device device
-    ) : nr_input_values(nr_input_values),
-        nr_actions(nr_actions),
-        max_qubits(max_qubits),
+    ) : max_qubits(max_qubits),
         max_instructions(max_instructions),
         max_depth(max_depth),
         critic_learning_rate(critic_learning_rate),
         actor_learning_rate(actor_learning_rate),
         nr_parallel_environments(nr_parallel_environments),
+        critic(critic),
+        actor(actor),
         device(device) {
-  int critic_layer1_size = static_cast<int>(std::lround(
-      std::cbrt(static_cast<double>(nr_input_values * nr_input_values))));
-  int critic_layer2_size = static_cast<int>(std::lround(
-      std::cbrt(static_cast<double>(nr_input_values))));
-  int actor_layer1_size = static_cast<int>(std::lround(std::cbrt(
-      static_cast<double>(nr_input_values * nr_input_values * nr_actions))));
-  int actor_layer2_size = static_cast<int>(std::lround(std::cbrt(
-      static_cast<double>(nr_input_values * nr_actions * nr_actions))));
 
-  this->critic = torch::nn::Sequential(
-      torch::nn::Linear(nr_input_values, critic_layer1_size),
-      torch::nn::LeakyReLU(),
-      torch::nn::Linear(critic_layer1_size, critic_layer2_size),
-      torch::nn::LeakyReLU(),
-      torch::nn::Linear(critic_layer2_size, 1));
+  // this->critic = torch::nn::Sequential(
+  //     torch::nn::Linear(nr_input_values, critic_layer1_size),
+  //     torch::nn::LeakyReLU(),
+  //     torch::nn::Linear(critic_layer1_size, critic_layer2_size),
+  //     torch::nn::LeakyReLU(),
+  //     torch::nn::Linear(critic_layer2_size, 1));
   this->critic->to(this->device);
-  this->actor = torch::nn::Sequential(
-      torch::nn::Linear(nr_input_values, actor_layer1_size),
-      torch::nn::LeakyReLU(),
-      torch::nn::Linear(actor_layer1_size, actor_layer2_size),
-      torch::nn::LeakyReLU(),
-      torch::nn::Linear(actor_layer2_size, nr_actions),
-      torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/-1)));
+  // this->actor = torch::nn::Sequential(
+  //     torch::nn::Linear(nr_input_values, actor_layer1_size),
+  //     torch::nn::LeakyReLU(),
+  //     torch::nn::Linear(actor_layer1_size, actor_layer2_size),
+  //     torch::nn::LeakyReLU(),
+  //     torch::nn::Linear(actor_layer2_size, nr_actions),
+  //     torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/-1)));
   this->actor->to(this->device);
   this->critic_optimizer = std::make_unique<torch::optim::Adam>(
       critic->parameters(), torch::optim::AdamOptions(critic_learning_rate));
@@ -63,7 +54,7 @@ A2CAgent::A2CAgent(
 }
 
 
-std::pair<torch::Tensor, torch::Tensor> A2CAgent::forward(
+std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
     torch::Tensor batched_observations) {
   batched_observations = batched_observations.to(this->device);
   return {this->critic->forward(batched_observations),
@@ -71,7 +62,7 @@ std::pair<torch::Tensor, torch::Tensor> A2CAgent::forward(
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-A2CAgent::select_action(const torch::Tensor &batched_observations) {
+BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
   auto [state_values, action_probs] = this->forward(batched_observations);
   // sample one action per row; result is [B,1] -> squeeze to [B]
   torch::Tensor actions = action_probs.multinomial(1).squeeze(-1);
@@ -86,7 +77,7 @@ A2CAgent::select_action(const torch::Tensor &batched_observations) {
   };
 }
 
-std::pair<torch::Tensor, torch::Tensor> A2CAgent::get_losses(
+std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
     const torch::Tensor &rewards,
     const torch::Tensor &log_action_probs,
     const torch::Tensor &state_values,
@@ -137,8 +128,8 @@ std::pair<torch::Tensor, torch::Tensor> A2CAgent::get_losses(
   return {critic_loss, actor_loss};
 }
 
-void A2CAgent::update_parameters(const torch::Tensor &critic_loss,
-                                 const torch::Tensor &actor_loss) {
+void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
+                                     const torch::Tensor &actor_loss) const {
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
@@ -146,29 +137,4 @@ void A2CAgent::update_parameters(const torch::Tensor &critic_loss,
   actor_loss.backward();
   this->actor_optimizer->step();
 }
-
-std::string
-A2CAgent::make_path(const std::string &dir, const std::string &who) const {
-  std::ostringstream os;
-  os << dir << "/" << who << "-"
-      << this->nr_input_values << "x" << this->nr_actions << ".h5";
-  return os.str();
-}
-
-void A2CAgent::save_model(const std::string &weights_dir) const {
-  std::string critic_path = this->make_path(weights_dir, "critic");
-  torch::save(this->critic, critic_path);
-  std::string actor_path = this->make_path(weights_dir, "actor");
-  torch::save(this->actor, actor_path);
-}
-
-void A2CAgent::load_model(const std::string &weights_dir) {
-  std::string critic_path = this->make_path(weights_dir, "critic");
-  torch::load(this->critic, critic_path);
-  this->critic->to(this->device);
-  std::string actor_path = this->make_path(weights_dir, "actor");
-  torch::load(this->actor, actor_path);
-  this->actor->to(this->device);
-}
-
 } // ai_pass_selector

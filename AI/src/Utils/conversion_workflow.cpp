@@ -99,23 +99,24 @@ int write_module_to_file(ModuleOp module,
 int build_png_from_tikz_file(const fs::path &tikz_file_path) {
   // Minimal wrapper document (standalone) that \input{sometikz.tikz}
   // Write temp.tex next to CWD (consistent with existing workflow).
-  {
-    const std::string latex_wrapper = "\\documentclass{standalone}\n"
-                                      "\\usepackage{tikz}\n"
-                                      "\\usetikzlibrary{quantikz}\n"
-                                      "\\begin{document}\n"
-                                      "\\input{" +
-                                      tikz_file_path.string() +
-                                      "}\n"
-                                      "\\end{document}\n";
-    std::ofstream temp_tex_file("temp.tex");
-    if (!temp_tex_file) {
-      std::cerr << "\nFailed to create temp.tex for " << tikz_file_path
-          << std::endl;
-      return -1;
-    }
-    temp_tex_file << latex_wrapper;
+
+  const std::string latex_wrapper = "\\documentclass{standalone}\n"
+                                    "\\usepackage{tikz}\n"
+                                    "\\usepackage{quantikz}\n"
+                                    "\\begin{document}\n"
+                                    "\\input{" +
+                                    tikz_file_path.string() +
+                                    "}\n"
+                                    "\\end{document}\n";
+  std::ofstream temp_tex_file("temp.tex");
+  if (!temp_tex_file) {
+    std::cerr << "\nFailed to create temp.tex for " << tikz_file_path
+        << std::endl;
+    return -1;
   }
+  temp_tex_file << latex_wrapper;
+  temp_tex_file.flush();
+  temp_tex_file.close();
 
   const std::string png_output_base =
       tikz_file_path.string().substr(0, tikz_file_path.string().find(".tikz"));
@@ -128,8 +129,8 @@ int build_png_from_tikz_file(const fs::path &tikz_file_path) {
       ".png > /dev/null 2>&1 && "
       "rm temp.* > /dev/null 2>&1";
 
-  return run_shell_command(command_line,
-                           "PNG conversion for " + tikz_file_path.string());
+  return run_shell_command(
+      command_line, "PNG conversion for " + tikz_file_path.string());
 }
 
 // ------------------------------------------------------------

@@ -1,6 +1,6 @@
 #include "mlir_utils.hpp"
 #include "Environment/environment.hpp"
-#include "Torch/a2c_agent.hpp"
+#include "Torch/base_a2c_agent.hpp"
 #include "Utils/info_utils.hpp"
 
 #include <torch/torch.h>

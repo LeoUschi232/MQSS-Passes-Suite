@@ -336,12 +336,16 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
     }
 
     int gateIndex = -1;
+    bool isAdj = false;
     for (; j < maxQubits + NR_GATES; j++) {
-      if (double value = tensor(instr, j); value == 1.0) {
+      if (double value = tensor(instr, j); std::abs(value) == 1.0) {
         if (gateIndex >= 0) {
           throw std::runtime_error("Multiple gates triggered in one row.");
         }
         gateIndex = j - maxQubits;
+        if (value < 0.0) {
+          isAdj = true;
+        }
       } else if (value != 0.0) {
         throw std::runtime_error("Gate trigger: " + std::to_string(value));
       }
@@ -352,17 +356,11 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
       break;
     }
 
-    bool isAdj = false;
-    if (double value = tensor(instr, j++); value == 1.0) {
-      isAdj = true;
-    } else if (value != 0.0) {
-      throw std::runtime_error("IsAdj trigger: " + std::to_string(value));
-    }
     std::vector<double> angles;
     for (; j < featuresPerRow; j++) {
       angles.push_back(tensor(instr, j));
     }
-    if (angles.size() != MAX_GATE_ANGLES) {
+    if (angles.size() != MAX_GATE_PARAMS) {
       throw std::runtime_error(
           "Nr gate angles: " + std::to_string(angles.size()));
     }
@@ -391,12 +389,16 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
 
       int j = 0;
       int gateIndex = -1;
+      bool isAdj = false;
       for (; j < NR_GATES; j++) {
-        if (double value = tensor(depth, qubit, j); value == 1.0) {
+        if (double value = tensor(depth, qubit, j); std::abs(value) == 1.0) {
           if (gateIndex >= 0) {
             throw std::runtime_error("Multiple gates triggered in one cell.");
           }
           gateIndex = j;
+          if (value < 0.0) {
+            isAdj = true;
+          }
         } else if (value != 0.0) {
           throw std::runtime_error("Gate trigger: " + std::to_string(value));
         }
@@ -406,17 +408,11 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
         continue;
       }
 
-      bool isAdj = false;
-      if (double value = tensor(depth, qubit, j++); value == 1.0) {
-        isAdj = true;
-      } else if (value != 0.0) {
-        throw std::runtime_error("IsAdj trigger: " + std::to_string(value));
-      }
       std::vector<double> angles;
       for (; j < NR_GATES + MAX_GATE_PARAMS; j++) {
         angles.push_back(tensor(depth, qubit, j));
       }
-      if (angles.size() != MAX_GATE_ANGLES) {
+      if (angles.size() != MAX_GATE_PARAMS) {
         throw std::runtime_error(
             "Nr gate angles: " + std::to_string(angles.size()));
       }

@@ -1,5 +1,5 @@
-#ifndef A2C_AGENT_HPP
-#define A2C_AGENT_HPP
+#ifndef BASE_A2C_AGENT_HPP
+#define BASE_A2C_AGENT_HPP
 
 // Torch includes
 #include <torch/torch.h>
@@ -11,9 +11,7 @@
 
 
 namespace ai_pass_selector {
-class A2CAgent final : torch::nn::Module {
-  const int nr_input_values;
-  const int nr_actions;
+class BaseA2CAgent : public torch::nn::Module {
   const int max_qubits;
   const int max_instructions;
   const int max_depth;
@@ -28,29 +26,28 @@ class A2CAgent final : torch::nn::Module {
 
 public:
   /// Constructor
-  A2CAgent(
-      int nr_input_values,
-      int nr_actions,
+  BaseA2CAgent(
       int max_qubits,
       int max_instructions,
       int max_depth,
+      torch::nn::Sequential critic,
+      torch::nn::Sequential actor,
       double critic_learning_rate = 0.005,
       double actor_learning_rate = 0.001,
       int nr_parallel_environments = 10,
-      torch::Device device = torch::kCPU
-      );
+      torch::Device device = torch::kCPU);
 
   /// Destructor
-  ~A2CAgent() override = default;
+  ~BaseA2CAgent() override = default;
 
   /// Copy and move constructors and assignment operators
-  A2CAgent(const A2CAgent &other) = delete;
+  BaseA2CAgent(const BaseA2CAgent &other) = delete;
 
-  A2CAgent(A2CAgent &&other) noexcept = default;
+  BaseA2CAgent(BaseA2CAgent &&other) noexcept = default;
 
-  A2CAgent &operator=(const A2CAgent &other) = delete;
+  BaseA2CAgent &operator=(const BaseA2CAgent &other) = delete;
 
-  A2CAgent &operator=(A2CAgent &&other) noexcept = delete;
+  BaseA2CAgent &operator=(BaseA2CAgent &&other) noexcept = delete;
 
   /**
    *
@@ -90,13 +87,6 @@ public:
       double gae_hyperparameter,
       double entropy_coefficient);
 
-  /**
-   *
-   * @param dir
-   * @param who
-   * @return
-   */
-  std::string make_path(const std::string &dir, const std::string &who) const;
 
   /**
    *
@@ -104,22 +94,20 @@ public:
    * @param actor_loss
    */
   void update_parameters(const torch::Tensor &critic_loss,
-                         const torch::Tensor &actor_loss);
+                         const torch::Tensor &actor_loss) const;
 
   /**
    *
-   * @param weights_dir
    */
-  void save_model(const std::string &weights_dir) const;
+  virtual void save_model() const = 0;
 
   /**
    *
-   * @param weights_dir
    */
-  void load_model(const std::string &weights_dir);
+  virtual void load_model() = 0;
 
 };
 
 } // namespace ai_pass_selector
 
-#endif //A2C_AGENT_HPP
+#endif // BASE_A2C_AGENT_HPP

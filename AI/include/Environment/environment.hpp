@@ -137,7 +137,8 @@ public:
    * @param op
    * @return
    */
-  static std::tuple<std::vector<int>, std::vector<int>, std::vector<double> >
+  static std::tuple<
+    std::vector<int>, std::vector<int>, std::vector<double>, bool>
   getOperatingControlsTargetsParams(Operation *op);
 
 };
