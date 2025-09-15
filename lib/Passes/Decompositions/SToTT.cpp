@@ -34,6 +34,7 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_STOTT
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,11 +42,11 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceSToTT : public OpRewritePattern<quake::SOp> {
+struct ReplaceSToTT final : OpRewritePattern<quake::SOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(quake::SOp sOp,
-                                PatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(
+      quake::SOp sOp, PatternRewriter &rewriter) const override {
     if (sOp.isAdj() || sOp.getControls().size() != 0 ||
         sOp.getTargets().size() != 1) {
       return success();
@@ -59,13 +60,13 @@ struct ReplaceSToTT : public OpRewritePattern<quake::SOp> {
   }
 };
 
-class SToTT : public BaseMQSSPass<SToTT> {
+class SToTT final : public BaseMQSSPass<SToTT> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SToTT)
 
-  llvm::StringRef getArgument() const override { return "SToTT"; }
+  StringRef getArgument() const override { return "SToTT"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass that replaces S by two T gates";
   }
 

@@ -34,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_SWAPTOUPPERCXCXCX
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceSwapToUpperCxCxCx : public OpRewritePattern<quake::SwapOp> {
+struct ReplaceSwapToUpperCxCxCx final : OpRewritePattern<quake::SwapOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::SwapOp swapOp,
@@ -60,13 +61,13 @@ struct ReplaceSwapToUpperCxCxCx : public OpRewritePattern<quake::SwapOp> {
   }
 };
 
-class SwapToUpperCxCxCx : public BaseMQSSPass<SwapToUpperCxCxCx> {
+class SwapToUpperCxCxCx final : public BaseMQSSPass<SwapToUpperCxCxCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SwapToUpperCxCxCx)
 
-  llvm::StringRef getArgument() const override { return "SwapToUpperCxCxCx"; }
+  StringRef getArgument() const override { return "SwapToUpperCxCxCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of swap by three cx gates";
   }
 
