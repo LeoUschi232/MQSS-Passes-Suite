@@ -47,7 +47,8 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::RxOp>(op) || isa<quake::RyOp>(op) || isa<quake::RzOp>(op)) {
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
-    double angle = supportQuake::extractDoubleArgumentValue(operand1.getDefiningOp());
+    double angle = supportQuake::extractDoubleArgumentValue(
+        operand1.getDefiningOp());
     Value operand2 = op->getOperands()[1];
     int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
