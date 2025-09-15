@@ -31,11 +31,12 @@ X⋅H = H⋅Z
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_XHTOHZ
+
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 using namespace mlir;
@@ -50,8 +51,7 @@ public:
   StringRef getArgument() const override { return "XHToHZ"; }
 
   StringRef getDescription() const override {
-    return "Pass that switches a pattern composed by X and Hadamard to "
-           "Hadamard and Z";
+    return "Switches a pattern composed by X H to H Z";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
