@@ -316,11 +316,7 @@ public:
             loc, constantValue, floatType);
         parameterValues.push_back(constantOp);
       }
-      switch (op->
-
-        getType()
-
-      ) {
+      switch (op->getType()) {
       case qc::X:
         builder.create<quake::XOp>(
             loc, parameterValues, controlValues, targetValues);
