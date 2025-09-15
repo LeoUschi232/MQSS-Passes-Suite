@@ -290,11 +290,7 @@ public:
       SmallVector<Value> controlValues = {};
       SmallVector<Value> targetValues = {};
       // get the targets
-      for (int i = 0; i < targets.
-
-                      size();
-
-           i++) {
+      for (int i = 0; i < targets.size(); i++) {
         auto targetRef =
             builder.create<quake::ExtractRefOp>(loc, qubits, targets[i]);
         targetValues.push_back(targetRef);
@@ -309,7 +305,7 @@ public:
       for (auto p : parameter) {
         // TODO: Apparently all the parameters are floats in QC, may be the case
         //       this is not always true
-        llvm::APFloat constantValue(p);
+        APFloat constantValue(p);
         // Define the type as f64.
         auto floatType = builder.getF64Type();
         auto constantOp = builder.create<arith::ConstantFloatOp>(
@@ -374,6 +370,6 @@ public:
 
 std::unique_ptr<Pass>
 mqss::opt::createQuakeQMapPass(
-  Architecture &architecture,const Configuration &settings) {
+    Architecture &architecture, const Configuration &settings) {
   return std::make_unique<QuakeQMap>(architecture, settings);
 }
