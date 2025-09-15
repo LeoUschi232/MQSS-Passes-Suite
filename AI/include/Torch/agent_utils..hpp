@@ -5,9 +5,10 @@
 #include "Decompositions.hpp"
 #include "Transforms.hpp"
 
-#include <memory>
 #include <mlir/Pass/Pass.h>
 #include <torch/torch.h>
+#include <memory>
+#include <vector>
 
 using namespace mqss::opt;
 

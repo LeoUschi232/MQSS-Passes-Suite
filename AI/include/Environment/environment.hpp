@@ -88,7 +88,7 @@ public:
    *
    * @param circuit
    */
-  void register_quantum_circuit(ModuleOp circuit);
+  bool register_quantum_circuit(ModuleOp circuit);
 
   /**
    *
@@ -131,16 +131,14 @@ public:
    */
   DepthBasedTensor<double> get_depth_based_observation();
 
-
   /**
    *
    * @param op
    * @return
    */
-  static std::tuple<
-    std::vector<int>, std::vector<int>, std::vector<double>, bool>
+  static
+  std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
   getOperatingControlsTargetsParams(Operation *op);
-
 };
 
 } // namespace ai_pass_selector

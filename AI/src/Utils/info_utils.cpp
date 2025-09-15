@@ -1,5 +1,6 @@
 #include "Utils/info_utils.hpp"
 
+#include "Quake.hpp"
 #include "mlir_utils.hpp"
 
 #include <string>

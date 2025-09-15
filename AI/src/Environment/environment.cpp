@@ -5,9 +5,7 @@
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
-
-// Passes includes
-#include "Passes/Cancellations.hpp"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 // Support includes
 #include "Support/CodeGen/Quake.hpp"
@@ -24,6 +22,7 @@
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
 /// namespace, so every mlir type has to be included seperately.
 using mlir::ModuleOp;
+using mlir::Operation;
 using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -41,37 +40,37 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
   this->register_quantum_circuit(circuit);
 }
 
-void QuantumCircuitEnviorment::register_quantum_circuit(ModuleOp circuit) {
+bool QuantumCircuitEnviorment::register_quantum_circuit(ModuleOp circuit) {
   switch (circuit_invalid_type(circuit)) {
   case CIRCUIT_VALID:
     break;
   case NO_CIRCUIT:
     std::cerr << "No circuit provided to the environment." << std::endl;
-    return;
+    return false;
   case TOO_MANY_QUBITS:
     std::cerr << "Passed circuit has too many qubits." << std::endl;
-    return;
+    return false;
   case TOO_MANY_INSTRUCTIONS:
     std::cerr << "Passed circuit has too many instructions." << std::endl;
-    return;
+    return false;
   case TOO_LARGE_DEPTH:
-    std::cerr << "Passed circuit has too large depth." << std::endl;
-    return;
+    return false;
   case NO_QUBIT_ALLOCATIONS:
     std::cerr << "Passed circuit has no qubit allocations." << std::endl;
-    return;
+    return false;
   case MULTIPLE_QUBIT_ALLOCATIONS:
     std::cerr << "Passed circuit has multiple qubit allocations." << std::endl;
-    return;
+    return false;
   case AMBIGUOUS_MEASUREMENT:
     std::cerr << "Passed circuit has ambiguous measurements." << std::endl;
-    return;
+    return false;
   default:
     std::cerr << "Unkown circuit validation error." << std::endl;
-    return;
+    return false;
   }
   this->original_circuit = ModuleOp(circuit);
   this->current_circuit = ModuleOp(circuit);
+  return true;
 }
 
 std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,

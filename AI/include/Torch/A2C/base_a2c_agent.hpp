@@ -8,6 +8,7 @@
 #include <utility>
 #include <tuple>
 #include <memory>
+#include <filesystem>
 
 
 namespace fs = std::filesystem;
@@ -83,6 +84,12 @@ public:
 
   BaseA2CAgent &operator=(BaseA2CAgent &&other) noexcept = delete;
 
+    unsigned int getNrParallelEnvironments() const;
+
+    torch::Device getDevice() const;
+
+    unsigned int getNrActions() const;
+
   /**
    *
    * @param batched_observations
@@ -132,19 +139,19 @@ public:
 
   /**
    *
-   * @return
-   */
-  virtual std::string model_name() const = 0;
-
-  /**
-   *
    */
   void save_model() const;
 
   /**
    *
    */
-  void load_model() const;
+  void load_model();
+
+  /**
+   *
+   * @return
+   */
+  virtual std::string model_name() const = 0;
 
 };
 

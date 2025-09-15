@@ -1,6 +1,6 @@
 #ifndef INSTRUCTION_BASED_A2C_HPP
 #define INSTRUCTION_BASED_A2C_HPP
-#include "Torch/base_a2c_agent.hpp"
+#include "Torch/A2C/base_a2c_agent.hpp"
 
 #include "Torch/agent_utils..hpp"
 

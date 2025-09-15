@@ -1,11 +1,11 @@
 // Utils/tensor_utils.cpp
 #include "Utils/tensor_utils.hpp"
 
-#include "mlir_utils.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
+#include <common/RuntimeMLIR.h>
 
 #include <iostream>
 
@@ -465,53 +465,5 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
 }
 
-// ----------------- Legacy signatures (ctx supplied by caller) ---------
-ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(MLIRContext &ctx) {
-  OpBuilder b(&ctx);
-  auto loc = b.getUnknownLoc();
-  ModuleOp module = ModuleOp::create(loc);
-  {
-    auto funcType = b.getFunctionType({}, {});
-    FuncOp entry =
-        FuncOp::create(loc, "__nvqpp__mlirgen__FromTensor", funcType);
-    entry->setAttr(b.getStringAttr("cudaq-entrypoint"), b.getUnitAttr());
-    entry->setAttr(b.getStringAttr("cudaq-kernel"), b.getUnitAttr());
-    entry.addEntryBlock();
-    b.setInsertionPointToEnd(&entry.getBody().front());
-    b.create<ReturnOp>(loc);
-    module.push_back(entry);
-  }
-  Operation *ret = findReturn(module);
-  if (!ret) {
-    llvm::report_fatal_error("No return in synthesized kernel.");
-  }
-  b.setInsertionPoint(ret);
-  throw std::runtime_error(
-      "Deprecated: recreateQuantumCircuitFromInstructionBasedTensor");
-}
-
-ModuleOp recreateQuantumCircuitFromDepthBasedTensor(MLIRContext &ctx) {
-  OpBuilder b(&ctx);
-  auto loc = b.getUnknownLoc();
-  ModuleOp module = ModuleOp::create(loc);
-  {
-    auto funcType = b.getFunctionType({}, {});
-    FuncOp entry =
-        FuncOp::create(loc, "__nvqpp__mlirgen__FromTensor", funcType);
-    entry->setAttr(b.getStringAttr("cudaq-entrypoint"), b.getUnitAttr());
-    entry->setAttr(b.getStringAttr("cudaq-kernel"), b.getUnitAttr());
-    entry.addEntryBlock();
-    b.setInsertionPointToEnd(&entry.getBody().front());
-    b.create<ReturnOp>(loc);
-    module.push_back(entry);
-  }
-  Operation *ret = findReturn(module);
-  if (!ret) {
-    llvm::report_fatal_error("No return in synthesized kernel.");
-  }
-  b.setInsertionPoint(ret);
-  throw std::runtime_error(
-      "Deprecated: recreateQuantumCircuitFromDepthBasedTensor");
-}
 
 } // namespace ai_pass_selector

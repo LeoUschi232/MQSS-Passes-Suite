@@ -42,6 +42,18 @@ bool BaseA2CAgent::initialize(
   return true;
 }
 
+unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
+  return this->nr_parallel_environments;
+}
+
+torch::Device BaseA2CAgent::getDevice() const {
+  return this->device;
+}
+
+unsigned int BaseA2CAgent::getNrActions() const {
+  return this->nr_output_values;
+}
+
 
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
     torch::Tensor batched_observations) {
@@ -117,8 +129,9 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   return {critic_loss, actor_loss};
 }
 
-void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
-                                     const torch::Tensor &actor_loss) const {
+void BaseA2CAgent::update_parameters(
+    const torch::Tensor &critic_loss,
+    const torch::Tensor &actor_loss) const {
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
@@ -143,7 +156,7 @@ void BaseA2CAgent::save_model() const {
   torch::save(this->actor, actor_path);
 }
 
-void BaseA2CAgent::load_model() const {
+void BaseA2CAgent::load_model() {
   if (this->nr_input_values <= 0) {
     std::cerr << "No agent to load." << std::endl;
     return;

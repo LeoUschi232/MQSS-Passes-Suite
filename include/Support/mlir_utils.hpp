@@ -4,14 +4,25 @@
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
-
-// Support includes
-#include "Quake.hpp"
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 
 // Stdandard library includes
 #include <string>
 #include <tuple>
 
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::ModuleOp;
+using mlir::func::FuncOp;
+using mlir::func::ReturnOp;
+using mlir::Location;
+using mlir::MLIRContext;
+using mlir::OpBuilder;
+using mlir::Operation;
+using mlir::Value;
+using mlir::ValueRange;
+////////////////////////////////////////////////////////////////////////////////
 
 namespace mqss::support::quakeDialect {
 /**
@@ -33,7 +44,7 @@ std::string getOnlyGateName(Operation *op);
  * @param quakeModule The string contents of the quake file.
  * @return The MLIR module and context.
  */
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
+std::tuple<ModuleOp, MLIRContext *>
 extractMLIRContext(const std::string &quakeModule);
 
 /**
