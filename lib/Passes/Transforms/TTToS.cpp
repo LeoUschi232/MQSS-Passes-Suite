@@ -10,8 +10,8 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_TTTOS
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 
 using namespace mlir;
@@ -19,14 +19,17 @@ using namespace mlir;
 namespace {
 void foldTT(Operation *op) {
   auto t = dyn_cast_or_null<quake::TOp>(*op);
-  if (!t || t.getControls().size() != 0 || t.getTargets().size() != 1)
+  if (!t || t.getControls().size() != 0 || t.getTargets().size() != 1) {
     return;
+  }
   auto prev = supportQuake::getPreviousOperationOnTarget(t, t.getTargets()[0]);
-  if (!prev)
+  if (!prev) {
     return;
+  }
   auto t2 = dyn_cast_or_null<quake::TOp>(prev);
-  if (!t2 || t2.getControls().size() != 0 || t2.getTargets().size() != 1)
+  if (!t2 || t2.getControls().size() != 0 || t2.getTargets().size() != 1) {
     return;
+  }
   IRRewriter rewriter(t->getContext());
   rewriter.setInsertionPointAfter(t);
   rewriter.create<quake::SOp>(t.getLoc(), t.getTargets()[0]);
