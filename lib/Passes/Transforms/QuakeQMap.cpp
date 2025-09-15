@@ -377,7 +377,7 @@ public:
 } // namespace
 
 std::unique_ptr<Pass>
-mqss::opt::createQuakeQMapPass(Architecture &architecture,
-                               const Configuration &settings) {
+mqss::opt::createQuakeQMapPass(
+  Architecture &architecture,const Configuration &settings) {
   return std::make_unique<QuakeQMap>(architecture, settings);
 }
