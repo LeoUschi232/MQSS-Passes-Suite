@@ -58,7 +58,7 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     op->print(llvm::errs());
     llvm::errs() << "\n";
     llvm::errs() << "\tRotation with angle " << angle << " on qubit " << qubit
-                 << "\n";
+        << "\n";
 #endif
     assert(!(angle == -1.0 || qubit == -1) && "ill-formed rotation gate!");
     if (isa<quake::RxOp>(op)) {
@@ -92,10 +92,10 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
       op->print(llvm::errs());
       llvm::errs() << "\n";
       llvm::errs() << "\tqubit_ctrl " << qubit_ctrl << " qubit_target "
-                   << qubit_target << "\n";
+          << qubit_target << "\n";
 #endif
       assert(!(qubit_ctrl == -1 || qubit_target == -1) &&
-             "ill-formed controlled gate!");
+          "ill-formed controlled gate!");
       if (isa<quake::XOp>(op))
         qc.cx(qubit_ctrl, qubit_target);
       if (isa<quake::YOp>(op))
@@ -185,9 +185,8 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap final : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>>
-
-{
+class QuakeQMap final : public PassWrapper<
+      QuakeQMap, OperationPass<func::FuncOp> > {
 private:
   Architecture &architecture;
   const Configuration &settings;
@@ -196,26 +195,25 @@ public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
 
   QuakeQMap(Architecture &architecture, const Configuration &settings)
-      :
-
-        architecture(architecture), settings(settings) {}
+    : architecture(architecture), settings(settings) {
+  }
 
   StringRef getArgument() const
 
-      override {
+  override {
     return "quake-to-qmap-pass";
   }
 
   StringRef getDescription() const
 
-      override {
+  override {
     return "Pass that maps a given quake module respecting the constraints of "
-           "a given quantum device, using mqt-qmap tool";
+        "a given quantum device, using mqt-qmap tool";
   }
 
   void runOnOperation()
 
-      override {
+  override {
     // Getting the function
     auto circuit = getOperation();
     // Get the function name
@@ -263,7 +261,7 @@ public:
     // cleaning the mlir::funcOp corresponding to the quake circuit
     for (auto &block : circuit.
 
-                       getBody()
+         getBody()
 
     ) {
       block.
@@ -294,7 +292,7 @@ public:
       // get the targets
       for (int i = 0; i < targets.
 
-                          size();
+                      size();
 
            i++) {
         auto targetRef =
@@ -320,7 +318,7 @@ public:
       }
       switch (op->
 
-              getType()
+        getType()
 
       ) {
       case qc::X:
@@ -369,11 +367,7 @@ public:
         break;
       }
     }
-    builder.create<func::ReturnOp>(circuit.
-
-                                   getLoc()
-
-    );
+    builder.create<func::ReturnOp>(circuit.getLoc());
 #ifdef DEBUG
     std::cout << "Dumping QC after mapping:\n";
     qcMapped.print(std::cout);
