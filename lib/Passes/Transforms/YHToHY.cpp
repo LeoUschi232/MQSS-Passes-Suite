@@ -5,11 +5,12 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_YHTOHY
+
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 
@@ -22,8 +23,7 @@ public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(YHToHY)
   StringRef getArgument() const override { return "YHToHY"; }
   StringRef getDescription() const override {
-    return "Pass that switches a pattern composed by Y and Hadamard to "
-           "Hadamard and Y";
+    return "Switches a pattern composed by Y H to H Y";
   }
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {

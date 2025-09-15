@@ -29,14 +29,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZCXTOCXZ
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 using namespace mlir;
 
@@ -65,12 +64,11 @@ void commuteZCx(Operation *currentOp) {
   if (targetPrev == controlCurr) {
     IRRewriter rewriter(currentGate->getContext());
     rewriter.setInsertionPointAfter(currentGate);
-    rewriter.create<quake::ZOp>(previousGate.getLoc(), previousGate.isAdj(),
-                                previousGate.getParameters(),
-                                previousGate.getControls(),
-                                previousGate.getTargets());
+    rewriter.create<quake::ZOp>(
+        previousGate.getLoc(), previousGate.isAdj(),
+        previousGate.getParameters(), previousGate.getControls(),
+        previousGate.getTargets());
     rewriter.eraseOp(previousGate);
-    return;
   }
 }
 
