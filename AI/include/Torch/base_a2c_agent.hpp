@@ -10,38 +10,66 @@
 #include <memory>
 
 
+namespace fs = std::filesystem;
+
 namespace ai_pass_selector {
 class BaseA2CAgent : public torch::nn::Module {
-  const int max_qubits;
-  const int max_instructions;
-  const int max_depth;
-  const int nr_input_values;
-  const int nr_output_values;
+protected:
+  const unsigned int max_qubits;
+  const unsigned int max_instructions;
+  const unsigned int max_depth;
+  const int critic_optimizer_type;
+  const int actor_optimizer_type;
   const double critic_learning_rate;
   const double actor_learning_rate;
-  const int nr_parallel_environments;
+  const unsigned int nr_parallel_environments;
+  torch::Device device;
+  unsigned int nr_input_values;
+  unsigned int nr_output_values;
   torch::nn::Sequential critic;
   torch::nn::Sequential actor;
   std::unique_ptr<torch::optim::Optimizer> actor_optimizer;
   std::unique_ptr<torch::optim::Optimizer> critic_optimizer;
-  torch::Device device;
 
 public:
   /// Constructor
   BaseA2CAgent(
-      int max_qubits,
-      int max_instructions,
-      int max_depth,
+      unsigned int max_qubits,
+      unsigned int max_instructions,
+      unsigned int max_depth,
+      int critic_optimizer_type,
+      int actor_optimizer_type,
+      double critic_learning_rate,
+      double actor_learning_rate,
+      unsigned int nr_parallel_environments,
+      torch::Device device)
+    : max_qubits(max_qubits),
+      max_instructions(max_instructions),
+      max_depth(max_depth),
+      critic_optimizer_type(critic_optimizer_type),
+      actor_optimizer_type(actor_optimizer_type),
+      critic_learning_rate(critic_learning_rate),
+      actor_learning_rate(actor_learning_rate),
+      nr_parallel_environments(
+          nr_parallel_environments),
+      device(device),
+      nr_input_values(0),
+      nr_output_values(0) {
+  }
+
+  /**
+   *
+   * @param nr_input_values
+   * @param nr_output_values
+   * @param critic
+   * @param actor
+   * @return
+   */
+  bool initialize(
       int nr_input_values,
       int nr_output_values,
       const torch::nn::Sequential &critic,
-      const torch::nn::Sequential &actor,
-      int critic_optimizer_type,
-      int actor_optimizer_type,
-      double critic_learning_rate = 0.005,
-      double actor_learning_rate = 0.001,
-      int nr_parallel_environments = 10,
-      torch::Device device = torch::kCPU);
+      const torch::nn::Sequential &actor);
 
   /// Destructor
   ~BaseA2CAgent() override = default;
@@ -104,13 +132,19 @@ public:
 
   /**
    *
+   * @return
    */
-  virtual void save_model() const = 0;
+  virtual std::string model_name() const = 0;
 
   /**
    *
    */
-  virtual void load_model() = 0;
+  void save_model() const;
+
+  /**
+   *
+   */
+  void load_model() const;
 
 };
 

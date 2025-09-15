@@ -1,3 +1,4 @@
+#include "Environment/quantum_circuit_tensor.hpp"
 #include "Torch/agent_utils..hpp"
 
 #include <torch/torch.h>
@@ -47,4 +48,14 @@ unsigned int getNrOfPasses() {
   return passFunctions.size();
 }
 
+unsigned int getNrOfInputValuesForInstructionBased(
+    unsigned int max_qubits, unsigned int max_instructions) {
+  return max_instructions * (max_qubits + NR_GATES + MAX_GATE_PARAMS);
+}
+
+unsigned int getNrOfInputValuesForDepthBased(
+    unsigned int max_qubits, unsigned int max_depth) {
+  return max_depth * max_qubits
+         * (NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + max_qubits);
+}
 } // namespace ai_pass_selector

@@ -15,40 +15,31 @@
 
 namespace ai_pass_selector {
 
-
-BaseA2CAgent::BaseA2CAgent(
-    const int max_qubits,
-    const int max_instructions,
-    const int max_depth,
+bool BaseA2CAgent::initialize(
     int nr_input_values,
     int nr_output_values,
     const torch::nn::Sequential &critic,
-    const torch::nn::Sequential &actor,
-    int critic_optimizer_type,
-    int actor_optimizer_type,
-    const double critic_learning_rate,
-    const double actor_learning_rate,
-    const int nr_parallel_environments,
-    const torch::Device device
-    ) : max_qubits(max_qubits),
-        max_instructions(max_instructions),
-        max_depth(max_depth),
-        nr_input_values(nr_input_values),
-        nr_output_values(nr_output_values),
-        critic_learning_rate(critic_learning_rate),
-        actor_learning_rate(actor_learning_rate),
-        nr_parallel_environments(nr_parallel_environments),
-        critic(std::move(critic)),
-        actor(std::move(actor)),
-        device(device) {
-  register_module("critic", this->critic);
-  register_module("actor", this->actor);
-  this->critic->to(this->device);
-  this->actor->to(this->device);
-  this->critic_optimizer = makeOptimizer(
-      critic_optimizer_type, this->critic, this->critic_learning_rate);
-  this->actor_optimizer = makeOptimizer(
-      actor_optimizer_type, this->actor, this->actor_learning_rate);
+    const torch::nn::Sequential &actor) {
+  try {
+    this->nr_input_values = nr_input_values;
+    this->nr_output_values = nr_output_values;
+    this->critic = critic;
+    this->actor = actor;
+    register_module("critic", this->critic);
+    register_module("actor", this->actor);
+    this->critic->to(this->device);
+    this->actor->to(this->device);
+    this->critic_optimizer = makeOptimizer(
+        critic_optimizer_type, this->critic, this->critic_learning_rate);
+    this->actor_optimizer = makeOptimizer(
+        actor_optimizer_type, this->actor, this->actor_learning_rate);
+  } catch (const std::runtime_error &e) {
+    this->nr_input_values = 0;
+    this->nr_output_values = 0;
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
+  return true;
 }
 
 
@@ -135,4 +126,37 @@ void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
   actor_loss.backward();
   this->actor_optimizer->step();
 }
+
+void BaseA2CAgent::save_model() const {
+  if (this->nr_input_values <= 0) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  std::string name = model_name();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
+  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
+  torch::save(this->critic, critic_path);
+  torch::save(this->actor, actor_path);
+}
+
+void BaseA2CAgent::load_model() const {
+  if (this->nr_input_values <= 0) {
+    std::cerr << "No agent to load." << std::endl;
+    return;
+  }
+  std::string name = model_name();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
+  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
+  torch::load(this->critic, critic_path);
+  torch::load(this->actor, actor_path);
+}
+
 } // ai_pass_selector
