@@ -20,14 +20,18 @@ using namespace mlir;
 namespace {
 void foldSSToZ(Operation *op) {
   auto s = dyn_cast_or_null<quake::SOp>(*op);
-  if (!s || s.getControls().size() != 0 || s.getTargets().size() != 1)
-    return;
+  {
+    if (!s || s.getControls().size() != 0 || s.getTargets().size() != 1)
+      return;
+  }
   auto prev = supportQuake::getPreviousOperationOnTarget(s, s.getTargets()[0]);
-  if (!prev)
+  if (!prev) {
     return;
+  }
   auto s2 = dyn_cast_or_null<quake::SOp>(prev);
-  if (!s2 || s2.getControls().size() != 0 || s2.getTargets().size() != 1)
+  if (!s2 || s2.getControls().size() != 0 || s2.getTargets().size() != 1) {
     return;
+  }
   IRRewriter rewriter(s->getContext());
   rewriter.setInsertionPointAfter(s);
   rewriter.create<quake::ZOp>(s.getLoc(), s.getTargets()[0]);

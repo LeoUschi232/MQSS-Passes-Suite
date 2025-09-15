@@ -34,8 +34,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_SZTOSDG
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 using namespace mlir;
 
@@ -76,8 +76,7 @@ public:
   StringRef getArgument() const override { return "SZToSdg"; }
 
   StringRef getDescription() const override {
-    return "Optimization pass that replaces a pattern composed of S and Z by "
-           "Sdg";
+    return "Replaces a pattern composed of S and Z by Sdg";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
