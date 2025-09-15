@@ -322,44 +322,44 @@ public:
 
       ) {
       case qc::X:
-        builder.create<quake::XOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::XOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::Y:
-        builder.create<quake::YOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::YOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::Z:
-        builder.create<quake::ZOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::ZOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::RX:
-        builder.create<quake::RxOp>(loc, parameterValues, controlValues,
-                                    targetValues);
+        builder.create<quake::RxOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::RY:
-        builder.create<quake::RyOp>(loc, parameterValues, controlValues,
-                                    targetValues);
+        builder.create<quake::RyOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::RZ:
-        builder.create<quake::RzOp>(loc, parameterValues, controlValues,
-                                    targetValues);
+        builder.create<quake::RzOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::SWAP:
-        builder.create<quake::SwapOp>(loc, parameterValues, controlValues,
-                                      targetValues);
+        builder.create<quake::SwapOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::H:
-        builder.create<quake::HOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::HOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::S:
-        builder.create<quake::SOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::SOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::T:
-        builder.create<quake::TOp>(loc, parameterValues, controlValues,
-                                   targetValues);
+        builder.create<quake::TOp>(
+            loc, parameterValues, controlValues, targetValues);
         break;
       case qc::Measure:
         Type measTy = quake::MeasureType::get(builder.getContext());
