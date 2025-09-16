@@ -118,10 +118,8 @@ namespace ai_pass_selector {
 
         /**
          *
-         * @return
          */
-        std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
-            std::unordered_map<std::string, unsigned int> > reset();
+        void reset();
 
         /**
          *

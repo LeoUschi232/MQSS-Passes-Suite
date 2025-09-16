@@ -1,5 +1,7 @@
 #include "Torch/parallel_environments.hpp"
 
+#include <future>
+
 namespace ai_pass_selector {
 ParallelEnvironments::ParallelEnvironments(
     unsigned int nr_environments,
@@ -32,50 +34,74 @@ void ParallelEnvironments::clear_circuits() {
 }
 
 unsigned int ParallelEnvironments::size() const {
-  return static_cast<unsigned int>(environments.size());
+  return nr_environments;
 }
 
 
-std::vector<std::tuple<double, bool> > ParallelEnvironments::step(
-    std::vector<unsigned int> actions) {
-if ()
+std::vector<std::tuple<double, bool> >
+ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
+  if (actions.size() != nr_environments) {
+    throw std::runtime_error("actions.size() != nr_environments");
+  }
+  std::vector<std::future<std::tuple<double, bool> > > futures;
+  futures.reserve(nr_environments);
+  for (size_t i = 0; i < nr_environments; ++i) {
+    futures.emplace_back(std::async(std::launch::async, [&, i] {
+      return environments[i].step(actions[i]);
+    }));
+  }
+  std::vector<std::tuple<double, bool> > results;
+  results.reserve(nr_environments);
+  for (auto &future : futures) {
+    results.emplace_back(future.get());
+  }
+  return results;
 }
 
 torch::Tensor
 ParallelEnvironments::get_batched_instruction_based_observations() const {
-  const int64_t B = nr_environments;
-  const int64_t H = max_instructions;
+  const int64_t B = nr_environments, H = max_instructions;
   const int64_t W = max_qubits + NR_GATES + MAX_GATE_PARAMS;
 
-  torch::Tensor out = torch::zeros({B, H, W}, torch::kFloat64);
+  std::vector<std::future<torch::Tensor> > futures;
+  futures.reserve(B);
   for (int64_t i = 0; i < B; ++i) {
-    auto &env = const_cast<QuantumCircuitEnviorment &>(
-      environments[static_cast<size_t>(i)]);
-    auto obs = env.get_instruction_based_observation();
-    torch::Tensor src = torch::from_blob(
-        obs.raw(), {H, W}, torch::kFloat64);
-    out.index_put_({i}, src.clone());
+    futures.emplace_back(std::async(std::launch::async, [&, i] {
+      auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
+      auto obs = env.get_instruction_based_observation();
+      auto src = torch::from_blob(obs.raw(), {H, W}, torch::kFloat64);
+      return src.clone();
+    }));
   }
-  return out;
+  std::vector<torch::Tensor> slices;
+  slices.reserve(B);
+  for (auto &future : futures) {
+    slices.emplace_back(future.get());
+  }
+  return torch::stack(slices, 0);
 }
 
 torch::Tensor
 ParallelEnvironments::get_batched_depth_based_observations() const {
-  const int64_t B = nr_environments;
-  const int64_t D = max_depth;
-  const int64_t Q = max_qubits;
+  const int64_t B = nr_environments, D = max_depth, Q = max_qubits;
   const int64_t F = NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + max_qubits;
 
-  torch::Tensor out = torch::zeros({B, D, Q, F}, torch::kFloat64);
+  std::vector<std::future<torch::Tensor> > futures;
+  futures.reserve(B);
   for (int64_t i = 0; i < B; ++i) {
-    auto &env = const_cast<QuantumCircuitEnviorment &>(
-      environments[static_cast<size_t>(i)]);
-    auto obs = env.get_depth_based_observation();
-    torch::Tensor src = torch::from_blob(
-        obs.raw(), {D, Q, F}, torch::kFloat64);
-    out.index_put_({i}, src.clone());
+    futures.emplace_back(std::async(std::launch::async, [&, i] {
+      auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
+      auto obs = env.get_depth_based_observation();
+      auto src = torch::from_blob(obs.raw(), {D, Q, F}, torch::kFloat64);
+      return src.clone();
+    }));
   }
-  return out;
+  std::vector<torch::Tensor> slices;
+  slices.reserve(B);
+  for (auto &future : futures) {
+    slices.emplace_back(future.get());
+  }
+  return torch::stack(slices, 0);
 }
 
 

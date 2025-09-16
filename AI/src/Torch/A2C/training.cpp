@@ -75,10 +75,6 @@ std::unordered_map<std::string, std::string> train(
           = filtered_dataset_files[random_int(0, dataset_size)];
       environments.register_quantum_circuit(i, random_dataset_entry);
     }
-
-    if (environments.size() > nr_parallel_environments) {
-      throw std::runtime_error("Emplace_back doesn't work as expected.");
-    }
     auto episode_log_probs = torch::zeros(
         {nr_parallel_environments, NR_PASSES}, device);
     auto episode_values = torch::zeros(

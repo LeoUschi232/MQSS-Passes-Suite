@@ -99,9 +99,7 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
   return true;
 }
 
-std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
-           std::unordered_map<std::string, unsigned int> >
-QuantumCircuitEnviorment::reset() {
+void QuantumCircuitEnviorment::reset() {
   this->register_quantum_circuit(this->circuit_path);
   this->current_step = 0;
   return {this->get_instruction_based_observation(),
