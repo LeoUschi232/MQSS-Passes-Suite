@@ -41,7 +41,7 @@ namespace ai_pass_selector {
          * @return
          */
         bool register_quantum_circuit(
-        unsigned int index, const fs::path &circuit_path);
+            unsigned int index, const fs::path &circuit_path);
 
         /**
          *
@@ -54,6 +54,20 @@ namespace ai_pass_selector {
          * @return
          */
         torch::Tensor get_batched_depth_based_observations() const;
+
+        /**
+         *
+         * @return
+         */
+        unsigned int size() const;
+
+
+        /**
+         *
+         */
+        void clear_circuits();
+
+        std::vector<std::tuple<douuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuble, bool>>
     };
 } // namespace ai_pass_selector
 

@@ -107,6 +107,11 @@ namespace ai_pass_selector {
 
         /**
          *
+         */
+        void clear_circuit();
+
+        /**
+         *
          * @param circuit_path
          */
         bool register_quantum_circuit(const fs::path &circuit_path);

@@ -16,6 +16,7 @@ namespace ai_pass_selector {
         double discount_factor = 1.0,
         double gae_hyperparameter = 0.96,
         double entropy_coefficient = 0.01,
+        unsigned int nr_parallel_environments = 5,
         unsigned int max_steps_per_episode = 20,
         torch::Device device = torch::kCPU);
 } // namespace ai_pass_selector

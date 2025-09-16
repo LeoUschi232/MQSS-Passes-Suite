@@ -51,7 +51,6 @@ unsigned int BaseA2CAgent::getMaxDepth() const {
   return this->max_depth;
 }
 
-
 unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
   return this->nr_parallel_environments;
 }
@@ -62,6 +61,11 @@ unsigned int BaseA2CAgent::getNrInputValues() const {
 
 torch::Device BaseA2CAgent::getDevice() const {
   return this->device;
+}
+
+void BaseA2CAgent::setNrParallelEnvironments(
+    unsigned int nr_parallel_environments) {
+  this->nr_parallel_environments = nr_parallel_environments;
 }
 
 

@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <Environment/environment.hpp>
+#include <Torch/parallel_environments.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
 
@@ -16,20 +17,20 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
 
 std::unordered_map<std::string, std::string> train(
-    const BaseA2CAgent &agent,
+    BaseA2CAgent &agent,
     std::string dataset,
     unsigned int episodes,
     double discount_factor,
     double gae_hyperparameter,
     double entropy_coefficient,
+    unsigned int nr_parallel_environments,
     unsigned int max_steps_per_episode,
     torch::Device device) {
   unsigned int max_qubits = agent.getMaxQubits();
   unsigned int max_instructions = agent.getMaxInstructions();
   unsigned int max_depth = agent.getMaxDepth();
-  unsigned int nr_input_values = agent.getNrInputValues();
-  unsigned int nr_parallel_environments = agent.getNrParallelEnvironments();
-  if (nr_input_values <= 0 || nr_parallel_environments <= 0) {
+  if (unsigned int nr_input_values = agent.getNrInputValues();
+    nr_input_values <= 0 || nr_parallel_environments <= 0) {
     std::cerr << "No agent to train." << std::endl;
     return {};
   }
@@ -54,8 +55,10 @@ std::unordered_map<std::string, std::string> train(
     std::cerr << "No dataset files found." << std::endl;
     return {};
   }
-  std::vector<QuantumCircuitEnviorment> environments;
-  environments.reserve(nr_parallel_environments);
+  ParallelEnvironments environments(
+      nr_parallel_environments, max_qubits, max_instructions, max_depth,
+      max_steps_per_episode);
+  agent.setNrParallelEnvironments(nr_parallel_environments);
 
   double max_reward = -std::numeric_limits<double>::max();
   double average_reward = 0.0;
@@ -66,20 +69,13 @@ std::unordered_map<std::string, std::string> train(
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
     updateProgress(episode_nr, episodes,
                    "Episode " + std::to_string(episode_nr));
-    environments.clear();
-    environments.reserve(nr_parallel_environments);
 
-    {
-      // TODO: Parallelize this scope
-      for (unsigned int i = 0; i < nr_parallel_environments; i++) {
-        fs::path random_dataset_entry
-            = filtered_dataset_files[random_int(0, dataset_size)];
-        environments.emplace_back(
-            max_qubits, max_instructions, max_depth,
-            random_dataset_entry, max_steps_per_episode);
-      }
+    for (unsigned int i = 0; i < nr_parallel_environments; i++) {
+      fs::path random_dataset_entry
+          = filtered_dataset_files[random_int(0, dataset_size)];
+      environments.register_quantum_circuit(i, random_dataset_entry);
     }
-    
+
     if (environments.size() > nr_parallel_environments) {
       throw std::runtime_error("Emplace_back doesn't work as expected.");
     }

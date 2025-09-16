@@ -50,6 +50,12 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
   this->register_quantum_circuit(circuit_path);
 }
 
+void QuantumCircuitEnviorment::clear_circuit() {
+  this->circuit_path.clear();
+  this->circuit = nullptr;
+  this->context_ptr = nullptr;
+}
+
 bool QuantumCircuitEnviorment::register_quantum_circuit(
     const fs::path &circuit_path) {
   if (circuit_path.empty()) {
