@@ -160,15 +160,6 @@ namespace ai_pass_selector {
          * @return
          */
         virtual std::string model_name() const = 0;
-
-
-        virtual std::unordered_map<std::string, std::string> train(
-            std::string dataset,
-            unsigned int episodes,
-            double discount_factor,
-            double gae_hyperparameter,
-            double entropy_coefficient,
-            unsigned int max_steps_per_episode) = 0;
     };
 } // namespace ai_pass_selector
 

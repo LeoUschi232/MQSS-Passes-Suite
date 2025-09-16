@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
 
 std::unordered_map<std::string, std::string> train(
-    const InstructionBasedA2CAgent &agent,
+    const BaseA2CAgent &agent,
     std::string dataset,
     unsigned int episodes,
     double discount_factor,
@@ -68,6 +68,7 @@ std::unordered_map<std::string, std::string> train(
                    "Episode " + std::to_string(episode_nr));
     environments.clear();
     environments.reserve(nr_parallel_environments);
+
     {
       // TODO: Parallelize this scope
       for (unsigned int i = 0; i < nr_parallel_environments; i++) {
@@ -78,6 +79,7 @@ std::unordered_map<std::string, std::string> train(
             random_dataset_entry, max_steps_per_episode);
       }
     }
+    
     if (environments.size() > nr_parallel_environments) {
       throw std::runtime_error("Emplace_back doesn't work as expected.");
     }

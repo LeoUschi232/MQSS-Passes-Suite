@@ -52,6 +52,12 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
 
 bool QuantumCircuitEnviorment::register_quantum_circuit(
     const fs::path &circuit_path) {
+  if (circuit_path.empty()) {
+    // Assume construction of environment for later circuit registration.
+    // Don't print error message to not flood the console when pushing circuit
+    // registration to the future is intended use.
+    return false;
+  }
   this->circuit_path = circuit_path;
   auto [circuit, context_ptr]
       = extractModuleOpAndContextPointer(circuit_path.string());

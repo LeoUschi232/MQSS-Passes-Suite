@@ -10,7 +10,7 @@
 
 namespace ai_pass_selector {
     std::unordered_map<std::string, std::string> train(
-        const InstructionBasedA2CAgent &agent,
+        const BaseA2CAgent &agent,
         std::string dataset,
         unsigned int episodes,
         double discount_factor = 1.0,

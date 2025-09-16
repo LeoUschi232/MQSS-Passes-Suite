@@ -72,7 +72,19 @@ namespace ai_pass_selector {
         unsigned int current_step;
 
     public:
-        /// Constructor
+        /// Constructors
+        QuantumCircuitEnviorment(
+            unsigned int max_qubits,
+            unsigned int max_instructions,
+            unsigned int max_depth,
+            unsigned int max_steps)
+            : max_qubits(max_qubits),
+              max_instructions(max_instructions),
+              max_depth(max_depth),
+              max_steps(max_steps),
+              current_step(0) {
+        }
+
         QuantumCircuitEnviorment(
             unsigned int max_qubits,
             unsigned int max_instructions,
