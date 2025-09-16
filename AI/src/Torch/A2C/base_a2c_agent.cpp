@@ -4,7 +4,7 @@
 #include <torch/torch.h>
 
 // Utils includes
-#include "Torch/agent_utils..hpp"
+#include "Torch/agent_utils.hpp"
 
 // Standard library includes
 
@@ -17,12 +17,10 @@ namespace ai_pass_selector {
 
 bool BaseA2CAgent::initialize(
     int nr_input_values,
-    int nr_output_values,
     const torch::nn::Sequential &critic,
     const torch::nn::Sequential &actor) {
   try {
     this->nr_input_values = nr_input_values;
-    this->nr_output_values = nr_output_values;
     this->critic = critic;
     this->actor = actor;
     register_module("critic", this->critic);
@@ -35,23 +33,35 @@ bool BaseA2CAgent::initialize(
         actor_optimizer_type, this->actor, this->actor_learning_rate);
   } catch (const std::runtime_error &e) {
     this->nr_input_values = 0;
-    this->nr_output_values = 0;
     std::cerr << e.what() << std::endl;
     return false;
   }
   return true;
 }
 
+unsigned int BaseA2CAgent::getMaxQubits() const {
+  return this->max_qubits;
+}
+
+unsigned int BaseA2CAgent::getMaxInstructions() const {
+  return this->max_instructions;
+}
+
+unsigned int BaseA2CAgent::getMaxDepth() const {
+  return this->max_depth;
+}
+
+
 unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
   return this->nr_parallel_environments;
 }
 
-torch::Device BaseA2CAgent::getDevice() const {
-  return this->device;
+unsigned int BaseA2CAgent::getNrInputValues() const {
+  return this->nr_input_values;
 }
 
-unsigned int BaseA2CAgent::getNrActions() const {
-  return this->nr_output_values;
+torch::Device BaseA2CAgent::getDevice() const {
+  return this->device;
 }
 
 
@@ -132,6 +142,7 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
 void BaseA2CAgent::update_parameters(
     const torch::Tensor &critic_loss,
     const torch::Tensor &actor_loss) const {
+  std::lock_guard lock(*model_mutex);
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
@@ -141,6 +152,7 @@ void BaseA2CAgent::update_parameters(
 }
 
 void BaseA2CAgent::save_model() const {
+  std::lock_guard lock(*model_mutex);
   if (this->nr_input_values <= 0) {
     std::cerr << "No agent to save." << std::endl;
     return;
@@ -157,6 +169,7 @@ void BaseA2CAgent::save_model() const {
 }
 
 void BaseA2CAgent::load_model() {
+  std::lock_guard lock(*model_mutex);
   if (this->nr_input_values <= 0) {
     std::cerr << "No agent to load." << std::endl;
     return;

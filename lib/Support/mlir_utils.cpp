@@ -33,19 +33,32 @@ std::string getOnlyGateName(Operation *op) {
 }
 
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
+std::tuple<ModuleOp, MLIRContext *>
 extractMLIRContext(const std::string &quakeModule) {
   auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
+  MLIRContext &context = *contextPtr.get();
 
   // Get the quake representation of the kernel
   auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
+  auto m_module = mlir::parseSourceString<ModuleOp>(quakeCode, &context);
   if (!m_module) {
     throw std::runtime_error("Module cannot be parsed");
   }
 
   return std::make_tuple(m_module.release(), contextPtr.release());
+}
+
+std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+extractModuleOpAndContextPointer(const std::string &quakeModule) {
+  auto contextPtr = cudaq::initializeMLIR();
+  MLIRContext &context = *contextPtr.get();
+  // Get the quake representation of the kernel
+  auto quakeCode = quakeModule;
+  auto m_module = mlir::parseSourceString<ModuleOp>(quakeCode, &context);
+  if (!m_module) {
+    throw std::runtime_error("Module cannot be parsed");
+  }
+  return std::make_pair(m_module.release(), std::move(contextPtr));
 }
 
 std::string readFileToString(const std::string &filename) {

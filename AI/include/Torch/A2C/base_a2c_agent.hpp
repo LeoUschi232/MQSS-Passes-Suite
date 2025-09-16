@@ -9,6 +9,7 @@
 #include <tuple>
 #include <memory>
 #include <filesystem>
+#include <mutex>
 
 
 namespace fs = std::filesystem;
@@ -26,11 +27,11 @@ namespace ai_pass_selector {
         const unsigned int nr_parallel_environments;
         torch::Device device;
         unsigned int nr_input_values;
-        unsigned int nr_output_values;
         torch::nn::Sequential critic;
         torch::nn::Sequential actor;
         std::unique_ptr<torch::optim::Optimizer> actor_optimizer;
         std::unique_ptr<torch::optim::Optimizer> critic_optimizer;
+        std::unique_ptr<std::mutex> model_mutex;
 
     public:
         /// Constructor
@@ -55,20 +56,18 @@ namespace ai_pass_selector {
                   nr_parallel_environments),
               device(device),
               nr_input_values(0),
-              nr_output_values(0) {
+              model_mutex(std::make_unique<std::mutex>()) {
         }
 
         /**
          *
          * @param nr_input_values
-         * @param nr_output_values
          * @param critic
          * @param actor
          * @return
          */
         bool initialize(
             int nr_input_values,
-            int nr_output_values,
             const torch::nn::Sequential &critic,
             const torch::nn::Sequential &actor);
 
@@ -84,11 +83,20 @@ namespace ai_pass_selector {
 
         BaseA2CAgent &operator=(BaseA2CAgent &&other) noexcept = delete;
 
+
+        /// Getters
+        unsigned int getMaxQubits() const;
+
+        unsigned int getMaxInstructions() const;
+
+        unsigned int getMaxDepth() const;
+
+
         unsigned int getNrParallelEnvironments() const;
 
-        torch::Device getDevice() const;
+        unsigned int getNrInputValues() const;
 
-        unsigned int getNrActions() const;
+        torch::Device getDevice() const;
 
         /**
          *
@@ -159,7 +167,8 @@ namespace ai_pass_selector {
             unsigned int episodes,
             double discount_factor,
             double gae_hyperparameter,
-            double entropy_coefficient) = 0;
+            double entropy_coefficient,
+            unsigned int max_steps_per_episode) = 0;
     };
 } // namespace ai_pass_selector
 

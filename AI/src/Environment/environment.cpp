@@ -2,6 +2,7 @@
 
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
+#include "Utils/passes_utils.hpp"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
@@ -16,6 +17,8 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include <filesystem>
+#include <mlir/Transforms/Passes.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,20 +30,31 @@ using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
+namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
 
 QuantumCircuitEnviorment::QuantumCircuitEnviorment(
-    const int max_qubits, const int max_instructions, const int max_depth,
-    ModuleOp circuit)
+    const unsigned int max_qubits,
+    const unsigned int max_instructions,
+    const unsigned int max_depth,
+    const fs::path &circuit_path,
+    unsigned int max_steps)
   : max_qubits(max_qubits),
     max_instructions(max_instructions),
-    max_depth(max_depth) {
-  this->register_quantum_circuit(circuit);
+    max_depth(max_depth),
+    circuit_path(circuit_path),
+    max_steps(max_steps),
+    current_step(0) {
+  this->register_quantum_circuit(circuit_path);
 }
 
-bool QuantumCircuitEnviorment::register_quantum_circuit(ModuleOp circuit) {
+bool QuantumCircuitEnviorment::register_quantum_circuit(
+    const fs::path &circuit_path) {
+  this->circuit_path = circuit_path;
+  auto [circuit, context_ptr]
+      = extractModuleOpAndContextPointer(circuit_path.string());
   switch (circuit_invalid_type(circuit)) {
   case CIRCUIT_VALID:
     break;
@@ -68,38 +82,40 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(ModuleOp circuit) {
     std::cerr << "Unkown circuit validation error." << std::endl;
     return false;
   }
-  this->original_circuit = ModuleOp(circuit);
-  this->current_circuit = ModuleOp(circuit);
+  this->circuit = circuit;
+  this->context_ptr = std::move(context_ptr);
   return true;
 }
 
 std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
-           std::unordered_map<std::string, int> >
+           std::unordered_map<std::string, unsigned int> >
 QuantumCircuitEnviorment::reset() {
-  this->current_circuit = ModuleOp(this->original_circuit);
+  this->register_quantum_circuit(this->circuit_path);
+  this->current_step = 0;
   return {this->get_instruction_based_observation(),
           this->get_depth_based_observation(), this->get_circuit_info()};
 }
 
 
-std::unordered_map<std::string, int>
+std::unordered_map<std::string, unsigned int>
 QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
   if (circuit == nullptr) {
     return {};
   }
-  std::unordered_map<std::string, int> circuit_info;
+  std::unordered_map<std::string, unsigned int> circuit_info;
   circuit_info["qubits"] = getNumberOfQubits(FuncOp(circuit));
   circuit_info["gates"] = getNumberOfGates(FuncOp(circuit));
   circuit_info["depth"] = getCircuitDepth(FuncOp(circuit));
   return circuit_info;
 }
 
-int QuantumCircuitEnviorment::circuit_invalid_type(ModuleOp circuit) const {
+unsigned int QuantumCircuitEnviorment::circuit_invalid_type(
+    ModuleOp circuit) const {
   if (circuit == nullptr) {
     return NO_CIRCUIT;
   }
-  std::unordered_map<std::string, int> circuit_info = this->
-      get_circuit_info(circuit);
+  std::unordered_map<std::string, unsigned int> circuit_info
+      = this->get_circuit_info(circuit);
   if (circuit_info["qubits"] > this->max_qubits) {
     return TOO_MANY_QUBITS;
   }
@@ -128,23 +144,54 @@ int QuantumCircuitEnviorment::circuit_invalid_type(ModuleOp circuit) const {
   return CIRCUIT_VALID;
 }
 
-std::unordered_map<std::string, int>
+std::unordered_map<std::string, unsigned int>
 QuantumCircuitEnviorment::get_circuit_info() const {
-  if (this->current_circuit == nullptr) {
+  if (this->circuit == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  return get_circuit_info(this->current_circuit);
+  return get_circuit_info(this->circuit);
+}
+
+
+std::tuple<double, bool>
+QuantumCircuitEnviorment::step(unsigned int action) {
+  if (this->circuit == nullptr) {
+    std::cerr << "No circuit registered in the environment." << std::endl;
+    return {0.0, true};
+  }
+  if (action >= NR_PASSES) {
+    throw std::runtime_error("Invalid action: " + std::to_string(action));
+  }
+  std::unordered_map<std::string, unsigned int> previous_circuit_info
+      = this->get_circuit_info();
+  std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[action]();
+  MLIRContext &context = *this->context_ptr.get();
+  mlir::PassManager pass_manager(&context);
+  pass_manager.addPass(std::move(pass));
+  pass_manager.addPass(mlir::createCanonicalizerPass());
+  pass_manager.addPass(mlir::createCSEPass());
+  if (mlir::failed(pass_manager.run(this->circuit))) {
+    std::cerr << "\nAction " << action
+        << " failed on the circuit." << std::endl;
+    return {0.0, true};
+  }
+  std::unordered_map<std::string, unsigned int> current_circuit_info
+      = this->get_circuit_info();
+  double reward
+      = previous_circuit_info["depth"] - current_circuit_info["depth"]
+        + previous_circuit_info["gates"] - current_circuit_info["gates"];
+  return {reward, ++this->current_step >= this->max_steps};
 }
 
 InstructionBasedTensor<double>
 QuantumCircuitEnviorment::get_instruction_based_observation() {
   InstructionBasedTensor<double> observation(
       this->max_qubits, this->max_instructions);
-  if (this->current_circuit == nullptr) {
+  if (this->circuit == nullptr) {
     return observation;
   }
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->current_circuit));
+  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit));
   if (NR_QUBITS == 0) {
     return observation;
   }
@@ -154,7 +201,7 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
   const int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
 
   int instruction_index = 0;
-  this->current_circuit.walk([&](Operation *op) {
+  this->circuit.walk([&](Operation *op) {
     if (!isOperatingGate(op)) {
       return;
     }
@@ -211,14 +258,14 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
 
 DepthBasedTensor<double>
 QuantumCircuitEnviorment::get_depth_based_observation() {
-  if (this->current_circuit == nullptr) {
+  if (this->circuit == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {this->max_qubits, this->max_depth};
   }
 
   DepthBasedTensor<double> observation(this->max_qubits, this->max_depth);
 
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->current_circuit));
+  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit));
   if (NR_QUBITS == 0) {
     return observation;
   }
@@ -231,7 +278,7 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
   // Greedy ASAP schedule: track next free depth per qubit.
   std::vector next_free_depth(NR_QUBITS, 0);
 
-  this->current_circuit.walk([&](Operation *op) {
+  this->circuit.walk([&](Operation *op) {
     if (!isOperatingGate(op)) {
       return;
     }
@@ -316,7 +363,6 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
 
   return observation;
 }
-
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
 QuantumCircuitEnviorment::getOperatingControlsTargetsParams(Operation *op) {

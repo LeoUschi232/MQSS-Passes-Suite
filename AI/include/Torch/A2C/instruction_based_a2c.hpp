@@ -2,7 +2,7 @@
 #define INSTRUCTION_BASED_A2C_HPP
 #include "Torch/A2C/base_a2c_agent.hpp"
 
-#include "Torch/agent_utils..hpp"
+#include "Torch/agent_utils.hpp"
 
 namespace ai_pass_selector {
     class InstructionBasedA2CAgent : public BaseA2CAgent {
@@ -29,7 +29,8 @@ namespace ai_pass_selector {
             unsigned int episodes,
             double discount_factor,
             double gae_hyperparameter,
-            double entropy_coefficient) override;
+            double entropy_coefficient,
+            unsigned int max_steps_per_episode) override;
     };
 
 

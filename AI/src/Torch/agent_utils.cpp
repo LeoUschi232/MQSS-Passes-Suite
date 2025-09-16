@@ -1,5 +1,4 @@
-#include "Environment/quantum_circuit_tensor.hpp"
-#include "Torch/agent_utils..hpp"
+#include "Torch/agent_utils.hpp"
 
 #include <torch/torch.h>
 
@@ -31,31 +30,5 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
     throw std::runtime_error(
         "Unsupported optimizer type: " + std::to_string(optimizerType));
   }
-}
-
-
-std::pair<std::string, std::unique_ptr<mlir::Pass> >
-getPassByIndex(unsigned int index) {
-  if (index >= getNrOfPasses()) {
-    std::cerr << "In getPassByIndex: " << index << std::endl;
-    return {"", nullptr};
-  }
-  std::unique_ptr<mlir::Pass> pass = passFunctions[index]();
-  return {std::string(pass.get()->getArgument()), std::move(pass)};
-}
-
-unsigned int getNrOfPasses() {
-  return passFunctions.size();
-}
-
-unsigned int getNrOfInputValuesForInstructionBased(
-    unsigned int max_qubits, unsigned int max_instructions) {
-  return max_instructions * (max_qubits + NR_GATES + MAX_GATE_PARAMS);
-}
-
-unsigned int getNrOfInputValuesForDepthBased(
-    unsigned int max_qubits, unsigned int max_depth) {
-  return max_depth * max_qubits
-         * (NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + max_qubits);
 }
 } // namespace ai_pass_selector

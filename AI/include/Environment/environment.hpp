@@ -5,6 +5,8 @@
 /// The includes of llvm Casting must be left here before the include of cudaq
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
+#include <mlir_utils.hpp>
+
 #include "llvm/Support/Casting.h"
 using llvm::isa;
 using llvm::cast;
@@ -23,6 +25,7 @@ using llvm::dyn_cast;
 // Standard library includes
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
@@ -31,20 +34,21 @@ using mlir::ModuleOp;
 ////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
+namespace fs = std::filesystem;
 
 
 namespace ai_pass_selector {
     constexpr double PI = 3.14159265358979323846;
     constexpr double TWO_PI = 6.28318530717958647692;
 
-    constexpr int CIRCUIT_VALID = 0;
-    constexpr int NO_CIRCUIT = 1;
-    constexpr int TOO_MANY_QUBITS = 2;
-    constexpr int TOO_MANY_INSTRUCTIONS = 3;
-    constexpr int TOO_LARGE_DEPTH = 4;
-    constexpr int NO_QUBIT_ALLOCATIONS = 5;
-    constexpr int MULTIPLE_QUBIT_ALLOCATIONS = 6;
-    constexpr int AMBIGUOUS_MEASUREMENT = 7;
+    constexpr unsigned int CIRCUIT_VALID = 0;
+    constexpr unsigned int NO_CIRCUIT = 1;
+    constexpr unsigned int TOO_MANY_QUBITS = 2;
+    constexpr unsigned int TOO_MANY_INSTRUCTIONS = 3;
+    constexpr unsigned int TOO_LARGE_DEPTH = 4;
+    constexpr unsigned int NO_QUBIT_ALLOCATIONS = 5;
+    constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 6;
+    constexpr unsigned int AMBIGUOUS_MEASUREMENT = 7;
 
     inline std::vector<double> params_to_angles(std::vector<double> params) {
         for (int i = 0; i < params.size(); i++) {
@@ -58,17 +62,23 @@ namespace ai_pass_selector {
     }
 
     class QuantumCircuitEnviorment {
-        int max_qubits;
-        int max_instructions;
-        int max_depth;
-        ModuleOp original_circuit;
-        ModuleOp current_circuit;
+        unsigned int max_qubits;
+        unsigned int max_instructions;
+        unsigned int max_depth;
+        fs::path circuit_path;
+        ModuleOp circuit;
+        std::unique_ptr<MLIRContext> context_ptr;
+        unsigned int max_steps;
+        unsigned int current_step;
 
     public:
         /// Constructor
         QuantumCircuitEnviorment(
-            int max_qubits, int max_instructions, int max_depth,
-            ModuleOp circuit);
+            unsigned int max_qubits,
+            unsigned int max_instructions,
+            unsigned int max_depth,
+            const fs::path &circuit_path,
+            unsigned int max_steps);
 
         /// Destructor
         ~QuantumCircuitEnviorment() = default;
@@ -85,23 +95,23 @@ namespace ai_pass_selector {
 
         /**
          *
-         * @param circuit
+         * @param circuit_path
          */
-        bool register_quantum_circuit(ModuleOp circuit);
+        bool register_quantum_circuit(const fs::path &circuit_path);
 
         /**
          *
          * @return
          */
         std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
-            std::unordered_map<std::string, int> > reset();
+            std::unordered_map<std::string, unsigned int> > reset();
 
         /**
          *
          * @param circuit
          * @return
          */
-        static std::unordered_map<std::string, int>
+        static std::unordered_map<std::string, unsigned int>
         get_circuit_info(const ModuleOp &circuit);
 
         /**
@@ -109,14 +119,14 @@ namespace ai_pass_selector {
          * @param circuit
          * @return
          */
-        int circuit_invalid_type(ModuleOp circuit) const;
+        unsigned int circuit_invalid_type(ModuleOp circuit) const;
 
 
         /**
          *
          * @return
          */
-        std::unordered_map<std::string, int> get_circuit_info() const;
+        std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
         /**
          *
@@ -129,6 +139,13 @@ namespace ai_pass_selector {
          * @return
          */
         DepthBasedTensor<double> get_depth_based_observation();
+
+        /**
+         *
+         * @param action
+         * @return
+         */
+        std::tuple<double, bool> step(unsigned int action);
 
         /**
          *

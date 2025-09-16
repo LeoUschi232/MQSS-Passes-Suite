@@ -520,13 +520,9 @@ int convertTensortestCircuitToTikz(int index) {
   }
 
   // Build instruction/depth observations and reconstruct two modules
-  std::string quake_module_text =
-      readFileToString(quake_source_input_file.string());
-  auto [input_module, ctx_ptr] = extractMLIRContext(quake_module_text);
-
   QuantumCircuitEnviorment quantum_circuit_enviorment(
       TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS, TENSORTEST_MAX_DEPTH,
-      input_module);
+      quake_source_input_file, /*max_steps=*/0);
 
   InstructionBasedTensor<double> instruction_based_observation =
       quantum_circuit_enviorment.get_instruction_based_observation();

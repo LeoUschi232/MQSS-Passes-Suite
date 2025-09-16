@@ -46,7 +46,8 @@ file(GLOB_RECURSE ENV_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src
 file(GLOB UTILS_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Utils/*.hpp")
 file(GLOB UTILS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/*.cpp")
 
-add_library(ai_core STATIC ${UTILS_HEADERS} ${UTILS_SOURCES} ${ENV_HEADERS} ${ENV_SOURCES})
+add_library(ai_core STATIC ${UTILS_HEADERS} ${UTILS_SOURCES} ${ENV_HEADERS} ${ENV_SOURCES}
+        src/Utils/passes_utils.cpp)
 target_link_libraries(ai_core PUBLIC common_ai_props)
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
