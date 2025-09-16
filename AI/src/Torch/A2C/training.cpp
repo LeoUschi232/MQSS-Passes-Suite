@@ -85,6 +85,16 @@ std::unordered_map<std::string, std::string> train(
         {nr_parallel_environments, NR_PASSES}, device);
 
     double entropy = 0.0;
+    torch::Tensor batched_observations =
+        environments.get_batched_instruction_based_observations();
+    for (unsigned int update_step = 0;
+         update_step < max_steps_per_episode;
+         update_step++) {
+      auto [actions, log_action_probs, state_values, step_entropy]
+          = agent.select_action(batched_observations);
+      auto [reward, terminates]
+          = environments.step();
+    }
 
   }
 

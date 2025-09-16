@@ -96,12 +96,12 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
   }
   this->circuit = circuit;
   this->context_ptr = std::move(context_ptr);
+  this->current_step = 0;
   return true;
 }
 
 void QuantumCircuitEnviorment::reset() {
   this->register_quantum_circuit(this->circuit_path);
-  this->current_step = 0;
 }
 
 

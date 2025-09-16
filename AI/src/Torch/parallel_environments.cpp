@@ -38,7 +38,7 @@ unsigned int ParallelEnvironments::size() const {
 }
 
 
-std::vector<std::tuple<double, bool> >
+std::tuple<std::vector<double>, std::vector<bool> >
 ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
   if (actions.size() != nr_environments) {
     throw std::runtime_error("actions.size() != nr_environments");
@@ -50,13 +50,18 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
       return environments[i].step(actions[i]);
     }));
   }
-  std::vector<std::tuple<double, bool> > results;
-  results.reserve(nr_environments);
+  std::vector<double> rewards;
+  std::vector<bool> terminates;
+  rewards.reserve(nr_environments);
+  terminates.reserve(nr_environments);
   for (auto &future : futures) {
-    results.emplace_back(future.get());
+    auto result = future.get();
+    rewards.push_back(std::get<0>(result));
+    terminates.push_back(std::get<1>(result));
   }
-  return results;
+  return {std::move(rewards), std::move(terminates)};
 }
+
 
 torch::Tensor
 ParallelEnvironments::get_batched_instruction_based_observations() const {

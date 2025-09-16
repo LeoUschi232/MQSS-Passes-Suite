@@ -72,8 +72,8 @@ namespace ai_pass_selector {
          * @param actions
          * @return
          */
-        std::vector<std::tuple<double, bool> > step(
-            const std::vector<unsigned int> &actions);
+        std::tuple<std::vector<double>, std::vector<bool> >
+        step(const std::vector<unsigned int> &actions);
     };
 } // namespace ai_pass_selector
 
