@@ -38,7 +38,7 @@ unsigned int ParallelEnvironments::size() const {
 
 std::vector<std::tuple<double, bool> > ParallelEnvironments::step(
     std::vector<unsigned int> actions) {
-
+if ()
 }
 
 torch::Tensor
