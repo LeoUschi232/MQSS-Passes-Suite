@@ -82,10 +82,13 @@ BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
   auto [state_values, action_probs] = this->forward(batched_observations);
   // sample one action per row; result is [B,1] -> squeeze to [B]
   torch::Tensor actions_tensor = action_probs.multinomial(1).squeeze(-1);
+  // CUDA tensors can’t be read directly)
+  torch::Tensor actions_cpu = actions_tensor.to(torch::kCPU);
   std::vector<unsigned int> actions;
-  actions.reserve(actions_tensor.size(0));
-  for (int i = 0; i < actions_tensor.size(0); i++) {
-    actions.push_back(actions_tensor[i].item<unsigned int>());
+  actions.reserve(actions_cpu.size(0));
+  for (int64_t i = 0; i < actions_cpu.size(0); ++i) {
+    actions.push_back(static_cast<unsigned int>(
+      actions_cpu[i].item<int64_t>()));
   }
   // log π(a|s) for the sampled actions: gather along the action dim
   const torch::Tensor log_action_probs = action_probs.log();

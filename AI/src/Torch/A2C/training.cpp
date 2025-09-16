@@ -67,24 +67,22 @@ std::unordered_map<std::string, std::string> train(
   std::vector<double> actor_losses;
 
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
-    updateProgress(episode_nr, episodes,
-                   "Episode " + std::to_string(episode_nr));
 
     for (unsigned int i = 0; i < nr_parallel_environments; i++) {
       fs::path random_dataset_entry
           = filtered_dataset_files[random_int(0, dataset_size)];
       environments.register_quantum_circuit(i, random_dataset_entry);
     }
-    auto episode_log_probs = torch::zeros(
-        {nr_parallel_environments, NR_PASSES}, device);
-    auto episode_values = torch::zeros(
-        {nr_parallel_environments, NR_PASSES}, device);
-    auto episode_rewards = torch::zeros(
-        {nr_parallel_environments, NR_PASSES}, device);
-    auto termination_masks = torch::zeros(
-        {nr_parallel_environments, NR_PASSES}, device);
+    int64_t T = max_steps_per_episode;
+    int64_t B = nr_parallel_environments;
+    torch::TensorOptions options = torch::TensorOptions().device(device).dtype(
+        torch::kFloat64);
+    auto episode_log_probs = torch::zeros({T, B}, options);
+    auto episode_values = torch::zeros({T, B}, options);
+    auto episode_rewards = torch::zeros({T, B}, options);
+    auto episode_entropies = torch::zeros({T, B}, options);
+    auto termination_masks = torch::zeros({T, B}, options);
 
-    double entropy = 0.0;
     torch::Tensor batched_observations =
         environments.get_batched_instruction_based_observations();
     for (unsigned int update_step = 0;
@@ -92,12 +90,49 @@ std::unordered_map<std::string, std::string> train(
          update_step++) {
       auto [actions, log_action_probs, state_values, step_entropy]
           = agent.select_action(batched_observations);
-      auto [reward, terminates]
-          = environments.step();
+      auto [rewards, terminates] = environments.step(actions);
+      episode_log_probs[update_step] = log_action_probs;
+      episode_values[update_step] = state_values;
+      episode_entropies[update_step] = step_entropy;
+      for (unsigned int b = 0; b < B; b++) {
+        episode_rewards[update_step][b] = rewards[b];
+        termination_masks[update_step][b] = terminates[b] ? 0.0 : 1.0;
+      }
+      batched_observations
+          = environments.get_batched_instruction_based_observations();
     }
 
-  }
+    auto [critic_loss, actor_loss] = agent.get_losses(
+        episode_rewards,
+        episode_log_probs,
+        episode_values,
+        episode_entropies,
+        termination_masks,
+        discount_factor,
+        gae_hyperparameter,
+        entropy_coefficient);
 
+    auto episode_rewards_cpu = episode_rewards.to(torch::kCPU);
+    auto total_rewards = episode_rewards_cpu.sum(/*axis=*/0);
+    if (total_rewards.size(/*dim=*/0) != nr_parallel_environments) {
+      throw std::runtime_error("total_rewards.size=/=nr_parallel_environments");
+    }
+    average_reward = total_rewards.mean().item<double>();
+    if (average_reward > max_reward) {
+      max_reward = average_reward;
+      agent.save_model();
+    }
+    agent.update_parameters(critic_loss, actor_loss);
+    entropies.push_back(episode_entropies.mean().item<double>());
+    critic_losses.push_back(critic_loss.item<double>());
+    actor_losses.push_back(actor_loss.item<double>());
+    updateProgress(
+        episode_nr, episodes,
+        "Max: " + std::to_string(max_reward)
+        + " | Avg: " + std::to_string(average_reward)
+        + " | Critic: " + std::to_string(critic_loss.item<double>())
+        + " | Actor: " + std::to_string(actor_loss.item<double>()));
+  }
   return {};
 }
 } // namespace ai_pass_selector
