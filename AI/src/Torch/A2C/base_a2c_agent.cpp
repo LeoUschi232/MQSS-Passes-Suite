@@ -76,17 +76,23 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
           this->actor->forward(batched_observations)};
 }
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<std::vector<unsigned int>,
+           torch::Tensor, torch::Tensor, torch::Tensor>
 BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
   auto [state_values, action_probs] = this->forward(batched_observations);
   // sample one action per row; result is [B,1] -> squeeze to [B]
-  torch::Tensor actions = action_probs.multinomial(1).squeeze(-1);
+  torch::Tensor actions_tensor = action_probs.multinomial(1).squeeze(-1);
+  std::vector<unsigned int> actions;
+  actions.reserve(actions_tensor.size(0));
+  for (int i = 0; i < actions_tensor.size(0); i++) {
+    actions.push_back(actions_tensor[i].item<unsigned int>());
+  }
   // log π(a|s) for the sampled actions: gather along the action dim
   const torch::Tensor log_action_probs = action_probs.log();
   // a_t, log π(a_t|s_t), V(s_t), entropy of π(a_t|s_t)
   return {
       actions,
-      log_action_probs.gather(-1, actions.unsqueeze(-1)).squeeze(-1),
+      log_action_probs.gather(-1, actions_tensor.unsqueeze(-1)).squeeze(-1),
       state_values.squeeze(-1),
       -(action_probs * log_action_probs).sum(-1)
   };

@@ -24,7 +24,7 @@ namespace ai_pass_selector {
         const int actor_optimizer_type;
         const double critic_learning_rate;
         const double actor_learning_rate;
-         unsigned int nr_parallel_environments;
+        unsigned int nr_parallel_environments;
         torch::Device device;
         unsigned int nr_input_values;
         torch::nn::Sequential critic;
@@ -114,7 +114,7 @@ namespace ai_pass_selector {
          * @param batched_observations
          * @return
          */
-        std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+        std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor, torch::Tensor>
         select_action(const torch::Tensor &batched_observations);
 
         /**
