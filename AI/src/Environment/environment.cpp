@@ -102,8 +102,6 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
 void QuantumCircuitEnviorment::reset() {
   this->register_quantum_circuit(this->circuit_path);
   this->current_step = 0;
-  return {this->get_instruction_based_observation(),
-          this->get_depth_based_observation(), this->get_circuit_info()};
 }
 
 
