@@ -67,7 +67,13 @@ namespace ai_pass_selector {
          */
         void clear_circuits();
 
-        std::vector<std::tuple<douuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuble, bool>>
+        /**
+         *
+         * @param actions
+         * @return
+         */
+        std::vector<std::tuple<double, bool> > step(
+            std::vector<unsigned int> actions);
     };
 } // namespace ai_pass_selector
 

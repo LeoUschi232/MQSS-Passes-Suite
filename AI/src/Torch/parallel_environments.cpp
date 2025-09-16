@@ -35,6 +35,10 @@ unsigned int ParallelEnvironments::size() const {
   return static_cast<unsigned int>(environments.size());
 }
 
+
+std::vector<std::tuple<double, bool> > step(
+    std::vector<unsigned int> actions)
+
 torch::Tensor
 ParallelEnvironments::get_batched_instruction_based_observations() const {
   const int64_t B = nr_environments;
