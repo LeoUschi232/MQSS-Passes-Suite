@@ -37,7 +37,9 @@ unsigned int ParallelEnvironments::size() const {
 
 
 std::vector<std::tuple<double, bool> > ParallelEnvironments::step(
-    std::vector<unsigned int> actions)
+    std::vector<unsigned int> actions) {
+
+}
 
 torch::Tensor
 ParallelEnvironments::get_batched_instruction_based_observations() const {
