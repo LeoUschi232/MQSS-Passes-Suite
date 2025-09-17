@@ -12,6 +12,8 @@
 #include <mlir/Transforms/Passes.h>
 #include <torch/torch.h>
 
+#include <memory>
+
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
@@ -71,7 +73,25 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
 }
 
 std::string select_best_agent(const std::string &circuit) {
-  auto [module, contex_ptr] = extractMLIRContext(circuit);
+  auto found_circuit = search_circuit(circuit);
+  if (!found_circuit.has_value()) {
+    throw std::runtime_error("Failed to locate circuit: " + circuit);
+  }
+  auto [circuit_path, circuit_name, circuit_extension]
+      = found_circuit.value();
+  if (circuit_extension != ".qke") {
+    throw std::runtime_error(
+        "Unsupported circuit extension: " + circuit_extension);
+  }
+  fs::path input_path = circuit_path / (circuit_name + circuit_extension);
+  std::string quake_module_text = readFileToString(input_path.string());
+  if (quake_module_text.empty()) {
+    throw std::runtime_error(
+        "Failed to read circuit file: " + input_path.string());
+  }
+  auto extracted = extractMLIRContext(quake_module_text);
+  std::unique_ptr<MLIRContext> context_ptr(std::get<1>(extracted));
+  ModuleOp module = std::get<0>(extracted);
   switch (auto [nrQubits, nrGates, depth]
         = getQubitsInstructionsDepth(FuncOp(module));
     classify_circuit(nrQubits, nrGates, depth)) {
@@ -100,9 +120,9 @@ getRecommendedPasses(
     return {};
   }
   auto [path, name, extension] = found_circuit.value();
-  if (extension != ".quake") {
-    std::cerr << "Invalid circuit: "
-        << path / (name + extension) << std::endl;
+  if (extension != ".qke") {
+    std::cerr << "Unsupported circuit extension '" << extension << "' for "
+              << path / (name + extension) << std::endl;
     return {};
   }
   fs::path input_path = path / (name + extension);
@@ -171,7 +191,14 @@ getRecommendedPasses(
   if (!output_path.empty()) {
     std::string quake_module_text =
         readFileToString(input_path.string());
-    auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
+    if (quake_module_text.empty()) {
+      std::cerr << "Failed to read circuit file: " << input_path.string()
+                << std::endl;
+      return {pass_names, pass_indexes};
+    }
+    auto extracted = extractMLIRContext(quake_module_text);
+    std::unique_ptr<MLIRContext> context_ptr(std::get<1>(extracted));
+    ModuleOp mlir_module = std::get<0>(extracted);
     MLIRContext &context = *context_ptr;
     mlir::PassManager pass_manager(&context);
     for (auto &pass : passes) {
