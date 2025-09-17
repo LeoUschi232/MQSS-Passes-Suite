@@ -64,9 +64,15 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
     // registration to the future is intended use.
     return false;
   }
+  std::string circuit_mlir = readFileToString(circuit_path.string());
+  if (circuit_mlir.empty()) {
+    std::cerr << "Failed to read circuit file: " << circuit_path
+              << std::endl;
+    return false;
+  }
   this->circuit_path = circuit_path;
   auto [circuit, context_ptr]
-      = extractModuleOpAndContextPointer(circuit_path.string());
+      = extractModuleOpAndContextPointer(circuit_mlir);
   switch (circuit_invalid_type(circuit)) {
   case CIRCUIT_VALID:
     break;
