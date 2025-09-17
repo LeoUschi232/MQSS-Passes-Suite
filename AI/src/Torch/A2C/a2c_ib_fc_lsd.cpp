@@ -5,6 +5,7 @@
 #include <mlir_utils.hpp>
 #include <Environment/environment.hpp>
 #include <Torch/parallel_environments.hpp>
+#include <Utils/circuit_utils.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
 #include <Utils/progress_bar.hpp>
@@ -92,9 +93,13 @@ std::unordered_map<std::string, std::string> train_agent(
   std::vector<std::string> filtered_dataset_files;
   for (auto &file : all_dataset_files) {
     std::string quake_module_text = readFileToString(file.string());
-    if (auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-      getNumberOfQubits(FuncOp(mlir_module)) > max_qubits
-      || getNumberOfGates(FuncOp(mlir_module)) > max_instructions) {
+    auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
+    auto kernel = getKernelEntryPoint(mlir_module);
+    if (!kernel) {
+      continue;
+    }
+    if (getNumberOfQubits(kernel) > max_qubits
+        || getNumberOfGates(kernel) > max_instructions) {
       continue;
     }
     filtered_dataset_files.push_back(file.string());

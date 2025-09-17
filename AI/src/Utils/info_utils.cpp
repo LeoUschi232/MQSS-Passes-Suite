@@ -1,6 +1,7 @@
 #include "Utils/info_utils.hpp"
 
 #include "Quake.hpp"
+#include "Utils/circuit_utils.hpp"
 #include "mlir_utils.hpp"
 
 #include <string>
@@ -78,8 +79,11 @@ get_circuit_info(const std::string &circuit_file) {
   std::string quake_module_text
       = readFileToString(full_circuit_path.string());
   auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(
-      FuncOp(mlir_module));
+  auto kernel = getKernelEntryPoint(mlir_module);
+  if (!kernel) {
+    return std::nullopt;
+  }
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(kernel);
 
   return std::make_tuple(circuit_name, full_circuit_path,
                          nrQubits, nrGates, depth);
@@ -186,9 +190,13 @@ get_dataset_info(const std::string &dataset_name) {
         = readFileToString(entry_path.string());
     auto [mlir_module, context_ptr]
         = extractMLIRContext(quake_module_text);
-    unsigned int nr_qubits = getNumberOfQubits(FuncOp(mlir_module));
-    unsigned int nr_gates = getNumberOfGates(FuncOp(mlir_module));
-    unsigned int depth = getCircuitDepth(FuncOp(mlir_module));
+    auto kernel = getKernelEntryPoint(mlir_module);
+    if (!kernel) {
+      continue;
+    }
+    unsigned int nr_qubits = getNumberOfQubits(kernel);
+    unsigned int nr_gates = getNumberOfGates(kernel);
+    unsigned int depth = getCircuitDepth(kernel);
     if (nr_qubits < min_nr_qubits) {
       min_nr_qubits = nr_qubits;
     }

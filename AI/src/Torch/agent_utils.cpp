@@ -72,9 +72,12 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
 
 std::string select_best_agent(const std::string &circuit) {
   auto [module, contex_ptr] = extractMLIRContext(circuit);
-  switch (auto [nrQubits, nrGates, depth]
-        = getQubitsInstructionsDepth(FuncOp(module));
-    classify_circuit(nrQubits, nrGates, depth)) {
+  auto kernel = getKernelEntryPoint(module);
+  if (!kernel) {
+    throw std::runtime_error("No kernel entry function found in circuit.");
+  }
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(kernel);
+  switch (classify_circuit(nrQubits, nrGates, depth)) {
   case TINY:
     return "a2c-ib-fc-lsd-5x25x10";
   case SMALL:

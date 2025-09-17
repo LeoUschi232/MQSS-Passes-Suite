@@ -1,13 +1,13 @@
 #include "Utils/circuit_utils.hpp"
 
-#include <filesystem>
-#include <vector>
+#include <sstream>
 #include <string>
+#include <vector>
 
-namespace fs = std::filesystem;
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/Diagnostics.h"
 
 namespace ai_pass_selector {
-
 
 unsigned int classify_circuit(
     unsigned int nr_qubits,
@@ -36,7 +36,6 @@ unsigned int classify_circuit(
   return HUGE;
 }
 
-
 std::vector<std::string> split_string(const std::string &s, char delim) {
   std::vector<std::string> parts;
   std::stringstream ss(s);
@@ -45,6 +44,29 @@ std::vector<std::string> split_string(const std::string &s, char delim) {
     parts.push_back(item);
   }
   return parts;
+}
+
+FuncOp getKernelEntryPoint(ModuleOp module) {
+  if (!module) {
+    return nullptr;
+  }
+
+  FuncOp fallback_kernel;
+  for (FuncOp func : module.getOps<FuncOp>()) {
+    if (func->hasAttr("cudaq-entrypoint")) {
+      return func;
+    }
+    if (!fallback_kernel && func->hasAttr("cudaq-kernel")) {
+      fallback_kernel = func;
+    }
+  }
+
+  if (fallback_kernel) {
+    return fallback_kernel;
+  }
+
+  module.emitError("Failed to locate a cudaq kernel entry function.");
+  return nullptr;
 }
 
 } // namespace ai_pass_selector

@@ -3,9 +3,12 @@
 
 #include <array>
 #include <filesystem>
-#include <vector>
-#include <string>
 #include <limits>
+#include <string>
+#include <vector>
+
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 namespace ai_pass_selector {
     /// Circuit specifications [max_qubits, max_instructions, max_depth]
@@ -45,5 +48,15 @@ namespace ai_pass_selector {
      * @return
      */
     std::vector<std::string> split_string(const std::string &s, char delim);
+
+    /**
+     * Locate the kernel entry function within the given module.
+     *
+     * @param module The module that potentially contains kernel definitions.
+     * @return The kernel function, preferring the one marked with the
+     *         `cudaq-entrypoint` attribute. Returns a null FuncOp and emits an
+     *         error diagnostic when no kernel function is present.
+     */
+    mlir::func::FuncOp getKernelEntryPoint(mlir::ModuleOp module);
 } // namespace ai_pass_selector
 #endif // CIRCUIT_UTILS_HPP

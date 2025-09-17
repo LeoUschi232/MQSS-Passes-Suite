@@ -2,6 +2,7 @@
 
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
+#include "Utils/circuit_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
 // MLIR includes
@@ -26,7 +27,6 @@
 /// namespace, so every mlir type has to be included seperately.
 using mlir::ModuleOp;
 using mlir::Operation;
-using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
@@ -111,7 +111,11 @@ QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
     return {};
   }
   std::unordered_map<std::string, unsigned int> circuit_info;
-  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(FuncOp(circuit));
+  auto kernel = getKernelEntryPoint(circuit);
+  if (!kernel) {
+    return circuit_info;
+  }
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(kernel);
   circuit_info["qubits"] = nrQubits;
   circuit_info["gates"] = nrGates;
   circuit_info["depth"] = depth;
@@ -123,18 +127,21 @@ unsigned int QuantumCircuitEnviorment::circuit_invalid_type(
   if (circuit == nullptr) {
     return NO_CIRCUIT;
   }
-  std::unordered_map<std::string, unsigned int> circuit_info
-      = this->get_circuit_info(circuit);
-  if (circuit_info["qubits"] > this->max_qubits) {
+  auto kernel = getKernelEntryPoint(circuit);
+  if (!kernel) {
+    return NO_CIRCUIT;
+  }
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(kernel);
+  if (nrQubits > this->max_qubits) {
     return TOO_MANY_QUBITS;
   }
-  if (circuit_info["gates"] > this->max_instructions) {
+  if (nrGates > this->max_instructions) {
     return TOO_MANY_INSTRUCTIONS;
   }
-  if (circuit_info["depth"] > this->max_depth) {
+  if (depth > this->max_depth) {
     return TOO_LARGE_DEPTH;
   }
-  int nrAllocations = getNumberOfAllocations(FuncOp(circuit));
+  int nrAllocations = getNumberOfAllocations(kernel);
   if (nrAllocations <= 0) {
     return NO_QUBIT_ALLOCATIONS;
   }
@@ -200,7 +207,11 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
   if (this->circuit == nullptr) {
     return observation;
   }
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit));
+  auto kernel = getKernelEntryPoint(this->circuit);
+  if (!kernel) {
+    return observation;
+  }
+  const int NR_QUBITS = getNumberOfQubits(kernel);
   if (NR_QUBITS == 0) {
     return observation;
   }
@@ -274,7 +285,11 @@ QuantumCircuitEnviorment::get_depth_based_observation() {
 
   DepthBasedTensor<double> observation(this->max_qubits, this->max_depth);
 
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit));
+  auto kernel = getKernelEntryPoint(this->circuit);
+  if (!kernel) {
+    return observation;
+  }
+  const int NR_QUBITS = getNumberOfQubits(kernel);
   if (NR_QUBITS == 0) {
     return observation;
   }
