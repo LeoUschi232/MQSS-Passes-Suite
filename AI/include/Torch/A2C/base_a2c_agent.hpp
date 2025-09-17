@@ -8,7 +8,6 @@
 #include <utility>
 #include <tuple>
 #include <memory>
-#include <filesystem>
 #include <mutex>
 
 
@@ -17,16 +16,19 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
     class BaseA2CAgent : public torch::nn::Module {
     protected:
+        /// Generic attributes
         const unsigned int max_qubits;
         const unsigned int max_instructions;
         const unsigned int max_depth;
+        unsigned int nr_input_values;
+
+        /// Specific attributes
         const int critic_optimizer_type;
         const int actor_optimizer_type;
         const double critic_learning_rate;
         const double actor_learning_rate;
         unsigned int nr_parallel_environments;
         torch::Device device;
-        unsigned int nr_input_values;
         torch::nn::Sequential critic;
         torch::nn::Sequential actor;
         std::unique_ptr<torch::optim::Optimizer> actor_optimizer;
@@ -48,6 +50,7 @@ namespace ai_pass_selector {
             : max_qubits(max_qubits),
               max_instructions(max_instructions),
               max_depth(max_depth),
+              nr_input_values(0),
               critic_optimizer_type(critic_optimizer_type),
               actor_optimizer_type(actor_optimizer_type),
               critic_learning_rate(critic_learning_rate),
@@ -55,7 +58,6 @@ namespace ai_pass_selector {
               nr_parallel_environments(
                   nr_parallel_environments),
               device(device),
-              nr_input_values(0),
               model_mutex(std::make_unique<std::mutex>()) {
         }
 
@@ -83,20 +85,14 @@ namespace ai_pass_selector {
 
         BaseA2CAgent &operator=(BaseA2CAgent &&other) noexcept = delete;
 
-
-        /// Getters
+        /// Getter
         unsigned int getMaxQubits() const;
 
         unsigned int getMaxInstructions() const;
 
         unsigned int getMaxDepth() const;
 
-
-        unsigned int getNrParallelEnvironments() const;
-
         unsigned int getNrInputValues() const;
-
-        torch::Device getDevice() const;
 
         /// Setters
         void setNrParallelEnvironments(unsigned int nr_parallel_environments);
@@ -158,11 +154,7 @@ namespace ai_pass_selector {
          */
         void load_model();
 
-        /**
-         *
-         * @return
-         */
-        virtual std::string model_name() const = 0;
+        virtual std::string agentName() const = 0;
     };
 } // namespace ai_pass_selector
 

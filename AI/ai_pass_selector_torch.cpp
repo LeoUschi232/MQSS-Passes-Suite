@@ -10,7 +10,9 @@
 #include <vector>
 #include <cctype>
 #include <Torch/agent_utils.hpp>
+#include <Torch/training.hpp>
 
+using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 void print_help() {
@@ -20,14 +22,17 @@ void print_help() {
       "  -h, --help               Show this help message\n"
       "  -i, --info               Print info of provided arguments.\n"
       "  -t, --train              Whether to train the agent\n"
+      "  -p, --training-params    Depending on the selected agent and training, certain params need to be defined, if not defined, they'll default to their default values.\n"
+      "      Training params format: Space seperated list of <param>=<value>\n"
+      "  -u, --use                Whether to apply the selected passes onto the circuit.\n"
       "  -c, --circuit <file>     Circuit file (.qasm or .qke). Required if not training\n"
+      "  -o, --output <file>      Circuit file path to output the optimized circuit if using the passes.\n"
       "  -d, --dataset <name>     Dataset name (defaults to all)\n"
       "      For available dataset, see AI/Datasets\n"
       "      dataset=all -> Train on all available datasets.\n"
       "  -a, --agent <name>       Agent (defaults to auto)\n"
       "      For available agents, see AI/Agents\n"
-      "      agent=auto -> auto-select best agent for circuit dimensions.\n"
-      "  -e, --episodes <num>     Number of episodes (defaults to 100000)\n\n";
+      "      agent=auto -> auto-select best agent for circuit dimensions.\n\n";
 }
 
 int main(int argc, char **argv) {
@@ -40,8 +45,8 @@ int main(int argc, char **argv) {
   bool use = false;
   std::string circuit;
   std::string dataset = "all";
-  std::string agent = "auto";
-  unsigned long episodes = 100000;
+  std::string agent_name = "auto";
+  std::unordered_map<std::string, std::string> training_params;
 
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
@@ -58,6 +63,21 @@ int main(int argc, char **argv) {
       use = true;
     } else if (args[i] == "-t" || args[i] == "--train") {
       train = true;
+    } else if (args[i] == "-p" || args[i] == "--training-params") {
+      while (++i < n
+             && !args[i].empty()
+             && !args[i][0] == '-'
+             && args[i].find('=') != std::string::npos) {
+        auto pos = args[i].find('=');
+        if (pos == std::string::npos || pos == 0 || pos == args[i].size() - 1) {
+          std::cerr << "Invalid training param: " << args[i] << std::endl;
+          return 1;
+        }
+        training_params[args[i].substr(0, pos)]
+            = args[i].substr(pos + 1);
+      }
+      // Avoid i++ at the end of the loop
+      continue;
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
         circuit = args[i];
@@ -74,21 +94,9 @@ int main(int argc, char **argv) {
       }
     } else if (args[i] == "-a" || args[i] == "--agent") {
       if (++i < n) {
-        agent = args[i];
+        agent_name = args[i];
       } else {
         std::cerr << "Missing value for --agent\n";
-        return 1;
-      }
-    } else if (args[i] == "-e" || args[i] == "--episodes") {
-      if (++i < n) {
-        try {
-          episodes = std::stoul(args[i]);
-        } catch (...) {
-          std::cerr << "Invalid value for --episodes\n";
-          return 1;
-        }
-      } else {
-        std::cerr << "Missing value for --episodes\n";
         return 1;
       }
     } else {
@@ -99,31 +107,49 @@ int main(int argc, char **argv) {
 
   if (info) {
     if (!circuit.empty()) {
-      ai_pass_selector::print_circuit_info(circuit);
+      print_circuit_info(circuit);
     }
     if (!dataset.empty()) {
-      ai_pass_selector::print_dataset_info(dataset);
+      print_dataset_info(dataset);
     }
-    if (!agent.empty()) {
-      ai_pass_selector::print_agent_info(agent);
+    if (!agent_name.empty()) {
+      print_agent_info(agent_name);
     }
     return 0;
   }
-  if (agent == "auto") {
+  if (agent_name == "auto") {
     if (circuit.empty()) {
       std::cerr << "Cannot select best agent for circuit without circuit.\n";
       return 1;
     }
-    agent = ai_pass_selector::select_best_agent(circuit);
+    agent_name = select_best_agent(circuit);
   }
   if (train) {
     if (dataset.empty()) {
       std::cerr << "Training requires a dataset (--dataset)\n";
       return 1;
     }
+    train_agent(agent_name, dataset, training_params);
   }
   if (!circuit.empty()) {
-    // TODO:
+    auto [pass_names, pass_functions]
+        = getRecommendedPasses(agent_name, circuit);
+    std::cout << "Selected agent: " << agent_name << "\n"
+        << "Selected circuit: " << circuit << "\n"
+        << "Recommended passes: " << std::endl;
+    for (const auto &name : pass_names) {
+      std::cout << name << std::endl;
+    }
+    if (use) {
+      if (pass_functions.empty()) {
+        std::cerr << "No passes to apply.\n";
+        return 1;
+      }
+      if (!apply_passes_to_circuit(circuit, pass_functions)) {
+        std::cerr << "Failed to apply passes to circuit.\n";
+        return 1;
+      }
+    }
   }
 
   return 0;

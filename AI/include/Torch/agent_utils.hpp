@@ -18,6 +18,13 @@ namespace ai_pass_selector {
 
     /**
      *
+     * @param optimizer_name
+     * @return
+     */
+    int mapToOptimizerType(const std::string &optimizer_name);
+
+    /**
+     *
      * @param optimizerType
      * @param agentModel
      * @param learningRate
@@ -33,6 +40,16 @@ namespace ai_pass_selector {
      * @return
      */
     std::string select_best_agent(const std::string &circuit);
+
+
+    /**
+     *
+     * @param agent_name
+     * @param circuit
+     * @return
+     */
+    std::tuple<std::vector<std::string>, std::vector<std::unique_ptr<mlir::Pass> > >
+    getRecommendedPasses(const std::string &agent_name, const std::string &circuit);
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP

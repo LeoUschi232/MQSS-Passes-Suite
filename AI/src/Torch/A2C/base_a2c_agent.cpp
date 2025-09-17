@@ -7,7 +7,6 @@
 #include "Torch/agent_utils.hpp"
 
 // Standard library includes
-
 #include <utility>
 #include <tuple>
 #include <cmath>
@@ -51,23 +50,15 @@ unsigned int BaseA2CAgent::getMaxDepth() const {
   return this->max_depth;
 }
 
-unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
-  return this->nr_parallel_environments;
-}
-
 unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
 }
 
-torch::Device BaseA2CAgent::getDevice() const {
-  return this->device;
-}
 
 void BaseA2CAgent::setNrParallelEnvironments(
     unsigned int nr_parallel_environments) {
   this->nr_parallel_environments = nr_parallel_environments;
 }
-
 
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
     torch::Tensor batched_observations) {
@@ -90,6 +81,7 @@ BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
     actions.push_back(static_cast<unsigned int>(
       actions_cpu[i].item<int64_t>()));
   }
+
   // log π(a|s) for the sampled actions: gather along the action dim
   const torch::Tensor log_action_probs = action_probs.log();
   // a_t, log π(a_t|s_t), V(s_t), entropy of π(a_t|s_t)
@@ -170,7 +162,7 @@ void BaseA2CAgent::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  std::string name = model_name();
+  std::string name = this->agentName();
   if (name.empty()) {
     std::cerr << "No agent to save." << std::endl;
     return;
@@ -187,7 +179,7 @@ void BaseA2CAgent::load_model() {
     std::cerr << "No agent to load." << std::endl;
     return;
   }
-  std::string name = model_name();
+  std::string name = this->agentName();
   if (name.empty()) {
     std::cerr << "No agent to save." << std::endl;
     return;
