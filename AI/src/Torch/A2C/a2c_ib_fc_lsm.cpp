@@ -1,5 +1,9 @@
 #include "Torch/A2C/a2c_ib_fc_lsm.hpp"
 
+// Standard includes
+#include <limits>
+#include <sstream>
+
 // Environment includes
 #include <Environment/environment.hpp>
 
