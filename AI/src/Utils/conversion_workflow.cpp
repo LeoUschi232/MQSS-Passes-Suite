@@ -25,6 +25,7 @@
 #include <iostream>
 #include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include <vector>
 #include <common/RuntimeMLIR.h>
 
