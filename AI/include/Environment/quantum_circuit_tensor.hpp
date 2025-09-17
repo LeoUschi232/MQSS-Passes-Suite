@@ -33,10 +33,10 @@ namespace ai_pass_selector {
     constexpr unsigned int MAX_GATE_PARAMS = 3;
     constexpr unsigned int QUBIT_ROLE = 1;
 
-    constexpr unsigned int GATE_INDEX(std::string_view gate) {
-        for (unsigned int i = 0; i < NR_GATES; ++i) {
+    constexpr int GATE_INDEX(std::string_view gate) {
+        for (std::size_t i = 0; i < NR_GATES; ++i) {
             if (SUPPORTED_GATES[i] == gate) {
-                return i;
+                return static_cast<int>(i);
             }
         }
         return -1; // not found
@@ -44,7 +44,10 @@ namespace ai_pass_selector {
 
     constexpr std::array<double, NR_GATES> GATE_ONE_HOT(std::string_view gate) {
         std::array<double, NR_GATES> one_hot{};
-        one_hot[static_cast<std::size_t>(GATE_INDEX(gate))] = 1.0;
+        const int index = GATE_INDEX(gate);
+        if (index >= 0) {
+            one_hot[static_cast<std::size_t>(index)] = 1.0;
+        }
         return one_hot;
     }
 
