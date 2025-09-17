@@ -33,7 +33,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -46,14 +45,13 @@ using namespace mlir;
 using namespace mqss::support::quakeDialect;
 
 void dumpQuakeOperationToTikz(
-    mlir::Operation *op, std::vector<std::vector<std::string>> &qubitLines) {
+    Operation *op, std::vector<std::vector<std::string> > &qubitLines) {
   if (op->getDialect()->getNamespace() != "quake")
     return; // do nothing if it is not a quake operation
   if (isa<quake::AllocaOp>(op) || isa<quake::ExtractRefOp>(op))
     return; // do nothing if the next operation is a qubit allocation
-  std::string gateName = std::string(op->getName().getStringRef());
-  size_t pos = gateName.find("quake.");
-  if (pos != std::string::npos) {
+  auto gateName = std::string(op->getName().getStringRef());
+  if (size_t pos = gateName.find("quake."); pos != std::string::npos) {
     gateName.erase(pos, 6); // 6 is the length of "quake."
   }
 #ifdef DEBUG
@@ -73,7 +71,6 @@ void dumpQuakeOperationToTikz(
         measurements.push_back(qubitIndex);
         qubitLines[qubitIndex].push_back("\\meter{}");
       } else if (operand.getType().isa<quake::VeqType>()) {
-        auto qvecType = operand.getType().dyn_cast<quake::VeqType>();
         for (int i = 0; i < qubitLines.size(); i++) {
           measurements.push_back(i);
           qubitLines[i].push_back("\\meter{}");
@@ -88,17 +85,16 @@ void dumpQuakeOperationToTikz(
     isAdj = gate.isAdj();
 #ifdef DEBUG
     llvm::outs() << "\tParameters: " << parameters.size()
-                 << " Targets: " << targets.size()
-                 << " Controls :" << controls.size() << "\n";
+        << " Targets: " << targets.size()
+        << " Controls :" << controls.size() << "\n";
 #endif
   }
   // empty fill those qubits that are not used by the current targets, controls
   // and measurements
   for (int i = 0; i < qubitLines.size(); i++) {
-    if (!(std::find(targets.begin(), targets.end(), i) != targets.end()) &&
-        !(std::find(controls.begin(), controls.end(), i) != controls.end()) &&
-        !(std::find(measurements.begin(), measurements.end(), i) !=
-          measurements.end())) {
+    if (std::ranges::find(targets, i) == targets.end() &&
+        std::ranges::find(controls, i) == controls.end() &&
+        std::ranges::find(measurements, i) == measurements.end()) {
       qubitLines[i].push_back("\\qw");
     }
   }
@@ -108,7 +104,7 @@ void dumpQuakeOperationToTikz(
 
   if (isa<quake::SwapOp>(op)) {
     assert(targets.size() == 2 &&
-           "At the moment the SWAP only works on two targets...");
+        "At the moment the SWAP only works on two targets...");
     qubitLines[targets[0]].push_back(
         "\\swap{" + std::to_string(targets[1] - targets[0]) + "}");
     qubitLines[targets[1]].push_back("\\swap{}");
@@ -151,32 +147,32 @@ void dumpQuakeOperationToTikz(
 
 namespace {
 
-class QuakeToTikzPass
-    : public PassWrapper<QuakeToTikzPass, OperationPass<func::FuncOp>> {
+class QuakeToTikzPass final
+    : public PassWrapper<QuakeToTikzPass, OperationPass<FuncOp> > {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeToTikzPass)
 
-  QuakeToTikzPass(llvm::raw_string_ostream &ostream) : outputStream(ostream) {}
+  QuakeToTikzPass(llvm::raw_string_ostream &ostream) : outputStream(ostream) {
+  }
 
-  llvm::StringRef getArgument() const override {
+  StringRef getArgument() const override {
     return "convert-quake-to-tikz";
   }
-  llvm::StringRef getDescription() const override {
+
+  StringRef getDescription() const override {
     return "Lower Quake Operations to LaTeX TiKz";
   };
 
   void runOnOperation() override {
     auto circuit = getOperation();
     // Get the function name
-    StringRef funcName = circuit.getName();
-    if (!(funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) !=
-          std::string::npos))
+    if (StringRef funcName = circuit.getName();
+      funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
 
     std::map<int, int> measurements; // key: qubit, value register index
     int numQubits = getNumberOfQubits(circuit);
-    int numBits = getNumberOfClassicalBits(circuit, measurements);
-    std::vector<std::vector<std::string>> qubitTikz(numQubits);
+    std::vector<std::vector<std::string> > qubitTikz(numQubits);
     for (int i = 0; i < numQubits; i++)
       qubitTikz[i].push_back({"\\lstick{\\ket{0}}"});
     circuit.walk(
@@ -215,7 +211,7 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass>
+std::unique_ptr<Pass>
 mqss::opt::createQuakeToTikzPass(llvm::raw_string_ostream &ostream) {
   return std::make_unique<QuakeToTikzPass>(ostream);
 }

@@ -23,7 +23,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Decompositions.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -34,6 +33,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_STOSDGSDGSDG
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -49,7 +49,7 @@ void replaceSToSdgSdgSdg(Operation *currentOp) {
   }
   auto loc = sGate.getLoc();
   auto target = sGate.getTargets()[0];
-  mlir::IRRewriter rewriter(sGate->getContext());
+  IRRewriter rewriter(sGate->getContext());
   rewriter.setInsertionPointAfter(sGate);
   rewriter.create<quake::SOp>(loc, true, target);
   rewriter.create<quake::SOp>(loc, true, target);
@@ -57,13 +57,13 @@ void replaceSToSdgSdgSdg(Operation *currentOp) {
   rewriter.eraseOp(sGate);
 }
 
-class SToSdgSdgSdg : public BaseMQSSPass<SToSdgSdgSdg> {
+class SToSdgSdgSdg final : public BaseMQSSPass<SToSdgSdgSdg> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SToSdgSdgSdg)
 
-  llvm::StringRef getArgument() const override { return "SToSdgSdgSdg"; }
+  StringRef getArgument() const override { return "SToSdgSdgSdg"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass that replaces an S gate by Sdg, Sdg and Sdg";
   }
 

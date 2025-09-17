@@ -34,6 +34,7 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_RXTOHRZH
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceRxToHRzH : public OpRewritePattern<quake::RxOp> {
+struct ReplaceRxToHRzH final : OpRewritePattern<quake::RxOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::RxOp rxOp,
@@ -62,13 +63,13 @@ struct ReplaceRxToHRzH : public OpRewritePattern<quake::RxOp> {
   }
 };
 
-class RxToHRzH : public BaseMQSSPass<RxToHRzH> {
+class RxToHRzH final : public BaseMQSSPass<RxToHRzH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RxToHRzH)
 
-  llvm::StringRef getArgument() const override { return "RxToHRzH"; }
+  StringRef getArgument() const override { return "RxToHRzH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass that replaces Rx by H, Rz and H";
   }
 

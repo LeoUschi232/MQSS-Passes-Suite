@@ -8,10 +8,6 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 
-// Forward decls from CUDA-Q init (keeps includes light)
-namespace cudaq {
-std::unique_ptr<mlir::MLIRContext> initializeMLIR();
-} // namespace cudaq
 
 using mlir::Location;
 using mlir::MLIRContext;

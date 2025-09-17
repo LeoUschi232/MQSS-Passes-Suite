@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -35,14 +34,14 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_SDGZTOS
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 using namespace mlir;
 
 namespace {
 
-void ReplaceSdgZToS(mlir::Operation *currentOp) {
+void ReplaceSdgZToS(Operation *currentOp) {
   auto currentGate = dyn_cast_or_null<quake::ZOp>(*currentOp);
   if (!currentGate || currentGate.getControls().size() != 0 ||
       currentGate.getTargets().size() != 1) {
@@ -63,25 +62,25 @@ void ReplaceSdgZToS(mlir::Operation *currentOp) {
   auto ctrls = prevGate.getControls();
   auto targs = prevGate.getTargets();
 
-  mlir::IRRewriter rewriter(currentGate->getContext());
+  IRRewriter rewriter(currentGate->getContext());
   rewriter.setInsertionPointAfter(currentGate);
   rewriter.create<quake::SOp>(loc, false, params, ctrls, targs);
   rewriter.eraseOp(currentGate);
   rewriter.eraseOp(prevGate);
 }
 
-class SdgZToS : public BaseMQSSPass<SdgZToS> {
+class SdgZToS final : public BaseMQSSPass<SdgZToS> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgZToS)
 
-  llvm::StringRef getArgument() const override { return "SdgZToS"; }
+  StringRef getArgument() const override { return "SdgZToS"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Optimization pass that replaces a pattern composed of S adjoint "
            "and Z by S";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { ReplaceSdgZToS(op); });
   }
 };

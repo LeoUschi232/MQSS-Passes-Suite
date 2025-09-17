@@ -1,11 +1,11 @@
 // Utils/tensor_utils.cpp
 #include "Utils/tensor_utils.hpp"
 
-#include "mlir_utils.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
+#include <common/RuntimeMLIR.h>
 
 #include <iostream>
 
@@ -336,12 +336,16 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
     }
 
     int gateIndex = -1;
+    bool isAdj = false;
     for (; j < maxQubits + NR_GATES; j++) {
-      if (double value = tensor(instr, j); value == 1.0) {
+      if (double value = tensor(instr, j); std::abs(value) == 1.0) {
         if (gateIndex >= 0) {
           throw std::runtime_error("Multiple gates triggered in one row.");
         }
         gateIndex = j - maxQubits;
+        if (value < 0.0) {
+          isAdj = true;
+        }
       } else if (value != 0.0) {
         throw std::runtime_error("Gate trigger: " + std::to_string(value));
       }
@@ -352,17 +356,11 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
       break;
     }
 
-    bool isAdj = false;
-    if (double value = tensor(instr, j++); value == 1.0) {
-      isAdj = true;
-    } else if (value != 0.0) {
-      throw std::runtime_error("IsAdj trigger: " + std::to_string(value));
-    }
     std::vector<double> angles;
     for (; j < featuresPerRow; j++) {
       angles.push_back(tensor(instr, j));
     }
-    if (angles.size() != MAX_GATE_ANGLES) {
+    if (angles.size() != MAX_GATE_PARAMS) {
       throw std::runtime_error(
           "Nr gate angles: " + std::to_string(angles.size()));
     }
@@ -391,12 +389,16 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
 
       int j = 0;
       int gateIndex = -1;
+      bool isAdj = false;
       for (; j < NR_GATES; j++) {
-        if (double value = tensor(depth, qubit, j); value == 1.0) {
+        if (double value = tensor(depth, qubit, j); std::abs(value) == 1.0) {
           if (gateIndex >= 0) {
             throw std::runtime_error("Multiple gates triggered in one cell.");
           }
           gateIndex = j;
+          if (value < 0.0) {
+            isAdj = true;
+          }
         } else if (value != 0.0) {
           throw std::runtime_error("Gate trigger: " + std::to_string(value));
         }
@@ -406,17 +408,11 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
         continue;
       }
 
-      bool isAdj = false;
-      if (double value = tensor(depth, qubit, j++); value == 1.0) {
-        isAdj = true;
-      } else if (value != 0.0) {
-        throw std::runtime_error("IsAdj trigger: " + std::to_string(value));
-      }
       std::vector<double> angles;
       for (; j < NR_GATES + MAX_GATE_PARAMS; j++) {
         angles.push_back(tensor(depth, qubit, j));
       }
-      if (angles.size() != MAX_GATE_ANGLES) {
+      if (angles.size() != MAX_GATE_PARAMS) {
         throw std::runtime_error(
             "Nr gate angles: " + std::to_string(angles.size()));
       }
@@ -469,53 +465,5 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
 }
 
-// ----------------- Legacy signatures (ctx supplied by caller) ---------
-ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(MLIRContext &ctx) {
-  OpBuilder b(&ctx);
-  auto loc = b.getUnknownLoc();
-  ModuleOp module = ModuleOp::create(loc);
-  {
-    auto funcType = b.getFunctionType({}, {});
-    FuncOp entry =
-        FuncOp::create(loc, "__nvqpp__mlirgen__FromTensor", funcType);
-    entry->setAttr(b.getStringAttr("cudaq-entrypoint"), b.getUnitAttr());
-    entry->setAttr(b.getStringAttr("cudaq-kernel"), b.getUnitAttr());
-    entry.addEntryBlock();
-    b.setInsertionPointToEnd(&entry.getBody().front());
-    b.create<ReturnOp>(loc);
-    module.push_back(entry);
-  }
-  Operation *ret = findReturn(module);
-  if (!ret) {
-    llvm::report_fatal_error("No return in synthesized kernel.");
-  }
-  b.setInsertionPoint(ret);
-  throw std::runtime_error(
-      "Deprecated: recreateQuantumCircuitFromInstructionBasedTensor");
-}
-
-ModuleOp recreateQuantumCircuitFromDepthBasedTensor(MLIRContext &ctx) {
-  OpBuilder b(&ctx);
-  auto loc = b.getUnknownLoc();
-  ModuleOp module = ModuleOp::create(loc);
-  {
-    auto funcType = b.getFunctionType({}, {});
-    FuncOp entry =
-        FuncOp::create(loc, "__nvqpp__mlirgen__FromTensor", funcType);
-    entry->setAttr(b.getStringAttr("cudaq-entrypoint"), b.getUnitAttr());
-    entry->setAttr(b.getStringAttr("cudaq-kernel"), b.getUnitAttr());
-    entry.addEntryBlock();
-    b.setInsertionPointToEnd(&entry.getBody().front());
-    b.create<ReturnOp>(loc);
-    module.push_back(entry);
-  }
-  Operation *ret = findReturn(module);
-  if (!ret) {
-    llvm::report_fatal_error("No return in synthesized kernel.");
-  }
-  b.setInsertionPoint(ret);
-  throw std::runtime_error(
-      "Deprecated: recreateQuantumCircuitFromDepthBasedTensor");
-}
 
 } // namespace ai_pass_selector

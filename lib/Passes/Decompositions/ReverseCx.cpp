@@ -23,7 +23,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Decompositions.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -34,6 +33,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_REVERSECX
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,7 +41,7 @@ using namespace mlir;
 
 namespace {
 
-void ReverseCNot(mlir::Operation *currentOp) {
+void ReverseCNot(Operation *currentOp) {
   auto cxOp = dyn_cast_or_null<quake::XOp>(*currentOp);
   if (!cxOp || cxOp.getControls().size() != 1 ||
       cxOp.getTargets().size() != 1) {
@@ -51,7 +51,7 @@ void ReverseCNot(mlir::Operation *currentOp) {
   Value target = cxOp.getTargets()[0];
   Location loc = cxOp.getLoc();
 
-  mlir::IRRewriter rewriter(cxOp->getContext());
+  IRRewriter rewriter(cxOp->getContext());
   rewriter.setInsertionPointAfter(cxOp);
   rewriter.create<quake::HOp>(loc, control);
   rewriter.create<quake::HOp>(loc, target);
@@ -61,15 +61,15 @@ void ReverseCNot(mlir::Operation *currentOp) {
   rewriter.eraseOp(cxOp);
 }
 
-class ReverseCx : public BaseMQSSPass<ReverseCx> {
+class ReverseCx final : public BaseMQSSPass<ReverseCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
 
-  llvm::StringRef getArgument() const override { return "ReverseCx"; }
+  StringRef getArgument() const override { return "ReverseCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass that reverses the control and targets of each "
-           "two-qubits CNot gate in a circuit";
+        "two-qubits CNot gate in a circuit";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {

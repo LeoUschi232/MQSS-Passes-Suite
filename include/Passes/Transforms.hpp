@@ -33,13 +33,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-
-#include "llvm/Support/raw_ostream.h"
-
-#include <stdexcept>
-// #include "qdmi.h"
 #include "sc/heuristic/HeuristicMapper.hpp"
 
 /**
@@ -50,82 +43,128 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
 namespace mqss::opt {
-
-/**
- * @brief MLIR/Quake pass to perform the mapping of quantum circuits to
- superconducting devices using the MQT-QMAP.
-   @details This method constructs an `mlir::Pass` of the type QuakeQMapPass.
- This pass operates on any MLIR/Quake module and performs the mapping of any
- given quantum circuit to an specific quantum superconducting device.
-  @param[out] architecture is the selected superconducting quantum device
- configuration, including important information for mapping, i.e., connectivity
- of all the qubits
-  @param[out] settings defines the configuration of the mapper, for more details
- visit MQT-QMAP official documentation.
-
-  For example, given the following connectivity graph describing the relation of
- qubits in quantum arquictecture:
-
-  \image html docs/_static/mqss-passes/connectivity_graph.png width=45%
-
-  The MQT-QMAP tool re-maps the following two input circuits as follows:
-
-  \image html docs/_static/mqss-passes/QuakeQMapPass-01.png width=50%
-  \image html docs/_static/mqss-passes/QuakeQMapPass-02.png width=95%
-
- @return An `mlir::Pass` object containing the definition of the QuakeQMapPass.
- This `mlir::Pass` object has to be passed to an `mlir::PassManager` to take
- effect on any given MLIR module. After applying this pass, any given circuit is
- transformed to fulfill the physical constraints imposed by the selected quantum
- device `architecture` and `settings`.
- */
-std::unique_ptr<mlir::Pass> createQuakeQMapPass(Architecture &architecture,
-                                                const Configuration &settings);
+std::unique_ptr<mlir::Pass> createQuakeQMapPass(
+    Architecture &architecture, const Configuration &settings);
 
 std::unique_ptr<mlir::Pass> createNormalizeArgAnglePass();
 
-// Current count:
-// 35 passes
+/// 1
 std::unique_ptr<mlir::Pass> createCxRxToRxCxPass();
+
+/// 2
 std::unique_ptr<mlir::Pass> createCxXToXCxPass();
+
+/// 3
 std::unique_ptr<mlir::Pass> createCxZToZCxPass();
+
+/// 4
 std::unique_ptr<mlir::Pass> createRxCxToCxRxPass();
+
+/// 5
 std::unique_ptr<mlir::Pass> createXCxToCxXPass();
+
+/// 6
 std::unique_ptr<mlir::Pass> createZCxToCxZPass();
+
+/// 7
 std::unique_ptr<mlir::Pass> createCxCxCxToSwapPass();
+
+/// 8
 std::unique_ptr<mlir::Pass> createHXHToZPass();
+
+/// 9
 std::unique_ptr<mlir::Pass> createHZHToXPass();
+
+/// 10
 std::unique_ptr<mlir::Pass> createSdgZToSPass();
+
+/// 11
 std::unique_ptr<mlir::Pass> createZSdgToSPass();
+
+/// 12
 std::unique_ptr<mlir::Pass> createSZToSdgPass();
+
+/// 13
 std::unique_ptr<mlir::Pass> createZSToSdgPass();
+
+/// 14
 std::unique_ptr<mlir::Pass> createHCxHToCzPass();
+
+/// 15
 std::unique_ptr<mlir::Pass> createHCzHToCxPass();
+
+/// 16
 std::unique_ptr<mlir::Pass> createHCrxHToCrzPass();
+
+/// 17
 std::unique_ptr<mlir::Pass> createHCrzHToCrxPass();
+
+/// 18
 std::unique_ptr<mlir::Pass> createHRxHToRzPass();
+
+/// 19
 std::unique_ptr<mlir::Pass> createHRzHToRxPass();
+
+/// 20
 std::unique_ptr<mlir::Pass> createSdgSdgSdgToSPass();
+
+/// 21
 std::unique_ptr<mlir::Pass> createSdgSdgToZPass();
+
+/// 22
 std::unique_ptr<mlir::Pass> createSSSToSdgPass();
+
+/// 23
 std::unique_ptr<mlir::Pass> createSSToZPass();
+
+/// 24
 std::unique_ptr<mlir::Pass> createTTToSPass();
+
+/// 25
 std::unique_ptr<mlir::Pass> createRxRxToRxPass();
+
+/// 26
 std::unique_ptr<mlir::Pass> createRyRyToRyPass();
+
+/// 27
 std::unique_ptr<mlir::Pass> createRzRzToRzPass();
+
+/// 28
 std::unique_ptr<mlir::Pass> createHXToZHPass();
+
+/// 29
 std::unique_ptr<mlir::Pass> createHZToXHPass();
+
+/// 30
 std::unique_ptr<mlir::Pass> createXHToHZPass();
+
+/// 31
 std::unique_ptr<mlir::Pass> createZHToHXPass();
+
+/// 32
 std::unique_ptr<mlir::Pass> createHYToYHPass();
+
+/// 33
 std::unique_ptr<mlir::Pass> createYHToHYPass();
+
+/// 34
 std::unique_ptr<mlir::Pass> createXHZToHPass();
+
+/// 35
 std::unique_ptr<mlir::Pass> createZHXToHPass();
 
 } // namespace mqss::opt
 
-// declarative passes
+// Declarative passes
+/**
+ * @def GEN_PASS_DECL
+ * @brief Macro for declaring passes for registration.
+ */
 #define GEN_PASS_DECL
-
+/**
+ * @def GEN_PASS_REGISTRATION
+ * @brief Macro for pass registration.
+ */
 #define GEN_PASS_REGISTRATION
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"

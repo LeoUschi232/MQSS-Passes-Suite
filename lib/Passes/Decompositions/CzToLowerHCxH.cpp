@@ -34,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_CZTOLOWERHCXH
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceCzToLowerHCxH : public OpRewritePattern<quake::ZOp> {
+struct ReplaceCzToLowerHCxH final :  OpRewritePattern<quake::ZOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::ZOp czOp,
@@ -60,13 +61,13 @@ struct ReplaceCzToLowerHCxH : public OpRewritePattern<quake::ZOp> {
   }
 };
 
-class CzToLowerHCxH : public BaseMQSSPass<CzToLowerHCxH> {
+class CzToLowerHCxH final : public BaseMQSSPass<CzToLowerHCxH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CzToLowerHCxH)
 
-  llvm::StringRef getArgument() const override { return "CzToLowerHCxH"; }
+  StringRef getArgument() const override { return "CzToLowerHCxH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of Cz by H, Cx, and H";
   }
 

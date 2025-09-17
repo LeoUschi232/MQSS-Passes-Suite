@@ -1,7 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -10,13 +9,15 @@
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_SSDGTOID
+
+// NOLINTNEXTLINE
 #include "Passes/Cancellations.h.inc"
 } // namespace mqss::opt
 
 using namespace mlir;
 
 namespace {
-void cancelSSdgToId(mlir::Operation *op) {
+void cancelSSdgToId(Operation *op) {
   auto s = dyn_cast_or_null<quake::SOp>(*op);
   if (!s || !s.isAdj() || !s.getControls().empty() ||
       s.getTargets().size() != 1) {
@@ -32,28 +33,24 @@ void cancelSSdgToId(mlir::Operation *op) {
       prevGate.getTargets().size() != 1) {
     return;
   }
-  auto loc = prevGate.getLoc();
-  auto params = prevGate.getParameters();
-  auto ctrls = prevGate.getControls();
-  auto targs = prevGate.getTargets();
 
-  mlir::IRRewriter rewriter(s->getContext());
+  IRRewriter rewriter(s->getContext());
   rewriter.setInsertionPointAfter(s);
   rewriter.eraseOp(s);
   rewriter.eraseOp(prevGate);
 }
 
-class SSdgToId : public BaseMQSSPass<SSdgToId> {
+class SSdgToId final : public BaseMQSSPass<SSdgToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSdgToId)
 
-  llvm::StringRef getArgument() const override { return "SSdgToId"; }
+  StringRef getArgument() const override { return "SSdgToId"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Remove Sdg followed by S.";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { cancelSSdgToId(op); });
   }
 };

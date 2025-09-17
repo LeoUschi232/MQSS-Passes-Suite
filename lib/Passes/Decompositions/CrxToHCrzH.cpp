@@ -34,13 +34,14 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_CRXTOHCRZH
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
 using namespace mlir;
 
 namespace {
-struct ReplaceCrxToHCrzH : public OpRewritePattern<quake::RxOp> {
+struct ReplaceCrxToHCrzH final : OpRewritePattern<quake::RxOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::RxOp crxOp,
@@ -61,13 +62,13 @@ struct ReplaceCrxToHCrzH : public OpRewritePattern<quake::RxOp> {
   }
 };
 
-class CrxToHCrzH : public BaseMQSSPass<CrxToHCrzH> {
+class CrxToHCrzH final : public BaseMQSSPass<CrxToHCrzH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CrxToHCrzH)
 
-  llvm::StringRef getArgument() const override { return "CrxToHCrzH"; }
+  StringRef getArgument() const override { return "CrxToHCrzH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of crx by h, crz and h";
   }
 

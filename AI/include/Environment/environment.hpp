@@ -5,6 +5,8 @@
 /// The includes of llvm Casting must be left here before the include of cudaq
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
+#include <mlir_utils.hpp>
+
 #include "llvm/Support/Casting.h"
 using llvm::isa;
 using llvm::cast;
@@ -23,6 +25,7 @@ using llvm::dyn_cast;
 // Standard library includes
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
@@ -31,117 +34,146 @@ using mlir::ModuleOp;
 ////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
+namespace fs = std::filesystem;
 
 
 namespace ai_pass_selector {
-constexpr double PI = 3.14159265358979323846;
-constexpr double TWO_PI = 6.28318530717958647692;
+    constexpr double PI = 3.14159265358979323846;
+    constexpr double TWO_PI = 6.28318530717958647692;
 
-constexpr int CIRCUIT_VALID = 0;
-constexpr int NO_CIRCUIT = 1;
-constexpr int TOO_MANY_QUBITS = 2;
-constexpr int TOO_MANY_INSTRUCTIONS = 3;
-constexpr int TOO_LARGE_DEPTH = 4;
-constexpr int NO_QUBIT_ALLOCATIONS = 5;
-constexpr int MULTIPLE_QUBIT_ALLOCATIONS = 6;
-constexpr int AMBIGUOUS_MEASUREMENT = 7;
+    constexpr unsigned int CIRCUIT_VALID = 0;
+    constexpr unsigned int NO_CIRCUIT = 1;
+    constexpr unsigned int TOO_MANY_QUBITS = 2;
+    constexpr unsigned int TOO_MANY_INSTRUCTIONS = 3;
+    constexpr unsigned int TOO_LARGE_DEPTH = 4;
+    constexpr unsigned int NO_QUBIT_ALLOCATIONS = 5;
+    constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 6;
+    constexpr unsigned int AMBIGUOUS_MEASUREMENT = 7;
 
-inline std::vector<double> params_to_angles(std::vector<double> params) {
-  for (int i = 0; i < params.size(); i++) {
-    double angle = std::fmod(params[i] + PI, TWO_PI);
-    if (angle < 0) {
-      angle += TWO_PI;
+    inline std::vector<double> params_to_angles(std::vector<double> params) {
+        for (int i = 0; i < params.size(); i++) {
+            double angle = std::fmod(params[i] + PI, TWO_PI);
+            if (angle < 0) {
+                angle += TWO_PI;
+            }
+            params[i] = angle - PI;
+        }
+        return params;
     }
-    params[i] = angle - PI;
-  }
-  return params;
-}
 
-class QuantumCircuitEnviorment {
-  int max_qubits;
-  int max_instructions;
-  int max_depth;
-  ModuleOp original_circuit;
-  ModuleOp current_circuit;
+    class QuantumCircuitEnviorment {
+        unsigned int max_qubits;
+        unsigned int max_instructions;
+        unsigned int max_depth;
+        fs::path circuit_path;
+        ModuleOp circuit;
+        std::unique_ptr<MLIRContext> context_ptr;
+        unsigned int max_steps;
+        unsigned int current_step;
 
-public:
-  /// Constructor
-  QuantumCircuitEnviorment(
-      int max_qubits, int max_instructions, int max_depth,
-      ModuleOp circuit);
+        bool register_quantum_circuit(
+            const fs::path &circuit_path, const std::string &circuit_text);
 
-  /// Destructor
-  ~QuantumCircuitEnviorment() = default;
+    public:
+        /// Constructors
+        QuantumCircuitEnviorment(
+            unsigned int max_qubits,
+            unsigned int max_instructions,
+            unsigned int max_depth,
+            unsigned int max_steps)
+            : max_qubits(max_qubits),
+              max_instructions(max_instructions),
+              max_depth(max_depth),
+              max_steps(max_steps),
+              current_step(0) {
+        }
 
-  /// Copy and move constructors and assignment operators
-  QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
+        QuantumCircuitEnviorment(
+            unsigned int max_qubits,
+            unsigned int max_instructions,
+            unsigned int max_depth,
+            const fs::path &circuit_path,
+            unsigned int max_steps);
 
-  QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept = default;
+        /// Destructor
+        ~QuantumCircuitEnviorment() = default;
 
-  QuantumCircuitEnviorment
-  &operator=(const QuantumCircuitEnviorment &other) = delete;
+        /// Copy and move constructors and assignment operators
+        QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
 
-  QuantumCircuitEnviorment
-  &operator=(const QuantumCircuitEnviorment &&other) noexcept = delete;
+        QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept = default;
 
-  /**
-   *
-   * @param circuit
-   */
-  void register_quantum_circuit(ModuleOp circuit);
+        QuantumCircuitEnviorment
+        &operator=(const QuantumCircuitEnviorment &other) = delete;
 
-  /**
-   *
-   * @return
-   */
-  std::tuple<InstructionBasedTensor<double>, DepthBasedTensor<double>,
-             std::unordered_map<std::string, int> > reset();
+        QuantumCircuitEnviorment &operator=(QuantumCircuitEnviorment &&) noexcept = default;
 
-  /**
-   *
-   * @param circuit
-   * @return
-   */
-  static std::unordered_map<std::string, int>
-  get_circuit_info(const ModuleOp &circuit);
+        /**
+         *
+         */
+        void clear_circuit();
 
-  /**
-   *
-   * @param circuit
-   * @return
-   */
-  int circuit_invalid_type(ModuleOp circuit) const;
+        /**
+         *
+         * @param circuit_path
+         */
+        bool register_quantum_circuit(const fs::path &circuit_path);
 
+        /**
+         *
+         */
+        void reset();
 
-  /**
-   *
-   * @return
-   */
-  std::unordered_map<std::string, int> get_circuit_info() const;
+        /**
+         *
+         * @param circuit
+         * @return
+         */
+        static std::unordered_map<std::string, unsigned int>
+        get_circuit_info(const ModuleOp &circuit);
 
-  /**
-   *
-   * @return
-   */
-  InstructionBasedTensor<double> get_instruction_based_observation();
-
-  /**
-   *
-   * @return
-   */
-  DepthBasedTensor<double> get_depth_based_observation();
+        /**
+         *
+         * @param circuit
+         * @return
+         */
+        unsigned int circuit_invalid_type(ModuleOp circuit) const;
 
 
-  /**
-   *
-   * @param op
-   * @return
-   */
-  static std::tuple<std::vector<int>, std::vector<int>, std::vector<double> >
-  getOperatingControlsTargetsParams(Operation *op);
+        /**
+         *
+         * @return
+         */
+        std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
-};
+        /**
+         *
+         * @return
+         */
+        InstructionBasedTensor<double> get_instruction_based_observation();
 
+        /**
+         *
+         * @return
+         */
+        DepthBasedTensor<double> get_depth_based_observation();
+
+        /**
+         *
+         * @param action
+         * @return
+         */
+        std::tuple<double, bool> step(unsigned int action);
+
+        /**
+         *
+         * @param op
+         * @return
+         */
+        static
+        std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
+        getOperatingControlsTargetsParams(Operation *op);
+    };
 } // namespace ai_pass_selector
 
 #endif // ENVIRONMENT_HPP

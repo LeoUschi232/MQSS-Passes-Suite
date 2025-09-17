@@ -24,18 +24,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/CommutateOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_CXRXTORXCX
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 
 } // namespace mqss::opt
@@ -44,17 +42,17 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class CxRxToRxCx : public BaseMQSSPass<CxRxToRxCx> {
+class CxRxToRxCx final : public BaseMQSSPass<CxRxToRxCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxRxToRxCx)
 
-  llvm::StringRef getArgument() const override { return "CxRxToRxCx"; }
+  StringRef getArgument() const override { return "CxRxToRxCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Apply commutation pass of pattern CNot-Rx to Rx-CNot";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       commuteOperation<quake::XOp, quake::RxOp>(op, 1, 1, 0, 1);
     });

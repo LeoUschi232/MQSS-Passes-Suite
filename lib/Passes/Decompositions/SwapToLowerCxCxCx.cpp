@@ -34,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_SWAPTOLOWERCXCXCX
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,11 +42,11 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceSwapToLowerCxCxCx : public OpRewritePattern<quake::SwapOp> {
+struct ReplaceSwapToLowerCxCxCx final : OpRewritePattern<quake::SwapOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(quake::SwapOp swapOp,
-                                PatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(
+      quake::SwapOp swapOp, PatternRewriter &rewriter) const override {
     if (!swapOp.getControls().empty() || swapOp.getTargets().size() != 2) {
       return success();
     }
@@ -60,13 +61,13 @@ struct ReplaceSwapToLowerCxCxCx : public OpRewritePattern<quake::SwapOp> {
   }
 };
 
-class SwapToLowerCxCxCx : public BaseMQSSPass<SwapToLowerCxCxCx> {
+class SwapToLowerCxCxCx final : public BaseMQSSPass<SwapToLowerCxCxCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SwapToLowerCxCxCx)
 
-  llvm::StringRef getArgument() const override { return "SwapToLowerCxCxCx"; }
+  StringRef getArgument() const override { return "SwapToLowerCxCxCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of swap by three cx gates";
   }
 

@@ -24,18 +24,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_CYCYTOID
 
+// NOLINTNEXTLINE
 #include "Passes/Cancellations.h.inc"
 
 } // namespace mqss::opt
@@ -44,17 +42,17 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class CyCyToId : public BaseMQSSPass<CyCyToId> {
+class CyCyToId final : public BaseMQSSPass<CyCyToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CyCyToId)
 
-  llvm::StringRef getArgument() const override { return "CyCyToId"; }
+  StringRef getArgument() const override { return "CyCyToId"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Remove consecutive identical Cy gates.";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       patternCancellation<quake::YOp, quake::YOp>(op, 1, 1, 1, 1);
     });

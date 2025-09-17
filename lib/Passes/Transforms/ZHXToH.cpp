@@ -2,7 +2,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -12,8 +11,8 @@
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZHXTOH
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
-
 } // namespace mqss::opt
 
 using namespace mlir;
@@ -42,7 +41,7 @@ void ReplaceZHXToH(Operation *op) {
   if (!z || !z.getControls().empty() || z.getTargets().size() != 1) {
     return;
   }
-  mlir::IRRewriter rewriter(x->getContext());
+  IRRewriter rewriter(x->getContext());
   rewriter.setInsertionPoint(x);
   rewriter.create<quake::HOp>(x.getLoc(), x.getTargets());
   rewriter.eraseOp(x);
@@ -50,15 +49,15 @@ void ReplaceZHXToH(Operation *op) {
   rewriter.eraseOp(z);
 }
 
-class ZHXToH : public BaseMQSSPass<ZHXToH> {
+class ZHXToH final : public BaseMQSSPass<ZHXToH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZHXToH)
 
-  llvm::StringRef getArgument() const override { return "ZHXToH"; }
+  StringRef getArgument() const override { return "ZHXToH"; }
 
-  llvm::StringRef getDescription() const override { return "Fold Z H X to H"; }
+  StringRef getDescription() const override { return "Fold Z H X to H"; }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { ReplaceZHXToH(op); });
   }
 };

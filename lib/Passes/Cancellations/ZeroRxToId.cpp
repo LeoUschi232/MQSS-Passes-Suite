@@ -25,7 +25,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -33,12 +32,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <cmath>
-#include <numbers>
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_ZERORXTOID
 
+// NOLINTNEXTLINE
 #include "Passes/Cancellations.h.inc"
 
 } // namespace mqss::opt
@@ -46,7 +45,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-void removeZeroRxToId(mlir::Operation *currentOp) {
+void removeZeroRxToId(Operation *currentOp) {
   if (!isa<quake::RxOp>(currentOp)) {
     return;
   }
@@ -55,34 +54,33 @@ void removeZeroRxToId(mlir::Operation *currentOp) {
   // Assume that parameters are all rotation angles
   bool deleteGate = true;
   for (auto parameter : gate.getParameters()) {
-    double param =
-        supportQuake::extractDoubleArgumentValue(parameter.getDefiningOp());
-    if (!isMultipleOfTwoPi(param) && param != 0) {
+    if (double param = extractDoubleArgumentValue(parameter.getDefiningOp());
+      !isMultipleOfTwoPi(param) && param != 0) {
       deleteGate = false;
     }
   }
   if (deleteGate) {
-    mlir::IRRewriter rewriter(gate->getContext());
+    IRRewriter rewriter(gate->getContext());
     rewriter.eraseOp(gate);
   }
 }
 
-class ZeroRxToId : public BaseMQSSPass<ZeroRxToId> {
+class ZeroRxToId final : public BaseMQSSPass<ZeroRxToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRxToId)
 
-  llvm::StringRef getArgument() const override { return "ZeroRxToId"; }
+  StringRef getArgument() const override { return "ZeroRxToId"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Optimization pass that removes Rx rotations with zero angles";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { removeZeroRxToId(op); });
   }
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss::opt::createZeroRxToIdPass() {
+std::unique_ptr<Pass> mqss::opt::createZeroRxToIdPass() {
   return std::make_unique<ZeroRxToId>();
 }

@@ -57,8 +57,8 @@ int run_shell_command(const std::string &command, const std::string &task) {
 bool copy_file_and_report(const fs::path &source, const fs::path &destination) {
   std::error_code error_code;
   fs::create_directories(destination.parent_path(), error_code);
-  if (!fs::copy_file(source, destination, fs::copy_options::overwrite_existing,
-                     error_code)) {
+  if (!fs::copy_file(source, destination,
+                     fs::copy_options::overwrite_existing, error_code)) {
     std::cerr << "\nFailed to copy " << source.string() << " to "
         << destination.string()
         << (error_code ? ": " + error_code.message() : "") << std::endl;
@@ -99,23 +99,24 @@ int write_module_to_file(ModuleOp module,
 int build_png_from_tikz_file(const fs::path &tikz_file_path) {
   // Minimal wrapper document (standalone) that \input{sometikz.tikz}
   // Write temp.tex next to CWD (consistent with existing workflow).
-  {
-    const std::string latex_wrapper = "\\documentclass{standalone}\n"
-                                      "\\usepackage{tikz}\n"
-                                      "\\usetikzlibrary{quantikz}\n"
-                                      "\\begin{document}\n"
-                                      "\\input{" +
-                                      tikz_file_path.string() +
-                                      "}\n"
-                                      "\\end{document}\n";
-    std::ofstream temp_tex_file("temp.tex");
-    if (!temp_tex_file) {
-      std::cerr << "\nFailed to create temp.tex for " << tikz_file_path
-          << std::endl;
-      return -1;
-    }
-    temp_tex_file << latex_wrapper;
+
+  const std::string latex_wrapper = "\\documentclass{standalone}\n"
+                                    "\\usepackage{tikz}\n"
+                                    "\\usepackage{quantikz}\n"
+                                    "\\begin{document}\n"
+                                    "\\input{" +
+                                    tikz_file_path.string() +
+                                    "}\n"
+                                    "\\end{document}\n";
+  std::ofstream temp_tex_file("temp.tex");
+  if (!temp_tex_file) {
+    std::cerr << "\nFailed to create temp.tex for " << tikz_file_path
+        << std::endl;
+    return -1;
   }
+  temp_tex_file << latex_wrapper;
+  temp_tex_file.flush();
+  temp_tex_file.close();
 
   const std::string png_output_base =
       tikz_file_path.string().substr(0, tikz_file_path.string().find(".tikz"));
@@ -128,8 +129,8 @@ int build_png_from_tikz_file(const fs::path &tikz_file_path) {
       ".png > /dev/null 2>&1 && "
       "rm temp.* > /dev/null 2>&1";
 
-  return run_shell_command(command_line,
-                           "PNG conversion for " + tikz_file_path.string());
+  return run_shell_command(
+      command_line, "PNG conversion for " + tikz_file_path.string());
 }
 
 // ------------------------------------------------------------
@@ -519,13 +520,13 @@ int convertTensortestCircuitToTikz(int index) {
   }
 
   // Build instruction/depth observations and reconstruct two modules
-  std::string quake_module_text =
-      readFileToString(quake_source_input_file.string());
-  auto [input_module, ctx_ptr] = extractMLIRContext(quake_module_text);
-
   QuantumCircuitEnviorment quantum_circuit_enviorment(
       TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS, TENSORTEST_MAX_DEPTH,
-      input_module);
+      /*max_steps=*/0);
+  if (!quantum_circuit_enviorment.register_quantum_circuit(
+          quake_source_input_file)) {
+    return -1;
+  }
 
   InstructionBasedTensor<double> instruction_based_observation =
       quantum_circuit_enviorment.get_instruction_based_observation();

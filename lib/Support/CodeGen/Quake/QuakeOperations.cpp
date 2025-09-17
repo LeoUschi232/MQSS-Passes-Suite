@@ -156,6 +156,35 @@ int getNumberOfQubits(FuncOp circuit) {
   return numQubits;
 }
 
+int getNumberOfGates(FuncOp circuit) {
+  int nrQubits = getNumberOfQubits(circuit);
+  if (nrQubits == 0) {
+    return 0;
+  }
+  int nrGates = 0;
+  circuit.walk([&](Operation *op) {
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    if (isMeasurementGate(op)) {
+      for (auto operand : op->getOperands()) {
+        if (operand.getType().isa<quake::RefType>()) {
+          int qubitIndex =
+              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+            nrGates++;
+          }
+        } else if (operand.getType().isa<quake::VeqType>()) {
+          nrGates += operand.getType().dyn_cast<quake::VeqType>().getSize();
+        }
+      }
+    } else {
+      nrGates++;
+    }
+  });
+  return nrGates;
+}
+
 int getCircuitDepth(FuncOp circuit) {
   int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
@@ -207,34 +236,6 @@ int getCircuitDepth(FuncOp circuit) {
   return *std::ranges::max_element(depths);
 }
 
-int getNumberOfGates(FuncOp circuit) {
-  int nrQubits = getNumberOfQubits(circuit);
-  if (nrQubits == 0) {
-    return 0;
-  }
-  int nrGates = 0;
-  circuit.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
-      return;
-    }
-    if (isMeasurementGate(op)) {
-      for (auto operand : op->getOperands()) {
-        if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
-              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
-          if (0 <= qubitIndex && qubitIndex < nrQubits) {
-            nrGates++;
-          }
-        } else if (operand.getType().isa<quake::VeqType>()) {
-          nrGates += operand.getType().dyn_cast<quake::VeqType>().getSize();
-        }
-      }
-    } else {
-      nrGates++;
-    }
-  });
-  return nrGates;
-}
 
 // Function to get the number of classical bits allocated in a given
 // quantum kernel, it also stores information of the qubit position

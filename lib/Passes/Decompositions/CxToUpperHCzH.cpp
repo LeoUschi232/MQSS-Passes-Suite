@@ -34,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 #define GEN_PASS_DEF_CXTOUPPERHCZH
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -41,7 +42,7 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceCxToUpperHCzH : public OpRewritePattern<quake::XOp> {
+struct ReplaceCxToUpperHCzH final : OpRewritePattern<quake::XOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::XOp cxOp,
@@ -60,13 +61,13 @@ struct ReplaceCxToUpperHCzH : public OpRewritePattern<quake::XOp> {
   }
 };
 
-class CxToUpperHCzH : public BaseMQSSPass<CxToUpperHCzH> {
+class CxToUpperHCzH final : public BaseMQSSPass<CxToUpperHCzH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxToUpperHCzH)
 
-  llvm::StringRef getArgument() const override { return "CxToUpperHCzH"; }
+  StringRef getArgument() const override { return "CxToUpperHCzH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of two-qubits cnot by H, Cz, and H";
   }
 

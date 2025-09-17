@@ -38,6 +38,7 @@ https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-c
 namespace mqss::opt {
 #define GEN_PASS_DEF_CZTOUPPERHCXH
 
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 
 } // namespace mqss::opt
@@ -45,7 +46,7 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceCzToUpperHCxH : public OpRewritePattern<quake::ZOp> {
+struct ReplaceCzToUpperHCxH final : OpRewritePattern<quake::ZOp> {
   using OpRewritePattern::OpRewritePattern;
 
   LogicalResult matchAndRewrite(quake::ZOp czOp,
@@ -64,13 +65,13 @@ struct ReplaceCzToUpperHCxH : public OpRewritePattern<quake::ZOp> {
   }
 };
 
-class CzToUpperHCxH : public BaseMQSSPass<CzToUpperHCxH> {
+class CzToUpperHCxH final : public BaseMQSSPass<CzToUpperHCxH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CzToUpperHCxH)
 
-  llvm::StringRef getArgument() const override { return "CzToUpperHCxH"; }
+  StringRef getArgument() const override { return "CzToUpperHCxH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of Cz by H, Cx, and H";
   }
 

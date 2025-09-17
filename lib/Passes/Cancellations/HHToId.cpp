@@ -1,16 +1,15 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 namespace mqss::opt {
 #define GEN_PASS_DEF_HHTOID
+
+// NOLINTNEXTLINE
 #include "Passes/Cancellations.h.inc"
 } // namespace mqss::opt
 
@@ -18,17 +17,17 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HHToId : public BaseMQSSPass<HHToId> {
+class HHToId final : public BaseMQSSPass<HHToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HHToId)
 
-  llvm::StringRef getArgument() const override { return "HHToId"; }
+  StringRef getArgument() const override { return "HHToId"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Remove consecutive H gates.";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       patternCancellation<quake::HOp, quake::HOp>(op, 0, 1, 0, 1);
     });

@@ -31,6 +31,8 @@ author Martin Letras date February 2025 version 1.0 *
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_XTOHZH
+
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"
 } // namespace mqss::opt
 
@@ -38,11 +40,11 @@ using namespace mlir;
 
 namespace {
 
-struct ReplaceXToHZH : public OpRewritePattern<quake::XOp> {
+struct ReplaceXToHZH final : OpRewritePattern<quake::XOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(quake::XOp xOp,
-                                PatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(
+      quake::XOp xOp, PatternRewriter &rewriter) const override {
     if (xOp.isAdj() || !xOp.getControls().empty() ||
         xOp.getTargets().size() != 1) {
       return success();
@@ -57,13 +59,13 @@ struct ReplaceXToHZH : public OpRewritePattern<quake::XOp> {
   }
 };
 
-class XToHZH : public BaseMQSSPass<XToHZH> {
+class XToHZH final : public BaseMQSSPass<XToHZH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(XToHZH)
 
-  llvm::StringRef getArgument() const override { return "XToHZH"; }
+  StringRef getArgument() const override { return "XToHZH"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Decomposition pass of X by H, Z and H";
   }
 

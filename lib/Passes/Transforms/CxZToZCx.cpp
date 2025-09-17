@@ -24,18 +24,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 // Include auto-generated pass registration
 namespace mqss::opt {
 #define GEN_PASS_DEF_CXZTOZCX
 
+// NOLINTNEXTLINE
 #include "Passes/Transforms.h.inc"
 
 } // namespace mqss::opt
@@ -43,9 +42,9 @@ using namespace mlir;
 
 namespace {
 
-void commuteCNotZ(mlir::Operation *currentOp) {
+void commuteCNotZ(Operation *currentOp) {
   auto currentGate = dyn_cast_or_null<quake::ZOp>(*currentOp);
-  if (!currentGate || currentGate.getControls().size() != 0 ||
+  if (!currentGate || !currentGate.getControls().empty() ||
       currentGate.getTargets().size() != 1) {
     return;
   }
@@ -60,36 +59,30 @@ void commuteCNotZ(mlir::Operation *currentOp) {
     return;
   }
 
-  auto target1 = previousGate.getTargets()[0].getDefiningOp();
-  auto control1 = previousGate.getControls()[0].getDefiningOp();
-  auto target2 = currentGate.getTargets()[0].getDefiningOp();
-  auto control2 = currentGate.getControls()[0].getDefiningOp();
-  int targetPrev = supportQuake::extractIndexFromQuakeExtractRefOp(target1);
-  int controlPrev = supportQuake::extractIndexFromQuakeExtractRefOp(control1);
-  int targetCurr = supportQuake::extractIndexFromQuakeExtractRefOp(target2);
-  if (targetCurr == controlPrev) {
-    mlir::IRRewriter rewriter(currentGate->getContext());
+  if (supportQuake::extractIndexFromQuakeExtractRefOp(
+          previousGate.getControls()[0].getDefiningOp())
+      == supportQuake::extractIndexFromQuakeExtractRefOp(
+          currentGate.getTargets()[0].getDefiningOp())) {
+    IRRewriter rewriter(currentGate->getContext());
     rewriter.setInsertionPointAfter(currentGate);
-    rewriter.create<quake::XOp>(previousGate.getLoc(), previousGate.isAdj(),
-                                previousGate.getParameters(),
-                                previousGate.getControls(),
-                                previousGate.getTargets());
+    rewriter.create<quake::XOp>(
+        previousGate.getLoc(), false, previousGate.getParameters(),
+        previousGate.getControls(), previousGate.getTargets());
     rewriter.eraseOp(previousGate);
-    return;
   }
 }
 
-class CxZToZCx : public BaseMQSSPass<CxZToZCx> {
+class CxZToZCx final : public BaseMQSSPass<CxZToZCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxZToZCx)
 
-  llvm::StringRef getArgument() const override { return "CxZToZCx"; }
+  StringRef getArgument() const override { return "CxZToZCx"; }
 
-  llvm::StringRef getDescription() const override {
+  StringRef getDescription() const override {
     return "Apply commutation pass of the pattern CNot-Z to Z-CNot";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) { commuteCNotZ(op); });
   }
 };
