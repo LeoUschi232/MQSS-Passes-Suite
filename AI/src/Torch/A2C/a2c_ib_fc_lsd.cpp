@@ -1,3 +1,7 @@
+#include <cmath>
+#include <limits>
+#include <sstream>
+
 #include "Torch/A2C/a2c_ib_fc_lsd.hpp"
 
 #include "Environment/quantum_circuit_tensor.hpp"
