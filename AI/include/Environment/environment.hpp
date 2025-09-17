@@ -23,6 +23,7 @@ using llvm::dyn_cast;
 #include "Support/CodeGen/Quake.hpp"
 
 // Standard library includes
+#include <cmath>
 #include <string>
 #include <unordered_map>
 #include <filesystem>
