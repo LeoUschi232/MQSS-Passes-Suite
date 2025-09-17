@@ -5,6 +5,9 @@
 
 #include <torch/torch.h>
 #include <memory>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using namespace mqss::opt;
 
@@ -21,7 +24,7 @@ namespace ai_pass_selector {
      * @param optimizer_name
      * @return
      */
-    int mapToOptimizerType(const std::string &optimizer_name);
+    int mapToOptimizerType(std::string &optimizer_name);
 
     /**
      *
@@ -46,10 +49,14 @@ namespace ai_pass_selector {
      *
      * @param agent_name
      * @param circuit
+     * @param nr_passes
+     * @param output_path
      * @return
      */
-    std::tuple<std::vector<std::string>, std::vector<std::unique_ptr<mlir::Pass> > >
-    getRecommendedPasses(const std::string &agent_name, const std::string &circuit);
+    std::tuple<std::vector<std::string>, std::vector<unsigned int> >
+    getRecommendedPasses(
+        const std::string &agent_name, const std::string &circuit,
+        unsigned int nr_passes, fs::path output_path = fs::path());
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP

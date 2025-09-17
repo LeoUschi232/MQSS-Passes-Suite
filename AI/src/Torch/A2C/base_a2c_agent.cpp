@@ -54,6 +54,13 @@ unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
 }
 
+unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
+  return this->nr_parallel_environments;
+}
+
+torch::Device BaseA2CAgent::getDevice() const {
+  return this->device;
+}
 
 void BaseA2CAgent::setNrParallelEnvironments(
     unsigned int nr_parallel_environments) {

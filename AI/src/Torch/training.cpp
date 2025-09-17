@@ -5,16 +5,12 @@
 
 // Torch includes
 #include <Torch/A2C/base_a2c_agent.hpp>
-#include <Torch/parallel_environments.hpp>
 
 // Utils includes
-#include <Utils/progress_bar.hpp>
-#include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
 #include <Utils/circuit_utils.hpp>
 
 // Stdandard library includes
-#include <mlir_utils.hpp>
 #include <unordered_map>
 #include <string>
 #include <Torch/A2C/a2c_ib_fc_lsd.hpp>

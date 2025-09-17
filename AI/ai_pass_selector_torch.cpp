@@ -1,6 +1,5 @@
 #include "mlir_utils.hpp"
 #include "Environment/environment.hpp"
-#include "Torch/A2C/base_a2c_agent.hpp"
 #include "Utils/info_utils.hpp"
 
 #include <torch/torch.h>
@@ -8,7 +7,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cctype>
 #include <Torch/agent_utils.hpp>
 #include <Torch/training.hpp>
 
@@ -26,7 +24,7 @@ void print_help() {
       "      Training params format: Space seperated list of <param>=<value>\n"
       "  -u, --use                Whether to apply the selected passes onto the circuit.\n"
       "  -c, --circuit <file>     Circuit file (.qasm or .qke). Required if not training\n"
-      "  -o, --output <file>      Circuit file path to output the optimized circuit if using the passes.\n"
+      "  -o, --output <file_path>      Circuit file path to output the optimized circuit if using the passes.\n"
       "  -d, --dataset <name>     Dataset name (defaults to all)\n"
       "      For available dataset, see AI/Datasets\n"
       "      dataset=all -> Train on all available datasets.\n"
@@ -47,6 +45,7 @@ int main(int argc, char **argv) {
   std::string dataset = "all";
   std::string agent_name = "auto";
   std::unordered_map<std::string, std::string> training_params;
+  fs::path output_path;
 
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
@@ -66,7 +65,7 @@ int main(int argc, char **argv) {
     } else if (args[i] == "-p" || args[i] == "--training-params") {
       while (++i < n
              && !args[i].empty()
-             && !args[i][0] == '-'
+             && args[i][0] != '-'
              && args[i].find('=') != std::string::npos) {
         auto pos = args[i].find('=');
         if (pos == std::string::npos || pos == 0 || pos == args[i].size() - 1) {
@@ -83,6 +82,13 @@ int main(int argc, char **argv) {
         circuit = args[i];
       } else {
         std::cerr << "Missing value for --circuit\n";
+        return 1;
+      }
+    } else if (args[i] == "-o" || args[i] == "--output") {
+      if (++i < n) {
+        output_path = args[i];
+      } else {
+        std::cerr << "Missing value for --output\n";
         return 1;
       }
     } else if (args[i] == "-d" || args[i] == "--dataset") {
@@ -132,8 +138,10 @@ int main(int argc, char **argv) {
     train_agent(agent_name, dataset, training_params);
   }
   if (!circuit.empty()) {
+    unsigned int nr_passes = 20;
     auto [pass_names, pass_functions]
-        = getRecommendedPasses(agent_name, circuit);
+        = getRecommendedPasses(
+            agent_name, circuit, nr_passes, output_path);
     std::cout << "Selected agent: " << agent_name << "\n"
         << "Selected circuit: " << circuit << "\n"
         << "Recommended passes: " << std::endl;
@@ -143,10 +151,6 @@ int main(int argc, char **argv) {
     if (use) {
       if (pass_functions.empty()) {
         std::cerr << "No passes to apply.\n";
-        return 1;
-      }
-      if (!apply_passes_to_circuit(circuit, pass_functions)) {
-        std::cerr << "Failed to apply passes to circuit.\n";
         return 1;
       }
     }

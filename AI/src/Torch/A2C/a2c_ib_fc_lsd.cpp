@@ -71,13 +71,13 @@ std::unordered_map<std::string, std::string> train_agent(
     double discount_factor,
     double gae_hyperparameter,
     double entropy_coefficient,
-    unsigned int nr_parallel_environments,
-    unsigned int max_steps_per_episode,
-    torch::Device device) {
+    unsigned int max_steps_per_episode) {
 
   unsigned int max_qubits = agent.getMaxQubits();
   unsigned int max_instructions = agent.getMaxInstructions();
   unsigned int max_depth = agent.getMaxDepth();
+  unsigned int nr_parallel_environments = agent.getNrParallelEnvironments();
+  torch::Device device = agent.getDevice();
   if (unsigned int nr_input_values = agent.getNrInputValues();
     nr_input_values <= 0 || nr_parallel_environments <= 0) {
     std::cerr << "No agent to train." << std::endl;

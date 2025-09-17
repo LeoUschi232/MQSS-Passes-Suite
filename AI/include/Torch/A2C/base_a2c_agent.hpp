@@ -85,7 +85,7 @@ namespace ai_pass_selector {
 
         BaseA2CAgent &operator=(BaseA2CAgent &&other) noexcept = delete;
 
-        /// Getter
+        /// Getters
         unsigned int getMaxQubits() const;
 
         unsigned int getMaxInstructions() const;
@@ -93,6 +93,10 @@ namespace ai_pass_selector {
         unsigned int getMaxDepth() const;
 
         unsigned int getNrInputValues() const;
+
+        unsigned int getNrParallelEnvironments() const;
+
+        torch::Device getDevice() const;
 
         /// Setters
         void setNrParallelEnvironments(unsigned int nr_parallel_environments);
