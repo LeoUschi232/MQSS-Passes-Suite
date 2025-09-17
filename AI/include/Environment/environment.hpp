@@ -71,6 +71,9 @@ namespace ai_pass_selector {
         unsigned int max_steps;
         unsigned int current_step;
 
+        bool register_quantum_circuit(
+            const fs::path &circuit_path, const std::string &circuit_text);
+
     public:
         /// Constructors
         QuantumCircuitEnviorment(

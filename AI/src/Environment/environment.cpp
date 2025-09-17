@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <filesystem>
+#include <exception>
 #include <mlir/Transforms/Passes.h>
 
 
@@ -47,7 +48,13 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
     circuit_path(circuit_path),
     max_steps(max_steps),
     current_step(0) {
-  this->register_quantum_circuit(circuit_path);
+  if (circuit_path.empty()) {
+    this->register_quantum_circuit(circuit_path);
+  } else {
+    const std::string circuit_text
+        = readFileToString(circuit_path.string());
+    this->register_quantum_circuit(circuit_path, circuit_text);
+  }
 }
 
 void QuantumCircuitEnviorment::clear_circuit() {
@@ -64,9 +71,33 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
     // registration to the future is intended use.
     return false;
   }
-  this->circuit_path = circuit_path;
-  auto [circuit, context_ptr]
-      = extractModuleOpAndContextPointer(circuit_path.string());
+  const std::string circuit_text
+      = readFileToString(circuit_path.string());
+  return this->register_quantum_circuit(circuit_path, circuit_text);
+}
+
+bool QuantumCircuitEnviorment::register_quantum_circuit(
+    const fs::path &circuit_path, const std::string &circuit_text) {
+  if (circuit_path.empty()) {
+    // Assume construction of environment for later circuit registration.
+    return false;
+  }
+  if (circuit_text.empty()) {
+    std::cerr << "Failed to read circuit file: " << circuit_path << std::endl;
+    return false;
+  }
+
+  std::pair<ModuleOp, std::unique_ptr<MLIRContext> > circuit_and_context;
+  try {
+    circuit_and_context = extractModuleOpAndContextPointer(circuit_text);
+  } catch (const std::exception &ex) {
+    std::cerr << "Failed to parse circuit from " << circuit_path << ": "
+              << ex.what() << std::endl;
+    return false;
+  }
+  ModuleOp circuit = circuit_and_context.first;
+  std::unique_ptr<MLIRContext> context_ptr
+      = std::move(circuit_and_context.second);
   switch (circuit_invalid_type(circuit)) {
   case CIRCUIT_VALID:
     break;
@@ -94,6 +125,7 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
     std::cerr << "Unkown circuit validation error." << std::endl;
     return false;
   }
+  this->circuit_path = circuit_path;
   this->circuit = circuit;
   this->context_ptr = std::move(context_ptr);
   this->current_step = 0;

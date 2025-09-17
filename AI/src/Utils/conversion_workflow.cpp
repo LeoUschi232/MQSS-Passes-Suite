@@ -522,7 +522,11 @@ int convertTensortestCircuitToTikz(int index) {
   // Build instruction/depth observations and reconstruct two modules
   QuantumCircuitEnviorment quantum_circuit_enviorment(
       TENSORTEST_MAX_QUBITS, TENSORTEST_MAX_INSTRUCTIONS, TENSORTEST_MAX_DEPTH,
-      quake_source_input_file, /*max_steps=*/0);
+      /*max_steps=*/0);
+  if (!quantum_circuit_enviorment.register_quantum_circuit(
+          quake_source_input_file)) {
+    return -1;
+  }
 
   InstructionBasedTensor<double> instruction_based_observation =
       quantum_circuit_enviorment.get_instruction_based_observation();
