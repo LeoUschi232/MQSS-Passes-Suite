@@ -88,6 +88,14 @@ namespace mqss::support::quakeDialect {
 
     /**
      *
+     * @param circuit
+     * @return
+     */
+    std::tuple<unsigned int, unsigned int, unsigned int>
+    getQubitsInstructionsDepth(FuncOp circuit);
+
+    /**
+     *
      * @param vec
      * @return
      */

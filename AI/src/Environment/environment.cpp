@@ -111,9 +111,10 @@ QuantumCircuitEnviorment::get_circuit_info(const ModuleOp &circuit) {
     return {};
   }
   std::unordered_map<std::string, unsigned int> circuit_info;
-  circuit_info["qubits"] = getNumberOfQubits(FuncOp(circuit));
-  circuit_info["gates"] = getNumberOfGates(FuncOp(circuit));
-  circuit_info["depth"] = getCircuitDepth(FuncOp(circuit));
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(FuncOp(circuit));
+  circuit_info["qubits"] = nrQubits;
+  circuit_info["gates"] = nrGates;
+  circuit_info["depth"] = depth;
   return circuit_info;
 }
 

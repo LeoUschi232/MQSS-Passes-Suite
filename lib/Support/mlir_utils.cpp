@@ -48,7 +48,7 @@ extractMLIRContext(const std::string &quakeModule) {
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
 extractModuleOpAndContextPointer(const std::string &quakeModule) {
   auto contextPtr = cudaq::initializeMLIR();
   MLIRContext &context = *contextPtr.get();
@@ -100,6 +100,62 @@ std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits) {
     throw std::runtime_error("Measurement gate op has unsupported operand.");
   }
   return targets;
+}
+
+
+std::tuple<unsigned int, unsigned int, unsigned int>
+getQubitsInstructionsDepth(FuncOp circuit) {
+  unsigned int nrQubits = 0;
+  unsigned int nrGates = 0;
+  std::vector depths(nrQubits, 0);
+  circuit.walk([&](Operation *op) {
+    if (isa<quake::AllocaOp>(op)) {
+      if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
+        allocOp.getType().dyn_cast<quake::RefType>()) {
+        nrQubits += 1;
+      } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
+        nrQubits += qvecType.getSize();
+      }
+      return;
+    }
+    if (!isOperatingGate(op)) {
+      return;
+    }
+    if (isMeasurementGate(op)) {
+      for (auto operand : op->getOperands()) {
+        if (operand.getType().isa<quake::RefType>()) {
+          int qubitIndex =
+              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+            nrGates++;
+            depths[qubitIndex]++;
+          }
+        } else if (operand.getType().isa<quake::VeqType>()) {
+          // Because this function only works for a single allocation, the
+          // reference to a Veq will reference all allocated qubits in the
+          // range [0, nrQubits-1].
+          for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
+            depths[qubitIndex]++;
+          }
+          nrGates += operand.getType().dyn_cast<quake::VeqType>().getSize();
+        }
+      }
+    } else {
+      nrGates++;
+      auto gate = dyn_cast<quake::OperatorInterface>(op);
+      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+      targets.insert(targets.end(), controls.begin(), controls.end());
+      int max_depth = 0;
+      for (int qubit : targets) {
+        max_depth = std::max(max_depth, depths[qubit]);
+      }
+      for (int qubit : targets) {
+        depths[qubit] = max_depth + 1;
+      }
+    }
+  });
+  return {nrQubits, nrGates, *std::ranges::max_element(depths)};
 }
 
 std::string vectorToString(const std::vector<int> &vec) {

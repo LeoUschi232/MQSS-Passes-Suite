@@ -26,6 +26,13 @@ namespace ai_pass_selector {
     std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
         int optimizerType, const torch::nn::Sequential &agentModel,
         double learningRate);
+
+    /**
+     *
+     * @param circuit
+     * @return
+     */
+    std::string select_best_agent(const std::string &circuit);
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP

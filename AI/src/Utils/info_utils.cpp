@@ -78,10 +78,11 @@ get_circuit_info(const std::string &circuit_file) {
   std::string quake_module_text
       = readFileToString(full_circuit_path.string());
   auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
+  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(
+      FuncOp(mlir_module));
+
   return std::make_tuple(circuit_name, full_circuit_path,
-                         getNumberOfQubits(FuncOp(mlir_module)),
-                         getNumberOfGates(FuncOp(mlir_module)),
-                         getCircuitDepth(FuncOp(mlir_module)));
+                         nrQubits, nrGates, depth);
 }
 
 void print_circuit_info(const std::string &circuit_file) {
@@ -120,12 +121,24 @@ std::vector<fs::path> get_dataset_files(const std::string &dataset_name) {
   if (dataset_name.empty()) {
     return {};
   }
-  fs::path quake_dataset_dir
-      = fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
-  if (!fs::exists(quake_dataset_dir) || !fs::is_directory(quake_dataset_dir)) {
-    return {};
-  }
+  std::string dataset_name_lower = dataset_name;
+  std::transform(
+      dataset_name_lower.begin(),
+      dataset_name_lower.end(),
+      dataset_name_lower.begin(),
+      [](unsigned char c) { return std::tolower(c); });
   std::vector<fs::path> files;
+  fs::path quake_dataset_dir;
+  if (dataset_name_lower == "all" || dataset_name == "*") {
+    quake_dataset_dir = fs::path(AI_DATASET_DIR) / "Quake";
+  } else {
+    quake_dataset_dir
+        = fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
+    if (!fs::exists(quake_dataset_dir) || !
+        fs::is_directory(quake_dataset_dir)) {
+      return {};
+    }
+  }
   for (auto it = fs::recursive_directory_iterator(
            quake_dataset_dir, fs::directory_options::skip_permission_denied);
        it != fs::recursive_directory_iterator(); ++it) {
