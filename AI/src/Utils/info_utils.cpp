@@ -60,6 +60,32 @@ search_circuit(const std::string &circuit_file) {
   return std::nullopt;
 }
 
+std::optional<fs::path> prepare_circuit_input_path(
+    const fs::path &circuit_folder,
+    const std::string &circuit_name,
+    const std::string &circuit_extension) {
+  fs::path circuit_path = circuit_folder / (circuit_name + circuit_extension);
+  if (circuit_extension == ".qke") {
+    if (!fs::exists(circuit_path)) {
+      std::cerr << "Circuit file not found: " << circuit_path << std::endl;
+      return std::nullopt;
+    }
+    return circuit_path;
+  }
+  if (circuit_extension == ".qasm") {
+    const std::string qasm_to_quake_tool_path
+        = std::string(MQSS_BUILD_DIR) + "/tools/qasm-to-quake";
+    std::cerr << "Circuit " << circuit_path
+        << " uses '.qasm'. Convert it to '.qke' first (e.g. with "
+        << qasm_to_quake_tool_path << ") before requesting passes."
+        << std::endl;
+    return std::nullopt;
+  }
+  std::cerr << "Unsupported circuit extension '" << circuit_extension
+      << "'. Expected a '.qke' circuit." << std::endl;
+  return std::nullopt;
+}
+
 std::optional<std::tuple<
   std::string, std::string,
   unsigned int, unsigned int, unsigned int> >

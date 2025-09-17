@@ -32,6 +32,18 @@ std::optional<std::tuple<fs::path, std::string, std::string> >
 search_circuit(const std::string &circuit_file);
 
 /**
+ * Resolve a circuit lookup result into a usable Quake file path.
+ * @param circuit_folder Absolute directory that contains the circuit.
+ * @param circuit_name   Circuit basename (without extension).
+ * @param circuit_extension Original extension returned by search_circuit.
+ * @return The full path to a Quake (.qke) file when available.
+ */
+std::optional<fs::path> prepare_circuit_input_path(
+    const fs::path &circuit_folder,
+    const std::string &circuit_name,
+    const std::string &circuit_extension);
+
+/**
  *
  * @param circuit_file
  * @return

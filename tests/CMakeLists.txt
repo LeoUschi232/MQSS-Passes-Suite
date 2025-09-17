@@ -129,6 +129,14 @@ target_include_directories(
           ${CUDAQ_MLIR_RUNTIME_PATH})
 add_test(NAME Test-QASM-parser-correctness COMMAND test-qasm-parser-correctness)
 
+if (TARGET ai_core)
+  add_executable(test-ai-info-utils testAIInfoUtils.cpp)
+  target_link_libraries(test-ai-info-utils PRIVATE ai_core ${GTEST_LIBRARIES})
+  target_compile_definitions(
+    test-ai-info-utils PRIVATE MQSS_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+  add_test(NAME Test-ai-info-utils COMMAND test-ai-info-utils)
+endif ()
+
 set(TEST_OUTPUT_DIR $<TARGET_FILE_DIR:test-mqss-passes>/golden-cases)
 add_custom_target(
   copy-golden-cases ALL

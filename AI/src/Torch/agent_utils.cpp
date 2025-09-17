@@ -100,12 +100,12 @@ getRecommendedPasses(
     return {};
   }
   auto [path, name, extension] = found_circuit.value();
-  if (extension != ".quake") {
-    std::cerr << "Invalid circuit: "
-        << path / (name + extension) << std::endl;
+  auto input_path_optional
+      = prepare_circuit_input_path(path, name, extension);
+  if (!input_path_optional.has_value()) {
     return {};
   }
-  fs::path input_path = path / (name + extension);
+  fs::path input_path = input_path_optional.value();
   std::vector<std::unique_ptr<mlir::Pass> > passes;
   std::vector<std::string> pass_names;
   std::vector<unsigned int> pass_indexes;
