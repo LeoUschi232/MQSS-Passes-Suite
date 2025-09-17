@@ -24,9 +24,9 @@ std::unordered_map<std::string, std::string> train_agent(
     const std::string &dataset,
     std::unordered_map<std::string, std::string> training_params) {
   std::unordered_map<std::string, std::string> training_results;
-  std::vector<std::string> agent_attributes = split_string(agent_name, '-');
 
-  if (agent_attributes[0] == "a2c") {
+  if (std::vector<std::string> agent_attributes = split_string(agent_name, '-');
+    agent_attributes[0] == "a2c") {
     std::vector<std::string> dimensions
         = split_string(agent_attributes[4], 'x');
     unsigned int max_qubits = std::stoi(dimensions[0]);

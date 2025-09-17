@@ -83,13 +83,9 @@ std::unordered_map<std::string, std::string> train_agent(
     std::cerr << "No agent to train." << std::endl;
     return {};
   }
-  if (fs::path dataset_dir = fs::path(AI_DATASET_DIR) / "Quake" / dataset;
-    !fs::exists(dataset_dir) || !fs::is_directory(dataset_dir)) {
-    std::cerr << "Dataset: " << dataset << " not found." << std::endl;
-    return {};
-  }
   std::vector<fs::path> all_dataset_files = get_dataset_files(dataset);
   std::vector<std::string> filtered_dataset_files;
+  std::cout << "Filtering dataset files." << std::endl;
   for (auto &file : all_dataset_files) {
     std::string quake_module_text = readFileToString(file.string());
     if (auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
@@ -104,6 +100,8 @@ std::unordered_map<std::string, std::string> train_agent(
     std::cerr << "No dataset files found." << std::endl;
     return {};
   }
+  std::cout << "Nr of dataset files after filtering: "
+      << filtered_dataset_files.size() << std::endl;
   ParallelEnvironments environments(
       nr_parallel_environments, max_qubits, max_instructions, max_depth,
       max_steps_per_episode);
