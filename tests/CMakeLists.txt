@@ -52,6 +52,13 @@ target_link_libraries(test-transpiler PRIVATE ${COMMON_LIBRARIES})
 target_include_directories(test-transpiler PRIVATE ${CMAKE_SOURCE_DIR}/include
                                                    ${CUDAQ_MLIR_RUNTIME_PATH})
 
+if (TARGET ai_torch)
+  add_executable(test-parallel-environments testParallelEnvironments.cpp)
+  target_link_libraries(test-parallel-environments PRIVATE ${COMMON_LIBRARIES}
+                                                           ai_torch)
+  add_test(NAME Test-parallel-environments COMMAND test-parallel-environments)
+endif ()
+
 add_executable(test-verification-qcec testMQSS-QCEC.cpp)
 target_link_libraries(test-verification-qcec PRIVATE ${COMMON_LIBRARIES}
                                                      MQT::QCEC MLIRPasses)

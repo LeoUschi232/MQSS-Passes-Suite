@@ -35,10 +35,13 @@ namespace ai_pass_selector {
         ParallelEnvironments &operator=(ParallelEnvironments &&) noexcept = default;
 
         /**
+         * Registers a circuit in the environment identified by @p index.
+         * The provided @p index must be smaller than size(); otherwise, a
+         * std::out_of_range exception is thrown.
          *
-         * @param index
-         * @param circuit_path
-         * @return
+         * @param index        Environment slot that should own the circuit.
+         * @param circuit_path Path to the circuit that should be registered.
+         * @return True if the circuit could be registered successfully.
          */
         bool register_quantum_circuit(
             unsigned int index, const fs::path &circuit_path);
