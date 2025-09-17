@@ -100,8 +100,8 @@ getRecommendedPasses(
     return {};
   }
   auto [path, name, extension] = found_circuit.value();
-  if (extension != ".quake") {
-    std::cerr << "Invalid circuit: "
+  if (extension != ".quake" && extension != ".qke") {
+    std::cerr << "Invalid circuit (expected .quake or .qke): "
         << path / (name + extension) << std::endl;
     return {};
   }
