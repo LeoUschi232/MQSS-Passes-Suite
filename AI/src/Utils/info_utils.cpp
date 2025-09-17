@@ -3,9 +3,12 @@
 #include "Quake.hpp"
 #include "mlir_utils.hpp"
 
-#include <string>
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <iostream>
+#include <limits>
+#include <string>
 
 namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
