@@ -233,7 +233,7 @@ void print_dataset_info(const std::string &dataset_name) {
   fs::path quake_dataset_dir = fs::path(AI_DATASET_DIR)
                                / "Quake" / dataset_name;
 
-  if (fs::exists(quake_dataset_dir) && fs::is_directory(quake_dataset_dir)) {
+  if (fs::exists(qasm_dataset_dir) && fs::is_directory(qasm_dataset_dir)) {
     std::cout << "Dataset Quake/" + dataset_name << ":" << std::endl;
     auto dataset_info = get_dataset_info(dataset_name);
     if (!dataset_info.has_value()) {
