@@ -23,6 +23,9 @@ ParallelEnvironments::ParallelEnvironments(
 
 bool ParallelEnvironments::register_quantum_circuit(
     unsigned int index, const fs::path &circuit_path) {
+  if (index >= environments.size()) {
+    return false;
+  }
   return environments[index].register_quantum_circuit(circuit_path);
 }
 
