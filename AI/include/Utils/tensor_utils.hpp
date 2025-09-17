@@ -4,6 +4,8 @@
 
 #include "Environment/quantum_circuit_tensor.hpp"
 
+#include "llvm/ADT/ArrayRef.h"
+
 // MLIR
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"

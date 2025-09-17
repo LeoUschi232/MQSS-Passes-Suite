@@ -50,7 +50,7 @@ Operation *findReturn(ModuleOp module) {
 }
 
 std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
-                                  const std::vector<double> &angles) {
+                                  llvm::ArrayRef<double> angles) {
   std::vector<Value> vals;
   vals.reserve(angles.size());
   for (double angle : angles) {
