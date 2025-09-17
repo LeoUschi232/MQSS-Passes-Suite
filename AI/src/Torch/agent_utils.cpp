@@ -12,6 +12,8 @@
 #include <mlir/Transforms/Passes.h>
 #include <torch/torch.h>
 
+#include <exception>
+
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
@@ -71,7 +73,39 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
 }
 
 std::string select_best_agent(const std::string &circuit) {
-  auto [module, contex_ptr] = extractMLIRContext(circuit);
+  auto found_circuit = search_circuit(circuit);
+  if (!found_circuit.has_value()) {
+    throw std::runtime_error(
+        "Circuit '" + circuit + "' could not be found.");
+  }
+
+  auto [circuit_folder, circuit_name, circuit_extension]
+      = found_circuit.value();
+  fs::path circuit_path
+      = circuit_folder / (circuit_name + circuit_extension);
+  if (circuit_extension != ".qke") {
+    throw std::runtime_error(
+        "Circuit '" + circuit_path.string() + "' is not a .qke file.");
+  }
+
+  std::string quake_module_text = readFileToString(circuit_path.string());
+  if (quake_module_text.empty()) {
+    throw std::runtime_error(
+        "Circuit '" + circuit_path.string()
+        + "' could not be read or is empty.");
+  }
+
+  ModuleOp module = nullptr;
+  MLIRContext *context_ptr = nullptr;
+  try {
+    std::tie(module, context_ptr) = extractMLIRContext(quake_module_text);
+  } catch (const std::exception &ex) {
+    throw std::runtime_error(
+        "Failed to parse circuit '" + circuit_path.string()
+        + "': " + ex.what());
+  }
+  (void)context_ptr;
+
   switch (auto [nrQubits, nrGates, depth]
         = getQubitsInstructionsDepth(FuncOp(module));
     classify_circuit(nrQubits, nrGates, depth)) {
