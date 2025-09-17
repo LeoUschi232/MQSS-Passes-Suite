@@ -2,6 +2,7 @@
 
 #include <mlir_utils.hpp>
 #include <Environment/environment.hpp>
+#include <Passes/CodeGen.hpp>
 #include <Torch/parallel_environments.hpp>
 #include <Torch/A2C/a2c_ib_fc_lsd.hpp>
 #include <Torch/A2C/a2c_ib_fc_lsm.hpp>
@@ -9,10 +10,136 @@
 #include <Utils/conversion_workflow.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Pass/PassManager.h>
 #include <mlir/Transforms/Passes.h>
 #include <torch/torch.h>
+#include <llvm/Support/raw_ostream.h>
+
+#include <fstream>
+#include <optional>
+#include <regex>
+#include <sstream>
+#include <system_error>
+#include <memory>
 
 using namespace mqss::support::quakeDialect;
+
+namespace {
+
+std::string sanitizeKernelName(const std::string &kernel_name) {
+  if (kernel_name.empty()) {
+    return "kernel";
+  }
+  std::regex disallowed(R"([-_])");
+  std::string sanitized = std::regex_replace(kernel_name, disallowed, "");
+  if (sanitized.empty()) {
+    return "kernel";
+  }
+  return sanitized;
+}
+
+std::string createEmptyQuakeModule(const std::string &kernel_name,
+                                   const std::string &function_name) {
+  std::string template_module = R"(module attributes {
+  llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
+  llvm.triple = "x86_64-unknown-linux-gnu",
+  quake.mangled_name_map = {__nvqpp__mlirgen__KERNELNAME = "FUNCTIONNAME"}
+} {
+  func.func @__nvqpp__mlirgen__KERNELNAME() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+   return
+  }
+
+  func.func @FUNCTIONNAME(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+)";
+  std::regex kernel_placeholder("KERNELNAME");
+  std::regex function_placeholder("FUNCTIONNAME");
+  template_module
+      = std::regex_replace(template_module, kernel_placeholder, kernel_name);
+  template_module = std::regex_replace(
+      template_module, function_placeholder, function_name);
+  return template_module;
+}
+
+std::optional<fs::path> convertQasmCircuitToQuakeFile(
+    const fs::path &input_path, std::string &error_message) {
+  std::ifstream input_file(input_path);
+  if (!input_file.is_open()) {
+    error_message = "Failed to open QASM circuit: " + input_path.string();
+    return std::nullopt;
+  }
+
+  std::stringstream buffer;
+  buffer << input_file.rdbuf();
+  std::istringstream qasm_stream(buffer.str());
+
+  const std::string kernel_name
+      = sanitizeKernelName(input_path.stem().string());
+  const std::string function_name = "_" + kernel_name;
+  std::string empty_module
+      = createEmptyQuakeModule(kernel_name, function_name);
+
+  auto [mlir_module, context_ptr] = extractMLIRContext(empty_module);
+  if (context_ptr == nullptr) {
+    error_message = "Failed to create MLIR context for QASM conversion.";
+    return std::nullopt;
+  }
+  std::unique_ptr<MLIRContext> context_owner(context_ptr);
+  MLIRContext &context = *context_owner;
+  context.disableMultithreading();
+
+  mlir::PassManager pass_manager(&context);
+  pass_manager.nest<mlir::func::FuncOp>().addPass(
+      mqss::opt::createQASM3ToQuakePass(qasm_stream, false));
+  pass_manager.addPass(mlir::createCanonicalizerPass());
+  pass_manager.addPass(mlir::createCSEPass());
+  if (mlir::failed(pass_manager.run(mlir_module))) {
+    error_message = "Failed to run QASM to Quake conversion passes for "
+        + input_path.string();
+    return std::nullopt;
+  }
+
+  std::string module_output;
+  llvm::raw_string_ostream string_stream(module_output);
+  mlir_module.print(string_stream);
+  string_stream.flush();
+
+  fs::path temp_model;
+  try {
+    temp_model = fs::temp_directory_path()
+        / fs::path(kernel_name + "-%%%%-%%%%-%%%%-%%%%.qke");
+  } catch (const fs::filesystem_error &e) {
+    error_message = std::string("Failed to obtain temporary directory: ")
+        + e.what();
+    return std::nullopt;
+  }
+
+  fs::path temp_path;
+  try {
+    temp_path = fs::unique_path(temp_model);
+  } catch (const fs::filesystem_error &e) {
+    error_message = std::string("Failed to create temporary file for QASM "
+                                "conversion: ")
+        + e.what();
+    return std::nullopt;
+  }
+
+  std::ofstream output_file(temp_path);
+  if (!output_file.is_open()) {
+    error_message = "Failed to open temporary file for converted circuit: "
+        + temp_path.string();
+    return std::nullopt;
+  }
+  output_file << module_output;
+  output_file.close();
+
+  return temp_path;
+}
+
+} // namespace
 
 namespace ai_pass_selector {
 
@@ -100,12 +227,41 @@ getRecommendedPasses(
     return {};
   }
   auto [path, name, extension] = found_circuit.value();
-  if (extension != ".quake") {
-    std::cerr << "Invalid circuit: "
-        << path / (name + extension) << std::endl;
+  fs::path input_path = path / (name + extension);
+  struct TemporaryFileGuard {
+    std::optional<fs::path> path;
+    ~TemporaryFileGuard() {
+      if (!path.has_value()) {
+        return;
+      }
+      std::error_code ec;
+      fs::remove(*path, ec);
+      if (ec) {
+        std::cerr << "Warning: failed to clean up temporary file "
+            << path->string() << ": " << ec.message() << std::endl;
+      }
+    }
+  } temp_file_guard;
+
+  if (extension == ".qasm") {
+    std::string conversion_error;
+    if (auto converted_path
+        = convertQasmCircuitToQuakeFile(input_path, conversion_error);
+        converted_path.has_value()) {
+      temp_file_guard.path = converted_path;
+      input_path = *converted_path;
+    } else {
+      std::cerr << conversion_error << std::endl;
+      return {};
+    }
+  } else if (extension == ".qke" || extension == ".quake") {
+    // Supported extensions, no additional action required.
+  } else {
+    std::cerr << "Unsupported circuit extension for "
+        << path / (name + extension)
+        << ". Supported extensions are .qke, .quake, and .qasm." << std::endl;
     return {};
   }
-  fs::path input_path = path / (name + extension);
   std::vector<std::unique_ptr<mlir::Pass> > passes;
   std::vector<std::string> pass_names;
   std::vector<unsigned int> pass_indexes;
