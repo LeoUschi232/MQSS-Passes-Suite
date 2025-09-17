@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "Environment/quantum_circuit_tensor.hpp"
 #include "Utils/passes_utils.hpp"
 
