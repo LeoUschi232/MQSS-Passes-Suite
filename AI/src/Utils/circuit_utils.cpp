@@ -1,6 +1,7 @@
 #include "Utils/circuit_utils.hpp"
 
 #include <filesystem>
+#include <sstream>
 #include <vector>
 #include <string>
 
