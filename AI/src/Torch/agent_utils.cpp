@@ -11,6 +11,7 @@
 #include <Utils/passes_utils.hpp>
 #include <mlir/Transforms/Passes.h>
 #include <torch/torch.h>
+#include <memory>
 
 using namespace mqss::support::quakeDialect;
 
@@ -71,10 +72,54 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
 }
 
 std::string select_best_agent(const std::string &circuit) {
-  auto [module, contex_ptr] = extractMLIRContext(circuit);
-  switch (auto [nrQubits, nrGates, depth]
-        = getQubitsInstructionsDepth(FuncOp(module));
-    classify_circuit(nrQubits, nrGates, depth)) {
+  auto found_circuit = search_circuit(circuit);
+  if (!found_circuit.has_value()) {
+    std::cerr << "Failed to locate circuit: " << circuit << std::endl;
+    return "";
+  }
+
+  auto [path, name, extension] = found_circuit.value();
+  fs::path input_path = path / (name + extension);
+  if (extension != ".qke") {
+    if (extension == ".qasm") {
+      std::cerr
+          << "Unsupported circuit extension '.qasm' for "
+          << input_path
+          << ". Please convert the circuit to a Quake (.qke) file before "
+             "selecting an agent."
+          << std::endl;
+    } else {
+      std::cerr << "Unsupported circuit extension '" << extension
+                << "' for " << input_path << std::endl;
+    }
+    return "";
+  }
+
+  std::string quake_module_text = readFileToString(input_path.string());
+  if (quake_module_text.empty()) {
+    std::cerr << "Failed to read circuit: " << input_path << std::endl;
+    return "";
+  }
+
+  ModuleOp module;
+  MLIRContext *raw_context = nullptr;
+  try {
+    std::tie(module, raw_context) = extractMLIRContext(quake_module_text);
+  } catch (const std::exception &ex) {
+    std::cerr << "Failed to parse circuit '" << input_path
+              << "': " << ex.what() << std::endl;
+    return "";
+  } catch (...) {
+    std::cerr << "Failed to parse circuit '" << input_path
+              << "': unknown error" << std::endl;
+    return "";
+  }
+
+  std::unique_ptr<MLIRContext> context_owner(raw_context);
+
+  auto [nrQubits, nrGates, depth]
+      = getQubitsInstructionsDepth(FuncOp(module));
+  switch (classify_circuit(nrQubits, nrGates, depth)) {
   case TINY:
     return "a2c-ib-fc-lsd-5x25x10";
   case SMALL:
@@ -86,7 +131,10 @@ std::string select_best_agent(const std::string &circuit) {
   default:
     break;
   }
-  throw std::runtime_error("No suitable agent found for circuit.");
+
+  std::cerr << "No suitable agent found for circuit: " << input_path
+            << std::endl;
+  return "";
 }
 
 
@@ -94,6 +142,10 @@ std::tuple<std::vector<std::string>, std::vector<unsigned int> >
 getRecommendedPasses(
     const std::string &agent_name, const std::string &circuit,
     unsigned int nr_passes, fs::path output_path) {
+  if (agent_name.empty()) {
+    std::cerr << "No agent specified for recommending passes." << std::endl;
+    return {};
+  }
   auto found_circuit = search_circuit(circuit);
   if (!found_circuit.has_value()) {
     std::cerr << "Failed to get circuit: " << circuit << std::endl;
