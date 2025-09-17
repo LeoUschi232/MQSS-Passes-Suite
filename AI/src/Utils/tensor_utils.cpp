@@ -75,15 +75,12 @@ std::string gateIdFor(const std::string &base, int numControls,
     return numControls == 1 ? "ch" : "h";
 
   if (base == "s")
-    return numControls == 1
-             ? (isAdjoint ? "csdg" : "cs")
-             : isAdjoint
-             ? "sdg"
-             : "s";
+    return numControls == 1 ? (isAdjoint ? "csdg" : "cs")
+           : isAdjoint      ? "sdg"
+                            : "s";
   if (base == "t")
-    return numControls == 1
-             ? (isAdjoint ? "ctdg" : "ct")
-             : (isAdjoint ? "tdg" : "t");
+    return numControls == 1 ? (isAdjoint ? "ctdg" : "ct")
+                            : (isAdjoint ? "tdg" : "t");
 
   if (base == "rx")
     return numControls == 1 ? "crx" : "rx";
@@ -224,10 +221,12 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
       Value qref = targetRefs[0];
       std::vector<Value> empty;
       std::vector tRef{qref};
+      Type measTy = quake::MeasureType::get(builder.getContext());
+      SmallVector<Value> mTargets{qref};
       if (baseGate == "mx") {
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "h", builder, loc, empty, empty, tRef, false);
-        builder.create<quake::MzOp>(loc, qref);
+        builder.create<quake::MzOp>(loc, measTy, mTargets);
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "h", builder, loc, empty, empty, tRef, false);
       } else if (baseGate == "my") {
@@ -235,13 +234,13 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromInstructionBasedTensor(
             "sdg", builder, loc, empty, empty, tRef, false);
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "h", builder, loc, empty, empty, tRef, false);
-        builder.create<quake::MzOp>(loc, qref);
+        builder.create<quake::MzOp>(loc, measTy, mTargets);
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "h", builder, loc, empty, empty, tRef, false);
         mqss::interfaces::insertQASMGateIntoQuakeModule(
             "s", builder, loc, empty, empty, tRef, false);
       } else {
-        builder.create<quake::MzOp>(loc, qref);
+        builder.create<quake::MzOp>(loc, measTy, mTargets);
       }
       continue;
     }
@@ -344,7 +343,7 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
       continue;
 
     // Group qubits by gate index
-    std::unordered_map<int, std::vector<int> > qubitsByGate;
+    std::unordered_map<int, std::vector<int>> qubitsByGate;
     for (int q = 0; q < maxQubits; ++q) {
       if (cells[q].gateIndex >= 0) {
         qubitsByGate[cells[q].gateIndex].push_back(q);
@@ -475,11 +474,12 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
           for (int t : targets) {
             Value qref = getRef(t);
             std::vector<Value> empty;
-            std::vector<Value> tRef{qref};
+            SmallVector<Value> tRef{qref};
+            Type measTy = quake::MeasureType::get(builder.getContext());
             if (baseGate == "mx") {
               mqss::interfaces::insertQASMGateIntoQuakeModule(
                   "h", builder, loc, empty, empty, tRef, false);
-              builder.create<quake::MzOp>(loc, qref);
+              builder.create<quake::MzOp>(loc, measTy, tRef);
               mqss::interfaces::insertQASMGateIntoQuakeModule(
                   "h", builder, loc, empty, empty, tRef, false);
             } else if (baseGate == "my") {
@@ -487,13 +487,13 @@ ModuleOp ai_pass_selector::recreateQuantumCircuitFromDepthBasedTensor(
                   "sdg", builder, loc, empty, empty, tRef, false);
               mqss::interfaces::insertQASMGateIntoQuakeModule(
                   "h", builder, loc, empty, empty, tRef, false);
-              builder.create<quake::MzOp>(loc, qref);
+              builder.create<quake::MzOp>(loc, measTy, tRef);
               mqss::interfaces::insertQASMGateIntoQuakeModule(
                   "h", builder, loc, empty, empty, tRef, false);
               mqss::interfaces::insertQASMGateIntoQuakeModule(
                   "s", builder, loc, empty, empty, tRef, false);
             } else {
-              builder.create<quake::MzOp>(loc, qref);
+              builder.create<quake::MzOp>(loc, measTy, tRef);
             }
           }
           continue;
