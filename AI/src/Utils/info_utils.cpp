@@ -264,7 +264,7 @@ void print_dataset_info(const std::string &dataset_name) {
   std::cout << "Dataset Quake/" + dataset_name << " not found." << std::endl;
   fs::path qasm_dataset_dir = fs::path(AI_DATASET_DIR)
                               / "Qasm" / dataset_name;
-  if (fs::exists(quake_dataset_dir) && fs::is_directory(quake_dataset_dir)) {
+  if (fs::exists(qasm_dataset_dir) && fs::is_directory(qasm_dataset_dir)) {
     unsigned int nr_circuits = 0;
     for (auto it = fs::recursive_directory_iterator(
              qasm_dataset_dir, fs::directory_options::skip_permission_denied);
