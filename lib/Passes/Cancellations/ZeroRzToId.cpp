@@ -45,7 +45,7 @@ public:
 
       std::vector<double> params = getOperationParameters(rzOp);
       if (params.size() != 1) {
-        throw std::runtime_error("Expected a single parameter for RxOp");
+        return;
       }
       if (isMultipleOfTwoPi(params[0])) {
         IRRewriter rewriter(rzOp->getContext());
