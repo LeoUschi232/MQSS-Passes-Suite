@@ -32,18 +32,20 @@ std::unordered_map<std::string, std::string> train(
       if (attributes.specific_attributes[1] == "fc") {
         if (attributes.specific_attributes[2] == "lsd") {
           try {
+            auto agent_params = params;
             A2C_IB_FC_LSD agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
+                attributes.size_class, std::move(agent_params));
+            training_results = train_a2c(agent, dataset, params);
           } catch (const std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
             return {};
           }
         } else if (attributes.specific_attributes[2] == "lsm") {
           try {
+            auto agent_params = params;
             A2C_IB_FC_LSM agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
+                attributes.size_class, std::move(agent_params));
+            training_results = train_a2c(agent, dataset, params);
           } catch (const std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
             return {};
