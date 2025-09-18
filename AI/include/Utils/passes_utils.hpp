@@ -5,7 +5,9 @@
 #include "Decompositions.hpp"
 #include "Transforms.hpp"
 
-#include <mlir/Pass/Pass.h>
+#include "mlir/Pass/Pass.h"
+
+// Standard library includes
 #include <memory>
 
 using namespace mqss::opt;
@@ -89,24 +91,6 @@ namespace ai_pass_selector {
      */
     std::pair<std::string, std::unique_ptr<mlir::Pass> >
     getPassNameAndPointer(unsigned int index);
-
-    /**
-     *
-     * @param max_qubits
-     * @param max_instructions
-     * @return
-     */
-    unsigned int getNrOfInputValuesForInstructionBased(
-        unsigned int max_qubits, unsigned int max_instructions);
-
-    /**
-     *
-     * @param max_qubits
-     * @param max_depth
-     * @return
-     */
-    unsigned int getNrOfInputValuesForDepthBased(
-        unsigned int max_qubits, unsigned int max_depth);
 } // namespace ai_pass_selector
 
 #endif // PASSES_UTILS_HPP

@@ -12,38 +12,16 @@ namespace ai_pass_selector {
     class A2C_IB_FC_LSM final : public BaseA2CAgent {
     public:
         A2C_IB_FC_LSM(
-            unsigned int max_qubits,
-            unsigned int max_instructions,
-            unsigned int max_depth,
-            int critic_optimizer_type = OPTIMIZER_ADAM,
-            int actor_optimizer_type = OPTIMIZER_ADAM,
-            double critic_learning_rate = 0.005,
-            double actor_learning_rate = 0.001,
-            unsigned int nr_parallel_environments = 10,
-            torch::Device device = torch::kCPU);
+            int circuit_size_class,
+            std::unordered_map<std::string, std::string> params);
+
+
+        A2C_IB_FC_LSM(
+            const std::string &circuit_size,
+            std::unordered_map<std::string, std::string> params);
 
         std::string agentName() const override;
     };
-
-    /**
-     *
-     * @param agent
-     * @param dataset
-     * @param episodes
-     * @param discount_factor
-     * @param gae_hyperparameter
-     * @param entropy_coefficient
-     * @param max_steps_per_episode
-     * @return
-     */
-    std::unordered_map<std::string, std::string> train_agent(
-        A2C_IB_FC_LSM &agent,
-        std::string dataset,
-        unsigned int episodes,
-        double discount_factor,
-        double gae_hyperparameter,
-        double entropy_coefficient,
-        unsigned int max_steps_per_episode);
 } // namespace ai_pass_selector
 
 #endif // A2C_IB_FC_LSM_HPP

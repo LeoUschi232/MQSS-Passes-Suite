@@ -11,8 +11,61 @@
 #include <tuple>
 #include <cmath>
 #include <memory>
+#include <Utils/circuit_utils.hpp>
 
 namespace ai_pass_selector {
+BaseA2CAgent::BaseA2CAgent(
+    int circuit_size_class,
+    std::unordered_map<std::string, std::string> params) {
+  this->configure(circuit_size_class, std::move(params));
+}
+
+BaseA2CAgent::BaseA2CAgent(
+    const std::string &circuit_size,
+    std::unordered_map<std::string, std::string> params) {
+  if (CIRCUIT_SIZE_TO_CLASS.find(circuit_size)
+      == CIRCUIT_SIZE_TO_CLASS.end()) {
+    throw std::runtime_error("Unsupported size: " + circuit_size);
+  }
+  int circuit_size_class = CIRCUIT_SIZE_TO_CLASS.at(circuit_size);
+  this->configure(circuit_size_class, std::move(params));
+}
+
+void BaseA2CAgent::configure(
+    int circuit_size_class,
+    std::unordered_map<std::string, std::string> params) {
+  if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class)
+      == CIRCUIT_CLASS_TO_SPECS.end()) {
+    throw std::runtime_error("Unsupported size class: " + circuit_size_class);
+  }
+  this->size_class = circuit_size_class;
+  std::tie(this->max_qubits, this->max_instructions, this->max_depth)
+      = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
+  for (auto [key, value] : params) {
+    if (key == "critic_optimizer") {
+      if (OPTIMIZER_NAME_TO_TYPE.find(value) == OPTIMIZER_NAME_TO_TYPE.end()) {
+        throw std::runtime_error("Unsupported optimizer: " + value);
+      }
+      this->critic_optimizer_type = OPTIMIZER_NAME_TO_TYPE.at(value);
+    } else if (key == "actor_optimizer") {
+      if (OPTIMIZER_NAME_TO_TYPE.find(value) == OPTIMIZER_NAME_TO_TYPE.end()) {
+        throw std::runtime_error("Unsupported optimizer: " + value);
+      }
+      this->actor_optimizer_type = OPTIMIZER_NAME_TO_TYPE.at(value);
+    } else if (key == "critic_learning_rate") {
+      this->critic_learning_rate = std::stod(value);
+    } else if (key == "actor_learning_rate") {
+      this->actor_learning_rate = std::stod(value);
+    } else if (key == "nr_parallel_environments") {
+      this->nr_parallel_environments = std::stoul(value);
+    } else if (key == "device"
+               && (value == "cuda" || value == "gpu")
+               && torch::cuda::is_available()) {
+      this->device = torch::kCUDA;
+    }
+  }
+}
+
 
 bool BaseA2CAgent::initialize(
     int nr_input_values,
@@ -60,11 +113,6 @@ unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
 
 torch::Device BaseA2CAgent::getDevice() const {
   return this->device;
-}
-
-void BaseA2CAgent::setNrParallelEnvironments(
-    unsigned int nr_parallel_environments) {
-  this->nr_parallel_environments = nr_parallel_environments;
 }
 
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(

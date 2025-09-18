@@ -22,6 +22,7 @@ target_include_directories(common_ai_props INTERFACE
 target_compile_definitions(common_ai_props INTERFACE
         AI_DATASET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Dataset"
         AI_AGENTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Agents"
+        AI_CIRCUITS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Circuits"
         MQSS_BUILD_DIR="${CMAKE_BINARY_DIR}"
 )
 target_link_libraries(common_ai_props INTERFACE
