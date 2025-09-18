@@ -37,7 +37,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Include auto-generated pass registration
 namespace mqss::opt {
-#define GEN_PASS_CANCELLATIONNULLROTATION
+#define GEN_PASS_DEF_CANCELLATIONNULLROTATION
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 using namespace mlir;
