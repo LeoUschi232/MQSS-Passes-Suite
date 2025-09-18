@@ -194,6 +194,9 @@ QuantumCircuitEnviorment::step(unsigned int action) {
   }
   std::unordered_map<std::string, unsigned int> previous_circuit_info
       = this->get_circuit_info();
+  double previous_depth = previous_circuit_info["depth"];
+  double previous_gates = previous_circuit_info["gates"];
+
   std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[action]();
 
   std::cout << this->circuit_path.stem().string() << " | "
@@ -212,10 +215,11 @@ QuantumCircuitEnviorment::step(unsigned int action) {
   std::unordered_map<std::string, unsigned int> current_circuit_info
       = this->get_circuit_info();
 
-  double reward
-      = previous_circuit_info["depth"] - current_circuit_info["depth"]
-        + previous_circuit_info["gates"] - current_circuit_info["gates"];
-  return {reward, ++this->current_step >= this->max_steps};
+  double current_depth = current_circuit_info["depth"];
+  double current_gates = current_circuit_info["gates"];
+  return {
+      previous_depth - current_depth + previous_gates - current_gates,
+      ++this->current_step >= this->max_steps};
 }
 
 InstructionBasedTensor<double>
