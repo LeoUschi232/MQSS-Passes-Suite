@@ -24,6 +24,8 @@ std::unordered_map<std::string, std::string> train(
     const std::string &dataset,
     std::unordered_map<std::string, std::string> params) {
   std::unordered_map<std::string, std::string> training_results;
+  auto agent_params = params;
+  auto trainer_params = params;
 
   switch (AgentAttributes attributes = parseAgentName(agent_name);
     attributes.agent_class) {
@@ -33,8 +35,8 @@ std::unordered_map<std::string, std::string> train(
         if (attributes.specific_attributes[2] == "lsd") {
           try {
             A2C_IB_FC_LSD agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
+                attributes.size_class, std::move(agent_params));
+            training_results = train_a2c(agent, dataset, std::move(trainer_params));
           } catch (const std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
             return {};
@@ -42,8 +44,8 @@ std::unordered_map<std::string, std::string> train(
         } else if (attributes.specific_attributes[2] == "lsm") {
           try {
             A2C_IB_FC_LSM agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
+                attributes.size_class, std::move(agent_params));
+            training_results = train_a2c(agent, dataset, std::move(trainer_params));
           } catch (const std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
             return {};
