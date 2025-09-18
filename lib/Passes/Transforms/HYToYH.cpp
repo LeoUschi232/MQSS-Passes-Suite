@@ -1,4 +1,3 @@
-/* Auto-generated simple pass implementing HY -> YH transformation */
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/SwitchOperations.hpp"
@@ -22,13 +21,38 @@ class HYToYH final : public BaseMQSSPass<HYToYH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HYToYH)
   StringRef getArgument() const override { return "HYToYH"; }
+
   StringRef getDescription() const override {
     return "Pass that switches a pattern composed Hadamard and Y to Y and "
-           "Hadamard";
+        "Hadamard";
   }
+
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternSwitch<quake::HOp, quake::YOp, quake::YOp, quake::HOp>(op);
+      auto hOp = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp
+          || hOp.getTargets().size() != 1
+          || !hOp.getControls().empty()) {
+        return;
+      }
+      auto optional_yOp = getNextOperationOnTarget(hOp, hOp.getTargets()[0]);
+      if (!optional_yOp) {
+        return;
+      }
+      auto yOp = dyn_cast_or_null<quake::YOp>(*optional_yOp);
+      if (!yOp
+          || yOp.getTargets().size() != 1
+          || !yOp.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(hOp->getContext());
+      rewriter.setInsertionPointAfter(yOp);
+      ValueRange targets = hOp.getTargets();
+      Location loc = hOp.getLoc();
+      rewriter.create<quake::YOp>(loc, false, targets);
+      rewriter.create<quake::HOp>(loc, false, targets);
+      rewriter.eraseOp(hOp);
+      rewriter.eraseOp(yOp);
     });
   }
 };

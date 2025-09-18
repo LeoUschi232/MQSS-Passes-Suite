@@ -1,33 +1,10 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 // Include auto-generated pass registration
@@ -39,45 +16,9 @@ namespace mqss::opt {
 
 } // namespace mqss::opt
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-
-void ReplaceHZHToX(Operation *currentOp) {
-  auto currentGate = dyn_cast_or_null<quake::HOp>(*currentOp);
-  if (!currentGate || currentGate.getControls().size() != 0 ||
-      currentGate.getTargets().size() != 1) {
-    return;
-  }
-  auto prevOp = supportQuake::getPreviousOperationOnTarget(
-      currentGate, currentGate.getTargets()[0]);
-  if (!prevOp) {
-    return;
-  }
-  auto prevGate = dyn_cast_or_null<quake::ZOp>(*prevOp);
-  if (!prevGate || prevGate.getControls().size() != 0 ||
-      prevGate.getTargets().size() != 1) {
-    return;
-  }
-  auto prevPrevOp = supportQuake::getPreviousOperationOnTarget(
-      prevGate, currentGate.getTargets()[0]);
-  if (!prevPrevOp) {
-    return;
-  }
-  auto prevPrevGate = dyn_cast_or_null<quake::HOp>(*prevPrevOp);
-  if (!prevPrevGate || prevPrevGate.getControls().size() != 0 ||
-      prevPrevGate.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(currentGate->getContext());
-  rewriter.setInsertionPointAfter(currentGate);
-  rewriter.create<quake::XOp>(
-      currentGate.getLoc(), currentGate.getControls(),
-      currentGate.getTargets());
-  rewriter.eraseOp(currentGate);
-  rewriter.eraseOp(prevGate);
-  rewriter.eraseOp(prevPrevGate);
-}
-
 class HZHToX final : public BaseMQSSPass<HZHToX> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HZHToX)
@@ -89,7 +30,44 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReplaceHZHToX(op); });
+    kernel.walk([&](Operation *op) {
+      auto hOp1 = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp1
+          || hOp1.getTargets().size() != 1
+          || !hOp1.getControls().empty()) {
+        return;
+      }
+      auto optional_zOp
+          = getNextOperationOnTarget(hOp1, hOp1.getTargets()[0]);
+      if (!optional_zOp) {
+        return;
+      }
+      auto zOp = dyn_cast_or_null<quake::ZOp>(*optional_zOp);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()) {
+        return;
+      }
+      auto optional_hOp2
+          = getNextOperationOnTarget(zOp, zOp.getTargets()[0]);
+      if (!optional_hOp2) {
+        return;
+      }
+      auto hOp2 = dyn_cast_or_null<quake::HOp>(*optional_hOp2);
+      if (!hOp2
+          || hOp2.getTargets().size() != 1
+          || !hOp2.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(hOp1->getContext());
+      rewriter.setInsertionPointAfter(hOp2);
+      ValueRange targets = hOp1.getTargets();
+      Location loc = hOp1.getLoc();
+      rewriter.create<quake::XOp>(loc, false, targets);
+      rewriter.eraseOp(hOp1);
+      rewriter.eraseOp(zOp);
+      rewriter.eraseOp(hOp2);
+    });
   }
 };
 } // namespace

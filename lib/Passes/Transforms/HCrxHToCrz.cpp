@@ -32,7 +32,46 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      // TODO: Implement the actual transformation logic here.
+      auto hOp1 = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp1
+          || hOp1.getTargets().size() != 1
+          || !hOp1.getControls().empty()) {
+        return;
+      }
+      auto optional_crxOp
+          = getNextOperationOnTarget(hOp1, hOp1.getTargets()[0]);
+      if (!optional_crxOp) {
+        return;
+      }
+      auto crxOp = dyn_cast_or_null<quake::RxOp>(*optional_crxOp);
+      if (!crxOp
+          || crxOp.isAdj()
+          || crxOp.getTargets().size() != 1
+          || crxOp.getControls().size() != 1
+          || crxOp.getParameters().size() != 1) {
+        return;
+      }
+      auto optional_hOp2
+          = getNextOperationOnTarget(crxOp, crxOp.getTargets()[0]);
+      if (!optional_hOp2) {
+        return;
+      }
+      auto hOp2 = dyn_cast_or_null<quake::HOp>(*optional_hOp2);
+      if (!hOp2
+          || hOp2.getTargets().size() != 1
+          || !hOp2.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(op->getContext());
+      rewriter.setInsertionPointAfter(hOp2);
+      ValueRange targets = crxOp.getTargets();
+      ValueRange controls = crxOp.getControls();
+      ValueRange params = crxOp.getParameters();
+      Location loc = crxOp.getLoc();
+      rewriter.create<quake::RzOp>(loc, false, params, controls, targets);
+      rewriter.eraseOp(hOp1);
+      rewriter.eraseOp(crxOp);
+      rewriter.eraseOp(hOp2);
     });
   }
 };

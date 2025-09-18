@@ -53,8 +53,12 @@ void normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
   std::vector<Value> nParameters = {};
   IRRewriter rewriter(gate->getContext());
   for (auto parameter : gate.getParameters()) {
-    double param =
-        supportQuake::extractDoubleArgumentValue(parameter.getDefiningOp());
+    auto optional_param_value
+        = supportQuake::extractDoubleArgumentValue(parameter.getDefiningOp());
+    if (!optional_param_value.has_value()) {
+      return;
+    }
+    double param = optional_param_value.value();
     param =
         param - std::floor(param / (2 * pi)) * 2 * pi;
     nParameters.push_back(
