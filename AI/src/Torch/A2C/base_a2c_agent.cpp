@@ -41,6 +41,13 @@ void BaseA2CAgent::configure(
   this->size_class = circuit_size_class;
   std::tie(this->max_qubits, this->max_instructions, this->max_depth)
       = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
+
+  // Sensible defaults that can be overridden by CLI parameters.
+  this->critic_optimizer_type = OPTIMIZER_ADAM;
+  this->actor_optimizer_type = OPTIMIZER_ADAM;
+  this->critic_learning_rate = 1e-3;
+  this->actor_learning_rate = 1e-4;
+
   for (auto [key, value] : params) {
     if (key == "critic_optimizer") {
       if (OPTIMIZER_NAME_TO_TYPE.find(value) == OPTIMIZER_NAME_TO_TYPE.end()) {

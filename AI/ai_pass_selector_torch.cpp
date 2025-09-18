@@ -23,7 +23,11 @@ void print_help() {
       "  -o, --output <file_path>      Circuit file path to output the optimized circuit if using the passes.\n"
       "  -i, --info                    Print info of provided arguments.\n"
       "Other parameters:\n"
-      "  <key>=<value>                 Parameters for agent/environment/training, will be loaded with default values if nor provided.\n\n";
+      "  <key>=<value>                 Parameters for agent/environment/training, will be loaded with default values if not provided.\n"
+      "    critic_optimizer=adam       Optimizer for the critic network (default: adam).\n"
+      "    actor_optimizer=adam        Optimizer for the actor network (default: adam).\n"
+      "    critic_learning_rate=0.001  Learning rate for the critic optimizer (default: 0.001).\n"
+      "    actor_learning_rate=0.0001  Learning rate for the actor optimizer (default: 0.0001).\n\n";
 }
 
 int main(int argc, char **argv) {
