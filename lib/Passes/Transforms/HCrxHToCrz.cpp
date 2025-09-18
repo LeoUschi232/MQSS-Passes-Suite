@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -16,47 +16,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void foldHCrxHToCrz(Operation *op) {
-  auto h2 = dyn_cast_or_null<quake::HOp>(*op);
-  if (!h2 || !h2.getControls().empty() || h2.getTargets().size() != 1) {
-    return;
-  }
-  auto prev =
-      supportQuake::getPreviousOperationOnTarget(h2, h2.getTargets()[0]);
-  if (!prev) {
-    return;
-  }
-  auto crx = dyn_cast_or_null<quake::RxOp>(prev);
-  if (!crx || crx.getControls().size() != 1 || crx.getTargets().size() != 1) {
-    return;
-  }
-  auto idx2 = supportQuake::extractIndexFromQuakeExtractRefOp(
-      h2.getTargets()[0].getDefiningOp());
-  auto idx1 = supportQuake::extractIndexFromQuakeExtractRefOp(
-      crx.getTargets()[0].getDefiningOp());
-  if (idx1 != idx2) {
-    return;
-  }
-  auto prev2 =
-      supportQuake::getPreviousOperationOnTarget(crx, crx.getTargets()[0]);
-  if (!prev2) {
-    return;
-  }
-  auto h1 = dyn_cast_or_null<quake::HOp>(prev2);
-  if (!h1 || !h1.getControls().empty() || h1.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(crx->getContext());
-  rewriter.setInsertionPointAfter(crx);
-  rewriter.create<quake::RzOp>(
-      crx.getLoc(), crx.isAdj(), crx.getParameters(),
-      crx.getControls(), crx.getTargets());
-  rewriter.eraseOp(h2);
-  rewriter.eraseOp(crx);
-  rewriter.eraseOp(h1);
-}
 
 class HCrxHToCrz final : public BaseMQSSPass<HCrxHToCrz> {
 public:
@@ -69,7 +31,9 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { foldHCrxHToCrz(op); });
+    kernel.walk([&](Operation *op) {
+      // TODO: Implement the actual transformation logic here.
+    });
   }
 };
 } // namespace
