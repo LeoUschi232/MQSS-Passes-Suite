@@ -28,6 +28,13 @@ std::unordered_map<std::string, std::string> train(
   switch (AgentAttributes attributes = parseAgentName(agent_name);
     attributes.agent_class) {
   case A2C:
+    if (attributes.specific_attributes.size() < 3) {
+      std::cerr
+          << "Agent '" << agent_name
+          << "' is missing required modifiers (expected at least three)."
+          << std::endl;
+      return {};
+    }
     if (attributes.specific_attributes[0] == "ib") {
       if (attributes.specific_attributes[1] == "fc") {
         if (attributes.specific_attributes[2] == "lsd") {
