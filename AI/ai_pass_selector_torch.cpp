@@ -2,10 +2,14 @@
 #include "Utils/info_utils.hpp"
 
 #include <torch/torch.h>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <system_error>
+#include <unordered_map>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 #include <Torch/agent_utils.hpp>
 #include <Torch/training_and_run_manager.hpp>
 
@@ -13,6 +17,9 @@ using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 /// Default values for agent/environment/training parameters.
+std::unordered_map<std::string, std::string> load_params_from_yaml(
+    const std::string &path,
+    std::unordered_map<std::string, std::string> defaults = {});
 std::unordered_map<std::string, std::string> load_default_params();
 
 void print_help() {
@@ -122,8 +129,34 @@ int main(int argc, char **argv) {
 }
 
 
+std::unordered_map<std::string, std::string> load_params_from_yaml(
+    const std::string &path,
+    std::unordered_map<std::string, std::string> defaults) {
+  try {
+    YAML::Node cfg = YAML::LoadFile(path);
+    if (!cfg || !cfg.IsMap()) {
+      return defaults;
+    }
+
+    for (const auto &it : cfg) {
+      const std::string key = it.first.as<std::string>();
+      if (it.second.IsScalar()) {
+        defaults[key] = it.second.as<std::string>();
+      }
+    }
+  } catch (const YAML::BadFile &) {
+    return defaults;
+  } catch (const std::exception &ex) {
+    std::cerr << "Failed to parse params YAML '" << path
+              << "': " << ex.what() << std::endl;
+    return defaults;
+  }
+
+  return defaults;
+}
+
 std::unordered_map<std::string, std::string> load_default_params() {
-  return {
+  std::unordered_map<std::string, std::string> defaults = {
       {"agent", ""},
       {"dataset", ""},
       {"circuit", ""},
@@ -141,4 +174,23 @@ std::unordered_map<std::string, std::string> load_default_params() {
       {"actor_learning_rate", "0.001"},
       {"print_param_info", ""}
   };
+
+  const char *env_path = std::getenv("MQSS_AI_DEFAULT_PARAMS");
+  const fs::path source_dir = fs::path(__FILE__).parent_path();
+  const std::vector<fs::path> candidate_paths = {
+      source_dir / "default_params.yaml",
+      env_path == nullptr ? fs::path{} : fs::path(env_path)};
+
+  for (const auto &candidate : candidate_paths) {
+    if (candidate.empty()) {
+      continue;
+    }
+
+    std::error_code ec;
+    if (fs::exists(candidate, ec) && !ec && fs::is_regular_file(candidate, ec)) {
+      defaults = load_params_from_yaml(candidate.string(), std::move(defaults));
+    }
+  }
+
+  return defaults;
 }
