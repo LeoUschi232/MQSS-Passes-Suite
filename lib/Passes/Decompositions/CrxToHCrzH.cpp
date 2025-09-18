@@ -32,8 +32,8 @@ public:
       auto crxOp = dyn_cast_or_null<quake::RxOp>(*op);
       if (!crxOp
           || crxOp.isAdj()
-          || crxOp.getControls().size() != 1
           || crxOp.getTargets().size() != 1
+          || crxOp.getControls().size() != 1
           || crxOp.getParameters().size() != 1) {
         return;
       }
