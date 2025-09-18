@@ -1,7 +1,9 @@
 #include "Torch/A2C/a2c_trainer.hpp"
 
 #include <Quake.hpp>
+#include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <mlir_utils.hpp>
 #include <Torch/parallel_environments.hpp>
 #include <Utils/info_utils.hpp>
@@ -78,9 +80,11 @@ std::unordered_map<std::string, std::string> train_a2c(
   std::vector<double> actor_losses;
 
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
+    std::vector<fs::path> environment_circuits(nr_parallel_environments);
     for (unsigned int i = 0; i < nr_parallel_environments; i++) {
       fs::path random_dataset_entry
           = filtered_dataset_files[random_int(0, dataset_size)];
+      environment_circuits[i] = random_dataset_entry;
       environments.register_quantum_circuit(i, random_dataset_entry);
     }
     int64_t T = max_steps_per_episode;
@@ -95,21 +99,58 @@ std::unordered_map<std::string, std::string> train_a2c(
 
     torch::Tensor batched_observations =
         environments.get_batched_instruction_based_observations();
+    std::vector<uint8_t> active_mask(B, 1);
+    unsigned int active_envs = B;
     for (unsigned int update_step = 0;
          update_step < max_steps_per_episode;
          update_step++) {
+      if (active_envs == 0) {
+        break;
+      }
+      std::vector<uint8_t> step_mask = active_mask;
       auto [actions, log_action_probs, state_values, step_entropy]
           = agent.select_action(batched_observations);
-      auto [rewards, terminates] = environments.step(actions);
+      for (int64_t b = 0; b < B; ++b) {
+        if (step_mask[b]) {
+          continue;
+        }
+        actions[b] = 0;
+        const int64_t index = b;
+        log_action_probs.index_put_({index}, 0.0);
+        state_values.index_put_({index}, 0.0);
+        step_entropy.index_put_({index}, 0.0);
+      }
+      auto [rewards, terminates] = environments.step(actions, step_mask);
       episode_log_probs[update_step] = log_action_probs;
       episode_values[update_step] = state_values;
       episode_entropies[update_step] = step_entropy;
-      for (unsigned int b = 0; b < B; b++) {
-        episode_rewards[update_step][b] = rewards[b];
-        termination_masks[update_step][b] = terminates[b] ? 0.0 : 1.0;
+      for (int64_t b = 0; b < B; b++) {
+        episode_rewards[update_step][b] = step_mask[b] ? rewards[b] : 0.0;
+        termination_masks[update_step][b] = (step_mask[b] && !terminates[b]) ? 1.0 : 0.0;
+        if (step_mask[b] && terminates[b]) {
+          active_mask[b] = 0;
+          if (active_envs > 0) {
+            active_envs--;
+          }
+          if (!environment_circuits[b].empty()
+              && !environments.register_quantum_circuit(
+                  static_cast<unsigned int>(b),
+                  environment_circuits[b])) {
+            std::cerr << "Failed to reset circuit for environment " << b
+                      << std::endl;
+          }
+        }
+      }
+      if (active_envs == 0) {
+        break;
       }
       batched_observations
           = environments.get_batched_instruction_based_observations();
+      for (int64_t b = 0; b < B; ++b) {
+        if (!active_mask[b]) {
+          batched_observations.select(0, b).zero_();
+        }
+      }
     }
 
     auto [critic_loss, actor_loss] = agent.get_losses(

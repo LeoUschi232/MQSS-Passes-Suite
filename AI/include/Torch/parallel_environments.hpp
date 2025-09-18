@@ -3,6 +3,7 @@
 #include <Environment/environment.hpp>
 
 #include <torch/torch.h>
+#include <cstdint>
 
 namespace ai_pass_selector {
     class ParallelEnvironments {
@@ -77,6 +78,11 @@ namespace ai_pass_selector {
          */
         std::tuple<std::vector<double>, std::vector<bool> >
         step(const std::vector<unsigned int> &actions);
+
+        std::tuple<std::vector<double>, std::vector<bool> >
+        step(
+            const std::vector<unsigned int> &actions,
+            const std::vector<uint8_t> &active_mask);
     };
 } // namespace ai_pass_selector
 

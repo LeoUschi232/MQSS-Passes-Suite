@@ -47,24 +47,40 @@ unsigned int ParallelEnvironments::size() const {
 
 std::tuple<std::vector<double>, std::vector<bool> >
 ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
+  std::vector<uint8_t> active_mask(nr_environments, 1);
+  return step(actions, active_mask);
+}
+
+std::tuple<std::vector<double>, std::vector<bool> >
+ParallelEnvironments::step(
+    const std::vector<unsigned int> &actions,
+    const std::vector<uint8_t> &active_mask) {
   if (actions.size() != nr_environments) {
     throw std::runtime_error("actions.size() != nr_environments");
   }
-  std::vector<std::future<std::tuple<double, bool> > > futures;
-  futures.reserve(nr_environments);
-  for (size_t i = 0; i < nr_environments; ++i) {
-    futures.emplace_back(std::async(std::launch::async, [&, i] {
-      return environments[i].step(actions[i]);
-    }));
+  if (active_mask.size() != nr_environments) {
+    throw std::runtime_error("active_mask.size() != nr_environments");
   }
-  std::vector<double> rewards;
-  std::vector<bool> terminates;
-  rewards.reserve(nr_environments);
-  terminates.reserve(nr_environments);
-  for (auto &future : futures) {
-    auto result = future.get();
-    rewards.push_back(std::get<0>(result));
-    terminates.push_back(std::get<1>(result));
+  std::vector<std::future<std::tuple<double, bool> > > futures(nr_environments);
+  std::vector<uint8_t> should_wait(nr_environments, 0);
+  for (size_t i = 0; i < nr_environments; ++i) {
+    if (!active_mask[i]) {
+      continue;
+    }
+    should_wait[i] = 1;
+    futures[i] = std::async(std::launch::async, [&, i] {
+      return environments[i].step(actions[i]);
+    });
+  }
+  std::vector<double> rewards(nr_environments, 0.0);
+  std::vector<bool> terminates(nr_environments, true);
+  for (size_t i = 0; i < nr_environments; ++i) {
+    if (!should_wait[i]) {
+      continue;
+    }
+    auto result = futures[i].get();
+    rewards[i] = std::get<0>(result);
+    terminates[i] = std::get<1>(result);
   }
   return {std::move(rewards), std::move(terminates)};
 }
