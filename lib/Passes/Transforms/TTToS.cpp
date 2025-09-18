@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -15,27 +15,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void foldTT(Operation *op) {
-  auto t = dyn_cast_or_null<quake::TOp>(*op);
-  if (!t || t.getControls().size() != 0 || t.getTargets().size() != 1) {
-    return;
-  }
-  auto prev = supportQuake::getPreviousOperationOnTarget(t, t.getTargets()[0]);
-  if (!prev) {
-    return;
-  }
-  auto t2 = dyn_cast_or_null<quake::TOp>(prev);
-  if (!t2 || t2.getControls().size() != 0 || t2.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(t->getContext());
-  rewriter.setInsertionPointAfter(t);
-  rewriter.create<quake::SOp>(t.getLoc(), t.getTargets()[0]);
-  rewriter.eraseOp(t);
-  rewriter.eraseOp(t2);
-}
 
 class TTToS final : public BaseMQSSPass<TTToS> {
 public:
@@ -46,7 +28,34 @@ public:
   StringRef getDescription() const override { return "Replace T T by S"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { foldTT(op); });
+    kernel.walk([&](Operation *op) {
+      auto tOp1 = dyn_cast_or_null<quake::TOp>(op);
+      if (!tOp1
+          || tOp1.isAdj()
+          || tOp1.getTargets().size() != 1
+          || !tOp1.getControls().empty()) {
+        return;
+      }
+      auto optional_tOp
+          = getNextOperationOnTarget(tOp1, tOp1.getTargets()[0]);
+      if (!optional_tOp) {
+        return;
+      }
+      auto tOp2 = dyn_cast_or_null<quake::TOp>(*optional_tOp);
+      if (!tOp2
+          || tOp2.isAdj()
+          || tOp2.getTargets().size() != 1
+          || !tOp2.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(tOp1->getContext());
+      rewriter.setInsertionPointAfter(tOp2);
+      Location loc = tOp1.getLoc();
+      ValueRange targets = tOp1.getTargets();
+      rewriter.create<quake::SOp>(loc, false, targets);
+      rewriter.eraseOp(tOp1);
+      rewriter.eraseOp(tOp2);
+    });
   }
 };
 } // namespace

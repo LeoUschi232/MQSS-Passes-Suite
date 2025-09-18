@@ -1,11 +1,10 @@
-/* Fold pattern Z H X -> H */
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/CodeGen/Quake.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -16,39 +15,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void ReplaceZHXToH(Operation *op) {
-  auto x = dyn_cast_or_null<quake::XOp>(*op);
-  if (!x || !x.getControls().empty() || x.getTargets().size() != 1) {
-    return;
-  }
-  auto prevHOp =
-      supportQuake::getPreviousOperationOnTarget(x, x.getTargets()[0]);
-  if (!prevHOp) {
-    return;
-  }
-  auto h = dyn_cast_or_null<quake::HOp>(prevHOp);
-  if (!h || !h.getControls().empty() || h.getTargets().size() != 1) {
-    return;
-  }
-  auto prevZOp =
-      supportQuake::getPreviousOperationOnTarget(h, h.getTargets()[0]);
-  if (!prevZOp) {
-    return;
-  }
-  auto z = dyn_cast_or_null<quake::ZOp>(prevZOp);
-  if (!z || !z.getControls().empty() || z.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(x->getContext());
-  rewriter.setInsertionPoint(x);
-  rewriter.create<quake::HOp>(x.getLoc(), x.getTargets());
-  rewriter.eraseOp(x);
-  rewriter.eraseOp(h);
-  rewriter.eraseOp(z);
-}
-
 class ZHXToH final : public BaseMQSSPass<ZHXToH> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZHXToH)
@@ -58,7 +27,44 @@ public:
   StringRef getDescription() const override { return "Fold Z H X to H"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReplaceZHXToH(op); });
+    kernel.walk([&](Operation *op) {
+      auto zOp = dyn_cast_or_null<quake::ZOp>(*op);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()) {
+        return;
+      }
+      auto optional_hOp
+          = getNextOperationOnTarget(zOp, zOp.getTargets()[0]);
+      if (!optional_hOp) {
+        return;
+      }
+      auto hOp = dyn_cast_or_null<quake::HOp>(*optional_hOp);
+      if (!hOp
+          || hOp.getTargets().size() != 1
+          || !hOp.getControls().empty()) {
+        return;
+      }
+      auto optional_xOp
+          = getNextOperationOnTarget(hOp, hOp.getTargets()[0]);
+      if (!optional_xOp) {
+        return;
+      }
+      auto xOp = dyn_cast_or_null<quake::XOp>(*optional_xOp);
+      if (!xOp
+          || xOp.getTargets().size() != 1
+          || !xOp.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(zOp->getContext());
+      rewriter.setInsertionPointAfter(xOp);
+      Value target = zOp.getTargets()[0];
+      Location loc = zOp.getLoc();
+      rewriter.create<quake::HOp>(loc, false, target);
+      rewriter.eraseOp(zOp);
+      rewriter.eraseOp(hOp);
+      rewriter.eraseOp(xOp);
+    });
   }
 };
 } // namespace
