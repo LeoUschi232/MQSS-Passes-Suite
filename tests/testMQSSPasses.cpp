@@ -447,6 +447,18 @@ INSTANTIATE_TEST_SUITE_P(
         "./golden-cases/ZeroRzToIdPass.qke",
         []() { return mqss::opt::createZeroRzToIdPass(); }, false),
       std::make_tuple(
+        "XXToIdPass", "./quake/XXToIdPass.qke",
+        "./golden-cases/XXToIdPass.qke",
+        []() { return mqss::opt::createXXToIdPass(); }, false),
+      std::make_tuple(
+        "YYToIdPass", "./quake/YYToIdPass.qke",
+        "./golden-cases/YYToIdPass.qke",
+        []() { return mqss::opt::createYYToIdPass(); }, false),
+      std::make_tuple(
+        "ZZToIdPass", "./quake/ZZToIdPass.qke",
+        "./golden-cases/ZZToIdPass.qke",
+        []() { return mqss::opt::createZZToIdPass(); }, false),
+      std::make_tuple(
         "SdgZToSPass", "./quake/SAdjToSPass.qke",
         "./golden-cases/SAdjToSPass.qke",
         []() { return mqss::opt::createSdgZToSPass(); }, false),

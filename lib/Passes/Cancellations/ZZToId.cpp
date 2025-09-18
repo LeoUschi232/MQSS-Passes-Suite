@@ -31,7 +31,7 @@ public:
     kernel.walk([&](Operation *op) {
       auto zOp1 = dyn_cast_or_null<quake::ZOp>(*op);
       if (!zOp1
-          || !zOp1.isAdj()
+          || zOp1.isAdj()
           || zOp1.getTargets().size() != 1
           || !zOp1.getControls().empty()) {
         return;
