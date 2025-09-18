@@ -44,7 +44,7 @@ public:
       if (!optional_sOp2) {
         return;
       }
-      auto sOp2 = dyn_cast_or_null<quake::SOp>(*optional_sOp2);
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(optional_sOp2);
       if (!sOp2
           || !sOp2.isAdj()
           || sOp2.getTargets().size() != 1
@@ -56,7 +56,7 @@ public:
       if (!optional_sOp3) {
         return;
       }
-      auto sOp3 = dyn_cast_or_null<quake::SOp>(*optional_sOp3);
+      auto sOp3 = dyn_cast_or_null<quake::SOp>(optional_sOp3);
       if (!sOp3
           || !sOp3.isAdj()
           || sOp3.getTargets().size() != 1

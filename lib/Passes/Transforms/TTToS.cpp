@@ -41,7 +41,7 @@ public:
       if (!optional_tOp) {
         return;
       }
-      auto tOp2 = dyn_cast_or_null<quake::TOp>(*optional_tOp);
+      auto tOp2 = dyn_cast_or_null<quake::TOp>(optional_tOp);
       if (!tOp2
           || tOp2.isAdj()
           || tOp2.getTargets().size() != 1

@@ -41,7 +41,7 @@ public:
       if (!optional_hOp) {
         return;
       }
-      auto hOp = dyn_cast_or_null<quake::HOp>(*optional_hOp);
+      auto hOp = dyn_cast_or_null<quake::HOp>(optional_hOp);
       if (!hOp
           || hOp.getTargets().size() != 1
           || !hOp.getControls().empty()) {
@@ -52,7 +52,7 @@ public:
       if (!optional_zOp) {
         return;
       }
-      auto zOp = dyn_cast_or_null<quake::ZOp>(*optional_zOp);
+      auto zOp = dyn_cast_or_null<quake::ZOp>(optional_zOp);
       if (!zOp
           || zOp.getTargets().size() != 1
           || !zOp.getControls().empty()) {

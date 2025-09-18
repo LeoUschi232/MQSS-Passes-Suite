@@ -31,7 +31,7 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto czOp1 = dyn_cast_or_null<quake::ZOp>(*op);
+      auto czOp1 = dyn_cast_or_null<quake::ZOp>(op);
       if (!czOp1
           || czOp1.getTargets().size() != 1
           || czOp1.getControls().size() != 1) {
@@ -46,7 +46,7 @@ public:
           || optional_czOp2_onTarget != optional_czOp2_onControl) {
         return;
       }
-      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*optional_czOp2_onTarget);
+      auto czOp2 = dyn_cast_or_null<quake::ZOp>(optional_czOp2_onTarget);
       if (!czOp2
           || czOp2.getTargets().size() != 1
           || czOp2.getControls().size() != 1

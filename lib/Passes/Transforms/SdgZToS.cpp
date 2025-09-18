@@ -43,7 +43,7 @@ public:
       if (!optional_zOp) {
         return;
       }
-      auto zOp = dyn_cast_or_null<quake::ZOp>(*optional_zOp);
+      auto zOp = dyn_cast_or_null<quake::ZOp>(optional_zOp);
       if (!zOp
           || zOp.getTargets().size() != 1
           || !zOp.getControls().empty()) {

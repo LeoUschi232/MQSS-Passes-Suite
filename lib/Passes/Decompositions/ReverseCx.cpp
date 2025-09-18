@@ -30,7 +30,7 @@ public:
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto cxOp = dyn_cast_or_null<quake::XOp>(*op);
+      auto cxOp = dyn_cast_or_null<quake::XOp>(op);
       if (!cxOp
           || cxOp.getControls().size() != 1
           || cxOp.getTargets().size() != 1) {

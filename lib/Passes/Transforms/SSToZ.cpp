@@ -43,7 +43,7 @@ public:
       if (!optional_sOp) {
         return;
       }
-      auto sOp2 = dyn_cast_or_null<quake::SOp>(*optional_sOp);
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(optional_sOp);
       if (!sOp2
           || sOp2.isAdj()
           || sOp2.getTargets().size() != 1

@@ -41,7 +41,7 @@ public:
       if (!optional_cxOp) {
         return;
       }
-      auto cxOp = dyn_cast_or_null<quake::XOp>(*optional_cxOp);
+      auto cxOp = dyn_cast_or_null<quake::XOp>(optional_cxOp);
       if (!cxOp
           || cxOp.getTargets().size() != 1
           || cxOp.getControls().size() != 1) {

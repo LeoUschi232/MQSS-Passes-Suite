@@ -30,7 +30,7 @@ public:
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto crzOp = dyn_cast_or_null<quake::RzOp>(*op);
+      auto crzOp = dyn_cast_or_null<quake::RzOp>(op);
       if (!crzOp
           || crzOp.isAdj()
           || crzOp.getTargets().size() != 1

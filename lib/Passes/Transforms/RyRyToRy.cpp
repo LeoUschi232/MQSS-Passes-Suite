@@ -28,7 +28,7 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto ryOp1 = dyn_cast_or_null<quake::RyOp>(*op);
+      auto ryOp1 = dyn_cast_or_null<quake::RyOp>(op);
       if (!ryOp1
           || ryOp1.getTargets().size() != 1
           || !ryOp1.getControls().empty()
@@ -40,7 +40,7 @@ public:
       if (!optional_ryOp2) {
         return;
       }
-      auto ryOp2 = dyn_cast_or_null<quake::RyOp>(*optional_ryOp2);
+      auto ryOp2 = dyn_cast_or_null<quake::RyOp>(optional_ryOp2);
       if (!ryOp2
           || ryOp2.getTargets().size() != 1
           || !ryOp2.getControls().empty()

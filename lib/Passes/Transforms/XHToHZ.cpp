@@ -40,7 +40,7 @@ public:
       if (!optional_hOp) {
         return;
       }
-      auto hOp = dyn_cast_or_null<quake::HOp>(*optional_hOp);
+      auto hOp = dyn_cast_or_null<quake::HOp>(optional_hOp);
       if (!hOp
           || hOp.getTargets().size() != 1
           || !hOp.getControls().empty()) {
