@@ -22,6 +22,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
+
 class ZeroRyToId final : public BaseMQSSPass<ZeroRyToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRyToId)
