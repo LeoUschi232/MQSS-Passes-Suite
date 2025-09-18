@@ -47,11 +47,19 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
   if (isa<quake::RxOp>(op) || isa<quake::RyOp>(op) || isa<quake::RzOp>(op)) {
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
-    double angle = supportQuake::extractDoubleArgumentValue(
+    auto angleOpt = supportQuake::extractDoubleArgumentValue(
         operand1.getDefiningOp());
+    if (!angleOpt.has_value()) {
+      return;
+    }
+    double angle = angleOpt.value();
     Value operand2 = op->getOperands()[1];
-    int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+    auto qubitOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
+    if (!qubitOpt.has_value()) {
+      return;
+    }
+    int qubit = qubitOpt.value();
 #ifdef DEBUG
     llvm::errs() << "Operation ";
     op->print(llvm::errs());
@@ -80,11 +88,16 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // controlled operations
     if (op->getOperands().size() == 2) {
       Value operand1 = op->getOperands()[0];
-      int qubit_ctrl = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto qubitCtrlOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
       Value operand2 = op->getOperands()[1];
-      int qubit_target = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto qubitTargetOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand2.getDefiningOp());
+      if (!qubitCtrlOpt.has_value() || !qubitTargetOpt.has_value()) {
+        return;
+      }
+      int qubit_ctrl = qubitCtrlOpt.value();
+      int qubit_target = qubitTargetOpt.value();
 #ifdef DEBUG
       llvm::errs() << "Operation ";
       op->print(llvm::errs());
@@ -104,8 +117,12 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto qubitOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
+      if (!qubitOpt.has_value()) {
+        return;
+      }
+      int qubit = qubitOpt.value();
 #ifdef DEBUG
       llvm::errs() << "Operation ";
       op->print(llvm::errs());
@@ -129,8 +146,12 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto qubitOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
+      if (!qubitOpt.has_value()) {
+        return;
+      }
+      int qubit = qubitOpt.value();
 #ifdef DEBUG
       llvm::errs() << "Operation ";
       op->print(llvm::errs());
@@ -160,8 +181,12 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
     assert(op->getOperands().size() == 1 && "ill-formed measurement gate!");
     if (Value operand = op->getOperands()[0];
       operand.getType().isa<quake::RefType>()) {
-      int qubitIndex = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto qubitIndexOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
           operand.getDefiningOp());
+      if (!qubitIndexOpt.has_value()) {
+        return;
+      }
+      int qubitIndex = qubitIndexOpt.value();
       assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
       qc.measure(static_cast<qc::Qubit>(qubitIndex),
                  measurements.at(qubitIndex));
