@@ -150,3 +150,13 @@ set(TEST_OUTPUT_DIR $<TARGET_FILE_DIR:test-mqss-passes>/qasm)
 add_custom_target(
         copy-qasm-test ALL COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/tests/qasm ${TEST_OUTPUT_DIR})
+
+if (TARGET ai_torch)
+    add_executable(test-a2c-trainer-config testA2CTrainerConfig.cpp)
+    target_link_libraries(test-a2c-trainer-config PRIVATE ${GTEST_LIBRARIES} ai_torch)
+    target_include_directories(
+            test-a2c-trainer-config
+            PRIVATE ${CMAKE_SOURCE_DIR}/AI/include
+            ${CMAKE_SOURCE_DIR}/include)
+    add_test(NAME Test-a2c-trainer-config COMMAND test-a2c-trainer-config)
+endif ()

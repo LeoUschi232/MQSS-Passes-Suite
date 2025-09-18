@@ -7,10 +7,58 @@
 #include <Utils/info_utils.hpp>
 #include <Utils/progress_bar.hpp>
 
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <sstream>
+
 using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+A2CTrainerConfig build_a2c_trainer_config(
+    const std::unordered_map<std::string, std::string> &params) {
+  A2CTrainerConfig config;
+  for (const auto &[key, value] : params) {
+    if (key == "nr_parallel_environments") {
+      config.nr_parallel_environments = std::stoul(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "episodes") {
+      config.episodes = std::stoul(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "max_steps_per_episode") {
+      config.max_steps_per_episode = std::stoul(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "discount_factor") {
+      config.discount_factor = std::stod(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "gae_hyperparameter") {
+      config.gae_hyperparameter = std::stod(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "entropy_coefficient") {
+      config.entropy_coefficient = std::stod(value);
+      config.applied_overrides.push_back(key + "=" + value);
+    } else if (key == "device") {
+      std::string value_lower = value;
+      std::transform(
+          value_lower.begin(), value_lower.end(), value_lower.begin(),
+          [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+      if (value_lower == "cpu") {
+        config.device = torch::kCPU;
+        config.applied_overrides.push_back("device=cpu");
+      } else if (value_lower == "cuda" || value_lower == "gpu") {
+        if (torch::cuda::is_available()) {
+          config.device = torch::kCUDA;
+          config.applied_overrides.push_back("device=cuda");
+        } else {
+          config.applied_overrides.push_back("device=" + value_lower + " (unavailable)");
+        }
+      }
+    }
+  }
+  return config;
+}
+
 std::unordered_map<std::string, std::string> train_a2c(
     BaseA2CAgent &agent,
     const std::string &dataset,
@@ -19,33 +67,22 @@ std::unordered_map<std::string, std::string> train_a2c(
   unsigned int max_instructions = agent.getMaxInstructions();
   unsigned int max_depth = agent.getMaxDepth();
 
-  // Default values
-  unsigned int nr_parallel_environments = 10;
-  unsigned int episodes = 1000;
-  unsigned int max_steps_per_episode = 20;
-  double discount_factor = 1.0;
-  double gae_hyperparameter = 0.96;
-  double entropy_coefficient = 0.01;
-  torch::Device device = torch::kCPU;
-  for (auto [key, value] : params) {
-    if (key == "nr_parallel_environments") {
-      nr_parallel_environments = std::stoul(value);
-    } else if (key == "episodes") {
-      episodes = std::stoul(value);
-    } else if (key == "max_steps_per_episode") {
-      max_steps_per_episode = std::stoul(value);
-    } else if (key == "discount_factor") {
-      discount_factor = std::stod(value);
-    } else if (key == "gae_hyperparameter") {
-      gae_hyperparameter = std::stod(value);
-    } else if (key == "entropy_coefficient") {
-      entropy_coefficient = std::stod(value);
-    } else if (key == "device"
-               && (value == "cuda" || value == "gpu")
-               && torch::cuda::is_available()) {
-      device = torch::kCUDA;
+  A2CTrainerConfig config = build_a2c_trainer_config(params);
+  if (!config.applied_overrides.empty()) {
+    std::ostringstream overrides_stream;
+    overrides_stream << "train_a2c overrides:";
+    for (const auto &override_entry : config.applied_overrides) {
+      overrides_stream << ' ' << override_entry;
     }
+    std::cout << overrides_stream.str() << std::endl;
   }
+  unsigned int nr_parallel_environments = config.nr_parallel_environments;
+  unsigned int episodes = config.episodes;
+  unsigned int max_steps_per_episode = config.max_steps_per_episode;
+  double discount_factor = config.discount_factor;
+  double gae_hyperparameter = config.gae_hyperparameter;
+  double entropy_coefficient = config.entropy_coefficient;
+  torch::Device device = config.device;
 
   if (agent.getNrInputValues() <= 0 || nr_parallel_environments <= 0) {
     std::cerr << "No agent to train." << std::endl;
