@@ -1,26 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/CommutateOperations.hpp"
@@ -54,8 +31,34 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      commuteOperation<quake::RxOp, quake::XOp>(op, 0, 1, 1, 1);
-      // CommuteRxCNot(op);
+      auto rxOp = dyn_cast_or_null<quake::RxOp>(*op);
+      if (!rxOp
+          || rxOp.getTargets().size() != 1
+          || !rxOp.getControls().empty()
+          || rxOp.getParameters().size() != 1) {
+        return;
+      }
+      auto optional_cxOp
+          = getNextOperationOnTarget(rxOp, rxOp.getTargets()[0]);
+      if (!optional_cxOp) {
+        return;
+      }
+      auto cxOp = dyn_cast_or_null<quake::XOp>(*optional_cxOp);
+      if (!cxOp
+          || cxOp.getTargets().size() != 1
+          || cxOp.getControls().size() != 1) {
+        return;
+      }
+      IRRewriter rewriter(rxOp->getContext());
+      rewriter.setInsertionPointAfter(cxOp);
+      ValueRange targets = cxOp.getTargets();
+      ValueRange controls = cxOp.getControls();
+      ValueRange parameters = rxOp.getParameters();
+      Location loc = rxOp.getLoc();
+      rewriter.create<quake::XOp>(loc, false, controls, targets);
+      rewriter.create<quake::RxOp>(loc, parameters, ValueRange{}, targets);
+      rewriter.eraseOp(rxOp);
+      rewriter.eraseOp(cxOp);
     });
   }
 };
