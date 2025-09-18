@@ -12,6 +12,7 @@
 // Stdandard library includes
 #include <unordered_map>
 #include <string>
+#include <stdexcept>
 #include <Torch/A2C/a2c_ib_fc_lsd.hpp>
 #include <Torch/A2C/a2c_ib_fc_lsm.hpp>
 #include <Torch/A2C/a2c_trainer.hpp>
@@ -28,6 +29,11 @@ std::unordered_map<std::string, std::string> train(
   switch (AgentAttributes attributes = parseAgentName(agent_name);
     attributes.agent_class) {
   case A2C:
+    if (attributes.specific_attributes.size() < 3) {
+      throw std::runtime_error(
+          "Invalid agent name '" + agent_name
+          + "'. Expected format 'a2c-<size>-ib-fc-<lsd|lsm>'.");
+    }
     if (attributes.specific_attributes[0] == "ib") {
       if (attributes.specific_attributes[1] == "fc") {
         if (attributes.specific_attributes[2] == "lsd") {
