@@ -14,13 +14,12 @@
 #include <string>
 #include <Torch/A2C/a2c_ib_fc_lsd.hpp>
 #include <Torch/A2C/a2c_ib_fc_lsm.hpp>
-#include <Utils/circuit_utils.hpp>
-#include <Utils/info_utils.hpp>
+#include <Torch/A2C/a2c_trainer.hpp>
 
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-std::unordered_map<std::string, std::string> train_agent(
+std::unordered_map<std::string, std::string> train(
     const std::string &agent_name,
     const std::string &dataset,
     std::unordered_map<std::string, std::string> params) {
@@ -29,6 +28,29 @@ std::unordered_map<std::string, std::string> train_agent(
   switch (AgentAttributes attributes = parseAgentName(agent_name);
     attributes.agent_class) {
   case A2C:
+    if (attributes.specific_attributes[0] == "ib") {
+      if (attributes.specific_attributes[1] == "fc") {
+        if (attributes.specific_attributes[2] == "lsd") {
+          try {
+            A2C_IB_FC_LSD agent(
+                attributes.size_class, std::move(params));
+            training_results = train_a2c(agent, dataset, std::move(params));
+          } catch (const std::runtime_error &e) {
+            std::cerr << e.what() << std::endl;
+            return {};
+          }
+        } else if (attributes.specific_attributes[2] == "lsm") {
+          try {
+            A2C_IB_FC_LSM agent(
+                attributes.size_class, std::move(params));
+            training_results = train_a2c(agent, dataset, std::move(params));
+          } catch (const std::runtime_error &e) {
+            std::cerr << e.what() << std::endl;
+            return {};
+          }
+        }
+      }
+    }
     break;
   case A3C:
     break;
@@ -36,10 +58,11 @@ std::unordered_map<std::string, std::string> train_agent(
     break;
   case RNN:
     break;
+  default:
+    break;
   }
   return training_results;
 }
-
 
 std::unordered_map<std::string, std::string> run(
     const std::string &agent_name,

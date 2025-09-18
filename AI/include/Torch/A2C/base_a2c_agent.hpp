@@ -90,13 +90,6 @@ namespace ai_pass_selector {
 
         unsigned int getNrInputValues() const;
 
-        unsigned int getNrParallelEnvironments() const;
-
-        torch::Device getDevice() const;
-
-        /// Setters
-        void setNrParallelEnvironments(unsigned int nr_parallel_environments);
-
         /**
          *
          * @param batched_observations

@@ -70,7 +70,6 @@ std::unordered_map<std::string, std::string> train_a2c(
   ParallelEnvironments environments(
       nr_parallel_environments, max_qubits, max_instructions, max_depth,
       max_steps_per_episode);
-  agent.setNrParallelEnvironments(nr_parallel_environments);
 
   double max_reward = -std::numeric_limits<double>::max();
   double average_reward = 0.0;

@@ -107,14 +107,6 @@ unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
 }
 
-unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
-  return this->nr_parallel_environments;
-}
-
-torch::Device BaseA2CAgent::getDevice() const {
-  return this->device;
-}
-
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
     torch::Tensor batched_observations) {
   batched_observations = batched_observations.to(this->device);

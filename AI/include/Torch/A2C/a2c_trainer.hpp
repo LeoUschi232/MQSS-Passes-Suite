@@ -14,8 +14,7 @@ namespace ai_pass_selector {
     std::unordered_map<std::string, std::string> train_a2c(
         BaseA2CAgent &agent,
         const std::string &dataset,
-        std::unordered_map<std::string, std::string> params
-    );
+        std::unordered_map<std::string, std::string> params);
 } // namespace ai_pass_selector
 
 #endif // A2C_TRAINER_HPP
