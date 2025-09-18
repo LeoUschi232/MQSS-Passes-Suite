@@ -8,7 +8,6 @@
 #include <Utils/circuit_utils.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
-#include <Utils/progress_bar.hpp>
 
 
 namespace ai_pass_selector {

@@ -45,7 +45,14 @@ namespace ai_pass_selector {
     struct AgentAttributes {
         int agent_class;
         int size_class;
-        std::vector<std::string> specific_attributes;
+        std::string specifier;
+    };
+
+    /// Devices
+    const std::unordered_map<std::string, torch::Device> DEVICE_NAME_TO_TORCH = {
+        {"cpu", torch::kCPU},
+        {"cuda", torch::kCUDA},
+        {"gpu", torch::kCUDA}
     };
 
     /**

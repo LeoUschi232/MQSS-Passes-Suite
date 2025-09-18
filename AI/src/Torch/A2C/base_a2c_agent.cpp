@@ -41,29 +41,16 @@ void BaseA2CAgent::configure(
   this->size_class = circuit_size_class;
   std::tie(this->max_qubits, this->max_instructions, this->max_depth)
       = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
-  for (auto [key, value] : params) {
-    if (key == "critic_optimizer") {
-      if (OPTIMIZER_NAME_TO_TYPE.find(value) == OPTIMIZER_NAME_TO_TYPE.end()) {
-        throw std::runtime_error("Unsupported optimizer: " + value);
-      }
-      this->critic_optimizer_type = OPTIMIZER_NAME_TO_TYPE.at(value);
-    } else if (key == "actor_optimizer") {
-      if (OPTIMIZER_NAME_TO_TYPE.find(value) == OPTIMIZER_NAME_TO_TYPE.end()) {
-        throw std::runtime_error("Unsupported optimizer: " + value);
-      }
-      this->actor_optimizer_type = OPTIMIZER_NAME_TO_TYPE.at(value);
-    } else if (key == "critic_learning_rate") {
-      this->critic_learning_rate = std::stod(value);
-    } else if (key == "actor_learning_rate") {
-      this->actor_learning_rate = std::stod(value);
-    } else if (key == "nr_parallel_environments") {
-      this->nr_parallel_environments = std::stoul(value);
-    } else if (key == "device"
-               && (value == "cuda" || value == "gpu")
-               && torch::cuda::is_available()) {
-      this->device = torch::kCUDA;
-    }
-  }
+  this->critic_optimizer_type
+      = OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
+  this->actor_optimizer_type
+      = OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+  this->critic_learning_rate
+      = std::stod(params["critic_learning_rate"]);
+  this->actor_learning_rate
+      = std::stod(params["actor_learning_rate"]);
+  this->nr_parallel_environments
+      = std::stoul(params["nr_parallel_environments"]);
 }
 
 

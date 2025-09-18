@@ -12,6 +12,9 @@
 using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
+/// Default values for agent/environment/training parameters.
+std::unordered_map<std::string, std::string> load_default_params();
+
 void print_help() {
   std::cout <<
       "\nUsage: ./ai_pass_selector_torch [options]\n"
@@ -36,7 +39,7 @@ int main(int argc, char **argv) {
   std::string agent;
   std::string output;
   bool info = false;
-  std::unordered_map<std::string, std::string> params;
+  std::unordered_map<std::string, std::string> params = load_default_params();
 
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
@@ -112,4 +115,21 @@ int main(int argc, char **argv) {
     run(agent, circuit, output, params);
   }
   return 0;
+}
+
+
+std::unordered_map<std::string, std::string> load_default_params() {
+  return {
+      {"nr_parallel_environments", "10"},
+      {"episodes", "1000"},
+      {"max_steps_per_episode", "20"},
+      {"discount_factor", "1.0"},
+      {"gae_hyperparameter", "0.96"},
+      {"entropy_coefficient", "0.01"},
+      {"device", "cpu"},
+      {"critic_optimizer", "adam"},
+      {"actor_optimizer", "adam"},
+      {"critic_learning_rate", "0.005"},
+      {"actor_learning_rate", "0.001"}
+  };
 }

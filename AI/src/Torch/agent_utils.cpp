@@ -18,10 +18,9 @@ namespace ai_pass_selector {
 
 AgentAttributes parseAgentName(const std::string &agent_name) {
   std::vector<std::string> agent_attributes = split_string(agent_name, '-');
-  if (agent_attributes.size() < 2) {
+  if (agent_attributes.size() != 3) {
     throw std::runtime_error("Invalid agent name: " + agent_name);
   }
-
   // The first agent attribute is the agent classe.
   // The second agent attribute is the size class.
   // The rest are agent-specific attributes.
@@ -35,9 +34,7 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
     throw std::runtime_error("Unsupported size: " + agent_attributes[1]);
   }
   int circuit_class = CIRCUIT_SIZE_TO_CLASS.at(agent_attributes[1]);
-  std::vector specific_attributes(
-      agent_attributes.begin() + 2, agent_attributes.end());
-  return {agent_class, circuit_class, specific_attributes};
+  return {agent_class, circuit_class, agent_attributes[2]};
 }
 
 
@@ -91,11 +88,11 @@ std::string select_best_agent(const std::string &circuit) {
         = getQubitsInstructionsDepth(FuncOp(module));
     classify_circuit(nrQubits, nrGates, depth)) {
   case TINY:
-    return "a2c-tiny-ib-fc-lsd";
+    return "a2c-tiny-ibfclsd";
   case SMALL:
-    return "a2c-small-ib-fc-lsd";
+    return "a2c-small-ibfclsd";
   case MODERATE:
-    return "a2c-moderate-ib-fc-lsd";
+    return "a2c-moderate-ibfclsd";
   case BIG:
   case HUGE:
   default:

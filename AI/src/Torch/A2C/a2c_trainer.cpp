@@ -3,6 +3,7 @@
 #include <Quake.hpp>
 #include <filesystem>
 #include <mlir_utils.hpp>
+#include <Torch/agent_utils.hpp>
 #include <Torch/parallel_environments.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/progress_bar.hpp>
@@ -20,32 +21,20 @@ std::unordered_map<std::string, std::string> train_a2c(
   unsigned int max_depth = agent.getMaxDepth();
 
   // Default values
-  unsigned int nr_parallel_environments = 10;
-  unsigned int episodes = 1000;
-  unsigned int max_steps_per_episode = 20;
-  double discount_factor = 1.0;
-  double gae_hyperparameter = 0.96;
-  double entropy_coefficient = 0.01;
-  torch::Device device = torch::kCPU;
-  for (auto [key, value] : params) {
-    if (key == "nr_parallel_environments") {
-      nr_parallel_environments = std::stoul(value);
-    } else if (key == "episodes") {
-      episodes = std::stoul(value);
-    } else if (key == "max_steps_per_episode") {
-      max_steps_per_episode = std::stoul(value);
-    } else if (key == "discount_factor") {
-      discount_factor = std::stod(value);
-    } else if (key == "gae_hyperparameter") {
-      gae_hyperparameter = std::stod(value);
-    } else if (key == "entropy_coefficient") {
-      entropy_coefficient = std::stod(value);
-    } else if (key == "device"
-               && (value == "cuda" || value == "gpu")
-               && torch::cuda::is_available()) {
-      device = torch::kCUDA;
-    }
-  }
+  unsigned int nr_parallel_environments
+      = std::stoul(params["nr_parallel_environments"]);
+  unsigned int episodes
+      = std::stoul(params["episodes"]);
+  unsigned int max_steps_per_episode
+      = std::stoul(params["max_steps_per_episode"]);
+  double discount_factor
+      = std::stod(params["discount_factor"]);
+  double gae_hyperparameter
+      = std::stod(params["gae_hyperparameter"]);
+  double entropy_coefficient
+      = std::stod(params["entropy_coefficient"]);
+  torch::Device device
+      = DEVICE_NAME_TO_TORCH.at(params["device"]);
 
   if (agent.getNrInputValues() <= 0 || nr_parallel_environments <= 0) {
     std::cerr << "No agent to train." << std::endl;

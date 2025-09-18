@@ -24,42 +24,31 @@ std::unordered_map<std::string, std::string> train(
     const std::string &dataset,
     std::unordered_map<std::string, std::string> params) {
   std::unordered_map<std::string, std::string> training_results;
-
-  switch (AgentAttributes attributes = parseAgentName(agent_name);
-    attributes.agent_class) {
-  case A2C:
-    if (attributes.specific_attributes[0] == "ib") {
-      if (attributes.specific_attributes[1] == "fc") {
-        if (attributes.specific_attributes[2] == "lsd") {
-          try {
-            A2C_IB_FC_LSD agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
-          } catch (const std::runtime_error &e) {
-            std::cerr << e.what() << std::endl;
-            return {};
-          }
-        } else if (attributes.specific_attributes[2] == "lsm") {
-          try {
-            A2C_IB_FC_LSM agent(
-                attributes.size_class, std::move(params));
-            training_results = train_a2c(agent, dataset, std::move(params));
-          } catch (const std::runtime_error &e) {
-            std::cerr << e.what() << std::endl;
-            return {};
-          }
-        }
+  try {
+    switch (AgentAttributes attributes = parseAgentName(agent_name);
+      attributes.agent_class) {
+    case A2C: {
+      std::unique_ptr<BaseA2CAgent> agent;
+      if (attributes.specifier == "ibfclsd") {
+        agent = std::make_unique<A2C_IB_FC_LSD>(attributes.size_class, params);
+      } else if (attributes.specifier == "ibfclsm") {
+        agent = std::make_unique<A2C_IB_FC_LSM>(attributes.size_class, params);
+      } else {
+        throw std::runtime_error(
+            "Unknown A2C specifier: " + attributes.specifier);
       }
+      training_results = train_a2c(*agent, dataset, params);
+      break;
     }
-    break;
-  case A3C:
-    break;
-  case PPO:
-    break;
-  case RNN:
-    break;
-  default:
-    break;
+    case A3C:
+    case PPO:
+    case RNN:
+    default:
+      throw std::runtime_error("Unsupported agent_class in train()");
+    }
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
+    return {};
   }
   return training_results;
 }
