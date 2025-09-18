@@ -11,6 +11,7 @@
 #include <tuple>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <Utils/circuit_utils.hpp>
 
 namespace ai_pass_selector {
@@ -36,9 +37,14 @@ void BaseA2CAgent::configure(
     std::unordered_map<std::string, std::string> params) {
   if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class)
       == CIRCUIT_CLASS_TO_SPECS.end()) {
-    throw std::runtime_error("Unsupported size class: " + circuit_size_class);
+    throw std::runtime_error(
+        "Unsupported size class: " + std::to_string(circuit_size_class));
   }
   this->size_class = circuit_size_class;
+  this->critic_optimizer_type = DEFAULT_OPTIMIZER_TYPE;
+  this->actor_optimizer_type = DEFAULT_OPTIMIZER_TYPE;
+  this->critic_learning_rate = DEFAULT_LEARNING_RATE;
+  this->actor_learning_rate = DEFAULT_LEARNING_RATE;
   std::tie(this->max_qubits, this->max_instructions, this->max_depth)
       = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
   for (auto [key, value] : params) {

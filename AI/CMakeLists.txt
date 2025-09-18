@@ -71,6 +71,13 @@ if (TORCH_SOURCES OR TORCH_HEADERS)
     target_include_directories(ai_torch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
     target_include_directories(ai_torch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
     set_property(TARGET ai_torch PROPERTY CXX_STANDARD 17)
+
+    if (BUILD_MLIR_PASSES_TESTS)
+        enable_testing()
+        add_executable(ai_base_a2c_agent_test tests/base_a2c_agent_test.cpp)
+        target_link_libraries(ai_base_a2c_agent_test PRIVATE ai_torch)
+        add_test(NAME ai-base-a2c-agent COMMAND ai_base_a2c_agent_test)
+    endif ()
 endif ()
 
 add_executable(ai_pass_selector_torch ai_pass_selector_torch.cpp)

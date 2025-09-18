@@ -4,6 +4,9 @@
 // Torch includes
 #include <torch/torch.h>
 
+// Project includes
+#include "Torch/agent_utils.hpp"
+
 // Standard library includes
 #include <utility>
 #include <tuple>
@@ -16,15 +19,18 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
     class BaseA2CAgent : public torch::nn::Module {
     protected:
+        static constexpr int DEFAULT_OPTIMIZER_TYPE = OPTIMIZER_ADAM;
+        static constexpr double DEFAULT_LEARNING_RATE = 1e-3;
+
         /// Attributes on configuration
         int size_class = 0;
         unsigned int max_qubits = 0;
         unsigned int max_instructions = 0;
         unsigned int max_depth = 0;
-        int critic_optimizer_type = 0;
-        int actor_optimizer_type = 0;
-        double critic_learning_rate = 0;
-        double actor_learning_rate = 0;
+        int critic_optimizer_type = DEFAULT_OPTIMIZER_TYPE;
+        int actor_optimizer_type = DEFAULT_OPTIMIZER_TYPE;
+        double critic_learning_rate = DEFAULT_LEARNING_RATE;
+        double actor_learning_rate = DEFAULT_LEARNING_RATE;
         unsigned int nr_parallel_environments = 0;
         torch::Device device = torch::kCPU;
 
