@@ -65,8 +65,12 @@ void dumpQuakeOperationToTikz(
   if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
     for (auto operand : op->getOperands()) {
       if (operand.getType().isa<quake::RefType>()) {
-        int qubitIndex =
-            extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+        auto qubitIndexOpt
+            = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+        if (!qubitIndexOpt.has_value()) {
+          continue;
+        }
+        int qubitIndex = qubitIndexOpt.value();
         assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
         measurements.push_back(qubitIndex);
         qubitLines[qubitIndex].push_back("\\meter{}");

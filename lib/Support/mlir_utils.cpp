@@ -87,8 +87,12 @@ std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits) {
   }
   if (auto operand = op->getOpOperands().front().get();
     operand.getType().isa<quake::RefType>()) {
-    targets.push_back(
-        extractIndexFromQuakeExtractRefOp(operand.getDefiningOp()));
+    auto targetIndexOpt
+        = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+    if (!targetIndexOpt.has_value()) {
+      return {};
+    }
+    targets.push_back(targetIndexOpt.value());
   } else if (operand.getType().isa<quake::VeqType>()) {
     // Because this function only works for a single allocation, the
     // reference to a Veq will reference all allocated qubits in the
@@ -126,8 +130,12 @@ getQubitsInstructionsDepth(FuncOp circuit) {
     if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
-              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          auto qubitIndexOpt
+              = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (!qubitIndexOpt.has_value()) {
+            continue;
+          }
+          int qubitIndex = qubitIndexOpt.value();
           if (0 <= qubitIndex && qubitIndex < nrQubits) {
             nrGates++;
             depths[qubitIndex]++;

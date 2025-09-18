@@ -57,11 +57,14 @@ void commuteZCx(Operation *currentOp) {
       previousGate.getTargets().size() != 1) {
     return;
   }
-  int targetPrev = supportQuake::extractIndexFromQuakeExtractRefOp(
+  auto targetPrevOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
       previousGate.getTargets()[0].getDefiningOp());
-  int controlCurr = supportQuake::extractIndexFromQuakeExtractRefOp(
+  auto controlCurrOpt = supportQuake::extractIndexFromQuakeExtractRefOp(
       currentGate.getControls()[0].getDefiningOp());
-  if (targetPrev == controlCurr) {
+  if (!targetPrevOpt.has_value() || !controlCurrOpt.has_value()) {
+    return;
+  }
+  if (targetPrevOpt.value() == controlCurrOpt.value()) {
     IRRewriter rewriter(currentGate->getContext());
     rewriter.setInsertionPointAfter(currentGate);
     rewriter.create<quake::ZOp>(
