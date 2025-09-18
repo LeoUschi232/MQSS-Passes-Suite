@@ -1,8 +1,10 @@
 #include "Torch/A2C/a2c_trainer.hpp"
 
 #include <Quake.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <mlir_utils.hpp>
+#include <numeric>
 #include <Torch/parallel_environments.hpp>
 #include <Utils/info_utils.hpp>
 #include <Utils/progress_bar.hpp>
@@ -56,8 +58,9 @@ std::unordered_map<std::string, std::string> train_a2c(
   for (auto &file : all_dataset_files) {
     std::string quake_module_text = readFileToString(file.string());
     if (auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-      getNumberOfQubits(FuncOp(mlir_module)) > max_qubits
-      || getNumberOfGates(FuncOp(mlir_module)) > max_instructions) {
+        getNumberOfQubits(FuncOp(mlir_module)) > max_qubits
+        || getNumberOfGates(FuncOp(mlir_module)) > max_instructions
+        || getCircuitDepth(FuncOp(mlir_module)) > max_depth) {
       continue;
     }
     filtered_dataset_files.push_back(file.string());
@@ -71,6 +74,10 @@ std::unordered_map<std::string, std::string> train_a2c(
       nr_parallel_environments, max_qubits, max_instructions, max_depth,
       max_steps_per_episode);
 
+  std::vector<bool> environment_has_circuit(
+      nr_parallel_environments, false);
+  std::vector<std::size_t> dataset_indexes(dataset_size);
+
   double max_reward = -std::numeric_limits<double>::max();
   double average_reward = 0.0;
   std::vector<double> entropies;
@@ -79,9 +86,33 @@ std::unordered_map<std::string, std::string> train_a2c(
 
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
     for (unsigned int i = 0; i < nr_parallel_environments; i++) {
-      fs::path random_dataset_entry
-          = filtered_dataset_files[random_int(0, dataset_size)];
-      environments.register_quantum_circuit(i, random_dataset_entry);
+      bool registered = false;
+      std::iota(dataset_indexes.begin(), dataset_indexes.end(), 0);
+      std::shuffle(dataset_indexes.begin(), dataset_indexes.end(), rng);
+      for (std::size_t dataset_index : dataset_indexes) {
+        const fs::path &dataset_entry
+            = filtered_dataset_files[dataset_index];
+        if (environments.register_quantum_circuit(i, dataset_entry)) {
+          registered = true;
+          environment_has_circuit[i] = true;
+          break;
+        }
+      }
+      if (!registered) {
+        if (!environment_has_circuit[i]) {
+          std::cerr
+              << "Failed to register admissible circuit for environment " << i
+              << " after " << dataset_size
+              << " attempts. Aborting episode." << std::endl;
+          throw std::runtime_error(
+              "Unable to seed environment with admissible circuit.");
+        }
+        std::cerr
+            << "Warning: unable to register a new circuit for environment "
+            << i
+            << ". Continuing with previously registered circuit."
+            << std::endl;
+      }
     }
     int64_t T = max_steps_per_episode;
     int64_t B = nr_parallel_environments;
