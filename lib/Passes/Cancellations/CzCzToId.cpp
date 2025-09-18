@@ -1,26 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
@@ -60,12 +37,16 @@ public:
           || czOp1.getControls().size() != 1) {
         return;
       }
-      auto optional_czOp2
+      auto optional_czOp2_onTarget
           = getNextOperationOnTarget(czOp1, czOp1.getTargets()[0]);
-      if (!optional_czOp2) {
+      auto optional_czOp2_onControl
+          = getNextOperationOnTarget(czOp1, czOp1.getControls()[0]);
+      if (!optional_czOp2_onTarget
+          || !optional_czOp2_onControl
+          || optional_czOp2_onTarget != optional_czOp2_onControl) {
         return;
       }
-      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*optional_czOp2);
+      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*optional_czOp2_onTarget);
       if (!czOp2
           || czOp2.getTargets().size() != 1
           || czOp2.getControls().size() != 1

@@ -357,18 +357,17 @@ Operation *getPreviousOperationOnTarget(
   while (prevOp) {
     // Check if the operation has a target qubit and matches the given target
     if (auto quakeOp = dyn_cast<quake::OperatorInterface>(prevOp)) {
-      int targetQCurr =
-          extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp()).
-          value();
+      int targetQCurr = extractIndexFromQuakeExtractRefOp(
+          targetQubit.getDefiningOp()).value();
       for (Value target : quakeOp.getTargets()) {
-        int targetQPrev =
-            extractIndexFromQuakeExtractRefOp(target.getDefiningOp()).value();
+        int targetQPrev = extractIndexFromQuakeExtractRefOp(
+            target.getDefiningOp()).value();
         if (targetQCurr == targetQPrev)
           return prevOp;
       }
       for (Value control : quakeOp.getControls()) {
-        int controlQPrev =
-            extractIndexFromQuakeExtractRefOp(control.getDefiningOp()).value();
+        int controlQPrev = extractIndexFromQuakeExtractRefOp(
+            control.getDefiningOp()).value();
         if (targetQCurr == controlQPrev)
           return prevOp;
       }
@@ -389,20 +388,21 @@ Operation *getNextOperationOnTarget(
   while (nextOp) {
     // Check if the operation has a target qubit and matches the given target
     if (auto quakeOp = dyn_cast<quake::OperatorInterface>(nextOp)) {
-      int targetQCurr =
-          extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp()).
-          value();
+      int targetQCurr = extractIndexFromQuakeExtractRefOp(
+          targetQubit.getDefiningOp()).value();
       for (Value target : quakeOp.getTargets()) {
-        int targetQNext =
-            extractIndexFromQuakeExtractRefOp(target.getDefiningOp()).value();
-        if (targetQCurr == targetQNext)
+        int targetQNext = extractIndexFromQuakeExtractRefOp(
+            target.getDefiningOp()).value();
+        if (targetQCurr == targetQNext) {
           return nextOp;
+        }
       }
       for (Value control : quakeOp.getControls()) {
-        int controlQNext =
-            extractIndexFromQuakeExtractRefOp(control.getDefiningOp()).value();
-        if (targetQCurr == controlQNext)
+        int controlQNext = extractIndexFromQuakeExtractRefOp(
+            control.getDefiningOp()).value();
+        if (targetQCurr == controlQNext) {
           return nextOp;
+        }
       }
     }
     // Move to the next operation
