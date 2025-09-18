@@ -88,7 +88,7 @@ std::unordered_map<std::string, std::string> train_a2c(
     torch::TensorOptions options = torch::TensorOptions().device(device).dtype(
         torch::kFloat64);
     auto episode_log_probs = torch::zeros({T, B}, options);
-    auto episode_values = torch::zeros({T, B}, options);
+    auto episode_values = torch::zeros({T + 1, B}, options);
     auto episode_rewards = torch::zeros({T, B}, options);
     auto episode_entropies = torch::zeros({T, B}, options);
     auto termination_masks = torch::zeros({T, B}, options);
@@ -111,6 +111,10 @@ std::unordered_map<std::string, std::string> train_a2c(
       batched_observations
           = environments.get_batched_instruction_based_observations();
     }
+
+    episode_values[T]
+        = agent.forward(batched_observations).first.squeeze(-1).detach()
+              .to(device, options.dtype());
 
     auto [critic_loss, actor_loss] = agent.get_losses(
         episode_rewards,

@@ -164,13 +164,18 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   // based on the difference between the immediate reward obtained from a current state
   // and the estimated value of the next state.
   torch::Tensor A_gae = torch::zeros({B}, options);
-  for (int t = T - 2; t >= 0; t--) {
+  const int nr_state_values = state_values.size(0);
+  torch::Tensor bootstrap_value = torch::zeros({B}, state_values.options());
+  for (int t = T - 1; t >= 0; --t) {
+    const bool has_next_state_value = (t + 1) < nr_state_values;
+    const torch::Tensor &next_state_value
+        = has_next_state_value ? state_values[t + 1] : bootstrap_value;
 
     // In Barto & Sutton the temporal difference residual of V with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
     torch::Tensor delta_t
         = rewards[t] - state_values[t]
-          + discount_factor * state_values[t + 1] * termination_masks[t];
+          + discount_factor * next_state_value * termination_masks[t];
 
     // The generalized advantage estimation defined by Schulman et al is:
     // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
