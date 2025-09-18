@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
       }
       params[key_value[0]] = key_value[1];
     }
+    i++;
   }
 
   if (info) {
@@ -99,9 +100,9 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (agent.empty()) {
-      if (circuit.empty()) {
-        return 0;
-      }
+    if (circuit.empty()) {
+      return 0;
+    }
     agent = select_best_agent(circuit);
   }
   if (!dataset.empty()) {
