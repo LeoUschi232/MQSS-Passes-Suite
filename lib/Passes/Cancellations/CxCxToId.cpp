@@ -54,7 +54,27 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternCancellation<quake::XOp, quake::XOp>(op, 1, 1, 1, 1);
+      auto cxOp1 = dyn_cast_or_null<quake::XOp>(*op);
+      if (!cxOp1
+          || cxOp1.getTargets().size() != 1
+          || cxOp1.getControls().size() != 1) {
+        return;
+      }
+      auto optional_cxOp2
+          = getNextOperationOnTarget(cxOp1, cxOp1.getTargets()[0]);
+      if (!optional_cxOp2) {
+        return;
+      }
+      auto cxOp2 = dyn_cast_or_null<quake::XOp>(*optional_cxOp2);
+      if (!cxOp2
+          || cxOp2.getTargets().size() != 1
+          || cxOp2.getControls().size() != 1
+          || cxOp2.getControls()[0] != cxOp1.getControls()[0]) {
+        return;
+      }
+      IRRewriter rewriter(cxOp1->getContext());
+      rewriter.eraseOp(cxOp1);
+      rewriter.eraseOp(cxOp2);
     });
   }
 };

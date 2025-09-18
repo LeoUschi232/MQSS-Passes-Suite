@@ -54,8 +54,9 @@ public:
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
       auto cxOp = dyn_cast_or_null<quake::XOp>(*op);
-      if (!cxOp || cxOp.getControls().size() != 1 ||
-          cxOp.getTargets().size() != 1) {
+      if (!cxOp
+          || cxOp.getControls().size() != 1
+          || cxOp.getTargets().size() != 1) {
         return;
       }
       Value control = cxOp.getControls()[0];

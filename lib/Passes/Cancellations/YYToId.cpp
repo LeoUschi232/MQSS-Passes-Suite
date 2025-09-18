@@ -28,7 +28,28 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternCancellation<quake::YOp, quake::YOp>(op, 0, 1, 0, 1);
+      auto yOp1 = dyn_cast_or_null<quake::YOp>(*op);
+      if (!yOp1
+          || !yOp1.isAdj()
+          || yOp1.getTargets().size() != 1
+          || !yOp1.getControls().empty()) {
+        return;
+      }
+      auto optional_yOp2
+          = getNextOperationOnTarget(yOp1, yOp1.getTargets()[0]);
+      if (!optional_yOp2) {
+        return;
+      }
+      auto yOp2 = dyn_cast_or_null<quake::YOp>(*optional_yOp2);
+      if (!yOp2
+          || yOp2.isAdj()
+          || yOp2.getTargets().size() != 1
+          || !yOp2.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(yOp1->getContext());
+      rewriter.eraseOp(yOp1);
+      rewriter.eraseOp(yOp2);
     });
   }
 };
