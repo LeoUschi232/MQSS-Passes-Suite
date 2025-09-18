@@ -45,7 +45,7 @@ struct ReplaceXToHZH final : OpRewritePattern<quake::XOp> {
 
   LogicalResult matchAndRewrite(
       quake::XOp xOp, PatternRewriter &rewriter) const override {
-    if (xOp.isAdj() || !xOp.getControls().empty() ||
+    if (!xOp.getControls().empty() ||
         xOp.getTargets().size() != 1) {
       return success();
     }

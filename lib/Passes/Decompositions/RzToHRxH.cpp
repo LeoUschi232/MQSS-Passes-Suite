@@ -53,10 +53,9 @@ struct ReplaceRzToHRxH final : OpRewritePattern<quake::RzOp> {
     }
     auto loc = rzOp.getLoc();
     auto param = rzOp.getParameters()[0];
-    auto control = rzOp.getControls()[0];
     auto target = rzOp.getTargets()[0];
     rewriter.create<quake::HOp>(loc, target);
-    rewriter.create<quake::RxOp>(loc, false, param, control, target);
+    rewriter.create<quake::RxOp>(loc, false, param, ValueRange{}, target);
     rewriter.create<quake::HOp>(loc, target);
     rewriter.replaceOp(rzOp, {});
     return success();

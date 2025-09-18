@@ -204,10 +204,10 @@ void BaseA2CAgent::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
-  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
-  torch::save(this->critic, critic_path);
-  torch::save(this->actor, actor_path);
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  torch::save(this->critic, critic_path.string());
+  torch::save(this->actor, actor_path.string());
 }
 
 void BaseA2CAgent::load_model() {
@@ -219,13 +219,13 @@ void BaseA2CAgent::load_model() {
   if (name.empty()) {
     return;
   }
-  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
-  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
-  torch::load(this->critic, critic_path);
-  torch::load(this->actor, actor_path);
+  torch::load(this->critic, critic_path.string());
+  torch::load(this->actor, actor_path.string());
   std::cout << "Loaded model: " << name << std::endl;
 }
 

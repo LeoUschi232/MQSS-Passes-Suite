@@ -45,7 +45,7 @@ struct ReplaceZToHXH final : OpRewritePattern<quake::ZOp> {
 
   LogicalResult matchAndRewrite(
       quake::ZOp zOp, PatternRewriter &rewriter) const override {
-    if (zOp.isAdj() || !zOp.getControls().empty() ||
+    if (!zOp.getControls().empty() ||
         zOp.getTargets().size() != 1) {
       return success();
     }

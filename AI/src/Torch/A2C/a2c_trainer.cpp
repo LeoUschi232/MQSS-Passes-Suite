@@ -20,12 +20,14 @@ std::unordered_map<std::string, std::string> train_a2c(
   unsigned int max_instructions = agent.getMaxInstructions();
   unsigned int max_depth = agent.getMaxDepth();
 
-  std::cout << "Training A2C agent with parameters:" << std::endl;
-  std::cout << "  max_qubits: " << max_qubits << std::endl;
-  std::cout << "  max_instructions: " << max_instructions << std::endl;
-  std::cout << "  max_depth: " << max_depth << std::endl;
-  for (auto [key, value] : params) {
-    std::cout << "  " << key << ": " << value << std::endl;
+  if (params["print_param_info"] == "true") {
+    std::cout << "Training A2C agent with parameters:" << std::endl;
+    std::cout << "  max_qubits: " << max_qubits << std::endl;
+    std::cout << "  max_instructions: " << max_instructions << std::endl;
+    std::cout << "  max_depth: " << max_depth << std::endl;
+    for (auto [key, value] : params) {
+      std::cout << "  " << key << ": " << value << std::endl;
+    }
   }
 
   // Default values
