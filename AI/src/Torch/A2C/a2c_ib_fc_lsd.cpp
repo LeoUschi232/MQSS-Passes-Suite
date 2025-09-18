@@ -9,6 +9,8 @@
 #include <Utils/info_utils.hpp>
 #include <Utils/passes_utils.hpp>
 #include <Utils/progress_bar.hpp>
+#include <stdexcept>
+#include <utility>
 
 
 namespace ai_pass_selector {
@@ -45,6 +47,19 @@ A2C_IB_FC_LSD::A2C_IB_FC_LSD(
     std::cerr << "Failed to initialize A2C_IB_FC_LSD." << std::endl;
   }
 }
+
+A2C_IB_FC_LSD::A2C_IB_FC_LSD(
+    const std::string &circuit_size,
+    std::unordered_map<std::string, std::string> params)
+  : A2C_IB_FC_LSD(
+        [&circuit_size]() {
+          const auto it = CIRCUIT_SIZE_TO_CLASS.find(circuit_size);
+          if (it == CIRCUIT_SIZE_TO_CLASS.end()) {
+            throw std::runtime_error("Unsupported size: " + circuit_size);
+          }
+          return it->second;
+        }(),
+        std::move(params)) {}
 
 std::string A2C_IB_FC_LSD::agentName() const {
   std::string size_class_str;

@@ -7,6 +7,8 @@
 #include <Torch/parallel_environments.hpp>
 #include <Utils/circuit_utils.hpp>
 #include <Utils/passes_utils.hpp>
+#include <stdexcept>
+#include <utility>
 
 
 namespace ai_pass_selector {
@@ -35,6 +37,20 @@ A2C_IB_FC_LSM::A2C_IB_FC_LSM(
     std::cerr << "Failed to initialize IB_FC_LSD_A2C." << std::endl;
   }
 }
+
+
+A2C_IB_FC_LSM::A2C_IB_FC_LSM(
+    const std::string &circuit_size,
+    std::unordered_map<std::string, std::string> params)
+  : A2C_IB_FC_LSM(
+        [&circuit_size]() {
+          const auto it = CIRCUIT_SIZE_TO_CLASS.find(circuit_size);
+          if (it == CIRCUIT_SIZE_TO_CLASS.end()) {
+            throw std::runtime_error("Unsupported size: " + circuit_size);
+          }
+          return it->second;
+        }(),
+        std::move(params)) {}
 
 
 std::string A2C_IB_FC_LSM::agentName() const {
