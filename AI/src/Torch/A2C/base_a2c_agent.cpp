@@ -36,7 +36,8 @@ void BaseA2CAgent::configure(
     std::unordered_map<std::string, std::string> params) {
   if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class)
       == CIRCUIT_CLASS_TO_SPECS.end()) {
-    throw std::runtime_error("Unsupported size class: " + circuit_size_class);
+    throw std::runtime_error(
+        "Unsupported size class: " + std::to_string(circuit_size_class));
   }
   this->size_class = circuit_size_class;
   std::tie(this->max_qubits, this->max_instructions, this->max_depth)
