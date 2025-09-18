@@ -1,0 +1,16 @@
+agent: ""
+dataset: ""
+circuit: ""
+output: ""
+nr_parallel_environments: 1
+episodes: 1000
+max_steps_per_episode: 5
+discount_factor: 1.0
+gae_hyperparameter: 0.96
+entropy_coefficient: 0.01
+device: cpu
+critic_optimizer: adam
+actor_optimizer: adam
+critic_learning_rate: 0.005
+actor_learning_rate: 0.001
+print_param_info: ""
