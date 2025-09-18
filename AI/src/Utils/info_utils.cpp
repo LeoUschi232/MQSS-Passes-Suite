@@ -82,7 +82,6 @@ get_circuit_info(const std::string &circuit) {
   auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
   auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(
       FuncOp(mlir_module));
-
   return std::make_tuple(circuit_path, nrQubits, nrGates, depth);
 }
 

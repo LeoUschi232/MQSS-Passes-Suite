@@ -100,3 +100,44 @@ options or those with strong C++ APIs.
 - **Caffe**: A deep learning framework in C++ optimized for speed, especially in vision tasks. Allows defining networks
   via prototxt configs or code, with support for convolutional layers, ReLU/LeakyReLU activations, inner product (
   linear) layers, etc. Useful for CNN-based RL environments.
+  Yes—use **yaml-cpp**.
+
+```cpp
+// CMake: find_package(yaml-cpp REQUIRED); target_link_libraries(your_bin PRIVATE yaml-cpp)
+#include <yaml-cpp/yaml.h>
+#include <unordered_map>
+#include <string>
+
+std::unordered_map<std::string,std::string>
+load_params_from_yaml(const std::string& path,
+                      std::unordered_map<std::string,std::string> defaults = {}) {
+  YAML::Node cfg = YAML::LoadFile(path);
+  if (!cfg || !cfg.IsMap()) return defaults;
+
+  for (auto it : cfg) {
+    const std::string k = it.first.as<std::string>();
+    // stringify scalars; skip non-scalars
+    if (it.second.IsScalar()) {
+      defaults[k] = it.second.as<std::string>();
+    }
+  }
+  return defaults;
+}
+```
+
+Example `params.yaml`:
+
+```yaml
+nr_parallel_environments: 12
+episodes: 500
+device: cuda
+actor_learning_rate: 0.0005
+```
+
+Usage:
+
+```cpp
+auto params = load_default_params();
+params = load_params_from_yaml("params.yaml", std::move(params));
+```
+

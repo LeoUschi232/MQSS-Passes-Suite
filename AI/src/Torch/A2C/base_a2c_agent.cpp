@@ -95,10 +95,13 @@ unsigned int BaseA2CAgent::getNrInputValues() const {
 }
 
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
-    torch::Tensor batched_observations) {
-  batched_observations = batched_observations.to(this->device);
-  return {this->critic->forward(batched_observations),
-          this->actor->forward(batched_observations)};
+    const torch::Tensor &batched_observations) {
+  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+  if (x.dim() == 3) {
+    // flatten [B, max_qubits, max_instructions] to [B, max_qubits*max_instructions]
+    x = x.flatten(1);
+  }
+  return {this->critic->forward(x), this->actor->forward(x)};
 }
 
 std::tuple<std::vector<unsigned int>,
@@ -210,18 +213,20 @@ void BaseA2CAgent::save_model() const {
 void BaseA2CAgent::load_model() {
   std::lock_guard lock(*model_mutex);
   if (this->nr_input_values <= 0) {
-    std::cerr << "No agent to load." << std::endl;
     return;
   }
   std::string name = this->agentName();
   if (name.empty()) {
-    std::cerr << "No agent to save." << std::endl;
     return;
   }
   std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
   std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
+  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+    return;
+  }
   torch::load(this->critic, critic_path);
   torch::load(this->actor, actor_path);
+  std::cout << "Loaded model: " << name << std::endl;
 }
 
 } // ai_pass_selector

@@ -37,6 +37,7 @@ std::unordered_map<std::string, std::string> train(
         throw std::runtime_error(
             "Unknown A2C specifier: " + attributes.specifier);
       }
+      agent->load_model();
       training_results = train_a2c(*agent, dataset, params);
       break;
     }

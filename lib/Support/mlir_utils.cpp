@@ -44,11 +44,10 @@ extractMLIRContext(const std::string &quakeModule) {
   if (!m_module) {
     throw std::runtime_error("Module cannot be parsed");
   }
-
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
+std::pair<ModuleOp, std::unique_ptr<MLIRContext *> >
 extractModuleOpAndContextPointer(const std::string &quakeModule) {
   auto contextPtr = cudaq::initializeMLIR();
   MLIRContext &context = *contextPtr.get();
@@ -58,7 +57,8 @@ extractModuleOpAndContextPointer(const std::string &quakeModule) {
   if (!m_module) {
     throw std::runtime_error("Module cannot be parsed");
   }
-  return std::make_pair(m_module.release(), std::move(contextPtr));
+  return {m_module.release(),
+          std::make_unique<MLIRContext *>(contextPtr.release())};
 }
 
 std::string readFileToString(const std::string &filename) {
@@ -107,7 +107,8 @@ std::tuple<unsigned int, unsigned int, unsigned int>
 getQubitsInstructionsDepth(FuncOp circuit) {
   unsigned int nrQubits = 0;
   unsigned int nrGates = 0;
-  std::vector depths(nrQubits, 0);
+  std::vector<unsigned int> depths;
+
   circuit.walk([&](Operation *op) {
     if (isa<quake::AllocaOp>(op)) {
       if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
@@ -116,6 +117,7 @@ getQubitsInstructionsDepth(FuncOp circuit) {
       } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
         nrQubits += qvecType.getSize();
       }
+      depths.resize(nrQubits, 0);
       return;
     }
     if (!isOperatingGate(op)) {
@@ -146,7 +148,7 @@ getQubitsInstructionsDepth(FuncOp circuit) {
       std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
       std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
       targets.insert(targets.end(), controls.begin(), controls.end());
-      int max_depth = 0;
+      unsigned int max_depth = 0;
       for (int qubit : targets) {
         max_depth = std::max(max_depth, depths[qubit]);
       }

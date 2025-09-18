@@ -96,7 +96,7 @@ namespace ai_pass_selector {
          * @return
          */
         std::pair<torch::Tensor, torch::Tensor> forward(
-            torch::Tensor batched_observations);
+            const torch::Tensor &batched_observations);
 
         /**
          *

@@ -20,6 +20,14 @@ std::unordered_map<std::string, std::string> train_a2c(
   unsigned int max_instructions = agent.getMaxInstructions();
   unsigned int max_depth = agent.getMaxDepth();
 
+  std::cout << "Training A2C agent with parameters:" << std::endl;
+  std::cout << "  max_qubits: " << max_qubits << std::endl;
+  std::cout << "  max_instructions: " << max_instructions << std::endl;
+  std::cout << "  max_depth: " << max_depth << std::endl;
+  for (auto [key, value] : params) {
+    std::cout << "  " << key << ": " << value << std::endl;
+  }
+
   // Default values
   unsigned int nr_parallel_environments
       = std::stoul(params["nr_parallel_environments"]);
@@ -56,6 +64,7 @@ std::unordered_map<std::string, std::string> train_a2c(
     std::cerr << "No dataset files found." << std::endl;
     return {};
   }
+  std::cout << "\nFiltered dataset size: " << dataset_size << std::endl;
   ParallelEnvironments environments(
       nr_parallel_environments, max_qubits, max_instructions, max_depth,
       max_steps_per_episode);
@@ -66,6 +75,8 @@ std::unordered_map<std::string, std::string> train_a2c(
   std::vector<double> critic_losses;
   std::vector<double> actor_losses;
 
+  std::cout << "Beginning training." << std::endl;
+  updateProgress(0, episodes, "Beginning training");
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
     for (unsigned int i = 0; i < nr_parallel_environments; i++) {
       fs::path random_dataset_entry

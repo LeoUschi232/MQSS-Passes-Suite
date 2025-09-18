@@ -66,8 +66,8 @@ namespace ai_pass_selector {
         unsigned int max_instructions;
         unsigned int max_depth;
         fs::path circuit_path;
-        ModuleOp circuit;
-        std::unique_ptr<MLIRContext> context_ptr;
+        ModuleOp circuit_module;
+        std::unique_ptr<MLIRContext *> context_ptr;
         unsigned int max_steps;
         unsigned int current_step;
 
@@ -84,6 +84,7 @@ namespace ai_pass_selector {
             : max_qubits(max_qubits),
               max_instructions(max_instructions),
               max_depth(max_depth),
+              context_ptr(nullptr),
               max_steps(max_steps),
               current_step(0) {
         }
@@ -130,14 +131,14 @@ namespace ai_pass_selector {
          * @return
          */
         static std::unordered_map<std::string, unsigned int>
-        get_circuit_info(const ModuleOp &circuit);
+        get_circuit_info(FuncOp circuit);
 
         /**
          *
          * @param circuit
          * @return
          */
-        unsigned int circuit_invalid_type(ModuleOp circuit) const;
+        unsigned int circuit_invalid_type(FuncOp circuit) const;
 
 
         /**

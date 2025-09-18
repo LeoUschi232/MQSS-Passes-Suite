@@ -67,6 +67,7 @@ std::unique_ptr<torch::optim::Optimizer> makeOptimizer(
 }
 
 std::string select_best_agent(const std::string &circuit) {
+  std::cout << "Selecting best agent for circuit: " << circuit << std::endl;
   auto found_circuit = search_circuit(circuit);
   if (!found_circuit.has_value()) {
     throw std::runtime_error(

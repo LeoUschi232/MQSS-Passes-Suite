@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
     if (args[i] == "-a" || args[i] == "--agent") {
       if (++i < n) {
         agent = args[i];
+        params["agent"] = agent;
       } else {
         std::cerr << "No agent provided." << std::endl;
         return 1;
@@ -60,6 +61,7 @@ int main(int argc, char **argv) {
     } else if (args[i] == "-d" || args[i] == "--dataset") {
       if (++i < n) {
         dataset = args[i];
+        params["dataset"] = dataset;
       } else {
         std::cerr << "No dataset provided." << std::endl;
         return 1;
@@ -67,6 +69,7 @@ int main(int argc, char **argv) {
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
         circuit = args[i];
+        params["circuit"] = circuit;
       } else {
         std::cerr << "No circuit provided." << std::endl;
         return 1;
@@ -74,6 +77,7 @@ int main(int argc, char **argv) {
     } else if (args[i] == "-o" || args[i] == "--output") {
       if (++i < n) {
         output = args[i];
+        params["output"] = output;
       } else {
         std::cerr << "No output provided." << std::endl;
         return 1;
@@ -120,9 +124,13 @@ int main(int argc, char **argv) {
 
 std::unordered_map<std::string, std::string> load_default_params() {
   return {
-      {"nr_parallel_environments", "10"},
+      {"agent", ""},
+      {"dataset", ""},
+      {"circuit", ""},
+      {"output", ""},
+      {"nr_parallel_environments", "1"},
       {"episodes", "1000"},
-      {"max_steps_per_episode", "20"},
+      {"max_steps_per_episode", "5"},
       {"discount_factor", "1.0"},
       {"gae_hyperparameter", "0.96"},
       {"entropy_coefficient", "0.01"},
