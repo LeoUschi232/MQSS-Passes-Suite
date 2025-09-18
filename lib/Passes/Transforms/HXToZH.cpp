@@ -48,8 +48,7 @@ public:
   StringRef getArgument() const override { return "HXToZH"; }
 
   StringRef getDescription() const override {
-    return "Pass that switches a pattern composed Hadamard and X to Z and "
-        "Hadamard";
+    return "Pass that switches a pattern composed H X to Z H";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {

@@ -41,26 +41,6 @@ using namespace mlir;
 
 namespace {
 
-void ReverseCNot(Operation *currentOp) {
-  auto cxOp = dyn_cast_or_null<quake::XOp>(*currentOp);
-  if (!cxOp || cxOp.getControls().size() != 1 ||
-      cxOp.getTargets().size() != 1) {
-    return;
-  }
-  Value control = cxOp.getControls()[0];
-  Value target = cxOp.getTargets()[0];
-  Location loc = cxOp.getLoc();
-
-  IRRewriter rewriter(cxOp->getContext());
-  rewriter.setInsertionPointAfter(cxOp);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, target, control);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::HOp>(loc, control);
-  rewriter.eraseOp(cxOp);
-}
-
 class ReverseCx final : public BaseMQSSPass<ReverseCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
@@ -68,12 +48,29 @@ public:
   StringRef getArgument() const override { return "ReverseCx"; }
 
   StringRef getDescription() const override {
-    return "Decomposition pass that reverses the control and targets of each "
-        "two-qubits CNot gate in a circuit";
+    return "Transforms CX(0,1) to H(0) H(1) CX(1,0) H(1) H(0)";
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { ReverseCNot(op); });
+    kernel.walk([&](Operation *op) {
+      auto cxOp = dyn_cast_or_null<quake::XOp>(*op);
+      if (!cxOp || cxOp.getControls().size() != 1 ||
+          cxOp.getTargets().size() != 1) {
+        return;
+      }
+      Value control = cxOp.getControls()[0];
+      Value target = cxOp.getTargets()[0];
+      Location loc = cxOp.getLoc();
+
+      IRRewriter rewriter(cxOp->getContext());
+      rewriter.setInsertionPointAfter(cxOp);
+      rewriter.create<quake::HOp>(loc, control);
+      rewriter.create<quake::HOp>(loc, target);
+      rewriter.create<quake::XOp>(loc, target, control);
+      rewriter.create<quake::HOp>(loc, target);
+      rewriter.create<quake::HOp>(loc, control);
+      rewriter.eraseOp(cxOp);
+    });
   }
 };
 } // namespace

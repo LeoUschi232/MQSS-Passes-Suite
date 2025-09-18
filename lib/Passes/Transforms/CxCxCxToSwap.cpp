@@ -20,22 +20,27 @@ using namespace mlir;
 namespace {
 void foldCxCxCx(Operation *op) {
   auto cx3 = dyn_cast_or_null<quake::XOp>(*op);
-  if (!cx3 || cx3.getControls().size() != 1 || cx3.getTargets().size() != 1)
+  if (!cx3 || cx3.getControls().size() != 1 || cx3.getTargets().size() != 1) {
     return;
+  }
   auto prev2 =
       supportQuake::getPreviousOperationOnTarget(cx3, cx3.getTargets()[0]);
-  if (!prev2)
+  if (!prev2) {
     return;
+  }
   auto cx2 = dyn_cast_or_null<quake::XOp>(prev2);
-  if (!cx2 || cx2.getControls().size() != 1 || cx2.getTargets().size() != 1)
+  if (!cx2 || cx2.getControls().size() != 1 || cx2.getTargets().size() != 1) {
     return;
+  }
   auto prev1 =
       supportQuake::getPreviousOperationOnTarget(cx2, cx2.getTargets()[0]);
-  if (!prev1)
+  if (!prev1) {
     return;
+  }
   auto cx1 = dyn_cast_or_null<quake::XOp>(prev1);
-  if (!cx1 || cx1.getControls().size() != 1 || cx1.getTargets().size() != 1)
+  if (!cx1 || cx1.getControls().size() != 1 || cx1.getTargets().size() != 1) {
     return;
+  }
   // check pattern control-target alternating
   int c1 = supportQuake::extractIndexFromQuakeExtractRefOp(
       cx1.getControls()[0].getDefiningOp());
@@ -49,13 +54,14 @@ void foldCxCxCx(Operation *op) {
       cx3.getControls()[0].getDefiningOp());
   int t3 = supportQuake::extractIndexFromQuakeExtractRefOp(
       cx3.getTargets()[0].getDefiningOp());
-  if (!(c1 == c3 && t1 == t3 && c2 == t1 && t2 == c1))
+  if (!(c1 == c3 && t1 == t3 && c2 == t1 && t2 == c1)) {
     return;
+  }
   IRRewriter rewriter(cx3->getContext());
   rewriter.setInsertionPointAfter(cx3);
   SmallVector tgts{cx3.getControls()[0], cx3.getTargets()[0]};
-  rewriter.create<quake::SwapOp>(cx3.getLoc(), /*params*/ ValueRange{},
-                                 ValueRange{}, tgts);
+  rewriter.create<quake::SwapOp>(
+      cx3.getLoc(), /*params*/ ValueRange{}, ValueRange{}, tgts);
   rewriter.eraseOp(cx3);
   rewriter.eraseOp(cx2);
   rewriter.eraseOp(cx1);
