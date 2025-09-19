@@ -96,31 +96,38 @@ cd "${CUDAQ_DIR}"
 mkdir -p build && cd build
 
 echo "[CUDAQ] Configuring with Ninja"
+# --- add right above the "cmake -G Ninja" call for CUDA-Q ---
+FILECHECK="$HOME/.local/llvm16/bin/FileCheck"
+
 CMAKE_ARGS=(
-  -G Ninja
   -DMLIR_DIR="${MLIR_DIR}"
   -DClang_DIR="${CLANG_DIR}"
   -DLLVM_DIR="${LLVM_DIR}"
-  ..
+
+  # Disable all test plumbing so CMake doesn’t add check-* targets:
+  -DLLVM_INCLUDE_TESTS=OFF
+  -DMLIR_INCLUDE_TESTS=OFF
+  -DClang_INCLUDE_TESTS=OFF
+  -DCMAKE_DISABLE_FIND_PACKAGE_Lit=ON
+  -DCUDA_QUANTUM_ENABLE_TESTS=OFF        # primary switch used by many CUDA-Q revs
+  -DCUDAQ_ENABLE_TESTS=OFF               # fallback for older revs (harmless if unknown)
 )
 
+# If you want to be extra-safe you can also point to FileCheck’s exe (optional):
+if [ -x "$FILECHECK" ]; then
+  CMAKE_ARGS+=(-DLLVM_FILECHECK_EXE="$FILECHECK")
+fi
+
+# If you installed OpenBLAS in ~/.local (you did), keep the hints:
 CMAKE_ARGS+=(
   -DBLA_VENDOR=OpenBLAS
   -DBLAS_LIBRARIES="$HOME/.local/lib/libopenblas.so"
   -DBLAS_INCLUDE_DIR="$HOME/.local/include"
 )
 
-# If OpenBLAS is present in ~/.local, hint CMake to avoid BLAS errors
-if [ -f "${OPENBLAS_LIB}" ]; then
-  echo "[CUDAQ] Detected OpenBLAS at ${OPENBLAS_LIB}; passing BLAS hints."
-  CMAKE_ARGS+=(
-    -DBLA_VENDOR=OpenBLAS
-    -DBLAS_LIBRARIES="${OPENBLAS_LIB}"
-    -DBLAS_INCLUDE_DIR="${OPENBLAS_INC}"
-  )
-fi
+# Now call cmake with the array:
+cmake -G Ninja "${CMAKE_ARGS[@]}" ..
 
-cmake "${CMAKE_ARGS[@]}"
 
 echo "[CUDAQ] Building cudaq-mlir-runtime with ${NUM_JOBS} jobs"
 ninja -j"${NUM_JOBS}" cudaq-mlir-runtime
