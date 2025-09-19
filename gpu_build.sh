@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --build-tests) BUILD_TESTS=ON; shift ;;
     --build-ai)    BUILD_AI=ON;    shift ;;
     *) echo "Unknown option: $1"; exit 1 ;;
-  endesac
+  esac
 done
 
 # -------- env/path ----------
