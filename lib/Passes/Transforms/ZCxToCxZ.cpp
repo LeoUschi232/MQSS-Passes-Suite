@@ -26,7 +26,7 @@ public:
   StringRef getArgument() const override { return "ZCxToCxZ"; }
 
   StringRef getDescription() const override {
-    return "Apply commutation pass to pattern Z-CNot to CNot-Z";
+    return "Commute Z(0) Cx(0,1) to Cx(0,1) Z(0)";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {

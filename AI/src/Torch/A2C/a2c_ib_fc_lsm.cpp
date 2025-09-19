@@ -59,7 +59,7 @@ std::string A2C_IB_FC_LSM::agentName() const {
     throw std::runtime_error("Unsupported size class.");
   }
   std::ostringstream oss;
-  oss << "a2c-" << size_class_str << "-ib-fc-lsm";
+  oss << "a2c-" << size_class_str << "-ibfclsm";
   return oss.str();
 }
 } // namespace ai_pass_selector

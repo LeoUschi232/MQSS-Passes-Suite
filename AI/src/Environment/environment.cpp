@@ -199,9 +199,6 @@ QuantumCircuitEnviorment::step(unsigned int action) {
 
   std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[action]();
 
-  std::cout << this->circuit_path.stem().string() << " | "
-      << std::string(pass->getArgument()) << std::endl;
-
   MLIRContext &context = **this->context_ptr.get();
   mlir::PassManager pass_manager(&context);
   pass_manager.addPass(std::move(pass));
@@ -240,12 +237,10 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
 
   int instruction_index = 0;
   this->circuit_module.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
+    if (!isOperatingGate(op) || instruction_index >= this->max_instructions) {
       return;
     }
-    if (instruction_index >= this->max_instructions) {
-      throw std::runtime_error("instruction_index exceeded max_instructions.");
-    }
+
     std::string gate_name = getOnlyGateName(op);
     int gate_index = GATE_INDEX(gate_name);
     if (gate_index < 0) {

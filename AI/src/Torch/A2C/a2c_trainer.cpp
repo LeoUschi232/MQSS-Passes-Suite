@@ -72,7 +72,7 @@ std::unordered_map<std::string, std::string> train_a2c(
       max_steps_per_episode);
 
   double max_reward = -std::numeric_limits<double>::max();
-  double average_reward = 0.0;
+  double summed_rewards = 0.0;
   std::vector<double> entropies;
   std::vector<double> critic_losses;
   std::vector<double> actor_losses;
@@ -129,9 +129,10 @@ std::unordered_map<std::string, std::string> train_a2c(
     if (total_rewards.size(/*dim=*/0) != nr_parallel_environments) {
       throw std::runtime_error("total_rewards.size=/=nr_parallel_environments");
     }
-    average_reward = total_rewards.mean().item<double>();
-    if (average_reward > max_reward) {
-      max_reward = average_reward;
+    double current_reward = total_rewards.item<double>();
+    summed_rewards += current_reward;
+    if (current_reward > max_reward) {
+      max_reward = current_reward;
       agent.save_model();
     }
     agent.update_parameters(critic_loss, actor_loss);
@@ -141,13 +142,11 @@ std::unordered_map<std::string, std::string> train_a2c(
     updateProgress(
         episode_nr, episodes,
         "Max: " + std::to_string(max_reward)
-        + " | Avg: " + std::to_string(average_reward)
-        + " | Critic: " + std::to_string(critic_loss.item<double>())
-        + " | Actor: " + std::to_string(actor_loss.item<double>()));
+        + " | Avg: " + std::to_string(summed_rewards / episode_nr));
   }
   return {
       {"max_reward", std::to_string(max_reward)},
-      {"average_reward", std::to_string(average_reward)},
+      {"average_reward", std::to_string(summed_rewards / episodes)},
       {"final_entropy", std::to_string(entropies.back())},
       {"final_critic_loss", std::to_string(critic_losses.back())},
       {"final_actor_loss", std::to_string(actor_losses.back())}

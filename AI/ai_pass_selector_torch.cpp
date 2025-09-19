@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <yaml-cpp/yaml.h>
 #include <Torch/agent_utils.hpp>
 #include <Torch/training_and_run_manager.hpp>
 
@@ -34,13 +33,8 @@ int main(int argc, char **argv) {
     print_help();
     return 1;
   }
-  std::string circuit;
-  std::string dataset;
-  std::string agent;
-  std::string output;
   bool info = false;
   std::unordered_map<std::string, std::string> params = load_default_params();
-
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
 
@@ -52,32 +46,28 @@ int main(int argc, char **argv) {
     }
     if (args[i] == "-a" || args[i] == "--agent") {
       if (++i < n) {
-        agent = args[i];
-        params["agent"] = agent;
+        params["agent"] = args[i];
       } else {
         std::cerr << "No agent provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-d" || args[i] == "--dataset") {
       if (++i < n) {
-        dataset = args[i];
-        params["dataset"] = dataset;
+        params["dataset"] = args[i];
       } else {
         std::cerr << "No dataset provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
-        circuit = args[i];
-        params["circuit"] = circuit;
+        params["circuit"] = args[i];
       } else {
         std::cerr << "No circuit provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-o" || args[i] == "--output") {
       if (++i < n) {
-        output = args[i];
-        params["output"] = output;
+        params["output"] = args[i];
       } else {
         std::cerr << "No output provided." << std::endl;
         return 1;
@@ -93,6 +83,10 @@ int main(int argc, char **argv) {
     }
     i++;
   }
+  std::string agent = params["agent"];
+  std::string dataset = params["dataset"];
+  std::string circuit = params["circuit"];
+  std::string output = params["output"];
 
   if (info) {
     if (!circuit.empty()) {
@@ -122,40 +116,14 @@ int main(int argc, char **argv) {
 }
 
 
-std::unordered_map<std::string, std::string> load_params_from_yaml(
-    const std::string &path,
-    std::unordered_map<std::string, std::string> defaults) {
-  try {
-    YAML::Node cfg = YAML::LoadFile(path);
-    if (!cfg || !cfg.IsMap()) {
-      return defaults;
-    }
-
-    for (const auto &it : cfg) {
-      const std::string key = it.first.as<std::string>();
-      if (it.second.IsScalar()) {
-        defaults[key] = it.second.as<std::string>();
-      }
-    }
-  } catch (const YAML::BadFile &) {
-    return defaults;
-  } catch (const std::exception &ex) {
-    std::cerr << "Failed to parse params YAML '" << path
-        << "': " << ex.what() << std::endl;
-    return defaults;
-  }
-
-  return defaults;
-}
-
 std::unordered_map<std::string, std::string> load_default_params() {
   return {
-      {"agent", ""},
-      {"dataset", ""},
+      {"agent", "a2c-tiny-ibfclsd"},
+      {"dataset", "Passtest"},
       {"circuit", ""},
       {"output", ""},
       {"nr_parallel_environments", "1"},
-      {"episodes", "1000"},
+      {"episodes", "10000"},
       {"max_steps_per_episode", "5"},
       {"discount_factor", "1.0"},
       {"gae_hyperparameter", "0.96"},
@@ -165,6 +133,6 @@ std::unordered_map<std::string, std::string> load_default_params() {
       {"actor_optimizer", "adam"},
       {"critic_learning_rate", "0.005"},
       {"actor_learning_rate", "0.001"},
-      {"print_param_info", ""}
+      {"print_param_info", "true"}
   };
 }
