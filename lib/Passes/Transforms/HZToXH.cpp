@@ -30,23 +30,24 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto hOp = dyn_cast_or_null<quake::HOp>(op);
-      if (!hOp
-          || hOp.getTargets().size() != 1
-          || !hOp.getControls().empty()) {
-        return;
-      }
-      auto optional_zOp = getNextOperationOnTarget(hOp, hOp.getTargets()[0]);
-      if (!optional_zOp) {
-        return;
-      }
-      auto zOp = dyn_cast_or_null<quake::ZOp>(optional_zOp);
+      auto zOp = dyn_cast_or_null<quake::ZOp>(op);
       if (!zOp
           || zOp.getTargets().size() != 1
           || !zOp.getControls().empty()) {
         return;
       }
-      IRRewriter rewriter(hOp->getContext());
+      auto optional_hOp
+          = getPreviousOperationOnTarget(zOp, zOp.getTargets()[0]);
+      if (!optional_hOp) {
+        return;
+      }
+      auto hOp = dyn_cast_or_null<quake::HOp>(optional_hOp);
+      if (!hOp
+          || hOp.getTargets().size() != 1
+          || !hOp.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(zOp->getContext());
       rewriter.setInsertionPointAfter(zOp);
       ValueRange targets = hOp.getTargets();
       Location loc = hOp.getLoc();

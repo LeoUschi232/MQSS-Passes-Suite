@@ -32,16 +32,16 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto cxOp1 = dyn_cast_or_null<quake::XOp>(op);
-      if (!cxOp1
-          || cxOp1.getTargets().size() != 1
-          || cxOp1.getControls().size() != 1) {
+      auto cxOp3 = dyn_cast_or_null<quake::XOp>(op);
+      if (!cxOp3
+          || cxOp3.getTargets().size() != 1
+          || cxOp3.getControls().size() != 1) {
         return;
       }
       auto optional_cxOp2_onTarget
-          = getNextOperationOnTarget(cxOp1, cxOp1.getTargets()[0]);
+          = getPreviousOperationOnTarget(cxOp3, cxOp3.getTargets()[0]);
       auto optional_cxOp2_onControl
-          = getNextOperationOnTarget(cxOp1, cxOp1.getControls()[0]);
+          = getPreviousOperationOnTarget(cxOp3, cxOp3.getControls()[0]);
       if (!optional_cxOp2_onTarget
           || !optional_cxOp2_onControl
           || optional_cxOp2_onTarget != optional_cxOp2_onControl) {
@@ -52,28 +52,30 @@ public:
       if (!cxOp2
           || cxOp2.getTargets().size() != 1
           || cxOp2.getControls().size() != 1
+          || cxOp2.getControls()[0] != cxOp3.getTargets()[0]
+          || cxOp2.getTargets()[0] != cxOp3.getControls()[0]) {
+        return;
+      }
+      auto optional_cxOp1_onTarget
+          = getPreviousOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
+      auto optional_cxOp1_onControl
+          = getPreviousOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
+      if (!optional_cxOp1_onTarget
+          || !optional_cxOp1_onControl
+          || optional_cxOp1_onTarget != optional_cxOp1_onControl) {
+        return;
+      }
+      auto cxOp1 = dyn_cast_or_null<quake::XOp>(optional_cxOp1_onTarget);
+      if (!cxOp1
+          || cxOp1.getTargets().size() != 1
+          || cxOp1.getControls().size() != 1
           || cxOp2.getControls()[0] != cxOp1.getTargets()[0]
-          || cxOp2.getTargets()[0] != cxOp1.getControls()[0]) {
-        return;
-      }
-      auto optional_cxOp3_onTarget
-          = getNextOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
-      auto optional_cxOp3_onControl
-          = getNextOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
-      if (!optional_cxOp3_onTarget
-          || !optional_cxOp3_onControl
-          || optional_cxOp3_onTarget != optional_cxOp3_onControl) {
-        return;
-      }
-      auto cxOp3 = dyn_cast_or_null<quake::XOp>(optional_cxOp3_onTarget);
-      if (!cxOp3
-          || cxOp3.getTargets().size() != 1
-          || cxOp3.getControls().size() != 1
+          || cxOp2.getTargets()[0] != cxOp1.getControls()[0]
           || cxOp3.getControls()[0] != cxOp1.getControls()[0]
           || cxOp3.getTargets()[0] != cxOp1.getTargets()[0]) {
         return;
       }
-      IRRewriter rewriter(cxOp1->getContext());
+      IRRewriter rewriter(cxOp3->getContext());
       rewriter.setInsertionPointAfter(cxOp3);
       ValueRange targets{cxOp1.getControls()[0], cxOp1.getTargets()[0]};
       Location loc = cxOp1.getLoc();

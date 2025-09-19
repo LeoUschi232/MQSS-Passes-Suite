@@ -31,25 +31,25 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto zOp = dyn_cast_or_null<quake::ZOp>(op);
-      if (!zOp
-          || zOp.getTargets().size() != 1
-          || !zOp.getControls().empty()) {
-        return;
-      }
-      auto optional_cxOp
-          = getNextOperationOnTarget(zOp, zOp.getTargets()[0]);
-      if (!optional_cxOp) {
-        return;
-      }
-      auto cxOp = dyn_cast_or_null<quake::XOp>(optional_cxOp);
+      auto cxOp = dyn_cast_or_null<quake::XOp>(op);
       if (!cxOp
           || cxOp.getTargets().size() != 1
-          || cxOp.getControls().size() != 1
+          || cxOp.getControls().size() != 1) {
+        return;
+      }
+      auto optional_zOp
+          = getPreviousOperationOnTarget(cxOp, cxOp.getControls()[0]);
+      if (!optional_zOp) {
+        return;
+      }
+      auto zOp = dyn_cast_or_null<quake::ZOp>(optional_zOp);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()
           || cxOp.getControls()[0] != zOp.getTargets()[0]) {
         return;
       }
-      IRRewriter rewriter(zOp->getContext());
+      IRRewriter rewriter(cxOp->getContext());
       rewriter.setInsertionPointAfter(cxOp);
       ValueRange targets = cxOp.getTargets();
       ValueRange controls = cxOp.getControls();

@@ -31,18 +31,7 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto cxOp = dyn_cast_or_null<quake::XOp>(op);
-      if (!cxOp
-          || cxOp.getTargets().size() != 1
-          || cxOp.getControls().size() != 1) {
-        return;
-      }
-      auto optional_rxOp
-          = getNextOperationOnTarget(cxOp, cxOp.getTargets()[0]);
-      if (!optional_rxOp) {
-        return;
-      }
-      auto rxOp = dyn_cast_or_null<quake::RxOp>(optional_rxOp);
+      auto rxOp = dyn_cast_or_null<quake::RxOp>(op);
       if (!rxOp
           || rxOp.isAdj()
           || rxOp.getTargets().size() != 1
@@ -50,7 +39,18 @@ public:
           || rxOp.getParameters().size() != 1) {
         return;
       }
-      IRRewriter rewriter(cxOp->getContext());
+      auto optional_cxOp
+          = getPreviousOperationOnTarget(rxOp, rxOp.getTargets()[0]);
+      if (!optional_cxOp) {
+        return;
+      }
+      auto cxOp = dyn_cast_or_null<quake::XOp>(optional_cxOp);
+      if (!cxOp
+          || cxOp.getTargets().size() != 1
+          || cxOp.getControls().size() != 1) {
+        return;
+      }
+      IRRewriter rewriter(rxOp->getContext());
       rewriter.setInsertionPointAfter(rxOp);
       ValueRange targets = cxOp.getTargets();
       ValueRange controls = cxOp.getControls();

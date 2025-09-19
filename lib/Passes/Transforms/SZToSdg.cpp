@@ -31,25 +31,25 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto sOp = dyn_cast_or_null<quake::SOp>(op);
+      auto zOp = dyn_cast_or_null<quake::ZOp>(op);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()) {
+        return;
+      }
+      auto optional_sOp
+          = getPreviousOperationOnTarget(zOp, zOp.getTargets()[0]);
+      if (!optional_sOp) {
+        return;
+      }
+      auto sOp = dyn_cast_or_null<quake::SOp>(optional_sOp);
       if (!sOp
           || sOp.isAdj()
           || sOp.getTargets().size() != 1
           || !sOp.getControls().empty()) {
         return;
       }
-      auto optional_zOp
-          = getNextOperationOnTarget(sOp, sOp.getTargets()[0]);
-      if (!optional_zOp) {
-        return;
-      }
-      auto zOp = dyn_cast_or_null<quake::ZOp>(optional_zOp);
-      if (!zOp
-          || zOp.getTargets().size() != 1
-          || !zOp.getControls().empty()) {
-        return;
-      }
-      IRRewriter rewriter(sOp->getContext());
+      IRRewriter rewriter(zOp->getContext());
       rewriter.setInsertionPointAfter(zOp);
       Location loc = sOp.getLoc();
       ValueRange targets = sOp.getTargets();

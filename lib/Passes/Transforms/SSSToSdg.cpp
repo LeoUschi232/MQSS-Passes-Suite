@@ -31,15 +31,15 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto sOp1 = dyn_cast_or_null<quake::SOp>(op);
-      if (!sOp1
-          || sOp1.isAdj()
-          || sOp1.getTargets().size() != 1
-          || !sOp1.getControls().empty()) {
+      auto sOp3 = dyn_cast_or_null<quake::SOp>(op);
+      if (!sOp3
+          || sOp3.isAdj()
+          || sOp3.getTargets().size() != 1
+          || !sOp3.getControls().empty()) {
         return;
       }
       auto optional_sOp2
-          = getNextOperationOnTarget(sOp1, sOp1.getTargets()[0]);
+          = getPreviousOperationOnTarget(sOp3, sOp3.getTargets()[0]);
       if (!optional_sOp2) {
         return;
       }
@@ -50,19 +50,19 @@ public:
           || !sOp2.getControls().empty()) {
         return;
       }
-      auto optional_sOp3
-          = getNextOperationOnTarget(sOp2, sOp2.getTargets()[0]);
-      if (!optional_sOp3) {
+      auto optional_sOp1
+          = getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      if (!optional_sOp1) {
         return;
       }
-      auto sOp3 = dyn_cast_or_null<quake::SOp>(optional_sOp3);
-      if (!sOp3
-          || sOp3.isAdj()
-          || sOp3.getTargets().size() != 1
-          || !sOp3.getControls().empty()) {
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(optional_sOp1);
+      if (!sOp1
+          || sOp1.isAdj()
+          || sOp1.getTargets().size() != 1
+          || !sOp1.getControls().empty()) {
         return;
       }
-      IRRewriter rewriter(sOp1->getContext());
+      IRRewriter rewriter(sOp3->getContext());
       rewriter.setInsertionPointAfter(sOp1);
       Location loc = sOp1.getLoc();
       ValueRange targets = sOp1.getTargets();

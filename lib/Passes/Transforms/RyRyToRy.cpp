@@ -28,23 +28,23 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto ryOp1 = dyn_cast_or_null<quake::RyOp>(op);
-      if (!ryOp1
-          || ryOp1.getTargets().size() != 1
-          || !ryOp1.getControls().empty()
-          || ryOp1.getParameters().size() != 1) {
-        return;
-      }
-      auto optional_ryOp2
-          = getNextOperationOnTarget(ryOp1, ryOp1.getTargets()[0]);
-      if (!optional_ryOp2) {
-        return;
-      }
-      auto ryOp2 = dyn_cast_or_null<quake::RyOp>(optional_ryOp2);
+      auto ryOp2 = dyn_cast_or_null<quake::RyOp>(op);
       if (!ryOp2
           || ryOp2.getTargets().size() != 1
           || !ryOp2.getControls().empty()
           || ryOp2.getParameters().size() != 1) {
+        return;
+      }
+      auto optional_ryOp1
+          = getPreviousOperationOnTarget(ryOp2, ryOp2.getTargets()[0]);
+      if (!optional_ryOp1) {
+        return;
+      }
+      auto ryOp1 = dyn_cast_or_null<quake::RyOp>(optional_ryOp1);
+      if (!ryOp1
+          || ryOp1.getTargets().size() != 1
+          || !ryOp1.getControls().empty()
+          || ryOp1.getParameters().size() != 1) {
         return;
       }
       auto ry1Params = getOperationParameters(ryOp1);
@@ -53,7 +53,7 @@ public:
         return;
       }
       double angle = ry1Params[0] + ry2Params[0];
-      IRRewriter rewriter(ryOp1->getContext());
+      IRRewriter rewriter(ryOp2->getContext());
       rewriter.setInsertionPointAfter(ryOp2);
       Location loc = ryOp1.getLoc();
       ValueRange targets = ryOp1.getTargets();
