@@ -26,7 +26,7 @@ control and target qubits.
 
 #include "Interfaces/Constants.hpp"
 #include "Interfaces/QASMToQuake.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"

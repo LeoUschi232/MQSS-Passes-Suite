@@ -1,7 +1,7 @@
 // Utils/tensor_utils.cpp
 #include "Utils/tensor_utils.hpp"
 
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"

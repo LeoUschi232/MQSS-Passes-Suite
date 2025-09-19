@@ -58,7 +58,7 @@ tensor<8xcomplex<f64>>) -> tensor<8xcomplex<f64>> return %2
 ******************************************************************************/
 
 #include "Interfaces/QuakeToLinAlg.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/Complex/IR/Complex.h"

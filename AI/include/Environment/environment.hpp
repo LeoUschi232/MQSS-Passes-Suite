@@ -5,7 +5,7 @@
 /// The includes of llvm Casting must be left here before the include of cudaq
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
-#include <mlir_utils.hpp>
+#include "Support/mlir_utils.hpp"
 
 #include "llvm/Support/Casting.h"
 using llvm::isa;
@@ -18,9 +18,6 @@ using llvm::dyn_cast;
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
-
-// Support includes
-#include "Support/CodeGen/Quake.hpp"
 
 // Standard library includes
 #include <string>

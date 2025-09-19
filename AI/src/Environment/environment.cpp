@@ -10,10 +10,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 // Support includes
-#include "Support/CodeGen/Quake.hpp"
-
-// Standard library includes
-#include "mlir_utils.hpp"
+#include "Support/mlir_utils.hpp"
 
 #include <string>
 #include <unordered_map>
