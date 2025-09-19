@@ -30,7 +30,7 @@ public:
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto swapOp = dyn_cast_or_null<quake::SwapOp>(op);
+      auto swapOp = dyn_cast_or_null<quake::SwapOp>(*op);
       if (!swapOp
           || swapOp.getTargets().size() != 2
           || !swapOp.getControls().empty()) {

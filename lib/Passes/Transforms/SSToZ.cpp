@@ -31,7 +31,7 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto sOp1 = dyn_cast_or_null<quake::SOp>(op);
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(*op);
       if (!sOp1
           || sOp1.isAdj()
           || sOp1.getTargets().size() != 1
