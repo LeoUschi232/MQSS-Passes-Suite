@@ -1,6 +1,5 @@
 #include "Torch/A2C/a2c_trainer.hpp"
 
-#include <Quake.hpp>
 #include <filesystem>
 #include <mlir_utils.hpp>
 #include <Torch/agent_utils.hpp>

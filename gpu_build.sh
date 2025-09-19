@@ -96,64 +96,42 @@ cd "${CUDAQ_DIR}"
 mkdir -p build && cd build
 
 echo "[CUDAQ] Configuring with Ninja"
-# --- add right above the "cmake -G Ninja" call for CUDA-Q ---
+
+export LLVM_EXTERNAL_LIT=""   # neuter lit discovery
+
 FILECHECK="$HOME/.local/llvm16/bin/FileCheck"
+LITBIN="$HOME/.local/llvm16/bin/llvm-lit"   # optional, if present
 
 CMAKE_ARGS=(
+  -G Ninja
   -DMLIR_DIR="${MLIR_DIR}"
   -DClang_DIR="${CLANG_DIR}"
   -DLLVM_DIR="${LLVM_DIR}"
 
-  # Disable all test plumbing so CMake doesn’t add check-* targets:
+  # absolutely disable all testing & lit plumbing
+  -DBUILD_TESTING=OFF
+  -DLLVM_BUILD_TESTING=OFF
   -DLLVM_INCLUDE_TESTS=OFF
   -DMLIR_INCLUDE_TESTS=OFF
   -DClang_INCLUDE_TESTS=OFF
   -DCMAKE_DISABLE_FIND_PACKAGE_Lit=ON
-  -DCUDA_QUANTUM_ENABLE_TESTS=OFF        # primary switch used by many CUDA-Q revs
-  -DCUDAQ_ENABLE_TESTS=OFF               # fallback for older revs (harmless if unknown)
+
+  # ensure AddLLVM.cmake sees the executable instead of a CMake target
+  -DLLVM_FILECHECK_EXE="${FILECHECK}"
 )
 
-# If you want to be extra-safe you can also point to FileCheck’s exe (optional):
-if [ -x "$FILECHECK" ]; then
-  CMAKE_ARGS+=(-DLLVM_FILECHECK_EXE="$FILECHECK")
-fi
-
-# If you installed OpenBLAS in ~/.local (you did), keep the hints:
+# BLAS hints (keep)
 CMAKE_ARGS+=(
   -DBLA_VENDOR=OpenBLAS
   -DBLAS_LIBRARIES="$HOME/.local/lib/libopenblas.so"
   -DBLAS_INCLUDE_DIR="$HOME/.local/include"
 )
 
-# --- right before calling cmake for CUDA-Q ---
-export LLVM_EXTERNAL_LIT=""
+# Optional: if llvm-lit exists, pass it too (harmless if not used)
+[ -x "$LITBIN" ] && CMAKE_ARGS+=(-DLLVM_LIT="${LITBIN}")
 
-CMAKE_ARGS=(
-  -DMLIR_DIR="${MLIR_DIR}"
-  -DClang_DIR="${CLANG_DIR}"
-  -DLLVM_DIR="${LLVM_DIR}"
+cmake "${CMAKE_ARGS[@]}" ..
 
-  # 🔒 absolutely disable all tests
-  -DBUILD_TESTING=OFF
-  -DLLVM_BUILD_TESTING=OFF
-  -DLLVM_INCLUDE_TESTS=OFF
-)
-
-# Optional BLAS hints (you already have these):
-CMAKE_ARGS+=(
-  -DBLA_VENDOR=OpenBLAS
-  -DBLAS_LIBRARIES="$HOME/.local/lib/libopenblas.so"
-  -DBLAS_INCLUDE_DIR="$HOME/.local/include"
-)
-
-# clean build dir once (outside this snippet):
-# rm -rf "$CUDAQ_DIR/build"; mkdir -p "$CUDAQ_DIR/build"; cd "$CUDAQ_DIR/build"
-
-cmake -G Ninja "${CMAKE_ARGS[@]}" ..
-
-
-# Now call cmake with the array:
-cmake -G Ninja "${CMAKE_ARGS[@]}" ..
 
 
 echo "[CUDAQ] Building cudaq-mlir-runtime with ${NUM_JOBS} jobs"
