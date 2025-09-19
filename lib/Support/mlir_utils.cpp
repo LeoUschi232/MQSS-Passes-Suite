@@ -8,8 +8,8 @@
 // Runtime includes
 #include "common/RuntimeMLIR.h"
 
-// Support includes
-#include "Quake.hpp"
+// Cudaq includes
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
 // Stdandard library includes
 #include <fstream>
@@ -18,6 +18,11 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+
+
+using mlir::FloatAttr;
+using mlir::IntegerAttr;
+using mlir::arith::ConstantOp;
 
 namespace mqss::support::quakeDialect {
 std::string getOperationName(Operation *op) {

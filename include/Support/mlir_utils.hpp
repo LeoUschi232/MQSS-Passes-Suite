@@ -262,6 +262,6 @@ namespace mqss::support::quakeDialect {
       qubit.
     */
     Operation *getNextOperationOnTarget(
-        Operation *currentOp, Value targetQubit);git
+        Operation *currentOp, Value targetQubit);
 } // namespace mqss::support::quakeDialect
 #endif // MLIR_UTILS_HPP
