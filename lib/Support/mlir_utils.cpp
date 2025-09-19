@@ -21,6 +21,9 @@
 
 namespace mqss::support::quakeDialect {
 std::string getOperationName(Operation *op) {
+  if (!op) {
+    return "nullptr";
+  }
   return op->getName().getIdentifier().getValue().str();
 }
 

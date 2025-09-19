@@ -38,6 +38,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/Support/Casting.h"
 
 #include <iostream>
+#include <mlir_utils.hpp>
 using llvm::isa;
 using llvm::cast;
 using llvm::dyn_cast;
@@ -410,8 +411,7 @@ Operation *getPreviousOperationOnTarget(
   return nullptr; // No matching previous operation found
 }
 
-// Get the next operation on a given TargeQubit, starting from
-// currentOp
+
 Operation *getNextOperationOnTarget(
     Operation *currentOp, Value targetQubit) {
   auto targetQCurrOpt =
@@ -420,11 +420,9 @@ Operation *getNextOperationOnTarget(
     return nullptr;
   }
   int targetQCurr = targetQCurrOpt.value();
-  // Start from the next operation
   Operation *nextOp = currentOp->getNextNode();
-  // Iterate through the previous operations in the block
+
   while (nextOp) {
-    // Check if the operation has a target qubit and matches the given target
     if (auto quakeOp = dyn_cast<quake::OperatorInterface>(nextOp)) {
       for (Value target : quakeOp.getTargets()) {
         auto targetQNextOpt =
@@ -432,8 +430,8 @@ Operation *getNextOperationOnTarget(
         if (!targetQNextOpt.has_value()) {
           continue;
         }
-        int targetQNext = targetQNextOpt.value();
-        if (targetQCurr == targetQNext) {
+        if (int targetQNext = targetQNextOpt.value();
+          targetQCurr == targetQNext) {
           return nextOp;
         }
       }
@@ -443,15 +441,16 @@ Operation *getNextOperationOnTarget(
         if (!controlQNextOpt.has_value()) {
           continue;
         }
-        int controlQNext = controlQNextOpt.value();
-        if (targetQCurr == controlQNext) {
+        if (int controlQNext = controlQNextOpt.value();
+          targetQCurr == controlQNext) {
           return nextOp;
         }
       }
     }
-    // Move to the next operation
+
     nextOp = nextOp->getNextNode();
   }
-  return nullptr; // No matching next operation found
+  return nullptr;
+
 }
 } // namespace mqss::support::quakeDialect
