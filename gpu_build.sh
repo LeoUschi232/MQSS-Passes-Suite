@@ -97,6 +97,13 @@ mkdir -p build && cd build
 
 echo "[CUDAQ] Configuring with Ninja"
 
+# Make user zlib discoverable
+export CMAKE_PREFIX_PATH="$HOME/.local:${CMAKE_PREFIX_PATH:-}"
+export PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+export LD_LIBRARY_PATH="$HOME/.local/lib:${LD_LIBRARY_PATH:-}"
+export ZLIB_ROOT="$HOME/.local"
+export ZLIB_LIBRARY="$HOME/.local/lib/libz.so"         # or libz.a
+export ZLIB_INCLUDE_DIR="$HOME/.local/include"
 export LLVM_EXTERNAL_LIT=""   # neuter lit discovery
 
 FILECHECK="$HOME/.local/llvm16/bin/FileCheck"
