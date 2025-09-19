@@ -1,13 +1,8 @@
 // Utils/tensor_utils.cpp
 #include "Utils/tensor_utils.hpp"
 
+// Support includes
 #include "Support/mlir_utils.hpp"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "common/RuntimeMLIR.h"
-
-#include <iostream>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
@@ -21,7 +16,17 @@ using mlir::OpBuilder;
 using mlir::Operation;
 using mlir::Value;
 using mlir::ValueRange;
+using llvm::dyn_cast;
+using llvm::cast;
+using llvm::isa;
 ////////////////////////////////////////////////////////////////////////////////
+
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "common/RuntimeMLIR.h"
+
+#include <iostream>
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {

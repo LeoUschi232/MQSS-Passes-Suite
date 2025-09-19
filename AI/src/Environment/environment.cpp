@@ -5,13 +5,15 @@
 #include "Utils/passes_utils.hpp"
 
 // MLIR includes
-#include <mlir/Transforms/Passes.h>
+#include "mlir/Transforms/Passes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 // Support includes
 #include "Support/mlir_utils.hpp"
+#include "cudaq/Optimizer/Dialect/Quake/QuakeInterfaces.h"
 
+// Standard library includes
 #include <string>
 #include <unordered_map>
 #include <iostream>

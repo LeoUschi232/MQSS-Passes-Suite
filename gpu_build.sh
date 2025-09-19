@@ -125,6 +125,33 @@ CMAKE_ARGS+=(
   -DBLAS_INCLUDE_DIR="$HOME/.local/include"
 )
 
+# --- right before calling cmake for CUDA-Q ---
+export LLVM_EXTERNAL_LIT=""
+
+CMAKE_ARGS=(
+  -DMLIR_DIR="${MLIR_DIR}"
+  -DClang_DIR="${CLANG_DIR}"
+  -DLLVM_DIR="${LLVM_DIR}"
+
+  # 🔒 absolutely disable all tests
+  -DBUILD_TESTING=OFF
+  -DLLVM_BUILD_TESTING=OFF
+  -DLLVM_INCLUDE_TESTS=OFF
+)
+
+# Optional BLAS hints (you already have these):
+CMAKE_ARGS+=(
+  -DBLA_VENDOR=OpenBLAS
+  -DBLAS_LIBRARIES="$HOME/.local/lib/libopenblas.so"
+  -DBLAS_INCLUDE_DIR="$HOME/.local/include"
+)
+
+# clean build dir once (outside this snippet):
+# rm -rf "$CUDAQ_DIR/build"; mkdir -p "$CUDAQ_DIR/build"; cd "$CUDAQ_DIR/build"
+
+cmake -G Ninja "${CMAKE_ARGS[@]}" ..
+
+
 # Now call cmake with the array:
 cmake -G Ninja "${CMAKE_ARGS[@]}" ..
 
