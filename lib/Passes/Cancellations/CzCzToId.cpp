@@ -31,31 +31,33 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto czOp1 = dyn_cast_or_null<quake::ZOp>(*op);
-      if (!czOp1
-          || czOp1.getTargets().size() != 1
-          || czOp1.getControls().size() != 1) {
-        return;
-      }
-      auto optional_czOp2_onTarget
-          = getNextOperationOnTarget(czOp1, czOp1.getTargets()[0]);
-      auto optional_czOp2_onControl
-          = getNextOperationOnTarget(czOp1, czOp1.getControls()[0]);
-      if (!optional_czOp2_onTarget
-          || !optional_czOp2_onControl
-          || optional_czOp2_onTarget != optional_czOp2_onControl) {
-        return;
-      }
-      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*optional_czOp2_onTarget);
+      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*op);
       if (!czOp2
           || czOp2.getTargets().size() != 1
-          || czOp2.getControls().size() != 1
-          || czOp2.getControls()[0] != czOp1.getControls()[0]) {
+          || czOp2.getControls().size() != 1) {
         return;
       }
-      IRRewriter rewriter(czOp1->getContext());
-      rewriter.eraseOp(czOp1);
+      auto optional_czOp1_onTarget
+          = getPreviousOperationOnTarget(czOp2, czOp2.getTargets()[0]);
+      auto optional_czOp1_onControl
+          = getPreviousOperationOnTarget(czOp2, czOp2.getControls()[0]);
+      if (!optional_czOp1_onTarget
+          || !optional_czOp1_onControl
+          || optional_czOp1_onTarget != optional_czOp1_onControl) {
+        return;
+      }
+      auto czOp1
+          = dyn_cast_or_null<quake::ZOp>(*optional_czOp1_onTarget);
+      if (!czOp1
+          || czOp1.getTargets().size() != 1
+          || czOp1.getControls().size() != 1
+          || czOp1.getControls()[0] != czOp2.getControls()[0]) {
+        return;
+      }
+
+      IRRewriter rewriter(czOp2->getContext());
       rewriter.eraseOp(czOp2);
+      rewriter.eraseOp(czOp1);
     });
   }
 };

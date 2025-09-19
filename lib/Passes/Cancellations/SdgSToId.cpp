@@ -31,28 +31,28 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto sOp1 = dyn_cast_or_null<quake::SOp>(*op);
-      if (!sOp1
-          || !sOp1.isAdj()
-          || sOp1.getTargets().size() != 1
-          || !sOp1.getControls().empty()) {
-        return;
-      }
-      auto optional_sOp2 =
-          getNextOperationOnTarget(sOp1, sOp1.getTargets()[0]);
-      if (!optional_sOp2) {
-        return;
-      }
-      auto sOp2 = dyn_cast_or_null<quake::SOp>(*optional_sOp2);
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
       if (!sOp2
           || sOp2.isAdj()
           || sOp2.getTargets().size() != 1
           || !sOp2.getControls().empty()) {
         return;
       }
-      IRRewriter rewriter(sOp1->getContext());
-      rewriter.eraseOp(sOp1);
+      auto optional_sOp1 =
+          getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      if (!optional_sOp1) {
+        return;
+      }
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(*optional_sOp1);
+      if (!sOp1
+          || !sOp1.isAdj()
+          || sOp1.getTargets().size() != 1
+          || !sOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(sOp2->getContext());
       rewriter.eraseOp(sOp2);
+      rewriter.eraseOp(sOp1);
     });
   }
 };
