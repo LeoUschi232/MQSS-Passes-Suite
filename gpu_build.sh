@@ -104,6 +104,12 @@ CMAKE_ARGS=(
   ..
 )
 
+CMAKE_ARGS+=(
+  -DBLA_VENDOR=OpenBLAS
+  -DBLAS_LIBRARIES="$HOME/.local/lib/libopenblas.so"
+  -DBLAS_INCLUDE_DIR="$HOME/.local/include"
+)
+
 # If OpenBLAS is present in ~/.local, hint CMake to avoid BLAS errors
 if [ -f "${OPENBLAS_LIB}" ]; then
   echo "[CUDAQ] Detected OpenBLAS at ${OPENBLAS_LIB}; passing BLAS hints."
