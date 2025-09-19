@@ -116,29 +116,30 @@ CMAKE_ARGS=(
   -DClang_DIR="${CLANG_DIR}"
   -DLLVM_DIR="${LLVM_DIR}"
 
-  # nuke all tests/lit so no FileCheck/llvm-lit targets are created
   -DBUILD_TESTING=OFF
   -DLLVM_BUILD_TESTING=OFF
   -DLLVM_INCLUDE_TESTS=OFF
   -DMLIR_INCLUDE_TESTS=OFF
   -DClang_INCLUDE_TESTS=OFF
   -DCMAKE_DISABLE_FIND_PACKAGE_Lit=ON
-
-  # pass FileCheck exe explicitly (prevents AddLLVM from expecting a CMake target)
   -DLLVM_FILECHECK_EXE="${FILECHECK}"
 
-  # BLAS hints
   -DBLA_VENDOR=OpenBLAS
   -DBLAS_LIBRARIES="${OPENBLAS_LIB}"
   -DBLAS_INCLUDE_DIR="${OPENBLAS_INC}"
 
-  # relax warnings -> no -Werror breakage on Marshal.cpp
+  # 🔻 turn off remote/HTTP so RestClient never gets used
+  -DCUDA_QUANTUM_ENABLE_REMOTE=OFF
+  -DCUDAQ_ENABLE_REMOTE=OFF
+  -DCUDA_QUANTUM_ENABLE_HTTP_CLIENT=OFF
+
+  # relax warnings that previously tripped -Werror
   -DCMAKE_CXX_FLAGS="-Wno-error=unused-but-set-variable -Wno-unused-but-set-variable"
   -DCMAKE_C_FLAGS="-Wno-error=unused-but-set-variable -Wno-unused-but-set-variable"
 
-  # honor your chosen build type here too (affects optimization)
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
 )
+
 
 # optional: pass llvm-lit path (harmless if ignored by this CUDA-Q rev)
 [ -x "$LITBIN" ] && CMAKE_ARGS+=(-DLLVM_LIT="${LITBIN}")
