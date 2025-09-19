@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -------- Config (edit if you want different prefixes) --------
+# -------- Config --------
 export PATH="$HOME/.local/bin:$HOME/.local/llvm16/bin:$PATH"
 export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/llvm16/lib:${LD_LIBRARY_PATH:-}"
 export CMAKE_PREFIX_PATH="$HOME/.local:${CMAKE_PREFIX_PATH:-}"
