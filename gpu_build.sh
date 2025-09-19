@@ -1,123 +1,143 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-# -------- Config --------
-export PATH="$HOME/.local/bin:$HOME/.local/llvm16/bin:$PATH"
-export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/llvm16/lib:${LD_LIBRARY_PATH:-}"
-export CMAKE_PREFIX_PATH="$HOME/.local:${CMAKE_PREFIX_PATH:-}"
-export PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+git config --global --add safe.directory '*'
+clear
 
-# LLVM/MLIR package dirs
-export LLVM_DIR="${LLVM_DIR:-$HOME/.local/llvm16/lib/cmake/llvm}"
-export MLIR_DIR="${MLIR_DIR:-$HOME/.local/llvm16/lib/cmake/mlir}"
-export CLANG_DIR="${CLANG_DIR:-$HOME/.local/llvm16/lib/cmake/clang}"
+# ----------------------- Defaults -----------------------
+CURRENT_DIR=$(pwd)
+INSTALL_PATH="${INSTALL_PATH:-$HOME/.passes}"
 
-# Compilers (use clang toolchain)
-export CC="${CC:-clang}"
-export CXX="${CXX:-clang++}"
+NUM_JOBS=1
+BUILD_DOCS=OFF
+BUILD_TESTS=ON
+BUILD_TOOLS=ON
+BUILD_AI=ON
+BUILD_TYPE="Release"
 
-# CMake generator
-: "${CMAKE_GENERATOR:=Ninja}"
+# Point to your *user* LLVM16 by default (overridable).
+LLVM_PREFIX_DEFAULT="$HOME/.local/llvm16"
+LLVM_DIR="${LLVM_DIR:-${LLVM_PREFIX_DEFAULT}/lib/cmake/llvm}"
+MLIR_DIR="${MLIR_DIR:-${LLVM_PREFIX_DEFAULT}/lib/cmake/mlir}"
+CLANG_DIR="${CLANG_DIR:-${LLVM_PREFIX_DEFAULT}/lib/cmake/clang}"
+INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
 
-# Jobs / build type
-JOBS=8
-BUILD_TYPE=Release
+# Optional: auto-detect user OpenBLAS (if you built it in ~/.local)
+OPENBLAS_LIB="$HOME/.local/lib/libopenblas.so"
+OPENBLAS_INC="$HOME/.local/include"
+
+# ------------------- CLI Args (same as yours) -------------------
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -j|--jobs) JOBS="$2"; shift 2;;
-    --debug)   BUILD_TYPE=Debug; shift;;
-    *) echo "Unknown arg: $1"; exit 1;;
+  case $1 in
+    -j|--jobs) NUM_JOBS="$2"; shift 2 ;;
+    --debug)   BUILD_TYPE="Debug"; shift ;;
+    --mlir-dir) MLIR_DIR="$2"; shift 2 ;;
+    --install-dir) INSTALL_DIR="$2"; shift 2 ;;
+    --clang-dir) CLANG_DIR="$2"; shift 2 ;;
+    --llvm-dir) LLVM_DIR="$2"; shift 2 ;;
+    --build-tools) BUILD_TOOLS=ON; shift ;;
+    --build-docs)  BUILD_DOCS=ON;  shift ;;
+    --build-tests) BUILD_TESTS=ON; shift ;;
+    --build-ai)    BUILD_AI=ON;    shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
 
-# -------- Paths --------
-REPO_ROOT="$(pwd)"
-BUILD_DIR="$REPO_ROOT/build"
-DEPS_DIR="$BUILD_DIR/_deps"
-CUDAQ_DIR="$DEPS_DIR/cuda-quantum"
+# Ensure user cmake/ninja are on PATH if installed via pip
+export PATH="$HOME/.local/bin:$PATH"
 
-# -------- Optional AI externals (libtorch/tensorflow) --------
-AI_DIR="$REPO_ROOT/AI"
-AI_EXT="$AI_DIR/external"
-LIBTORCH_DIR="$AI_EXT/libtorch"
-TENSORFLOW_DIR="$AI_EXT/tensorflow"
+# ------------------- AI externals (unchanged) -------------------
+AI_DIR="${CURRENT_DIR}/AI"
+AI_EXTERNAL_DIR="${AI_DIR}/external"
+LIBTORCH_DIR="${AI_EXTERNAL_DIR}/libtorch"
+TENSORFLOW_DIR="${AI_EXTERNAL_DIR}/tensorflow"
+mkdir -p "${AI_EXTERNAL_DIR}"
 
-mkdir -p "$AI_EXT"
-if [[ ! -d "$LIBTORCH_DIR" ]]; then
-  echo "[AI] Installing LibTorch (CPU, nightly) into $AI_EXT ..."
-  pushd "$AI_EXT" >/dev/null
+if [ ! -d "${LIBTORCH_DIR}" ]; then
+  cd "${AI_EXTERNAL_DIR}"
+  echo "[AI] Downloading libtorch..."
   wget -q https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
   unzip -q libtorch-shared-with-deps-latest.zip
   rm -f libtorch-shared-with-deps-latest.zip
-  popd >/dev/null
 else
-  echo "[AI] Libtorch already present at $LIBTORCH_DIR"
+  echo "[AI] Libtorch already present at ${LIBTORCH_DIR}"
 fi
 
-if [[ ! -d "$TENSORFLOW_DIR" ]]; then
-  echo "[AI] Installing TensorFlow C++ shim into $TENSORFLOW_DIR ..."
-  pushd "$AI_EXT" >/dev/null
+if [ ! -d "${TENSORFLOW_DIR}" ]; then
+  cd "${AI_EXTERNAL_DIR}"
+  echo "[AI] Building tensorflow-cpp (user space)..."
   git clone https://github.com/leggedrobotics/tensorflow-cpp.git
-  pushd tensorflow-cpp/eigen >/dev/null
+  cd tensorflow-cpp/eigen
   ./install.sh --run-cmake
-  popd >/dev/null
-  pushd tensorflow-cpp/tensorflow >/dev/null
+  cd ../tensorflow
   mkdir -p build && cd build
-  cmake -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX="$TENSORFLOW_DIR" -DCMAKE_BUILD_TYPE=Release ..
-  cmake --build . -j"$JOBS" --target install
-  popd >/dev/null
+  cmake -DCMAKE_INSTALL_PREFIX="${TENSORFLOW_DIR}" -DCMAKE_BUILD_TYPE=Release ..
+  make install -j"$(nproc)"
+  cd "${AI_EXTERNAL_DIR}"
   rm -rf tensorflow-cpp
-  popd >/dev/null
 else
-  echo "[AI] Tensorflow already present at $TENSORFLOW_DIR"
+  echo "[AI] Tensorflow already present at ${TENSORFLOW_DIR}"
 fi
 
-# -------- CUDA Quantum (CPU path; we just need MLIR bits) --------
-mkdir -p "$DEPS_DIR"
-if [[ ! -d "$CUDAQ_DIR" ]]; then
-  echo "[CUDAQ] Cloning CUDA Quantum to $CUDAQ_DIR"
-  git clone https://github.com/NVIDIA/cuda-quantum.git "$CUDAQ_DIR"
-else
-  echo "[CUDAQ] CUDA Quantum already present at $CUDAQ_DIR"
+cd "${CURRENT_DIR}"
+
+# ------------------- CUDA-Q fetch & configure -------------------
+BUILD_DIR="${CURRENT_DIR}/build"
+DEPS_DIR="${BUILD_DIR}/_deps"
+CUDAQ_DIR="${DEPS_DIR}/cuda-quantum"
+CUDAQ_REPO="https://github.com/NVIDIA/cuda-quantum.git"
+
+mkdir -p "${BUILD_DIR}" "${DEPS_DIR}"
+
+echo "[CUDAQ] CUDA Quantum already present at ${CUDAQ_DIR}" \
+  && [ -d "${CUDAQ_DIR}" ] || { echo "[CUDAQ] Cloning..."; git clone "${CUDAQ_REPO}" "${CUDAQ_DIR}"; }
+
+cd "${CUDAQ_DIR}"
+mkdir -p build && cd build
+
+echo "[CUDAQ] Configuring with Ninja"
+CMAKE_ARGS=(
+  -G Ninja
+  -DMLIR_DIR="${MLIR_DIR}"
+  -DClang_DIR="${CLANG_DIR}"
+  -DLLVM_DIR="${LLVM_DIR}"
+  ..
+)
+
+# If OpenBLAS is present in ~/.local, hint CMake to avoid BLAS errors
+if [ -f "${OPENBLAS_LIB}" ]; then
+  echo "[CUDAQ] Detected OpenBLAS at ${OPENBLAS_LIB}; passing BLAS hints."
+  CMAKE_ARGS+=(
+    -DBLA_VENDOR=OpenBLAS
+    -DBLAS_LIBRARIES="${OPENBLAS_LIB}"
+    -DBLAS_INCLUDE_DIR="${OPENBLAS_INC}"
+  )
 fi
 
-mkdir -p "$CUDAQ_DIR/build"
-pushd "$CUDAQ_DIR/build" >/dev/null
-echo "[CUDAQ] Configuring with $CMAKE_GENERATOR"
-cmake -G "$CMAKE_GENERATOR" \
-  -DMLIR_DIR="$MLIR_DIR" \
-  -DClang_DIR="$CLANG_DIR" \
-  -DLLVM_DIR="$LLVM_DIR" \
-  ..
-echo "[CUDAQ] Building cudaq-mlir-runtime (-j$JOBS)"
-cmake --build . -j"$JOBS" --target cudaq-mlir-runtime
-popd >/dev/null
+cmake "${CMAKE_ARGS[@]}"
 
-# -------- Your project --------
-mkdir -p "$BUILD_DIR"
-pushd "$BUILD_DIR" >/dev/null
-echo "[MQSS] Configuring ($BUILD_TYPE)"
-cmake -G "$CMAKE_GENERATOR" \
-  -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-  -DCMAKE_INSTALL_PREFIX="${INSTALL_PATH:-$HOME/.passes}" \
-  -DCMAKE_C_COMPILER="$CC" \
-  -DCMAKE_CXX_COMPILER="$CXX" \
-  -DMLIR_DIR="$MLIR_DIR" \
-  -DLLVM_DIR="$LLVM_DIR" \
-  -DClang_DIR="$CLANG_DIR" \
-  -DBUILD_MLIR_PASSES_TOOLS=ON \
-  -DBUILD_MLIR_PASSES_DOCS=OFF \
-  -DBUILD_MLIR_PASSES_TESTS=ON \
-  -DBUILD_MLIR_PASSES_AI=ON \
-  -DCUDAQ_SOURCE_DIR="$CUDAQ_DIR" \
-  ..
+echo "[CUDAQ] Building cudaq-mlir-runtime with ${NUM_JOBS} jobs"
+ninja -j"${NUM_JOBS}" cudaq-mlir-runtime
 
-echo "[MQSS] Building (-j$JOBS)"
-cmake --build . -j"$JOBS"
+# ------------------- Configure & build your repo -------------------
+echo "${BUILD_DIR}"
+cd "${BUILD_DIR}"
 
-echo "[MQSS] (Optional) Install"
-# cmake --install .
+echo "[MQSS] Configuring CMake"
+cmake .. \
+  -DCMAKE_C_COMPILER=gcc \
+  -DCMAKE_CXX_COMPILER=g++ \
+  -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
+  -DMLIR_DIR="${MLIR_DIR}" \
+  -DLLVM_DIR="${LLVM_DIR}" \
+  -DBUILD_MLIR_PASSES_TOOLS="${BUILD_TOOLS}" \
+  -DBUILD_MLIR_PASSES_DOCS="${BUILD_DOCS}" \
+  -DBUILD_MLIR_PASSES_TESTS="${BUILD_TESTS}" \
+  -DBUILD_MLIR_PASSES_AI="${BUILD_AI}" \
+  -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
+  -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
 
-popd >/dev/null
+echo "[MQSS] Building with ${NUM_JOBS} jobs"
+make -j"${NUM_JOBS}"
 
-echo "✅ Done."
+echo "[DONE] Build completed successfully."
