@@ -84,11 +84,8 @@ else
   echo "[CUDAQ] CUDA Quantum already present at ${CUDAQ_DIR}"
 fi
 
-# Clean CUDA-Q build dir to avoid cached bad state
-rm -rf "${CUDAQ_DIR}/build"
-mkdir -p "${CUDAQ_DIR}/build"
+# Go go go Cudaq
 cd "${CUDAQ_DIR}/build"
-
 echo "[CUDAQ] Configuring with Ninja"
 
 # ---------- Make user libs discoverable ----------
@@ -132,6 +129,8 @@ EOF
 
 # --------------- Configure CUDA-Q ----------------------
 cmake -G Ninja \
+  -DCMAKE_CXX_FLAGS="-Wno-error=unused-but-set-variable -Wno-unused-but-set-variable"
+  -DCMAKE_C_FLAGS="-Wno-error=unused-but-set-variable -Wno-unused-but-set-variable"
   -DMLIR_DIR="${MLIR_DIR}" \
   -DClang_DIR="${CLANG_DIR}" \
   -DLLVM_DIR="${LLVM_DIR}" \
