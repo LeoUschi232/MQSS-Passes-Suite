@@ -165,6 +165,7 @@ cd "${BUILD_DIR}"
 
 echo "[MQSS] Configuring CMake"
 cmake .. \
+  -DCUDA_QUANTUM_ENABLE_TESTS=OFF
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
   -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
