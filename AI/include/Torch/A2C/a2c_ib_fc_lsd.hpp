@@ -11,15 +11,13 @@ namespace ai_pass_selector {
     class A2C_IB_FC_LSD final : public BaseA2CAgent {
     public:
         A2C_IB_FC_LSD(
-            unsigned int max_qubits,
-            unsigned int max_instructions,
-            unsigned int max_depth,
-            int critic_optimizer_type = OPTIMIZER_ADAM,
-            int actor_optimizer_type = OPTIMIZER_ADAM,
-            double critic_learning_rate = 0.005,
-            double actor_learning_rate = 0.001,
-            unsigned int nr_parallel_environments = 10,
-            torch::Device device = torch::kCPU);
+            int circuit_size_class,
+            std::unordered_map<std::string, std::string> params);
+
+
+        A2C_IB_FC_LSD(
+            const std::string &circuit_size,
+            std::unordered_map<std::string, std::string> params);
 
         std::string agentName() const override;
     };

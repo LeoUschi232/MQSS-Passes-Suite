@@ -1,26 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
@@ -45,26 +22,6 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-void removeZeroRxToId(Operation *currentOp) {
-  if (!isa<quake::RxOp>(currentOp)) {
-    return;
-  }
-  auto gate = dyn_cast<quake::OperatorInterface>(currentOp);
-
-  // Assume that parameters are all rotation angles
-  bool deleteGate = true;
-  for (auto parameter : gate.getParameters()) {
-    if (double param = extractDoubleArgumentValue(parameter.getDefiningOp());
-      !isMultipleOfTwoPi(param) && param != 0) {
-      deleteGate = false;
-    }
-  }
-  if (deleteGate) {
-    IRRewriter rewriter(gate->getContext());
-    rewriter.eraseOp(gate);
-  }
-}
-
 class ZeroRxToId final : public BaseMQSSPass<ZeroRxToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRxToId)
@@ -76,7 +33,24 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { removeZeroRxToId(op); });
+    kernel.walk([&](Operation *op) {
+      auto rxOp = dyn_cast_or_null<quake::RxOp>(*op);
+      if (!rxOp
+          || rxOp.getTargets().size() != 1
+          || !rxOp.getControls().empty()
+          || rxOp.getParameters().size() != 1) {
+        return;
+      }
+
+      std::vector<double> params = getOperationParameters(rxOp);
+      if (params.size() != 1) {
+        return;
+      }
+      if (isMultipleOfTwoPi(params[0])) {
+        IRRewriter rewriter(rxOp->getContext());
+        rewriter.eraseOp(rxOp);
+      }
+    });
   }
 };
 } // namespace

@@ -1,36 +1,32 @@
-#include "mlir_utils.hpp"
-#include "Environment/environment.hpp"
 #include "Utils/info_utils.hpp"
 
 #include <torch/torch.h>
-#include <filesystem>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 #include <Torch/agent_utils.hpp>
-#include <Torch/training.hpp>
+#include <Torch/training_and_run_manager.hpp>
 
 using namespace ai_pass_selector;
 namespace fs = std::filesystem;
+
+/// Default values for agent/environment/training parameters.
+std::unordered_map<std::string, std::string> load_default_params();
 
 void print_help() {
   std::cout <<
       "\nUsage: ./ai_pass_selector_torch [options]\n"
       "Options:\n"
-      "  -h, --help               Show this help message\n"
-      "  -i, --info               Print info of provided arguments.\n"
-      "  -t, --train              Whether to train the agent\n"
-      "  -p, --training-params    Depending on the selected agent and training, certain params need to be defined, if not defined, they'll default to their default values.\n"
-      "      Training params format: Space seperated list of <param>=<value>\n"
-      "  -u, --use                Whether to apply the selected passes onto the circuit.\n"
-      "  -c, --circuit <file>     Circuit file (.qasm or .qke). Required if not training\n"
+      "  -h, --help                    Show this help message\n"
+      "  -a, --agent <name>            Agent to train/use, if not provided, defaults to most appropriate for circuit.\n"
+      "  -d, --dataset <name>          Dataset name, agent will train on this dataset if provided.\n"
+      "  -c, --circuit <file>          Quake circuit file, agent will be used on this circuit.\n"
       "  -o, --output <file_path>      Circuit file path to output the optimized circuit if using the passes.\n"
-      "  -d, --dataset <name>     Dataset name (defaults to all)\n"
-      "      For available dataset, see AI/Datasets\n"
-      "      dataset=all -> Train on all available datasets.\n"
-      "  -a, --agent <name>       Agent (defaults to auto)\n"
-      "      For available agents, see AI/Agents\n"
-      "      agent=auto -> auto-select best agent for circuit dimensions.\n\n";
+      "  -i, --info                    Print info of provided arguments.\n"
+      "Other parameters:\n"
+      "  <key>=<value>                 Parameters for agent/environment/training, will be loaded with default values if nor provided.\n\n";
 }
 
 int main(int argc, char **argv) {
@@ -38,14 +34,12 @@ int main(int argc, char **argv) {
     print_help();
     return 1;
   }
-  bool info = false;
-  bool train = false;
-  bool use = false;
   std::string circuit;
-  std::string dataset = "all";
-  std::string agent_name = "auto";
-  std::unordered_map<std::string, std::string> training_params;
-  fs::path output_path;
+  std::string dataset;
+  std::string agent;
+  std::string output;
+  bool info = false;
+  std::unordered_map<std::string, std::string> params = load_default_params();
 
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
@@ -56,57 +50,46 @@ int main(int argc, char **argv) {
       print_help();
       return 0;
     }
-    if (args[i] == "-i" || args[i] == "--info") {
-      info = true;
-    } else if (args[i] == "-u" || args[i] == "--use") {
-      use = true;
-    } else if (args[i] == "-t" || args[i] == "--train") {
-      train = true;
-    } else if (args[i] == "-p" || args[i] == "--training-params") {
-      while (++i < n
-             && !args[i].empty()
-             && args[i][0] != '-'
-             && args[i].find('=') != std::string::npos) {
-        auto pos = args[i].find('=');
-        if (pos == std::string::npos || pos == 0 || pos == args[i].size() - 1) {
-          std::cerr << "Invalid training param: " << args[i] << std::endl;
-          return 1;
-        }
-        training_params[args[i].substr(0, pos)]
-            = args[i].substr(pos + 1);
-      }
-      // Avoid i++ at the end of the loop
-      continue;
-    } else if (args[i] == "-c" || args[i] == "--circuit") {
+    if (args[i] == "-a" || args[i] == "--agent") {
       if (++i < n) {
-        circuit = args[i];
+        agent = args[i];
+        params["agent"] = agent;
       } else {
-        std::cerr << "Missing value for --circuit\n";
-        return 1;
-      }
-    } else if (args[i] == "-o" || args[i] == "--output") {
-      if (++i < n) {
-        output_path = args[i];
-      } else {
-        std::cerr << "Missing value for --output\n";
+        std::cerr << "No agent provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-d" || args[i] == "--dataset") {
       if (++i < n) {
         dataset = args[i];
+        params["dataset"] = dataset;
       } else {
-        std::cerr << "Missing value for --dataset\n";
+        std::cerr << "No dataset provided." << std::endl;
         return 1;
       }
-    } else if (args[i] == "-a" || args[i] == "--agent") {
+    } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
-        agent_name = args[i];
+        circuit = args[i];
+        params["circuit"] = circuit;
       } else {
-        std::cerr << "Missing value for --agent\n";
+        std::cerr << "No circuit provided." << std::endl;
         return 1;
       }
+    } else if (args[i] == "-o" || args[i] == "--output") {
+      if (++i < n) {
+        output = args[i];
+        params["output"] = output;
+      } else {
+        std::cerr << "No output provided." << std::endl;
+        return 1;
+      }
+    } else if (args[i] == "-i" || args[i] == "--info") {
+      info = true;
     } else {
-      std::cout << "Unrecognized argument argument: " << args[i] << std::endl;
+      std::vector<std::string> key_value = split_string(args[i], '=');
+      if (key_value.size() != 2) {
+        std::cerr << "Malformatted params: " << args[i] << std::endl;
+      }
+      params[key_value[0]] = key_value[1];
     }
     i++;
   }
@@ -118,43 +101,70 @@ int main(int argc, char **argv) {
     if (!dataset.empty()) {
       print_dataset_info(dataset);
     }
-    if (!agent_name.empty()) {
-      print_agent_info(agent_name);
+    if (!agent.empty()) {
+      print_agent_info(agent);
     }
     return 0;
   }
-  if (agent_name == "auto") {
+  if (agent.empty()) {
     if (circuit.empty()) {
-      std::cerr << "Cannot select best agent for circuit without circuit.\n";
-      return 1;
+      return 0;
     }
-    agent_name = select_best_agent(circuit);
+    agent = select_best_agent(circuit);
   }
-  if (train) {
-    if (dataset.empty()) {
-      std::cerr << "Training requires a dataset (--dataset)\n";
-      return 1;
-    }
-    train_agent(agent_name, dataset, training_params);
+  if (!dataset.empty()) {
+    train(agent, dataset, params);
   }
   if (!circuit.empty()) {
-    unsigned int nr_passes = 20;
-    auto [pass_names, pass_functions]
-        = getRecommendedPasses(
-            agent_name, circuit, nr_passes, output_path);
-    std::cout << "Selected agent: " << agent_name << "\n"
-        << "Selected circuit: " << circuit << "\n"
-        << "Recommended passes: " << std::endl;
-    for (const auto &name : pass_names) {
-      std::cout << name << std::endl;
+    run(agent, circuit, output, params);
+  }
+  return 0;
+}
+
+
+std::unordered_map<std::string, std::string> load_params_from_yaml(
+    const std::string &path,
+    std::unordered_map<std::string, std::string> defaults) {
+  try {
+    YAML::Node cfg = YAML::LoadFile(path);
+    if (!cfg || !cfg.IsMap()) {
+      return defaults;
     }
-    if (use) {
-      if (pass_functions.empty()) {
-        std::cerr << "No passes to apply.\n";
-        return 1;
+
+    for (const auto &it : cfg) {
+      const std::string key = it.first.as<std::string>();
+      if (it.second.IsScalar()) {
+        defaults[key] = it.second.as<std::string>();
       }
     }
+  } catch (const YAML::BadFile &) {
+    return defaults;
+  } catch (const std::exception &ex) {
+    std::cerr << "Failed to parse params YAML '" << path
+        << "': " << ex.what() << std::endl;
+    return defaults;
   }
 
-  return 0;
+  return defaults;
+}
+
+std::unordered_map<std::string, std::string> load_default_params() {
+  return {
+      {"agent", ""},
+      {"dataset", ""},
+      {"circuit", ""},
+      {"output", ""},
+      {"nr_parallel_environments", "1"},
+      {"episodes", "1000"},
+      {"max_steps_per_episode", "5"},
+      {"discount_factor", "1.0"},
+      {"gae_hyperparameter", "0.96"},
+      {"entropy_coefficient", "0.01"},
+      {"device", torch::cuda::is_available() ? "cuda" : "cpu"},
+      {"critic_optimizer", "adam"},
+      {"actor_optimizer", "adam"},
+      {"critic_learning_rate", "0.005"},
+      {"actor_learning_rate", "0.001"},
+      {"print_param_info", ""}
+  };
 }

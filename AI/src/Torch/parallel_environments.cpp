@@ -24,11 +24,7 @@ ParallelEnvironments::ParallelEnvironments(
 bool ParallelEnvironments::register_quantum_circuit(
     unsigned int index, const fs::path &circuit_path) {
   if (index >= nr_environments) {
-    throw std::out_of_range(
-        "ParallelEnvironments::register_quantum_circuit: index "
-        + std::to_string(index)
-        + " is out of range for " + std::to_string(nr_environments)
-        + " environments");
+    throw std::out_of_range("In register_quantum_circuit.");
   }
   return environments[index].register_quantum_circuit(circuit_path);
 }

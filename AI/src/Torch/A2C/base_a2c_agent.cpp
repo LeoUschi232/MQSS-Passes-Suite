@@ -11,8 +11,48 @@
 #include <tuple>
 #include <cmath>
 #include <memory>
+#include <Utils/circuit_utils.hpp>
 
 namespace ai_pass_selector {
+BaseA2CAgent::BaseA2CAgent(
+    int circuit_size_class,
+    std::unordered_map<std::string, std::string> params) {
+  this->configure(circuit_size_class, std::move(params));
+}
+
+BaseA2CAgent::BaseA2CAgent(
+    const std::string &circuit_size,
+    std::unordered_map<std::string, std::string> params) {
+  if (CIRCUIT_SIZE_TO_CLASS.find(circuit_size)
+      == CIRCUIT_SIZE_TO_CLASS.end()) {
+    throw std::runtime_error("Unsupported size: " + circuit_size);
+  }
+  int circuit_size_class = CIRCUIT_SIZE_TO_CLASS.at(circuit_size);
+  this->configure(circuit_size_class, std::move(params));
+}
+
+void BaseA2CAgent::configure(
+    int circuit_size_class,
+    std::unordered_map<std::string, std::string> params) {
+  if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class)
+      == CIRCUIT_CLASS_TO_SPECS.end()) {
+    throw std::runtime_error("Unsupported size class: " + circuit_size_class);
+  }
+  this->size_class = circuit_size_class;
+  std::tie(this->max_qubits, this->max_instructions, this->max_depth)
+      = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
+  this->critic_optimizer_type
+      = OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
+  this->actor_optimizer_type
+      = OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+  this->critic_learning_rate
+      = std::stod(params["critic_learning_rate"]);
+  this->actor_learning_rate
+      = std::stod(params["actor_learning_rate"]);
+  this->nr_parallel_environments
+      = std::stoul(params["nr_parallel_environments"]);
+}
+
 
 bool BaseA2CAgent::initialize(
     int nr_input_values,
@@ -54,24 +94,14 @@ unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
 }
 
-unsigned int BaseA2CAgent::getNrParallelEnvironments() const {
-  return this->nr_parallel_environments;
-}
-
-torch::Device BaseA2CAgent::getDevice() const {
-  return this->device;
-}
-
-void BaseA2CAgent::setNrParallelEnvironments(
-    unsigned int nr_parallel_environments) {
-  this->nr_parallel_environments = nr_parallel_environments;
-}
-
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
-    torch::Tensor batched_observations) {
-  batched_observations = batched_observations.to(this->device);
-  return {this->critic->forward(batched_observations),
-          this->actor->forward(batched_observations)};
+    const torch::Tensor &batched_observations) {
+  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+  if (x.dim() == 3) {
+    // flatten [B, max_qubits, max_instructions] to [B, max_qubits*max_instructions]
+    x = x.flatten(1);
+  }
+  return {this->critic->forward(x), this->actor->forward(x)};
 }
 
 std::tuple<std::vector<unsigned int>,
@@ -174,27 +204,29 @@ void BaseA2CAgent::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
-  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
-  torch::save(this->critic, critic_path);
-  torch::save(this->actor, actor_path);
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  torch::save(this->critic, critic_path.string());
+  torch::save(this->actor, actor_path.string());
 }
 
 void BaseA2CAgent::load_model() {
   std::lock_guard lock(*model_mutex);
   if (this->nr_input_values <= 0) {
-    std::cerr << "No agent to load." << std::endl;
     return;
   }
   std::string name = this->agentName();
   if (name.empty()) {
-    std::cerr << "No agent to save." << std::endl;
     return;
   }
-  std::string critic_path = std::string(AI_AGENTS_DIR) + name + "-critic.pt";
-  std::string actor_path = std::string(AI_AGENTS_DIR) + name + "-actor.pt";
-  torch::load(this->critic, critic_path);
-  torch::load(this->actor, actor_path);
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+    return;
+  }
+  torch::load(this->critic, critic_path.string());
+  torch::load(this->actor, actor_path.string());
+  std::cout << "Loaded model: " << name << std::endl;
 }
 
 } // ai_pass_selector

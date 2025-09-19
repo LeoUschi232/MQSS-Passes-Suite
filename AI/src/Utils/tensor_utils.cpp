@@ -5,7 +5,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
-#include <common/RuntimeMLIR.h>
+#include "common/RuntimeMLIR.h"
 
 #include <iostream>
 

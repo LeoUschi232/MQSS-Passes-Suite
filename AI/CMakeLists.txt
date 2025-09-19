@@ -10,6 +10,7 @@ list(APPEND CMAKE_PREFIX_PATH
 # Find each SDK, but we will not mix them in a single target
 find_package(TensorFlow CONFIG REQUIRED)
 find_package(Torch REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,8 +21,9 @@ target_include_directories(common_ai_props INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 target_compile_definitions(common_ai_props INTERFACE
-        AI_DATASET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Dataset"
+        AI_DATASET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Datasets"
         AI_AGENTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Agents"
+        AI_CIRCUITS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Circuits"
         MQSS_BUILD_DIR="${CMAKE_BINARY_DIR}"
 )
 target_link_libraries(common_ai_props INTERFACE
@@ -73,7 +75,7 @@ if (TORCH_SOURCES OR TORCH_HEADERS)
 endif ()
 
 add_executable(ai_pass_selector_torch ai_pass_selector_torch.cpp)
-target_link_libraries(ai_pass_selector_torch PRIVATE ai_torch)
+target_link_libraries(ai_pass_selector_torch PRIVATE ai_torch yaml-cpp)
 
 # ---------------- TensorFlow-only targets ----------------
 file(GLOB_RECURSE TENSORFLOW_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Tensorflow/*.hpp")

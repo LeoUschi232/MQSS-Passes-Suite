@@ -89,10 +89,15 @@ void commuteOperation(mlir::Operation *currentOp, int nCtrlsOp1, int nTgtsOp1,
   if (previousGate.getControls().size() != nCtrlsOp1 ||
       previousGate.getTargets().size() != nTgtsOp1)
     return; // check both targets are the same
-  int targetPrev = extractIndexFromQuakeExtractRefOp(
+  auto targetPrevOpt = extractIndexFromQuakeExtractRefOp(
       previousGate.getTargets()[0].getDefiningOp());
-  int targetCurr = extractIndexFromQuakeExtractRefOp(
+  auto targetCurrOpt = extractIndexFromQuakeExtractRefOp(
       currentGate.getTargets()[0].getDefiningOp());
+  if (!targetPrevOpt.has_value() || !targetCurrOpt.has_value()) {
+    return;
+  }
+  int targetPrev = targetPrevOpt.value();
+  int targetCurr = targetCurrOpt.value();
   if (targetPrev != targetCurr)
     return;
 #ifdef DEBUG

@@ -38,6 +38,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/Support/Casting.h"
 
 #include <iostream>
+#include <mlir_utils.hpp>
 using llvm::isa;
 using llvm::cast;
 using llvm::dyn_cast;
@@ -109,6 +110,22 @@ int getNumberOfAllocations(FuncOp circuit) {
   return nrAllocations;
 }
 
+std::vector<double> getOperationParameters(Operation *op) {
+  if (!isOperatingGate(op)) {
+    return {};
+  }
+  auto gate = dyn_cast<quake::OperatorInterface>(op);
+  std::vector<double> parameters;
+  for (auto parameter : gate.getParameters()) {
+    std::optional<double> param
+        = extractDoubleArgumentValue(parameter.getDefiningOp());
+    if (param.has_value()) {
+      parameters.push_back(param.value());
+    }
+  }
+  return parameters;
+}
+
 
 // Given a OpBuilder and a double value, it inserts a double in the mlir
 // module pointer by the OpBuilder and returns the inserted Value
@@ -120,27 +137,26 @@ Value createFloatValue(
   return constantOp.getResult();
 }
 
-// TODO: return -1 is not good idea
-// Given an argument value as Operation, it extracts a double, it the operation
-// is not double, returns -1.0 when fail
-double extractDoubleArgumentValue(Operation *op) {
-  if (auto constantOp = dyn_cast<ConstantOp>(op))
-    if (auto floatAttr = constantOp.getValue().dyn_cast<FloatAttr>())
+std::optional<double> extractDoubleArgumentValue(Operation *op) {
+  if (auto constantOp = dyn_cast<ConstantOp>(op)) {
+    if (auto floatAttr = constantOp.getValue().dyn_cast<FloatAttr>()) {
       return floatAttr.getValueAsDouble();
-  return -1.0;
+    }
+  }
+  return std::nullopt;
 }
 
 // TODO: return -1 is not good idea
 // Given an ExtractRefOp, it extracts the integer of the index pointing that
 // reference (qubit index), returns -1 when fail
-int64_t
+std::optional<int64_t>
 extractIndexFromQuakeExtractRefOp(Operation *op) {
   if (auto extractRefOp = llvm::dyn_cast<quake::ExtractRefOp>(op)) {
     auto rawIndexAttr =
         extractRefOp->getAttrOfType<IntegerAttr>("rawIndex");
     return rawIndexAttr.getInt();
   }
-  return -1;
+  return std::nullopt;
 }
 
 // function to get the number of qubits in a given quantum kernel
@@ -169,8 +185,12 @@ int getNumberOfGates(FuncOp circuit) {
     if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
+          auto qubitIndexOpt =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (!qubitIndexOpt.has_value()) {
+            continue;
+          }
+          int qubitIndex = qubitIndexOpt.value();
           if (0 <= qubitIndex && qubitIndex < nrQubits) {
             nrGates++;
           }
@@ -205,8 +225,12 @@ int getCircuitDepth(FuncOp circuit) {
     if (isMeasurementGate(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
+          auto qubitIndexOpt =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (!qubitIndexOpt.has_value()) {
+            continue;
+          }
+          int qubitIndex = qubitIndexOpt.value();
           if (0 <= qubitIndex && qubitIndex < nrQubits) {
             depths[qubitIndex]++;
           }
@@ -253,8 +277,12 @@ int getNumberOfClassicalBits(
       for (auto operand : op->getOperands()) {
         // Check if it's qubit reference
         if (operand.getType().isa<quake::RefType>()) {
-          int qubitIndex =
+          auto qubitIndexOpt =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (!qubitIndexOpt.has_value()) {
+            continue;
+          }
+          int qubitIndex = qubitIndexOpt.value();
           assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
           measurements[qubitIndex] = numBits;
           numBits += 1;
@@ -291,8 +319,12 @@ int getNumberOfClassicalBits(FuncOp circuit) {
         if (operand.getType()
           .isa<quake::RefType>()) {
           // Check if it's a qubit reference
-          int qubitIndex =
+          auto qubitIndexOpt =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          if (!qubitIndexOpt.has_value()) {
+            continue;
+          }
+          int qubitIndex = qubitIndexOpt.value();
           assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
           numBits += 1;
         } else if (operand.getType().isa<quake::VeqType>()) {
@@ -310,8 +342,13 @@ std::vector<int>
 getIndicesOfValueRange(const ValueRange array) {
   std::vector<int> indices;
   for (auto value : array) {
-    int qubit_index = extractIndexFromQuakeExtractRefOp(value.getDefiningOp());
-    indices.push_back(qubit_index);
+    auto qubitIndexOpt =
+        extractIndexFromQuakeExtractRefOp(value.getDefiningOp());
+    if (!qubitIndexOpt.has_value()) {
+      continue;
+    }
+    int qubitIndex = qubitIndexOpt.value();
+    indices.push_back(qubitIndex);
   }
   return indices;
 }
@@ -321,7 +358,11 @@ std::vector<double>
 getParametersValues(const ValueRange array) {
   std::vector<double> parameters;
   for (auto value : array) {
-    double param = extractDoubleArgumentValue(value.getDefiningOp());
+    auto paramOpt = extractDoubleArgumentValue(value.getDefiningOp());
+    if (!paramOpt.has_value()) {
+      continue;
+    }
+    double param = paramOpt.value();
     parameters.push_back(param);
   }
   return parameters;
@@ -331,23 +372,35 @@ getParametersValues(const ValueRange array) {
 // currentOp
 Operation *getPreviousOperationOnTarget(
     Operation *currentOp, Value targetQubit) {
+  auto targetQCurrOpt =
+      extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp());
+  if (!targetQCurrOpt.has_value()) {
+    return nullptr;
+  }
+  int targetQCurr = targetQCurrOpt.value();
   // Start from the previous operation
   Operation *prevOp = currentOp->getPrevNode();
   // Iterate through the previous operations in the block
   while (prevOp) {
     // Check if the operation has a target qubit and matches the given target
     if (auto quakeOp = dyn_cast<quake::OperatorInterface>(prevOp)) {
-      int targetQCurr =
-          extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp());
       for (Value target : quakeOp.getTargets()) {
-        int targetQPrev =
+        auto targetQPrevOpt =
             extractIndexFromQuakeExtractRefOp(target.getDefiningOp());
+        if (!targetQPrevOpt.has_value()) {
+          continue;
+        }
+        int targetQPrev = targetQPrevOpt.value();
         if (targetQCurr == targetQPrev)
           return prevOp;
       }
       for (Value control : quakeOp.getControls()) {
-        int controlQPrev =
+        auto controlQPrevOpt =
             extractIndexFromQuakeExtractRefOp(control.getDefiningOp());
+        if (!controlQPrevOpt.has_value()) {
+          continue;
+        }
+        int controlQPrev = controlQPrevOpt.value();
         if (targetQCurr == controlQPrev)
           return prevOp;
       }
@@ -358,34 +411,46 @@ Operation *getPreviousOperationOnTarget(
   return nullptr; // No matching previous operation found
 }
 
-// Get the next operation on a given TargeQubit, starting from
-// currentOp
+
 Operation *getNextOperationOnTarget(
     Operation *currentOp, Value targetQubit) {
-  // Start from the next operation
+  auto targetQCurrOpt =
+      extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp());
+  if (!targetQCurrOpt.has_value()) {
+    return nullptr;
+  }
+  int targetQCurr = targetQCurrOpt.value();
   Operation *nextOp = currentOp->getNextNode();
-  // Iterate through the previous operations in the block
+
   while (nextOp) {
-    // Check if the operation has a target qubit and matches the given target
     if (auto quakeOp = dyn_cast<quake::OperatorInterface>(nextOp)) {
-      int targetQCurr =
-          extractIndexFromQuakeExtractRefOp(targetQubit.getDefiningOp());
       for (Value target : quakeOp.getTargets()) {
-        int targetQNext =
+        auto targetQNextOpt =
             extractIndexFromQuakeExtractRefOp(target.getDefiningOp());
-        if (targetQCurr == targetQNext)
+        if (!targetQNextOpt.has_value()) {
+          continue;
+        }
+        if (int targetQNext = targetQNextOpt.value();
+          targetQCurr == targetQNext) {
           return nextOp;
+        }
       }
       for (Value control : quakeOp.getControls()) {
-        int controlQNext =
+        auto controlQNextOpt =
             extractIndexFromQuakeExtractRefOp(control.getDefiningOp());
-        if (targetQCurr == controlQNext)
+        if (!controlQNextOpt.has_value()) {
+          continue;
+        }
+        if (int controlQNext = controlQNextOpt.value();
+          targetQCurr == controlQNext) {
           return nextOp;
+        }
       }
     }
-    // Move to the previous operation
+
     nextOp = nextOp->getNextNode();
   }
-  return nullptr; // No matching previous operation found
+  return nullptr;
+
 }
 } // namespace mqss::support::quakeDialect

@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -15,42 +15,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-
-void foldRxRx(Operation *op, OpBuilder &builder) {
-  auto rx2 = dyn_cast_or_null<quake::RxOp>(*op);
-  if (!rx2 || !rx2.getControls().empty() || rx2.getTargets().size() != 1) {
-    return;
-  }
-  auto prev =
-      supportQuake::getPreviousOperationOnTarget(rx2, rx2.getTargets()[0]);
-  if (!prev) {
-    return;
-  }
-  auto rx1 = dyn_cast_or_null<quake::RxOp>(prev);
-  if (!rx1 || !rx1.getControls().empty() || rx1.getTargets().size() != 1) {
-    return;
-  }
-  builder.setInsertionPoint(rx2);
-  auto p1 = supportQuake::getParametersValues(rx1.getParameters());
-  auto p2 = supportQuake::getParametersValues(rx2.getParameters());
-  if (p1.size() != p2.size()) {
-    return;
-  }
-  SmallVector<Value> params;
-  for (size_t i = 0; i < p1.size(); ++i) {
-    params.push_back(
-        supportQuake::createFloatValue(builder, rx2.getLoc(), p1[i] + p2[i]));
-  }
-  IRRewriter rewriter(rx2->getContext());
-  rewriter.setInsertionPointAfter(rx2);
-  rewriter.create<quake::RxOp>(rx2.getLoc(), rx2.isAdj(), params,
-                               rx2.getControls(), rx2.getTargets());
-  rewriter.eraseOp(rx2);
-  rewriter.eraseOp(rx1);
-}
-
 class RxRxToRx final : public BaseMQSSPass<RxRxToRx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RxRxToRx)
@@ -62,8 +29,41 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    OpBuilder builder(&kernel.getBody());
-    kernel.walk([&](Operation *op) { foldRxRx(op, builder); });
+    kernel.walk([&](Operation *op) {
+      auto rxOp2 = dyn_cast_or_null<quake::RxOp>(*op);
+      if (!rxOp2
+          || rxOp2.getTargets().size() != 1
+          || !rxOp2.getControls().empty()
+          || rxOp2.getParameters().size() != 1) {
+        return;
+      }
+      auto optional_rxOp1
+          = getPreviousOperationOnTarget(rxOp2, rxOp2.getTargets()[0]);
+      if (!optional_rxOp1) {
+        return;
+      }
+      auto rxOp1 = dyn_cast_or_null<quake::RxOp>(*optional_rxOp1);
+      if (!rxOp1
+          || rxOp1.getTargets().size() != 1
+          || !rxOp1.getControls().empty()
+          || rxOp1.getParameters().size() != 1) {
+        return;
+      }
+      auto rx1Params = getOperationParameters(rxOp1);
+      auto rx2Params = getOperationParameters(rxOp2);
+      if (rx1Params.size() != 1 || rx2Params.size() != 1) {
+        return;
+      }
+      double angle = rx1Params[0] + rx2Params[0];
+      IRRewriter rewriter(rxOp2->getContext());
+      rewriter.setInsertionPointAfter(rxOp2);
+      Location loc = rxOp1.getLoc();
+      ValueRange targets = rxOp1.getTargets();
+      Value params = createFloatValue(rewriter, loc, angle);
+      rewriter.create<quake::RxOp>(loc, params, ValueRange{}, targets);
+      rewriter.eraseOp(rxOp1);
+      rewriter.eraseOp(rxOp2);
+    });
   }
 };
 

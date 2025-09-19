@@ -16,50 +16,46 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
     class BaseA2CAgent : public torch::nn::Module {
     protected:
-        /// Generic attributes
-        const unsigned int max_qubits;
-        const unsigned int max_instructions;
-        const unsigned int max_depth;
-        unsigned int nr_input_values;
+        /// Attributes on configuration
+        int size_class = 0;
+        unsigned int max_qubits = 0;
+        unsigned int max_instructions = 0;
+        unsigned int max_depth = 0;
+        int critic_optimizer_type = 0;
+        int actor_optimizer_type = 0;
+        double critic_learning_rate = 0;
+        double actor_learning_rate = 0;
+        unsigned int nr_parallel_environments = 0;
+        torch::Device device = torch::kCPU;
 
-        /// Specific attributes
-        const int critic_optimizer_type;
-        const int actor_optimizer_type;
-        const double critic_learning_rate;
-        const double actor_learning_rate;
-        unsigned int nr_parallel_environments;
-        torch::Device device;
-        torch::nn::Sequential critic;
-        torch::nn::Sequential actor;
-        std::unique_ptr<torch::optim::Optimizer> actor_optimizer;
-        std::unique_ptr<torch::optim::Optimizer> critic_optimizer;
-        std::unique_ptr<std::mutex> model_mutex;
+        /// Attributes on initialization
+        unsigned int nr_input_values = 0;
+        torch::nn::Sequential critic = nullptr;
+        torch::nn::Sequential actor = nullptr;
+        std::unique_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
+        std::unique_ptr<torch::optim::Optimizer> critic_optimizer = nullptr;
+
+        /// Mutex for thread safety
+        std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
     public:
-        /// Constructor
+        /// Constructors
         BaseA2CAgent(
-            unsigned int max_qubits,
-            unsigned int max_instructions,
-            unsigned int max_depth,
-            int critic_optimizer_type,
-            int actor_optimizer_type,
-            double critic_learning_rate,
-            double actor_learning_rate,
-            unsigned int nr_parallel_environments,
-            torch::Device device)
-            : max_qubits(max_qubits),
-              max_instructions(max_instructions),
-              max_depth(max_depth),
-              nr_input_values(0),
-              critic_optimizer_type(critic_optimizer_type),
-              actor_optimizer_type(actor_optimizer_type),
-              critic_learning_rate(critic_learning_rate),
-              actor_learning_rate(actor_learning_rate),
-              nr_parallel_environments(
-                  nr_parallel_environments),
-              device(device),
-              model_mutex(std::make_unique<std::mutex>()) {
-        }
+            int circuit_size_class,
+            std::unordered_map<std::string, std::string> params);
+
+        BaseA2CAgent(
+            const std::string &circuit_size,
+            std::unordered_map<std::string, std::string> params);
+
+        /**
+         *
+         * @param circuit_size_class
+         * @param params
+         */
+        void configure(
+            int circuit_size_class,
+            std::unordered_map<std::string, std::string> params);
 
         /**
          *
@@ -94,20 +90,13 @@ namespace ai_pass_selector {
 
         unsigned int getNrInputValues() const;
 
-        unsigned int getNrParallelEnvironments() const;
-
-        torch::Device getDevice() const;
-
-        /// Setters
-        void setNrParallelEnvironments(unsigned int nr_parallel_environments);
-
         /**
          *
          * @param batched_observations
          * @return
          */
         std::pair<torch::Tensor, torch::Tensor> forward(
-            torch::Tensor batched_observations);
+            const torch::Tensor &batched_observations);
 
         /**
          *

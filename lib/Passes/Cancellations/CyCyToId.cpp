@@ -1,26 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
@@ -54,7 +31,33 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternCancellation<quake::YOp, quake::YOp>(op, 1, 1, 1, 1);
+      auto cyOp2 = dyn_cast_or_null<quake::YOp>(*op);
+      if (!cyOp2
+          || cyOp2.getTargets().size() != 1
+          || cyOp2.getControls().size() != 1) {
+        return;
+      }
+      auto optional_cyOp1_onTarget
+          = getPreviousOperationOnTarget(cyOp2, cyOp2.getTargets()[0]);
+      auto optional_cyOp1_onControl
+          = getPreviousOperationOnTarget(cyOp2, cyOp2.getControls()[0]);
+      if (!optional_cyOp1_onTarget
+          || !optional_cyOp1_onControl
+          || optional_cyOp1_onTarget != optional_cyOp1_onControl) {
+        return;
+      }
+      auto cyOp1
+          = dyn_cast_or_null<quake::YOp>(*optional_cyOp1_onTarget);
+      if (!cyOp1
+          || cyOp1.getTargets().size() != 1
+          || cyOp1.getControls().size() != 1
+          || cyOp1.getControls()[0] != cyOp2.getControls()[0]) {
+        return;
+      }
+
+      IRRewriter rewriter(cyOp2->getContext());
+      rewriter.eraseOp(cyOp2);
+      rewriter.eraseOp(cyOp1);
     });
   }
 };

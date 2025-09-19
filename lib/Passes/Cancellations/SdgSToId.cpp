@@ -1,6 +1,7 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
+#include "Support/Transforms/CancellationOperations.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -15,31 +16,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void cancelSdgSToId(Operation *op) {
-  auto s = dyn_cast_or_null<quake::SOp>(*op);
-  if (!s || s.isAdj() || !s.getControls().empty() ||
-      s.getTargets().size() != 1) {
-    return;
-  }
-  auto prevOp =
-      supportQuake::getPreviousOperationOnTarget(s, s.getTargets()[0]);
-  if (!prevOp) {
-    return;
-  }
-  auto prevGate = dyn_cast_or_null<quake::SOp>(*prevOp);
-  if (!prevGate || !prevGate.isAdj() || !prevGate.getControls().empty() ||
-      prevGate.getTargets().size() != 1) {
-    return;
-  }
-
-  IRRewriter rewriter(s->getContext());
-  rewriter.setInsertionPointAfter(s);
-  rewriter.eraseOp(s);
-  rewriter.eraseOp(prevGate);
-}
-
 class SdgSToId final : public BaseMQSSPass<SdgSToId> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgSToId)
@@ -51,7 +30,30 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { cancelSdgSToId(op); });
+    kernel.walk([&](Operation *op) {
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
+      if (!sOp2
+          || sOp2.isAdj()
+          || sOp2.getTargets().size() != 1
+          || !sOp2.getControls().empty()) {
+        return;
+      }
+      auto optional_sOp1 =
+          getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      if (!optional_sOp1) {
+        return;
+      }
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(*optional_sOp1);
+      if (!sOp1
+          || !sOp1.isAdj()
+          || sOp1.getTargets().size() != 1
+          || !sOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(sOp2->getContext());
+      rewriter.eraseOp(sOp2);
+      rewriter.eraseOp(sOp1);
+    });
   }
 };
 } // namespace

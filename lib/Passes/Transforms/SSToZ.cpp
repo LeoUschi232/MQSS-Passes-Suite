@@ -5,6 +5,7 @@
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -16,29 +17,10 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
+
 
 namespace {
-void foldSSToZ(Operation *op) {
-  auto s = dyn_cast_or_null<quake::SOp>(*op);
-  {
-    if (!s || s.getControls().size() != 0 || s.getTargets().size() != 1)
-      return;
-  }
-  auto prev = supportQuake::getPreviousOperationOnTarget(s, s.getTargets()[0]);
-  if (!prev) {
-    return;
-  }
-  auto s2 = dyn_cast_or_null<quake::SOp>(prev);
-  if (!s2 || s2.getControls().size() != 0 || s2.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(s->getContext());
-  rewriter.setInsertionPointAfter(s);
-  rewriter.create<quake::ZOp>(s.getLoc(), s.getTargets()[0]);
-  rewriter.eraseOp(s);
-  rewriter.eraseOp(s2);
-}
-
 class SSToZ final : public BaseMQSSPass<SSToZ> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSToZ)
@@ -48,7 +30,34 @@ public:
   StringRef getDescription() const override { return "Replace S S by Z"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { foldSSToZ(op); });
+    kernel.walk([&](Operation *op) {
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
+      if (!sOp2
+          || sOp2.isAdj()
+          || sOp2.getTargets().size() != 1
+          || !sOp2.getControls().empty()) {
+        return;
+      }
+      auto optional_sOp1
+          = getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      if (!optional_sOp1) {
+        return;
+      }
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(*optional_sOp1);
+      if (!sOp1
+          || sOp1.isAdj()
+          || sOp1.getTargets().size() != 1
+          || !sOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(sOp2->getContext());
+      rewriter.setInsertionPointAfter(sOp2);
+      Location loc = sOp1.getLoc();
+      ValueRange targets = sOp1.getTargets();
+      rewriter.create<quake::ZOp>(loc, false, targets);
+      rewriter.eraseOp(sOp1);
+      rewriter.eraseOp(sOp2);
+    });
   }
 };
 } // namespace

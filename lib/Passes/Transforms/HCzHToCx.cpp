@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -16,46 +16,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void foldHCzHToCx(Operation *op) {
-  auto h2 = dyn_cast_or_null<quake::HOp>(*op);
-  if (!h2 || !h2.getControls().empty() || h2.getTargets().size() != 1) {
-    return;
-  }
-  auto prev =
-      supportQuake::getPreviousOperationOnTarget(h2, h2.getTargets()[0]);
-  if (!prev) {
-    return;
-  }
-  auto cz = dyn_cast_or_null<quake::ZOp>(prev);
-  if (!cz || cz.getControls().size() != 1 || cz.getTargets().size() != 1) {
-    return;
-  }
-  auto idx2 = supportQuake::extractIndexFromQuakeExtractRefOp(
-      h2.getTargets()[0].getDefiningOp());
-  auto idx1 = supportQuake::extractIndexFromQuakeExtractRefOp(
-      cz.getTargets()[0].getDefiningOp());
-  if (idx1 != idx2) {
-    return;
-  }
-  auto prev2 =
-      supportQuake::getPreviousOperationOnTarget(cz, cz.getTargets()[0]);
-  if (!prev2) {
-    return;
-  }
-  auto h1 = dyn_cast_or_null<quake::HOp>(prev2);
-  if (!h1 || !h1.getControls().empty() || h1.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(cz->getContext());
-  rewriter.setInsertionPointAfter(cz);
-  rewriter.create<quake::XOp>(cz.getLoc(), cz.getControls(), cz.getTargets());
-  rewriter.eraseOp(h2);
-  rewriter.eraseOp(cz);
-  rewriter.eraseOp(h1);
-}
-
 class HCzHToCx final : public BaseMQSSPass<HCzHToCx> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HCzHToCx)
@@ -67,7 +30,45 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { foldHCzHToCx(op); });
+    kernel.walk([&](Operation *op) {
+      auto hOp2 = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp2
+          || hOp2.getTargets().size() != 1
+          || !hOp2.getControls().empty()) {
+        return;
+      }
+      auto optional_czOp
+          = getPreviousOperationOnTarget(hOp2, hOp2.getTargets()[0]);
+      if (!optional_czOp) {
+        return;
+      }
+      auto czOp = dyn_cast_or_null<quake::ZOp>(*optional_czOp);
+      if (!czOp
+          || czOp.getTargets().size() != 1
+          || czOp.getControls().size() != 1) {
+        return;
+      }
+      auto optional_hOp1
+          = getPreviousOperationOnTarget(czOp, czOp.getTargets()[0]);
+      if (!optional_hOp1) {
+        return;
+      }
+      auto hOp1 = dyn_cast_or_null<quake::HOp>(*optional_hOp1);
+      if (!hOp1
+          || hOp1.getTargets().size() != 1
+          || !hOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(hOp2->getContext());
+      rewriter.setInsertionPointAfter(hOp2);
+      ValueRange targets = czOp.getTargets();
+      ValueRange controls = czOp.getControls();
+      Location loc = czOp.getLoc();
+      rewriter.create<quake::XOp>(loc, false, controls, targets);
+      rewriter.eraseOp(hOp1);
+      rewriter.eraseOp(czOp);
+      rewriter.eraseOp(hOp2);
+    });
   }
 };
 } // namespace

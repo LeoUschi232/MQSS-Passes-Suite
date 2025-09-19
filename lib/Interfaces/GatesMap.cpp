@@ -567,13 +567,18 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
       auto q2 = targets[1];
       auto param1 = params[1];
       auto param2 = plusHalfPi;
+      auto param0ValueOpt = extractDoubleArgumentValue(
+          params[0].getDefiningOp());
+      auto param1ValueOpt = extractDoubleArgumentValue(
+          params[1].getDefiningOp());
+      if (!param0ValueOpt.has_value() || !param1ValueOpt.has_value()) {
+        return;
+      }
       auto param3 = createFloatValue(
-          builder, loc,
-          -0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+          builder, loc, -0.5 * param0ValueOpt.value());
       auto param4 = minusHalfPi;
       auto param5 = createFloatValue(
-          builder, loc,
-          -extractDoubleArgumentValue(params[1].getDefiningOp()));
+          builder, loc, -param1ValueOpt.value());
       builder.create<quake::RzOp>(loc, false, param1, ValueRange{}, q1);
       builder.create<quake::SOp>(loc, true, ValueRange{}, ValueRange{}, q2);
       builder.create<quake::RxOp>(loc, false, param2, ValueRange{}, q2);
@@ -611,16 +616,20 @@ void mqss::interfaces::insertQASMGateIntoQuakeModule(
           !adj && "ill-formed xx_minus_yy gate");
       auto q1 = targets[0];
       auto q2 = targets[1];
+      auto param0ValueOpt = extractDoubleArgumentValue(
+          params[0].getDefiningOp());
+      auto param1ValueOpt = extractDoubleArgumentValue(
+          params[1].getDefiningOp());
+      if (!param0ValueOpt.has_value() || !param1ValueOpt.has_value()) {
+        return;
+      }
       auto param1 = createFloatValue(
-          builder, loc,
-          -extractDoubleArgumentValue(params[1].getDefiningOp()));
+          builder, loc, -param1ValueOpt.value());
       auto param2 = plusHalfPi;
       auto param3 = createFloatValue(
-          builder, loc,
-          0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+          builder, loc, 0.5 * param0ValueOpt.value());
       auto param4 = createFloatValue(
-          builder, loc,
-          -0.5 * extractDoubleArgumentValue(params[0].getDefiningOp()));
+          builder, loc, -0.5 * param0ValueOpt.value());
       auto param5 = minusHalfPi;
       auto param6 = params[1];
       builder.create<quake::RzOp>(loc, false, param1, ValueRange{}, q2);

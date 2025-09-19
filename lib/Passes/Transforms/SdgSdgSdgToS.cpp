@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -16,40 +16,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void foldSdgSdgSdgToS(Operation *op) {
-  auto s = dyn_cast_or_null<quake::SOp>(*op);
-  if (!s || !s.isAdj() || s.getControls().size() != 0 ||
-      s.getTargets().size() != 1) {
-    return;
-  }
-  auto prev1 = supportQuake::getPreviousOperationOnTarget(s, s.getTargets()[0]);
-  if (!prev1) {
-    return;
-  }
-  auto s2 = dyn_cast_or_null<quake::SOp>(prev1);
-  if (!s2 || !s2.isAdj() || s2.getControls().size() != 0 ||
-      s2.getTargets().size() != 1) {
-    return;
-  }
-  auto prev2 =
-      supportQuake::getPreviousOperationOnTarget(s2, s.getTargets()[0]);
-  if (!prev2) {
-    return;
-  }
-  auto s3 = dyn_cast_or_null<quake::SOp>(prev2);
-  if (!s3 || !s3.isAdj() || s3.getControls().size() != 0 ||
-      s3.getTargets().size() != 1) {
-    return;
-  }
-  IRRewriter rewriter(s->getContext());
-  rewriter.setInsertionPointAfter(s);
-  rewriter.create<quake::SOp>(s.getLoc(), s.getTargets()[0]);
-  rewriter.eraseOp(s);
-  rewriter.eraseOp(s2);
-  rewriter.eraseOp(s3);
-}
 
 class SdgSdgSdgToS final : public BaseMQSSPass<SdgSdgSdgToS> {
 public:
@@ -62,7 +31,47 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { foldSdgSdgSdgToS(op); });
+    kernel.walk([&](Operation *op) {
+      auto sOp3 = dyn_cast_or_null<quake::SOp>(*op);
+      if (!sOp3
+          || !sOp3.isAdj()
+          || sOp3.getTargets().size() != 1
+          || !sOp3.getControls().empty()) {
+        return;
+      }
+      auto optional_sOp2
+          = getPreviousOperationOnTarget(sOp3, sOp3.getTargets()[0]);
+      if (!optional_sOp2) {
+        return;
+      }
+      auto sOp2 = dyn_cast_or_null<quake::SOp>(*optional_sOp2);
+      if (!sOp2
+          || !sOp2.isAdj()
+          || sOp2.getTargets().size() != 1
+          || !sOp2.getControls().empty()) {
+        return;
+      }
+      auto optional_sOp1
+          = getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      if (!optional_sOp1) {
+        return;
+      }
+      auto sOp1 = dyn_cast_or_null<quake::SOp>(*optional_sOp1);
+      if (!sOp1
+          || !sOp1.isAdj()
+          || sOp1.getTargets().size() != 1
+          || !sOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(sOp3->getContext());
+      rewriter.setInsertionPointAfter(sOp1);
+      Location loc = sOp1.getLoc();
+      ValueRange targets = sOp1.getTargets();
+      rewriter.create<quake::SOp>(loc, false, targets);
+      rewriter.eraseOp(sOp1);
+      rewriter.eraseOp(sOp2);
+      rewriter.eraseOp(sOp3);
+    });
   }
 };
 } // namespace

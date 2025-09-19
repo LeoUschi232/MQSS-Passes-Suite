@@ -4,7 +4,7 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -13,38 +13,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-
-void foldRyRy(Operation *op, OpBuilder &builder) {
-  auto ry2 = dyn_cast_or_null<quake::RyOp>(*op);
-  if (!ry2 || !ry2.getControls().empty() || ry2.getTargets().size() != 1)
-    return;
-  auto prev =
-      supportQuake::getPreviousOperationOnTarget(ry2, ry2.getTargets()[0]);
-  if (!prev)
-    return;
-  auto ry1 = dyn_cast_or_null<quake::RyOp>(prev);
-  if (!ry1 || !ry1.getControls().empty() || ry1.getTargets().size() != 1)
-    return;
-  builder.setInsertionPoint(ry2);
-  auto p1 = supportQuake::getParametersValues(ry1.getParameters());
-  auto p2 = supportQuake::getParametersValues(ry2.getParameters());
-  if (p1.size() != p2.size())
-    return;
-  SmallVector<Value> params;
-  for (size_t i = 0; i < p1.size(); ++i) {
-    params.push_back(
-        supportQuake::createFloatValue(builder, ry2.getLoc(), p1[i] + p2[i]));
-  }
-  IRRewriter rewriter(ry2->getContext());
-  rewriter.setInsertionPointAfter(ry2);
-  rewriter.create<quake::RyOp>(ry2.getLoc(), ry2.isAdj(), params,
-                               ry2.getControls(), ry2.getTargets());
-  rewriter.eraseOp(ry2);
-  rewriter.eraseOp(ry1);
-}
-
 class RyRyToRy final : public BaseMQSSPass<RyRyToRy> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RyRyToRy)
@@ -56,8 +27,41 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    OpBuilder builder(&kernel.getBody());
-    kernel.walk([&](Operation *op) { foldRyRy(op, builder); });
+    kernel.walk([&](Operation *op) {
+      auto ryOp2 = dyn_cast_or_null<quake::RyOp>(*op);
+      if (!ryOp2
+          || ryOp2.getTargets().size() != 1
+          || !ryOp2.getControls().empty()
+          || ryOp2.getParameters().size() != 1) {
+        return;
+      }
+      auto optional_ryOp1
+          = getPreviousOperationOnTarget(ryOp2, ryOp2.getTargets()[0]);
+      if (!optional_ryOp1) {
+        return;
+      }
+      auto ryOp1 = dyn_cast_or_null<quake::RyOp>(*optional_ryOp1);
+      if (!ryOp1
+          || ryOp1.getTargets().size() != 1
+          || !ryOp1.getControls().empty()
+          || ryOp1.getParameters().size() != 1) {
+        return;
+      }
+      auto ry1Params = getOperationParameters(ryOp1);
+      auto ry2Params = getOperationParameters(ryOp2);
+      if (ry1Params.size() != 1 || ry2Params.size() != 1) {
+        return;
+      }
+      double angle = ry1Params[0] + ry2Params[0];
+      IRRewriter rewriter(ryOp2->getContext());
+      rewriter.setInsertionPointAfter(ryOp2);
+      Location loc = ryOp1.getLoc();
+      ValueRange targets = ryOp1.getTargets();
+      Value params = createFloatValue(rewriter, loc, angle);
+      rewriter.create<quake::RyOp>(loc, false, params, ValueRange{}, targets);
+      rewriter.eraseOp(ryOp1);
+      rewriter.eraseOp(ryOp2);
+    });
   }
 };
 

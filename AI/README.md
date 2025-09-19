@@ -100,3 +100,5 @@ options or those with strong C++ APIs.
 - **Caffe**: A deep learning framework in C++ optimized for speed, especially in vision tasks. Allows defining networks
   via prototxt configs or code, with support for convolutional layers, ReLU/LeakyReLU activations, inner product (
   linear) layers, etc. Useful for CNN-based RL environments.
+  Yes—use **yaml-cpp**.
+

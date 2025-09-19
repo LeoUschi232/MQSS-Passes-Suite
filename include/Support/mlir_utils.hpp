@@ -51,8 +51,8 @@ namespace mqss::support::quakeDialect {
      *
      * @param quakeModule
      * @return
-     */
-    std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
+*/
+    std::pair<ModuleOp, std::unique_ptr<MLIRContext *> >
     extractModuleOpAndContextPointer(const std::string &quakeModule);
 
     /**

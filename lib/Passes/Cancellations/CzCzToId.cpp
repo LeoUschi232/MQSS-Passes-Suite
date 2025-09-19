@@ -1,26 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
@@ -54,7 +31,33 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternCancellation<quake::ZOp, quake::ZOp>(op, 1, 1, 1, 1);
+      auto czOp2 = dyn_cast_or_null<quake::ZOp>(*op);
+      if (!czOp2
+          || czOp2.getTargets().size() != 1
+          || czOp2.getControls().size() != 1) {
+        return;
+      }
+      auto optional_czOp1_onTarget
+          = getPreviousOperationOnTarget(czOp2, czOp2.getTargets()[0]);
+      auto optional_czOp1_onControl
+          = getPreviousOperationOnTarget(czOp2, czOp2.getControls()[0]);
+      if (!optional_czOp1_onTarget
+          || !optional_czOp1_onControl
+          || optional_czOp1_onTarget != optional_czOp1_onControl) {
+        return;
+      }
+      auto czOp1
+          = dyn_cast_or_null<quake::ZOp>(*optional_czOp1_onTarget);
+      if (!czOp1
+          || czOp1.getTargets().size() != 1
+          || czOp1.getControls().size() != 1
+          || czOp1.getControls()[0] != czOp2.getControls()[0]) {
+        return;
+      }
+
+      IRRewriter rewriter(czOp2->getContext());
+      rewriter.eraseOp(czOp2);
+      rewriter.eraseOp(czOp1);
     });
   }
 };

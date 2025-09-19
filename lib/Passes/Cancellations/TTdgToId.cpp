@@ -1,6 +1,7 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
 #include "Support/CodeGen/Quake.hpp"
+#include "Support/Transforms/CancellationOperations.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -15,30 +16,9 @@ namespace mqss::opt {
 } // namespace mqss::opt
 
 using namespace mlir;
+using namespace mqss::support::transforms;
 
 namespace {
-void cancelTTdgToId(Operation *op) {
-  auto t = dyn_cast_or_null<quake::TOp>(*op);
-  if (!t || !t.isAdj() || !t.getControls().empty() ||
-      t.getTargets().size() != 1) {
-    return;
-  }
-  auto prevOp =
-      supportQuake::getPreviousOperationOnTarget(t, t.getTargets()[0]);
-  if (!prevOp) {
-    return;
-  }
-  auto prevGate = dyn_cast_or_null<quake::TOp>(*prevOp);
-  if (!prevGate || prevGate.isAdj() || !prevGate.getControls().empty() ||
-      prevGate.getTargets().size() != 1) {
-    return;
-  }
-
-  IRRewriter rewriter(t->getContext());
-  rewriter.setInsertionPointAfter(t);
-  rewriter.eraseOp(t);
-  rewriter.eraseOp(prevGate);
-}
 
 class TTdgToId final : public BaseMQSSPass<TTdgToId> {
 public:
@@ -51,7 +31,30 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    kernel.walk([&](Operation *op) { cancelTTdgToId(op); });
+    kernel.walk([&](Operation *op) {
+      auto tOp2 = dyn_cast_or_null<quake::TOp>(*op);
+      if (!tOp2
+          || !tOp2.isAdj()
+          || tOp2.getTargets().size() != 1
+          || !tOp2.getControls().empty()) {
+        return;
+      }
+      auto optional_tOp1 =
+          getPreviousOperationOnTarget(tOp2, tOp2.getTargets()[0]);
+      if (!optional_tOp1) {
+        return;
+      }
+      auto tOp1 = dyn_cast_or_null<quake::TOp>(*optional_tOp1);
+      if (!tOp1
+          || tOp1.isAdj()
+          || tOp1.getTargets().size() != 1
+          || !tOp1.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(tOp2->getContext());
+      rewriter.eraseOp(tOp2);
+      rewriter.eraseOp(tOp1);
+    });
   }
 };
 } // namespace

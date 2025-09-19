@@ -1,30 +1,3 @@
-/* This code and any associated documentation is provided "as is"
-
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Martin Letras
-  date   January 2025
-  version 1.0
-
-It applies the following transformations
-
-Z⋅H = H⋅X
-*************************************************************************/
-
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/Transforms/SwitchOperations.hpp"
@@ -52,12 +25,36 @@ public:
 
   StringRef getDescription() const override {
     return "Pass that switches a pattern composed by Z and Hadamard to "
-           "Hadamard and X";
+        "Hadamard and X";
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      patternSwitch<quake::ZOp, quake::HOp, quake::HOp, quake::XOp>(op);
+      auto hOp = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp
+          || hOp.getTargets().size() != 1
+          || !hOp.getControls().empty()) {
+        return;
+      }
+      auto optional_zOp
+          = getPreviousOperationOnTarget(hOp, hOp.getTargets()[0]);
+      if (!optional_zOp) {
+        return;
+      }
+      auto zOp = dyn_cast_or_null<quake::ZOp>(*optional_zOp);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()) {
+        return;
+      }
+      IRRewriter rewriter(hOp->getContext());
+      rewriter.setInsertionPointAfter(hOp);
+      Value target = zOp.getTargets()[0];
+      Location loc = zOp.getLoc();
+      rewriter.create<quake::HOp>(loc, false, target);
+      rewriter.create<quake::XOp>(loc, false, target);
+      rewriter.eraseOp(zOp);
+      rewriter.eraseOp(hOp);
     });
   }
 };
