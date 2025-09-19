@@ -160,7 +160,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
       {"discount_factor", "1.0"},
       {"gae_hyperparameter", "0.96"},
       {"entropy_coefficient", "0.01"},
-      {"device", "cpu"},
+      {"device", torch::cuda::is_available() ? "cuda" : "cpu"},
       {"critic_optimizer", "adam"},
       {"actor_optimizer", "adam"},
       {"critic_learning_rate", "0.005"},

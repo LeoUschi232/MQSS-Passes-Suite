@@ -55,7 +55,7 @@ public:
       ValueRange controls = cxOp.getControls();
       Location loc = cxOp.getLoc();
       rewriter.create<quake::XOp>(loc, false, controls, targets);
-      rewriter.create<quake::ZOp>(loc, false, targets);
+      rewriter.create<quake::ZOp>(loc, false, controls);
       rewriter.eraseOp(zOp);
       rewriter.eraseOp(cxOp);
     });
