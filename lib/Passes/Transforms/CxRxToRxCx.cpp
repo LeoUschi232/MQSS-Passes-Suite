@@ -47,7 +47,8 @@ public:
       auto cxOp = dyn_cast_or_null<quake::XOp>(*optional_cxOp);
       if (!cxOp
           || cxOp.getTargets().size() != 1
-          || cxOp.getControls().size() != 1) {
+          || cxOp.getControls().size() != 1
+          || cxOp.getTargets()[0] != rxOp.getTargets()[0]) {
         return;
       }
       IRRewriter rewriter(rxOp->getContext());
