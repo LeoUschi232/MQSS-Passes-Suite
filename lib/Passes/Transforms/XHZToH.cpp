@@ -30,14 +30,14 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto xOp = dyn_cast_or_null<quake::XOp>(*op);
-      if (!xOp
-          || xOp.getTargets().size() != 1
-          || !xOp.getControls().empty()) {
+      auto zOp = dyn_cast_or_null<quake::ZOp>(*op);
+      if (!zOp
+          || zOp.getTargets().size() != 1
+          || !zOp.getControls().empty()) {
         return;
       }
       auto optional_hOp
-          = getNextOperationOnTarget(xOp, xOp.getTargets()[0]);
+          = getPreviousOperationOnTarget(zOp, zOp.getTargets()[0]);
       if (!optional_hOp) {
         return;
       }
@@ -47,18 +47,18 @@ public:
           || !hOp.getControls().empty()) {
         return;
       }
-      auto optional_zOp
-          = getNextOperationOnTarget(hOp, hOp.getTargets()[0]);
-      if (!optional_zOp) {
+      auto optional_xOp
+          = getPreviousOperationOnTarget(hOp, hOp.getTargets()[0]);
+      if (!optional_xOp) {
         return;
       }
-      auto zOp = dyn_cast_or_null<quake::ZOp>(*optional_zOp);
-      if (!zOp
-          || zOp.getTargets().size() != 1
-          || !zOp.getControls().empty()) {
+      auto xOp = dyn_cast_or_null<quake::XOp>(*optional_xOp);
+      if (!xOp
+          || xOp.getTargets().size() != 1
+          || !xOp.getControls().empty()) {
         return;
       }
-      IRRewriter rewriter(xOp->getContext());
+      IRRewriter rewriter(zOp->getContext());
       rewriter.setInsertionPointAfter(zOp);
       ValueRange targets = xOp.getTargets();
       Location loc = xOp.getLoc();

@@ -31,14 +31,14 @@ public:
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
     kernel.walk([&](Operation *op) {
-      auto hOp1 = dyn_cast_or_null<quake::HOp>(*op);
-      if (!hOp1
-          || hOp1.getTargets().size() != 1
-          || !hOp1.getControls().empty()) {
+      auto hOp2 = dyn_cast_or_null<quake::HOp>(*op);
+      if (!hOp2
+          || hOp2.getTargets().size() != 1
+          || !hOp2.getControls().empty()) {
         return;
       }
       auto optional_zOp
-          = getNextOperationOnTarget(hOp1, hOp1.getTargets()[0]);
+          = getPreviousOperationOnTarget(hOp2, hOp2.getTargets()[0]);
       if (!optional_zOp) {
         return;
       }
@@ -48,18 +48,18 @@ public:
           || !zOp.getControls().empty()) {
         return;
       }
-      auto optional_hOp2
-          = getNextOperationOnTarget(zOp, zOp.getTargets()[0]);
-      if (!optional_hOp2) {
+      auto optional_hOp1
+          = getPreviousOperationOnTarget(zOp, zOp.getTargets()[0]);
+      if (!optional_hOp1) {
         return;
       }
-      auto hOp2 = dyn_cast_or_null<quake::HOp>(*optional_hOp2);
-      if (!hOp2
-          || hOp2.getTargets().size() != 1
-          || !hOp2.getControls().empty()) {
+      auto hOp1 = dyn_cast_or_null<quake::HOp>(*optional_hOp1);
+      if (!hOp1
+          || hOp1.getTargets().size() != 1
+          || !hOp1.getControls().empty()) {
         return;
       }
-      IRRewriter rewriter(hOp1->getContext());
+      IRRewriter rewriter(hOp2->getContext());
       rewriter.setInsertionPointAfter(hOp2);
       ValueRange targets = hOp1.getTargets();
       Location loc = hOp1.getLoc();
