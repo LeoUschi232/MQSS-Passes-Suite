@@ -4,9 +4,9 @@ cmake-build-mqss-dev
 cmake-build-debug
 
 # Local training and data files.
-Datasets/*
-Agents/*
-Circuits/*
+#Datasets/*
+#Agents/*
+#Circuits/*
 
 # Test pdf compilation files.
 *.log
