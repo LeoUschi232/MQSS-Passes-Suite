@@ -94,7 +94,7 @@ if [ ! -d "${TENSORFLOW_DIR}" ]; then
   ./install.sh --run-cmake
   cd ../tensorflow
   mkdir build && cd build
-  cmake -DCMAKE_INSTALL_PREFIX="${TENSORFLOW_DIR}" -DCMAKE_BUILD_TYPE=Release ..
+  cmake -DCMAKE_INSTALL_PREFIX="${TENSORFLOW_DIR}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib ..
   make install -j
   cd "${AI_EXTERNAL_DIR}"
   rm -rf tensorflow-cpp
