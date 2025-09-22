@@ -170,8 +170,7 @@ cmake .. \
   -DBUILD_MLIR_PASSES_TESTS="${BUILD_TESTS}"\
   -DBUILD_MLIR_PASSES_AI="${BUILD_AI}" \
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
-	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
 echo "Building MQSS Repository Passes with ${NUM_JOBS} jobs."
 make -j"${NUM_JOBS}"
 echo "Build of MQSS Repository Passes completed!"
