@@ -81,7 +81,7 @@ TENSORFLOW_DIR=${AI_EXTERNAL_DIR}"/tensorflow"
 mkdir -p "${AI_EXTERNAL_DIR}"
 if [ ! -d "${LIBTORCH_DIR}" ]; then
   cd "${AI_EXTERNAL_DIR}"
-  wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+  wget https://download.pytorch.org/libtorch/nightly/cu129/libtorch-shared-with-deps-latest.zip
   unzip libtorch-shared-with-deps-latest.zip
   rm -rf libtorch-shared-with-deps-latest.zip
 else

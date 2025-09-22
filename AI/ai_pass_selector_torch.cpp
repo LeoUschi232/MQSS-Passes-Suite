@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
   std::string output = params["output"];
 
   if (info) {
+    std::cout << "Parameters:" << std::endl;
     for (auto [key, value] : params) {
       std::cout << "  " << key << ": " << value << std::endl;
     }
