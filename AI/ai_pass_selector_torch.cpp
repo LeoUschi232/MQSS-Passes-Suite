@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 std::unordered_map<std::string, std::string> load_default_params() {
   return {
       {"agent", "a2c-tiny-ibfclsd"},
-      {"dataset", "Passtest"},
+      {"dataset", ""},
       {"circuit", ""},
       {"output", ""},
       {"nr_parallel_environments", "1"},
