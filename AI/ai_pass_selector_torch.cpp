@@ -89,6 +89,9 @@ int main(int argc, char **argv) {
   std::string output = params["output"];
 
   if (info) {
+    for (auto [key, value] : params) {
+      std::cout << "  " << key << ": " << value << std::endl;
+    }
     if (!circuit.empty()) {
       print_circuit_info(circuit);
     }
@@ -123,7 +126,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
       {"circuit", ""},
       {"output", ""},
       {"nr_parallel_environments", "1"},
-      {"episodes", "10000"},
+      {"episodes", "1000"},
       {"max_steps_per_episode", "5"},
       {"discount_factor", "1.0"},
       {"gae_hyperparameter", "0.96"},
