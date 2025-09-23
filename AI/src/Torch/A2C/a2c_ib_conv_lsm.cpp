@@ -12,16 +12,19 @@
 
 // Standard library includes
 #include <sstream>
-#include <stdexcept>
 
 namespace ai_pass_selector {
 A2C_IB_CONV_LSM::A2C_IB_CONV_LSM(
     int circuit_size_class, std::unordered_map<std::string, std::string> params)
-    : BaseA2CAgent(circuit_size_class, std::move(params)) {
-  unsigned int nr_input_values =
-      max_instructions * (max_qubits + NR_GATES + MAX_GATE_PARAMS);
-  (void)nr_input_values;
-  throw std::runtime_error("A2C_IB_CONV_LSM not implemented yet.");
+: BaseA2CAgent(circuit_size_class, std::move(params)) {
+  unsigned int kernel_size = max_qubits + NR_GATES + MAX_GATE_PARAMS;
+  unsigned int conv_output_size = max_instructions;
+  unsigned int nr_input_values = conv_output_size * kernel_size;
+  auto critic = torch::nn::Sequential(
+  torch::nn::ConvolutionalLayer(1, 3, kernel_size),
+
+
+
 }
 
 std::string A2C_IB_CONV_LSM::agentName() const {

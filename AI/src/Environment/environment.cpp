@@ -36,13 +36,9 @@ namespace ai_pass_selector {
 
 QuantumCircuitEnviorment::QuantumCircuitEnviorment(
     const unsigned int max_qubits,
-    const unsigned int max_instructions,
-    const unsigned int max_depth,
     const fs::path &circuit_path,
     unsigned int max_steps)
   : max_qubits(max_qubits),
-    max_instructions(max_instructions),
-    max_depth(max_depth),
     circuit_path(circuit_path),
     max_steps(max_steps),
     current_step(0) {

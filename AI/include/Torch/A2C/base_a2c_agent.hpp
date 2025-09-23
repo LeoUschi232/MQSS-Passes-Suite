@@ -12,11 +12,6 @@
 
 namespace fs = std::filesystem;
 
-namespace torch::nn {
-/// Custom torch LeakyReLU layer with learnable parameter for negative inputs.
-PReLU HalfScalingLayer(int num_parameters, double init = 1.0);
-} // namespace torch::nn
-
 namespace ai_pass_selector {
 
 class BaseA2CAgent : public torch::nn::Module {

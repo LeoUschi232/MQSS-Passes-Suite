@@ -13,12 +13,6 @@
 #include <tuple>
 #include <utility>
 
-namespace torch::nn {
-PReLU HalfScalingLayer(int num_parameters, double init) {
-  return PReLU(PReLUOptions().num_parameters(num_parameters).init(init));
-}
-} // namespace torch::nn
-
 namespace ai_pass_selector {
 
 BaseA2CAgent::BaseA2CAgent(

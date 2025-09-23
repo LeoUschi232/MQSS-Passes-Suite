@@ -13,6 +13,21 @@
     std::string agentName() const override;                                    \
   };
 
+namespace torch::nn {
+/// Custom torch LeakyReLU layer with learnable parameter for negative inputs.
+inline PReLU HalfScalingLayer(int num_parameters, double init = 1.0) {
+  return PReLU(PReLUOptions().num_parameters(num_parameters).init(init));
+}
+/// Custom torch Conv1d layer with automatic output size calculation.
+inline Conv1d ConvolutionalLayer(unsigned int L_in, unsigned int L_out,
+                                 unsigned int kernel_size) {
+  // This layer assumes each instruction with its corresponding attributes:
+  // qubit triggers, gate triggers and params maps exclusively to its own L_out
+  // number of kernels.
+  return Conv1d(Conv1dOptions(L_in, L_out, kernel_size).stride(kernel_size));
+}
+} // namespace torch::nn
+
 namespace ai_pass_selector {
 /// A2C = Advantage Actor-Critic
 /// IB = Instruction-Based
