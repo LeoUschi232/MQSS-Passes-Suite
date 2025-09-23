@@ -7,13 +7,20 @@
 #include "Torch/agent_utils.hpp"
 
 // Standard library includes
-#include <utility>
-#include <tuple>
+#include <Utils/circuit_utils.hpp>
 #include <cmath>
 #include <memory>
-#include <Utils/circuit_utils.hpp>
+#include <tuple>
+#include <utility>
+
+namespace torch::nn {
+PReLU HalfScalingLayer(int num_parameters, double init) {
+  return PReLU(PReLUOptions().num_parameters(num_parameters).init(init));
+}
+} // namespace torch::nn
 
 namespace ai_pass_selector {
+
 BaseA2CAgent::BaseA2CAgent(
     int circuit_size_class,
     std::unordered_map<std::string, std::string> params) {
@@ -23,41 +30,37 @@ BaseA2CAgent::BaseA2CAgent(
 BaseA2CAgent::BaseA2CAgent(
     const std::string &circuit_size,
     std::unordered_map<std::string, std::string> params) {
-  if (CIRCUIT_SIZE_TO_CLASS.find(circuit_size)
-      == CIRCUIT_SIZE_TO_CLASS.end()) {
+  if (CIRCUIT_SIZE_NAME_TO_CLASS.find(circuit_size) ==
+      CIRCUIT_SIZE_NAME_TO_CLASS.end()) {
     throw std::runtime_error("Unsupported size: " + circuit_size);
   }
-  int circuit_size_class = CIRCUIT_SIZE_TO_CLASS.at(circuit_size);
+  int circuit_size_class = CIRCUIT_SIZE_NAME_TO_CLASS.at(circuit_size);
   this->configure(circuit_size_class, std::move(params));
 }
 
 void BaseA2CAgent::configure(
     int circuit_size_class,
     std::unordered_map<std::string, std::string> params) {
-  if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class)
-      == CIRCUIT_CLASS_TO_SPECS.end()) {
+  if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class) ==
+      CIRCUIT_CLASS_TO_SPECS.end()) {
     throw std::runtime_error("Unsupported size class: " + circuit_size_class);
   }
   this->size_class = circuit_size_class;
-  std::tie(this->max_qubits, this->max_instructions, this->max_depth)
-      = CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
-  this->critic_optimizer_type
-      = OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
-  this->actor_optimizer_type
-      = OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
-  this->critic_learning_rate
-      = std::stod(params["critic_learning_rate"]);
-  this->actor_learning_rate
-      = std::stod(params["actor_learning_rate"]);
-  this->nr_parallel_environments
-      = std::stoul(params["nr_parallel_environments"]);
+  std::tie(this->max_qubits, this->max_instructions, this->max_depth) =
+      CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
+  this->critic_optimizer_type =
+      OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
+  this->actor_optimizer_type =
+      OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+  this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
+  this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
+  this->nr_parallel_environments =
+      std::stoul(params["nr_parallel_environments"]);
 }
 
-
-bool BaseA2CAgent::initialize(
-    int nr_input_values,
-    const torch::nn::Sequential &critic,
-    const torch::nn::Sequential &actor) {
+bool BaseA2CAgent::initialize(int nr_input_values,
+                              const torch::nn::Sequential &critic,
+                              const torch::nn::Sequential &actor) {
   try {
     this->nr_input_values = nr_input_values;
     this->critic = critic;
@@ -66,10 +69,10 @@ bool BaseA2CAgent::initialize(
     register_module("actor", this->actor);
     this->critic->to(this->device);
     this->actor->to(this->device);
-    this->critic_optimizer = makeOptimizer(
-        critic_optimizer_type, this->critic, this->critic_learning_rate);
-    this->actor_optimizer = makeOptimizer(
-        actor_optimizer_type, this->actor, this->actor_learning_rate);
+    this->critic_optimizer = makeOptimizer(critic_optimizer_type, this->critic,
+                                           this->critic_learning_rate);
+    this->actor_optimizer = makeOptimizer(actor_optimizer_type, this->actor,
+                                          this->actor_learning_rate);
   } catch (const std::runtime_error &e) {
     this->nr_input_values = 0;
     std::cerr << e.what() << std::endl;
@@ -78,34 +81,31 @@ bool BaseA2CAgent::initialize(
   return true;
 }
 
-unsigned int BaseA2CAgent::getMaxQubits() const {
-  return this->max_qubits;
-}
+unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
 
 unsigned int BaseA2CAgent::getMaxInstructions() const {
   return this->max_instructions;
 }
 
-unsigned int BaseA2CAgent::getMaxDepth() const {
-  return this->max_depth;
-}
+unsigned int BaseA2CAgent::getMaxDepth() const { return this->max_depth; }
 
 unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
 }
 
-std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::forward(
-    const torch::Tensor &batched_observations) {
+std::pair<torch::Tensor, torch::Tensor>
+BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
   if (x.dim() == 3) {
-    // flatten [B, max_qubits, max_instructions] to [B, max_qubits*max_instructions]
+    // flatten [B, max_qubits, max_instructions] to [B,
+    // max_qubits*max_instructions]
     x = x.flatten(1);
   }
   return {this->critic->forward(x), this->actor->forward(x)};
 }
 
-std::tuple<std::vector<unsigned int>,
-           torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
+           torch::Tensor>
 BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
   auto [state_values, action_probs] = this->forward(batched_observations);
   // sample one action per row; result is [B,1] -> squeeze to [B]
@@ -115,30 +115,23 @@ BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
   std::vector<unsigned int> actions;
   actions.reserve(actions_cpu.size(0));
   for (int64_t i = 0; i < actions_cpu.size(0); ++i) {
-    actions.push_back(static_cast<unsigned int>(
-      actions_cpu[i].item<int64_t>()));
+    actions.push_back(
+        static_cast<unsigned int>(actions_cpu[i].item<int64_t>()));
   }
 
   // log π(a|s) for the sampled actions: gather along the action dim
   const torch::Tensor log_action_probs = action_probs.log();
   // a_t, log π(a_t|s_t), V(s_t), entropy of π(a_t|s_t)
-  return {
-      actions,
-      log_action_probs.gather(-1, actions_tensor.unsqueeze(-1)).squeeze(-1),
-      state_values.squeeze(-1),
-      -(action_probs * log_action_probs).sum(-1)
-  };
+  return {actions,
+          log_action_probs.gather(-1, actions_tensor.unsqueeze(-1)).squeeze(-1),
+          state_values.squeeze(-1), -(action_probs * log_action_probs).sum(-1)};
 }
 
 std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
-    const torch::Tensor &rewards,
-    const torch::Tensor &log_action_probs,
-    const torch::Tensor &state_values,
-    const torch::Tensor &entropy,
-    const torch::Tensor &termination_masks,
-    const double discount_factor,
-    const double gae_hyperparameter,
-    const double entropy_coefficient) {
+    const torch::Tensor &rewards, const torch::Tensor &log_action_probs,
+    const torch::Tensor &state_values, const torch::Tensor &entropy,
+    const torch::Tensor &termination_masks, const double discount_factor,
+    const double gae_hyperparameter, const double entropy_coefficient) {
 
   // Let T = final timestep of an episode.
   // An episode generates T+1 states from S_0 to S_T.
@@ -150,22 +143,24 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   torch::Tensor advantages = torch::zeros({T, B}, options);
 
   // Compute the advantages using Generalized Advantage Estimation.
-  // Temporal Difference is a method used in Reinforcement Learning to estimate the value function of a state
-  // based on the difference between the immediate reward obtained from a current state
-  // and the estimated value of the next state.
+  // Temporal Difference is a method used in Reinforcement Learning to estimate
+  // the value function of a state based on the difference between the immediate
+  // reward obtained from a current state and the estimated value of the next
+  // state.
   torch::Tensor A_gae = torch::zeros({B}, options);
   for (int t = T - 2; t >= 0; t--) {
 
-    // In Barto & Sutton the temporal difference residual of V with discount gamma is:
-    // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
-    torch::Tensor delta_t
-        = rewards[t] - state_values[t]
-          + discount_factor * state_values[t + 1] * termination_masks[t];
+    // In Barto & Sutton the temporal difference residual of V with discount
+    // gamma is: delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
+    torch::Tensor delta_t =
+        rewards[t] - state_values[t] +
+        discount_factor * state_values[t + 1] * termination_masks[t];
 
     // The generalized advantage estimation defined by Schulman et al is:
     // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
-    A_gae = discount_factor * gae_hyperparameter * A_gae * termination_masks[t]
-            + delta_t;
+    A_gae =
+        discount_factor * gae_hyperparameter * A_gae * termination_masks[t] +
+        delta_t;
     advantages[t] = A_gae;
   }
 
@@ -176,14 +171,13 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   // Give a bonus for higher entropy to encourage exploration.
   // The equation for the policy performance measure is:
   // J(θ) = (1/N) * sum_{t=0}^{N-1} (ln π_θ(a_t|s_t) * A(s_t, a_t))
-  auto actor_loss = -(log_action_probs * advantages.detach()).mean()
-                    - entropy_coefficient * entropy.mean();
+  auto actor_loss = -(log_action_probs * advantages.detach()).mean() -
+                    entropy_coefficient * entropy.mean();
   return {critic_loss, actor_loss};
 }
 
-void BaseA2CAgent::update_parameters(
-    const torch::Tensor &critic_loss,
-    const torch::Tensor &actor_loss) const {
+void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
+                                     const torch::Tensor &actor_loss) const {
   std::lock_guard lock(*model_mutex);
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
@@ -229,4 +223,4 @@ void BaseA2CAgent::load_model() {
   std::cout << "Loaded model: " << name << std::endl;
 }
 
-} // ai_pass_selector
+} // namespace ai_pass_selector

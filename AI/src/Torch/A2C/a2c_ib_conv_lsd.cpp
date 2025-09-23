@@ -18,9 +18,14 @@ namespace ai_pass_selector {
 A2C_IB_CONV_LSD::A2C_IB_CONV_LSD(
     int circuit_size_class, std::unordered_map<std::string, std::string> params)
     : BaseA2CAgent(circuit_size_class, std::move(params)) {
-  unsigned int nr_input_values =
-      max_instructions * (max_qubits + NR_GATES + MAX_GATE_PARAMS);
-  (void)nr_input_values;
+  unsigned int kernel_size = max_qubits + NR_GATES + MAX_GATE_PARAMS;
+  unsigned int stride = kernel_size;
+  unsigned int conv_output_size = max_instructions;
+  unsigned int nr_input_values = conv_output_size * kernel_size;
+
+
+
+
   throw std::runtime_error("A2C_IB_CONV_LSD not implemented yet.");
 }
 

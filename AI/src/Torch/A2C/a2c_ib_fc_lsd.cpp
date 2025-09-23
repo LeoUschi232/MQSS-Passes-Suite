@@ -25,13 +25,17 @@ A2C_IB_FC_LSD::A2C_IB_FC_LSD(
   int actor_layer2_size = static_cast<int>(std::lround(
       std::cbrt(static_cast<double>(nr_input_values * NR_PASSES * NR_PASSES))));
   auto critic = torch::nn::Sequential(
-      torch::nn::Linear(nr_input_values, critic_layer1_size), torch::nn::Tanh(),
+      torch::nn::Linear(nr_input_values, critic_layer1_size),
+      torch::nn::HalfScalingLayer(critic_layer1_size),
       torch::nn::Linear(critic_layer1_size, critic_layer2_size),
-      torch::nn::Tanh(), torch::nn::Linear(critic_layer2_size, 1));
+      torch::nn::HalfScalingLayer(critic_layer2_size),
+      torch::nn::Linear(critic_layer2_size, 1));
   auto actor = torch::nn::Sequential(
-      torch::nn::Linear(nr_input_values, actor_layer1_size), torch::nn::Tanh(),
+      torch::nn::Linear(nr_input_values, actor_layer1_size),
+      torch::nn::HalfScalingLayer(actor_layer1_size),
       torch::nn::Linear(actor_layer1_size, actor_layer2_size),
-      torch::nn::Tanh(), torch::nn::Linear(actor_layer2_size, NR_PASSES),
+      torch::nn::HalfScalingLayer(actor_layer2_size),
+      torch::nn::Linear(actor_layer2_size, NR_PASSES),
       torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim*/ -1)));
   if (bool initialized = initialize(nr_input_values, critic, actor);
       !initialized) {
