@@ -125,7 +125,7 @@ namespace ai_pass_selector {
      */
     std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
     recreateQuantumCircuitFromInstructionBasedTensorWithContext(
-        const InstructionBasedTensor<double> &tensor);
+        const AllInstructionsTensor<double> &tensor);
 
     /**
      *
@@ -134,7 +134,7 @@ namespace ai_pass_selector {
      */
     std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
     recreateQuantumCircuitFromDepthBasedTensorWithContext(
-        const DepthBasedTensor<double> &tensor);
+        const AllDepthsTensor<double> &tensor);
 
     /**
      * (Legacy signatures kept if you still need them somewhere else.)

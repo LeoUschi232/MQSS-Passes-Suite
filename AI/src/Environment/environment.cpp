@@ -218,9 +218,9 @@ QuantumCircuitEnviorment::step(unsigned int action) {
       ++this->current_step >= this->max_steps};
 }
 
-InstructionBasedTensor<double>
+AllInstructionsTensor<double>
 QuantumCircuitEnviorment::get_instruction_based_observation() {
-  InstructionBasedTensor<double> observation(
+  AllInstructionsTensor<double> observation(
       this->max_qubits, this->max_instructions);
   if (this->circuit_module == nullptr) {
     return observation;
@@ -288,14 +288,14 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
 }
 
 
-DepthBasedTensor<double>
+AllDepthsTensor<double>
 QuantumCircuitEnviorment::get_depth_based_observation() {
   if (this->circuit_module == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {this->max_qubits, this->max_depth};
   }
 
-  DepthBasedTensor<double> observation(this->max_qubits, this->max_depth);
+  AllDepthsTensor<double> observation(this->max_qubits, this->max_depth);
 
   const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit_module));
   if (NR_QUBITS == 0) {

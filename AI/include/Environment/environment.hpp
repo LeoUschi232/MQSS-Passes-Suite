@@ -148,13 +148,13 @@ namespace ai_pass_selector {
          *
          * @return
          */
-        InstructionBasedTensor<double> get_instruction_based_observation();
+        AllInstructionsTensor<double> get_instruction_based_observation();
 
         /**
          *
          * @return
          */
-        DepthBasedTensor<double> get_depth_based_observation();
+        AllDepthsTensor<double> get_depth_based_observation();
 
         /**
          *

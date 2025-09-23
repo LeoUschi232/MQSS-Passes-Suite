@@ -2,7 +2,6 @@
 set -euo pipefail
 
 # Rebuild MQSS only. Assumes: AI/external/libtorch + tensorflow + _deps/cuda-quantum built.
-
 CURRENT_DIR="$(pwd)"
 NUM_JOBS="${NUM_JOBS:-1}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
@@ -34,6 +33,7 @@ if module use /opt/nvidia/hpc_sdk/modulefiles && module load nvhpc/25.5 && comma
     CUDA_HOME="$(ls -d ${HPC_BASE}/* 2>/dev/null | grep -E '/[0-9]+\.[0-9]+$' | sort -V | tail -1)"
   fi
   if [[ -n "${CUDA_HOME:-}" && -d "${CUDA_HOME}/targets/x86_64-linux/include" ]]; then
+    export CAFFE2_NVRTC_LIBRARY="$(HPC_BASE)/12.9/targets/x86_64-linux/lib/stubs/libnvrtc.so"
     CUDA_ENABLED=1
     NVCC="/opt/nvidia/hpc_sdk/Linux_x86_64/25.5/compilers/bin/nvcc"
     CUDA_INCLUDE_DIRS="${CUDA_HOME}/targets/x86_64-linux/include"
@@ -70,4 +70,4 @@ cmake .. \
 
 echo "Building with ${NUM_JOBS} jobs..."
 make -j"${NUM_JOBS}"
-echo "Done."
+echo "Rebuild of MQSS Repository Passes completed!"

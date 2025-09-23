@@ -528,10 +528,10 @@ int convertTensortestCircuitToTikz(int index) {
     return -1;
   }
 
-  InstructionBasedTensor<double> instruction_based_observation =
+  AllInstructionsTensor<double> instruction_based_observation =
       quantum_circuit_enviorment.get_instruction_based_observation();
 
-  DepthBasedTensor<double> depth_based_observation =
+  AllDepthsTensor<double> depth_based_observation =
       quantum_circuit_enviorment.get_depth_based_observation();
 
   auto [reconstructed_from_instruction_tensor, ctx_instr]

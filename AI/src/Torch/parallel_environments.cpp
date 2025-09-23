@@ -24,7 +24,7 @@ ParallelEnvironments::ParallelEnvironments(
 bool ParallelEnvironments::register_quantum_circuit(
     unsigned int index, const fs::path &circuit_path) {
   if (index >= nr_environments) {
-    throw std::out_of_range("In register_quantum_circuit.");
+    throw std::out_of_range("index >= nr_environments");
   }
   return environments[index].register_quantum_circuit(circuit_path);
 }
@@ -58,9 +58,9 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
   rewards.reserve(nr_environments);
   terminates.reserve(nr_environments);
   for (auto &future : futures) {
-    auto result = future.get();
-    rewards.push_back(std::get<0>(result));
-    terminates.push_back(std::get<1>(result));
+    auto [reward, terminate] = future.get();
+    rewards.push_back(reward);
+    terminates.push_back(terminate);
   }
   return {std::move(rewards), std::move(terminates)};
 }
@@ -68,7 +68,8 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
 
 torch::Tensor
 ParallelEnvironments::get_batched_instruction_based_observations() const {
-  const int64_t B = nr_environments, H = max_instructions;
+  const int64_t B = nr_environments;
+  const int64_t H = max_instructions;
   const int64_t W = max_qubits + NR_GATES + MAX_GATE_PARAMS;
 
   std::vector<std::future<torch::Tensor> > futures;
@@ -91,7 +92,9 @@ ParallelEnvironments::get_batched_instruction_based_observations() const {
 
 torch::Tensor
 ParallelEnvironments::get_batched_depth_based_observations() const {
-  const int64_t B = nr_environments, D = max_depth, Q = max_qubits;
+  const int64_t B = nr_environments;
+  const int64_t D = max_depth;
+  const int64_t Q = max_qubits;
   const int64_t F = NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE + max_qubits;
 
   std::vector<std::future<torch::Tensor> > futures;

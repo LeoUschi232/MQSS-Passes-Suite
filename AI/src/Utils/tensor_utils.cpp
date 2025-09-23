@@ -313,7 +313,7 @@ void insertGate(
 // ----------------- High-level “with-context” wrappers -----------------
 std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
 recreateQuantumCircuitFromInstructionBasedTensorWithContext(
-    const InstructionBasedTensor<double> &tensor) {
+    const AllInstructionsTensor<double> &tensor) {
   // Decide maxQubits from tensor shape
   const int maxInstructions = tensor.shape[0];
   const int featuresPerRow = tensor.shape[1];
@@ -377,7 +377,7 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
 
 std::pair<ModuleOp, std::unique_ptr<MLIRContext> >
 recreateQuantumCircuitFromDepthBasedTensorWithContext(
-    const DepthBasedTensor<double> &tensor) {
+    const AllDepthsTensor<double> &tensor) {
   const int maxDepth = tensor.shape[0];
   const int maxQubits = tensor.shape[1];
 
