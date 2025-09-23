@@ -34,15 +34,12 @@ using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-
 constexpr unsigned int CIRCUIT_VALID = 0;
 constexpr unsigned int NO_CIRCUIT = 1;
 constexpr unsigned int TOO_MANY_QUBITS = 2;
-constexpr unsigned int TOO_MANY_INSTRUCTIONS = 3;
-constexpr unsigned int TOO_LARGE_DEPTH = 4;
-constexpr unsigned int NO_QUBIT_ALLOCATIONS = 5;
-constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 6;
-constexpr unsigned int AMBIGUOUS_MEASUREMENT = 7;
+constexpr unsigned int NO_QUBIT_ALLOCATIONS = 3;
+constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
+constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
 class QuantumCircuitEnviorment {
   unsigned int max_qubits;
@@ -51,9 +48,6 @@ class QuantumCircuitEnviorment {
   std::unique_ptr<MLIRContext *> context_ptr;
   unsigned int max_steps;
   unsigned int current_step;
-
-  bool register_quantum_circuit(const fs::path &circuit_path,
-                                const std::string &circuit_text);
 
 public:
   /// Constructors
@@ -81,14 +75,14 @@ public:
 
   /**
    *
-   */
-  void clear_circuit();
-
-  /**
-   *
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
+
+  /**
+   *
+   */
+  void clear_circuit();
 
   /**
    *

@@ -32,16 +32,11 @@ namespace ai_pass_selector {
 /// A2C = Advantage Actor-Critic
 /// IB = Instruction-Based
 /// DB = Depth-Based
-/// FC = Fully Connected
 /// CONV = Convolutional
 /// LSM = Layer Size Maintaining
 /// LSD = Layer Size Decreasing
-DECLARE_A2C_AGENT(A2C_IB_FC_LSM)
-DECLARE_A2C_AGENT(A2C_IB_FC_LSD)
 DECLARE_A2C_AGENT(A2C_IB_CONV_LSM)
 DECLARE_A2C_AGENT(A2C_IB_CONV_LSD)
-DECLARE_A2C_AGENT(A2C_DB_FC_LSM)
-DECLARE_A2C_AGENT(A2C_DB_FC_LSD)
 DECLARE_A2C_AGENT(A2C_DB_CONV_LSM)
 DECLARE_A2C_AGENT(A2C_DB_CONV_LSD)
 } // namespace ai_pass_selector

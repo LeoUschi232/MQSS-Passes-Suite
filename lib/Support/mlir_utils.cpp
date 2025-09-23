@@ -146,8 +146,8 @@ getQubitsInstructionsDepth(FuncOp circuit) {
           if (!qubitIndexOpt.has_value()) {
             continue;
           }
-          int qubitIndex = qubitIndexOpt.value();
-          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+          if (int qubitIndex = qubitIndexOpt.value();
+              0 <= qubitIndex && qubitIndex < nrQubits) {
             nrGates++;
             depths[qubitIndex]++;
           }
