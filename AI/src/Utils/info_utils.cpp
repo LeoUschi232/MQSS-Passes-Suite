@@ -269,7 +269,8 @@ void print_dataset_info(const std::string &dataset_name) {
 }
 
 void print_agent_info(const std::string &agent_name) {
-  throw std::runtime_error("Not implemented yet");
+  (void)agent_name;
+  std::cerr << "Function print_agent_info not implemented yet" << std::endl;
 }
 
 } // namespace ai_pass_selector
