@@ -33,8 +33,8 @@ A2C_IB_FC_LSD::A2C_IB_FC_LSD(
       torch::nn::Linear(actor_layer1_size, actor_layer2_size),
       torch::nn::Tanh(), torch::nn::Linear(actor_layer2_size, NR_PASSES),
       torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim*/ -1)));
-  bool initialized = initialize(nr_input_values, critic, actor);
-  if (!initialized) {
+  if (bool initialized = initialize(nr_input_values, critic, actor);
+      !initialized) {
     std::cerr << "Failed to initialize A2C_IB_FC_LSD." << std::endl;
   }
 }
