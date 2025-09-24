@@ -259,6 +259,26 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
   }
 }
 
+unsigned int
+nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor) {
+  const int nr_instructions = tensor.shape[0];
+  const int instruction_features = tensor.shape[1];
+  const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
+  unsigned int max_used_qubit_index = 0;
+  for (unsigned int instr = 0; instr < nr_instructions; instr++) {
+    for (unsigned int j = 0; j < max_qubits; j++) {
+      if (double value = tensor(instr, j); value == -1.0) {
+        max_used_qubit_index = std::max(max_used_qubit_index, j);
+      } else if (value == 1.0) {
+        max_used_qubit_index = std::max(max_used_qubit_index, j);
+      } else if (value != 0.0) {
+        throw std::runtime_error("Control trigger: " + std::to_string(value));
+      }
+    }
+  }
+  return max_used_qubit_index + 1;
+}
+
 // ----------------- High-level “with-context” wrappers -----------------
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 recreateQuantumCircuitFromInstructionBasedTensorWithContext(
@@ -267,14 +287,15 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
   const int nr_instructions = tensor.shape[0];
   const int instruction_features = tensor.shape[1];
   const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
+  const int nr_qubits = nrUsedQubitsInInstructionBasedTensor(tensor);
 
   auto rebuildSetup =
-      beginReconstruction("__nvqpp__mlirgen__FromTensor", max_qubits);
+      beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);
 
   for (int instr = 0; instr < nr_instructions; instr++) {
     std::vector<int> controlIndexes, targetIndexes;
     int j = 0;
-    for (; j < max_qubits; j++) {
+    for (; j < nr_qubits; j++) {
       if (double value = tensor(instr, j); value == -1.0) {
         controlIndexes.push_back(j);
       } else if (value == 1.0) {
@@ -283,6 +304,8 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
         throw std::runtime_error("Control trigger: " + std::to_string(value));
       }
     }
+    // Skip unused qubits.
+    j = max_qubits;
     if (targetIndexes.empty()) {
       std::cerr << "Warning: Found instruction without targets in "
                    "InstructionsTensor."
@@ -335,14 +358,15 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
     const DepthsTensor<double> &tensor) {
   const int depth = tensor.shape[0];
   const int max_qubits = tensor.shape[1];
+  const int nr_qubits = nrUsedQubitsInDepthBasedTensor(tensor);
 
   auto rebuildSetup =
-      beginReconstruction("__nvqpp__mlirgen__FromTensor", max_qubits);
+      beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);
 
   for (int layer = 0; layer < depth; layer++) {
-    std::vector qubitsHandled(max_qubits, false);
+    std::vector qubitsHandled(nr_qubits, false);
 
-    for (int qubit = 0; qubit < max_qubits; qubit++) {
+    for (int qubit = 0; qubit < nr_qubits; qubit++) {
       if (qubitsHandled[qubit]) {
         continue;
       }
@@ -417,7 +441,6 @@ recreateQuantumCircuitFromDepthBasedTensorWithContext(
       for (int target : targetIndexes) {
         qubitsHandled[target] = true;
       }
-
       insertGate(rebuildSetup, gateIndex, isAdj, controlIndexes, targetIndexes,
                  angles);
     }

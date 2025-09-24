@@ -113,6 +113,21 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
                 const std::vector<double> &angles);
 
 /**
+ * Count which qubits are actually used in the instruction-based circuit tensor.
+ * @param tensor
+ * @return
+ */
+unsigned int
+nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor);
+
+/**
+ * Count which qubits are actually used in the depth-based circuit tensor.
+ * @param tensor
+ * @return
+ */
+unsigned int nrUsedQubitsInDepthBasedTensor(const DepthsTensor<double> &tensor);
+
+/**
  *
  * @param tensor
  * @return
@@ -129,20 +144,6 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 recreateQuantumCircuitFromDepthBasedTensorWithContext(
     const DepthsTensor<double> &tensor);
-
-/**
- * (Legacy signatures kept if you still need them somewhere else.)
- * @param ctx
- * @return
- */
-ModuleOp recreateQuantumCircuitFromInstructionBasedTensor(MLIRContext &ctx);
-
-/**
- * (Legacy signatures kept if you still need them somewhere else.)
- * @param ctx
- * @return
- */
-ModuleOp recreateQuantumCircuitFromDepthBasedTensor(MLIRContext &ctx);
 } // namespace ai_pass_selector
 
 #endif // TENSOR_UTILS_HPP
