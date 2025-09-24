@@ -122,11 +122,11 @@ int main(int argc, char **argv) {
 
 std::unordered_map<std::string, std::string> load_default_params() {
   return {
-      {"agent", "a2c-tiny-ibfclsd"},
+      {"agent", "a2c-tiny-ibconv2"},
       {"dataset", ""},
       {"circuit", ""},
       {"output", ""},
-      {"nr_parallel_environments", "1"},
+      {"nr_parallel_environments", "16"},
       {"episodes", "1000"},
       {"max_steps_per_episode", "5"},
       {"discount_factor", "1.0"},

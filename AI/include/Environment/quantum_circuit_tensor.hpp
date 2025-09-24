@@ -1,6 +1,7 @@
 #ifndef QUANTUM_CIRCUIT_TENSOR_HPP
 #define QUANTUM_CIRCUIT_TENSOR_HPP
 
+#include <Utils/circuit_utils.hpp>
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -21,9 +22,6 @@ constexpr std::array<T, sizeof...(U)> make_array(U &&...u) {
 constexpr auto SUPPORTED_GATES = make_array<std::string_view>(
     "x"sv, "y"sv, "z"sv, "h"sv, "s"sv, "t"sv, "rx"sv, "ry"sv, "rz"sv, "swap"sv,
     "r1"sv, "u2"sv, "u3"sv, "phased_rx"sv, "mx"sv, "my"sv, "mz"sv);
-
-// The gate parameters are whether the gate is adjoint up to three possible
-// angles of unitary and rotation gates, making up to four parameters.
 constexpr unsigned int NR_GATES = SUPPORTED_GATES.size();
 constexpr unsigned int MAX_GATE_PARAMS = 3;
 constexpr unsigned int QUBIT_ROLE = 1;
@@ -66,14 +64,40 @@ index_to_one_hot(unsigned int size, const std::vector<unsigned int> &indexes) {
   return multi_hot;
 }
 
+constexpr unsigned int TINY_MAIN_INSTR_REPR_SIZE =
+    NR_GATES + MAX_GATE_PARAMS + TINY_CIRCUIT_MAX_QUBITS;
+constexpr unsigned int SMALL_MAIN_INSTR_REPR_SIZE =
+    NR_GATES + MAX_GATE_PARAMS + SMALL_CIRCUIT_MAX_QUBITS;
+constexpr unsigned int MODERATE_MAIN_INSTR_REPR_SIZE =
+    NR_GATES + MAX_GATE_PARAMS + MODERATE_CIRCUIT_MAX_QUBITS;
+constexpr unsigned int BIG_MAIN_INSTR_REPR_SIZE =
+    NR_GATES + MAX_GATE_PARAMS + BIG_CIRCUIT_MAX_QUBITS;
+// Huge circuit have arbitrarily big numbers of qubits.
+// Therefore a cap cannot be set on the numbers of qubit trigger.
+// The representation of which qubits are affected by some gate operation will
+// be represented by four values—two for targets two for controls because most
+// standard gates like ccx or swap have up to two controls and two targets.
+// This is likely going to have lower performance than using qubit triggers but
+// is the only way to enable passing arbitrary qubit indexes.
+constexpr unsigned int HUGE_MAIN_INSTR_REPR_SIZE =
+    NR_GATES + MAX_GATE_PARAMS + 4;
+const std::unordered_map<int, unsigned int>
+    CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE = {
+        {TINY, TINY_MAIN_INSTR_REPR_SIZE},
+        {SMALL, SMALL_MAIN_INSTR_REPR_SIZE},
+        {MODERATE, MODERATE_MAIN_INSTR_REPR_SIZE},
+        {BIG, BIG_MAIN_INSTR_REPR_SIZE},
+        {HUGE, HUGE_MAIN_INSTR_REPR_SIZE}};
+
 template <class T> struct InstructionsTensor {
   std::array<unsigned int, 2> shape{};
   std::vector<T> quantum_circuit_data;
 
   // Controls qubits triggered negative.
   // Target qubits triggered positive.
-  explicit InstructionsTensor(unsigned int max_qubits)
-      : shape{0, max_qubits + NR_GATES + MAX_GATE_PARAMS} {}
+  explicit InstructionsTensor(int circuit_size_class)
+      : shape{0, CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE.at(
+                     circuit_size_class)} {}
 
   void reserve(unsigned int nr_instructions) {
     quantum_circuit_data.reserve(nr_instructions * shape[1]);

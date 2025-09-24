@@ -19,8 +19,6 @@ protected:
   /// Attributes on configuration
   int size_class = 0;
   unsigned int max_qubits = 0;
-  unsigned int max_instructions = 0;
-  unsigned int max_depth = 0;
   int critic_optimizer_type = 0;
   int actor_optimizer_type = 0;
   double critic_learning_rate = 0;

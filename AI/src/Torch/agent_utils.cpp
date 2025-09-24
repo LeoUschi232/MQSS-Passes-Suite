@@ -88,14 +88,15 @@ std::string select_best_agent(const std::string &circuit) {
   auto [module, context_ptr] = extractMLIRContext(quake_module_text);
   switch (auto [nrQubits, nrGates, depth] =
               getQubitsInstructionsDepth(FuncOp(module));
-          classify_circuit(nrQubits, nrGates, depth)) {
+          classify_circuit(nrQubits)) {
   case TINY:
-    return "a2c-tiny-ibfclsd";
+    return "a2c-tiny-ibconv2";
   case SMALL:
-    return "a2c-small-ibfclsd";
+    return "a2c-small-ibconv2";
   case MODERATE:
-    return "a2c-moderate-ibfclsd";
+    return "a2c-moderate-ibconv2";
   case BIG:
+    return "a2c-big-ibconv2";
   case HUGE:
   default:
     break;

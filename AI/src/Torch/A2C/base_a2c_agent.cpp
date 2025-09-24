@@ -35,13 +35,13 @@ BaseA2CAgent::BaseA2CAgent(
 void BaseA2CAgent::configure(
     int circuit_size_class,
     std::unordered_map<std::string, std::string> params) {
-  if (CIRCUIT_CLASS_TO_SPECS.find(circuit_size_class) ==
-      CIRCUIT_CLASS_TO_SPECS.end()) {
+  if (CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.find(circuit_size_class) ==
+      CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.end()) {
     throw std::runtime_error("Unsupported size class: " + circuit_size_class);
   }
   this->size_class = circuit_size_class;
-  std::tie(this->max_qubits, this->max_instructions, this->max_depth) =
-      CIRCUIT_CLASS_TO_SPECS.at(circuit_size_class);
+  this->max_qubits = CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class);
+
   this->critic_optimizer_type =
       OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
   this->actor_optimizer_type =
@@ -50,6 +50,10 @@ void BaseA2CAgent::configure(
   this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
   this->nr_parallel_environments =
       std::stoul(params["nr_parallel_environments"]);
+  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
+                         torch::cuda::is_available()
+                     ? torch::kCUDA
+                     : torch::kCPU;
 }
 
 bool BaseA2CAgent::initialize(int nr_input_values,
@@ -76,12 +80,6 @@ bool BaseA2CAgent::initialize(int nr_input_values,
 }
 
 unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
-
-unsigned int BaseA2CAgent::getMaxInstructions() const {
-  return this->max_instructions;
-}
-
-unsigned int BaseA2CAgent::getMaxDepth() const { return this->max_depth; }
 
 unsigned int BaseA2CAgent::getNrInputValues() const {
   return this->nr_input_values;
