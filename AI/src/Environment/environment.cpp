@@ -35,10 +35,11 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-QuantumCircuitEnviorment::QuantumCircuitEnviorment(
-    const unsigned int max_qubits, const fs::path &circuit_path,
-    unsigned int max_steps)
-    : max_qubits(max_qubits), circuit_path(circuit_path), max_steps(max_steps),
+QuantumCircuitEnviorment::QuantumCircuitEnviorment(int circuit_size_class,
+                                                   unsigned int max_steps,
+                                                   const fs::path &circuit_path)
+    : max_qubits(CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class)),
+      circuit_path(circuit_path), context_ptr(nullptr), max_steps(max_steps),
       current_step(0) {
   if (!circuit_path.empty()) {
     this->register_quantum_circuit(circuit_path);

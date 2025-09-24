@@ -51,13 +51,8 @@ class QuantumCircuitEnviorment {
 
 public:
   /// Constructors
-  QuantumCircuitEnviorment(unsigned int max_qubits, unsigned int max_steps)
-      : max_qubits(max_qubits), context_ptr(nullptr), max_steps(max_steps),
-        current_step(0) {}
-
-  QuantumCircuitEnviorment(unsigned int max_qubits,
-                           const fs::path &circuit_path,
-                           unsigned int max_steps);
+  QuantumCircuitEnviorment(int circuit_size_class, unsigned int max_steps,
+                           const fs::path &circuit_path = "");
 
   /// Destructor
   ~QuantumCircuitEnviorment() = default;

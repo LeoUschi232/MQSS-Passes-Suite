@@ -6,10 +6,7 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-unsigned int classify_circuit(unsigned int nr_qubits) {
-  if (nr_qubits <= TINY_CIRCUIT_MAX_QUBITS) {
-    return TINY;
-  }
+int classify_circuit(unsigned int nr_qubits) {
   if (nr_qubits <= SMALL_CIRCUIT_MAX_QUBITS) {
     return SMALL;
   }
@@ -19,7 +16,10 @@ unsigned int classify_circuit(unsigned int nr_qubits) {
   if (nr_qubits <= BIG_CIRCUIT_MAX_QUBITS) {
     return BIG;
   }
-  return HUGE;
+  if (nr_qubits <= HUGE_CIRCUIT_MAX_QUBITS) {
+    return HUGE;
+  }
+  return TOO_BIG;
 }
 
 } // namespace ai_pass_selector

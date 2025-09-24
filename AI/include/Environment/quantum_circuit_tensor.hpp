@@ -64,26 +64,16 @@ index_to_one_hot(unsigned int size, const std::vector<unsigned int> &indexes) {
   return multi_hot;
 }
 
-constexpr unsigned int TINY_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + TINY_CIRCUIT_MAX_QUBITS;
 constexpr unsigned int SMALL_MAIN_INSTR_REPR_SIZE =
     NR_GATES + MAX_GATE_PARAMS + SMALL_CIRCUIT_MAX_QUBITS;
 constexpr unsigned int MODERATE_MAIN_INSTR_REPR_SIZE =
     NR_GATES + MAX_GATE_PARAMS + MODERATE_CIRCUIT_MAX_QUBITS;
 constexpr unsigned int BIG_MAIN_INSTR_REPR_SIZE =
     NR_GATES + MAX_GATE_PARAMS + BIG_CIRCUIT_MAX_QUBITS;
-// Huge circuit have arbitrarily big numbers of qubits.
-// Therefore a cap cannot be set on the numbers of qubit trigger.
-// The representation of which qubits are affected by some gate operation will
-// be represented by four values—two for targets two for controls because most
-// standard gates like ccx or swap have up to two controls and two targets.
-// This is likely going to have lower performance than using qubit triggers but
-// is the only way to enable passing arbitrary qubit indexes.
 constexpr unsigned int HUGE_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + 4;
+    NR_GATES + MAX_GATE_PARAMS + HUGE_CIRCUIT_MAX_QUBITS;
 const std::unordered_map<int, unsigned int>
     CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE = {
-        {TINY, TINY_MAIN_INSTR_REPR_SIZE},
         {SMALL, SMALL_MAIN_INSTR_REPR_SIZE},
         {MODERATE, MODERATE_MAIN_INSTR_REPR_SIZE},
         {BIG, BIG_MAIN_INSTR_REPR_SIZE},
@@ -125,6 +115,15 @@ template <class T> struct InstructionsTensor {
               quantum_circuit_data.begin() + i * shape[1]);
   }
 
+  T &operator()(unsigned int i, unsigned int j) {
+    assert(i < shape[0] && j < shape[1]);
+    return quantum_circuit_data[i * shape[1] + j];
+  }
+  const T &operator()(unsigned int i, unsigned int j) const {
+    assert(i < shape[0] && j < shape[1]);
+    return quantum_circuit_data[i * shape[1] + j];
+  }
+
   T *raw() { return quantum_circuit_data.data(); }
   const T *raw() const { return quantum_circuit_data.data(); }
   std::size_t size() const { return quantum_circuit_data.size(); }
@@ -153,6 +152,15 @@ template <class T> struct DepthsTensor {
     shape[0]++;
     quantum_circuit_data.insert(quantum_circuit_data.end(), values.begin(),
                                 values.end());
+  }
+
+  T &operator()(unsigned int i, unsigned int j, unsigned int k) {
+    assert(i < shape[0] && j < shape[1] && k < shape[2]);
+    return quantum_circuit_data[i * shape[1] * shape[2] + j * shape[2] + k];
+  }
+  const T &operator()(unsigned int i, unsigned int j, unsigned int k) const {
+    assert(i < shape[0] && j < shape[1] && k < shape[2]);
+    return quantum_circuit_data[i * shape[1] * shape[2] + j * shape[2] + k];
   }
 
   T *raw() { return quantum_circuit_data.data(); }

@@ -328,8 +328,8 @@ int getNumberOfGates(FuncOp circuit) {
           if (!qubitIndexOpt.has_value()) {
             continue;
           }
-          int qubitIndex = qubitIndexOpt.value();
-          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+          if (int qubitIndex = qubitIndexOpt.value();
+              0 <= qubitIndex && qubitIndex < nrQubits) {
             nrGates++;
           }
         } else if (operand.getType().isa<quake::VeqType>()) {
@@ -368,8 +368,8 @@ int getCircuitDepth(FuncOp circuit) {
           if (!qubitIndexOpt.has_value()) {
             continue;
           }
-          int qubitIndex = qubitIndexOpt.value();
-          if (0 <= qubitIndex && qubitIndex < nrQubits) {
+          if (int qubitIndex = qubitIndexOpt.value();
+              0 <= qubitIndex && qubitIndex < nrQubits) {
             depths[qubitIndex]++;
           }
         } else if (operand.getType().isa<quake::VeqType>()) {
@@ -523,8 +523,8 @@ Operation *getPreviousOperationOnTarget(Operation *currentOp,
         if (!targetQPrevOpt.has_value()) {
           continue;
         }
-        int targetQPrev = targetQPrevOpt.value();
-        if (targetQCurr == targetQPrev)
+        if (int targetQPrev = targetQPrevOpt.value();
+            targetQCurr == targetQPrev)
           return prevOp;
       }
       for (Value control : quakeOp.getControls()) {
@@ -533,8 +533,8 @@ Operation *getPreviousOperationOnTarget(Operation *currentOp,
         if (!controlQPrevOpt.has_value()) {
           continue;
         }
-        int controlQPrev = controlQPrevOpt.value();
-        if (targetQCurr == controlQPrev)
+        if (int controlQPrev = controlQPrevOpt.value();
+            targetQCurr == controlQPrev)
           return prevOp;
       }
     }
