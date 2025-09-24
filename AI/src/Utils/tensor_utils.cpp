@@ -279,6 +279,36 @@ nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor) {
   return max_used_qubit_index + 1;
 }
 
+unsigned int
+nrUsedQubitsInDepthBasedTensor(const DepthsTensor<double> &tensor) {
+  const int depth = tensor.shape[0];
+  const int max_qubits = tensor.shape[1];
+  unsigned int max_used_qubit_index = 0;
+  for (unsigned int layer = 0; layer < depth; layer++) {
+    for (unsigned int qubit = 0; qubit < max_qubits; qubit++) {
+      int j = 0;
+      for (; j < NR_GATES; j++) {
+        if (double value = tensor(layer, qubit, j); std::abs(value) == 1.0) {
+          max_used_qubit_index = std::max(max_used_qubit_index, qubit);
+        } else if (value != 0.0) {
+          throw std::runtime_error("Gate trigger: " + std::to_string(value));
+        }
+      }
+      for (; j < NR_GATES + MAX_GATE_PARAMS; j++) {
+        // angles do not affect used qubits
+      }
+      if (double value = tensor(layer, qubit, j++);
+          value == -1.0 || value == 1.0) {
+        max_used_qubit_index = std::max(max_used_qubit_index, qubit);
+      } else if (value != 0.0) {
+        throw std::runtime_error("Qubit role trigger: " +
+                                 std::to_string(value));
+      }
+    }
+  }
+  return max_used_qubit_index + 1;
+}
+
 // ----------------- High-level “with-context” wrappers -----------------
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 recreateQuantumCircuitFromInstructionBasedTensorWithContext(

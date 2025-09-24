@@ -21,10 +21,6 @@ A2C_IBCONV2::A2C_IBCONV2(int circuit_size_class,
       CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE.at(circuit_size_class);
   unsigned int lowdim_instr_repr_size =
       CIRCUIT_SIZE_CLASS_TO_LOWDIM_INSTR_REPR_SIZE.at(circuit_size_class);
-  this->actor = torch::nn::Sequential(
-      torch::nn::Conv1d(
-          torch::nn::Conv1dOptions(1, lowdim_instr_repr_size, main_instr_repr_size)
-              .stride(main_instr_repr_size)),
 }
 
 std::string A2C_IBCONV2::agentName() const {

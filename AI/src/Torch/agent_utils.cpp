@@ -89,8 +89,6 @@ std::string select_best_agent(const std::string &circuit) {
   switch (auto [nrQubits, nrGates, depth] =
               getQubitsInstructionsDepth(FuncOp(module));
           classify_circuit(nrQubits)) {
-  case TINY:
-    return "a2c-tiny-ibconv2";
   case SMALL:
     return "a2c-small-ibconv2";
   case MODERATE:

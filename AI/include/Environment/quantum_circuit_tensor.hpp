@@ -154,6 +154,19 @@ template <class T> struct DepthsTensor {
                                 values.end());
   }
 
+  void replace(unsigned int i, unsigned int j, const std::vector<T> &values) {
+    if (values.size() != shape[2]) {
+      throw std::runtime_error(
+          "Depth feature size does not match tensor shape.");
+    }
+    if (i >= shape[0] || j >= shape[1]) {
+      throw std::runtime_error("Depth or qubit index out of range.");
+    }
+    std::copy(values.begin(), values.end(),
+              quantum_circuit_data.begin() + i * shape[1] * shape[2] +
+                  j * shape[2]);
+  }
+
   T &operator()(unsigned int i, unsigned int j, unsigned int k) {
     assert(i < shape[0] && j < shape[1] && k < shape[2]);
     return quantum_circuit_data[i * shape[1] * shape[2] + j * shape[2] + k];

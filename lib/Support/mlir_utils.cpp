@@ -1,13 +1,13 @@
 #include "Support/mlir_utils.hpp"
 
+// Other includes
+#include "Interfaces/Constants.hpp"
+#include "common/RuntimeMLIR.h"
+
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
-
-// Runtime includes
-#include "common/RuntimeMLIR.h"
-
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 

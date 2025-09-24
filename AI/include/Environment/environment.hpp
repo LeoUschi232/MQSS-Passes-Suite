@@ -42,6 +42,7 @@ constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
 constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
 class QuantumCircuitEnviorment {
+  int circuit_size_class;
   unsigned int max_qubits;
   fs::path circuit_path;
   ModuleOp circuit_module;

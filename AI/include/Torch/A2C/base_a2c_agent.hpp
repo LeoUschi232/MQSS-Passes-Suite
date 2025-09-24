@@ -77,10 +77,6 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
 
-  unsigned int getMaxInstructions() const;
-
-  unsigned int getMaxDepth() const;
-
   unsigned int getNrInputValues() const;
 
   /**

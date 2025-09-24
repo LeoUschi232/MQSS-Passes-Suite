@@ -38,7 +38,8 @@ namespace ai_pass_selector {
 QuantumCircuitEnviorment::QuantumCircuitEnviorment(int circuit_size_class,
                                                    unsigned int max_steps,
                                                    const fs::path &circuit_path)
-    : max_qubits(CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class)),
+    : circuit_size_class(circuit_size_class),
+      max_qubits(CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class)),
       circuit_path(circuit_path), context_ptr(nullptr), max_steps(max_steps),
       current_step(0) {
   if (!circuit_path.empty()) {
@@ -202,7 +203,7 @@ std::tuple<double, bool> QuantumCircuitEnviorment::step(unsigned int action) {
 
 InstructionsTensor<double>
 QuantumCircuitEnviorment::get_instruction_based_observation() {
-  InstructionsTensor<double> observation(this->max_qubits);
+  InstructionsTensor<double> observation(this->circuit_size_class);
   if (this->circuit_module == nullptr) {
     return observation;
   }
@@ -210,6 +211,12 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
   if (NR_QUBITS == 0) {
     return observation;
   }
+  const unsigned int nr_instructions =
+      getNumberOfGates(FuncOp(this->circuit_module));
+  if (nr_instructions == 0) {
+    return observation;
+  }
+  observation.reserve(nr_instructions);
 
   const int MAX_QUBITS = this->max_qubits;
   const int GATE_OFFSET = MAX_QUBITS;
@@ -239,31 +246,30 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
           getOperatingControlsTargetsParams(op);
     }
 
-    // TODO: Fix this
-    double *row = observation.row_ptr(instruction_index);
-    std::fill_n(row, observation.shape[1], 0.0);
+    std::vector features(observation.shape[1], 0.0);
 
     // Controls
     for (int qubit : controls) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        row[qubit] = -1.0;
+        features[qubit] = -1.0;
       }
     }
 
     // Targets
     for (int qubit : targets) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        row[qubit] = 1.0;
+        features[qubit] = 1.0;
       }
     }
 
     // Gate
-    row[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
+    features[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
 
     // params: [angle1, angle2, angle3]
     for (int i = 0; i < MAX_GATE_PARAMS; i++) {
-      row[PARAM_OFFSET + i] = params[i];
+      features[PARAM_OFFSET + i] = params[i];
     }
+    observation.append(features);
     instruction_index++;
   });
   return observation;
@@ -280,6 +286,11 @@ DepthsTensor<double> QuantumCircuitEnviorment::get_depth_based_observation() {
   if (NR_QUBITS == 0) {
     return observation;
   }
+  const unsigned int depth = getCircuitDepth(FuncOp(this->circuit_module));
+  if (depth == 0) {
+    return observation;
+  }
+  observation.reserve(depth * NR_QUBITS);
 
   constexpr int GATE_OFFSET = 0;
   constexpr int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
@@ -322,27 +333,27 @@ DepthsTensor<double> QuantumCircuitEnviorment::get_depth_based_observation() {
 
     // Populate features for every involved qubit at this depth
     auto write_cell = [&](int qubit_index, bool is_control_qubit) {
-      // TODO: Fix this
-      double *cell = observation.cell_ptr(scheduled_depth, qubit_index);
+      std::vector features(observation.shape[2], 0.0);
 
       // The tensor storage is value-initialized to 0.0; write only non-zeros.
       if (gate_index >= 0) {
-        cell[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
+        features[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
       }
 
       // params: [adjoint, angle1, angle2, angle3]
       for (int i = 0; i < static_cast<int>(params.size()); i++) {
-        cell[PARAM_OFFSET + i] = params[i];
+        features[PARAM_OFFSET + i] = params[i];
       }
 
       // control info: [is_control_qubit, is_target_qubit]
-      cell[CONTROL_INFO_OFFSET] = is_control_qubit ? -1.0 : 1.0;
+      features[CONTROL_INFO_OFFSET] = is_control_qubit ? -1.0 : 1.0;
       for (int t : targets) {
-        cell[EXTRAS_OFFSET + t] = 1.0;
+        features[EXTRAS_OFFSET + t] = 1.0;
       }
       for (int c : controls) {
-        cell[EXTRAS_OFFSET + c] = -1.0;
+        features[EXTRAS_OFFSET + c] = -1.0;
       }
+      observation.append(qubit_index, features);
     };
     std::vector<char> touched(NR_QUBITS, 0);
     for (int qubit : targets) {

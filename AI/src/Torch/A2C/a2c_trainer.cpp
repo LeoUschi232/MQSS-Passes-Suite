@@ -15,8 +15,6 @@ std::unordered_map<std::string, std::string>
 train_a2c(BaseA2CAgent &agent, const std::string &dataset,
           std::unordered_map<std::string, std::string> params) {
   unsigned int max_qubits = agent.getMaxQubits();
-  unsigned int max_instructions = agent.getMaxInstructions();
-  unsigned int max_depth = agent.getMaxDepth();
 
   if (params["print_param_info"] == "true") {
     std::cout << "Training A2C agent with parameters:" << std::endl;
@@ -46,8 +44,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
   for (auto &file : all_dataset_files) {
     std::string quake_module_text = readFileToString(file.string());
     if (auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-        getNumberOfQubits(FuncOp(mlir_module)) > max_qubits ||
-        getNumberOfGates(FuncOp(mlir_module)) > max_instructions) {
+        getNumberOfQubits(FuncOp(mlir_module)) > max_qubits) {
       continue;
     }
     filtered_dataset_files.push_back(file.string());

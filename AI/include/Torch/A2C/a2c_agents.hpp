@@ -37,15 +37,13 @@ inline Conv1d ConvolutionalLayer(unsigned int L_in, unsigned int L_out,
 
 namespace ai_pass_selector {
 // Low-dimensional instruction representation sizes are arbitrarily chosen.
-constexpr unsigned int TINY_LOWDIM_INSTR_REPR_SIZE = 8;
-constexpr unsigned int SMALL_LOWDIM_INSTR_REPR_SIZE = 10;
-constexpr unsigned int MODERATE_LOWDIM_INSTR_REPR_SIZE = 15;
-constexpr unsigned int BIG_LOWDIM_INSTR_REPR_SIZE = 21;
-constexpr unsigned int HUGE_LOWDIM_INSTR_REPR_SIZE = 22;
+constexpr unsigned int SMALL_LOWDIM_INSTR_REPR_SIZE = 4;
+constexpr unsigned int MODERATE_LOWDIM_INSTR_REPR_SIZE = 8;
+constexpr unsigned int BIG_LOWDIM_INSTR_REPR_SIZE = 16;
+constexpr unsigned int HUGE_LOWDIM_INSTR_REPR_SIZE = 32;
 
 const std::unordered_map<int, unsigned int>
     CIRCUIT_SIZE_CLASS_TO_LOWDIM_INSTR_REPR_SIZE = {
-        {TINY, TINY_LOWDIM_INSTR_REPR_SIZE},
         {SMALL, SMALL_LOWDIM_INSTR_REPR_SIZE},
         {MODERATE, MODERATE_LOWDIM_INSTR_REPR_SIZE},
         {BIG, BIG_LOWDIM_INSTR_REPR_SIZE},
