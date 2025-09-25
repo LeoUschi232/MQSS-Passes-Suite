@@ -161,10 +161,10 @@ get_dataset_info(const std::string &dataset_name) {
                total_nr_qubits = 0, total_nr_gates = 0, total_depth = 0,
                nr_mx_gates = 0, nr_my_gates = 0, nr_mz_gates = 0;
   std::array<unsigned int, 2> nr_x_gates{0, 0}, nr_y_gates{0, 0},
-      nr_z_gates{0, 0}, nr_h_gates{0, 0}, nr_s_gates{0, 0}, nr_t_gates{0, 0},
-      nr_rx_gates{0, 0}, nr_ry_gates{0, 0}, nr_rz_gates{0, 0},
-      nr_swap_gates{0, 0}, nr_r1_gates{0, 0}, nr_u2_gates{0, 0},
-      nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
+      nr_z_gates{0, 0}, nr_h_gates{0, 0}, nr_rx_gates{0, 0}, nr_ry_gates{0, 0},
+      nr_rz_gates{0, 0}, nr_swap_gates{0, 0}, nr_r1_gates{0, 0},
+      nr_u2_gates{0, 0}, nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
+  std::array<unsigned int, 4> nr_s_gates{0, 0, 0, 0}, nr_t_gates{0, 0, 0, 0};
 
   unsigned int progress = 0;
   for (auto entry_path : files) {
@@ -230,6 +230,13 @@ get_dataset_info(const std::string &dataset_name) {
       }
       for (int qubit : targets) {
         depths[qubit] = local_max_depth + 1;
+      }
+      if (gate.isAdj()) {
+        if (isa<quake::SOp>(op) || isa<quake::TOp>(op)) {
+          count_index += 2;
+        } else {
+          throw std::runtime_error("Only S and T gates can be daggered.");
+        }
       }
       switch (GATE_INDEX(getOnlyGateName(op))) {
       case X:
@@ -322,9 +329,15 @@ get_dataset_info(const std::string &dataset_name) {
   info.emplace_back("Number of S gates", std::to_string(nr_s_gates[0]));
   info.emplace_back("Number of controlled-S gates",
                     std::to_string(nr_s_gates[1]));
+  info.emplace_back("Number of Sdg gates", std::to_string(nr_s_gates[2]));
+  info.emplace_back("Number of controlled-Sdg gates",
+                    std::to_string(nr_s_gates[3]));
   info.emplace_back("Number of T gates", std::to_string(nr_t_gates[0]));
   info.emplace_back("Number of controlled-T gates",
                     std::to_string(nr_t_gates[1]));
+  info.emplace_back("Number of Tdg gates", std::to_string(nr_t_gates[2]));
+  info.emplace_back("Number of controlled-Tdg gates",
+                    std::to_string(nr_t_gates[3]));
   info.emplace_back("Number of Rx gates", std::to_string(nr_rx_gates[0]));
   info.emplace_back("Number of controlled-Rx gates",
                     std::to_string(nr_rx_gates[1]));

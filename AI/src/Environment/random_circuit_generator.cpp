@@ -27,10 +27,14 @@ namespace ai_pass_selector {
 //   Number of controlled-Z gates: 44138
 //   Number of H gates: 344383
 //   Number of controlled-H gates: 16446
-//   Number of S gates: 69197
+//   Number of S gates: 43873
 //   Number of controlled-S gates: 0
-//   Number of T gates: 74836
+//   Number of Sdg gates: 25324
+//   Number of controlled-Sdg gates: 0
+//   Number of T gates: 37419
 //   Number of controlled-T gates: 0
+//   Number of Tdg gates: 37417
+//   Number of controlled-Tdg gates: 0
 //   Number of Rx gates: 26867
 //   Number of controlled-Rx gates: 16275
 //   Number of Ry gates: 192001
@@ -47,7 +51,6 @@ namespace ai_pass_selector {
 //   Number of controlled-U3 gates: 32482
 //   Number of PhasedRx gates: 0
 //   Number of controlled-PhasedRx gates: 0
-
 
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
 random_quantum_circuit_by_nr_instructions(unsigned int nr_qubits,
