@@ -201,8 +201,7 @@ std::tuple<double, bool> QuantumCircuitEnviorment::step(unsigned int action) {
           ++this->current_step >= this->max_steps};
 }
 
-InstructionsTensor<double>
-QuantumCircuitEnviorment::get_instruction_based_observation() {
+InstructionsTensor<double> QuantumCircuitEnviorment::get_observation() {
   InstructionsTensor<double> observation(this->circuit_size_class);
   if (this->circuit_module == nullptr) {
     return observation;
@@ -272,113 +271,6 @@ QuantumCircuitEnviorment::get_instruction_based_observation() {
     observation.append(features);
     instruction_index++;
   });
-  return observation;
-}
-
-DepthsTensor<double> QuantumCircuitEnviorment::get_depth_based_observation() {
-  DepthsTensor<double> observation(this->max_qubits);
-  if (this->circuit_module == nullptr) {
-    std::cerr << "No circuit registered in the environment." << std::endl;
-    return observation;
-  }
-
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit_module));
-  if (NR_QUBITS == 0) {
-    return observation;
-  }
-  const unsigned int depth = getCircuitDepth(FuncOp(this->circuit_module));
-  if (depth == 0) {
-    return observation;
-  }
-  observation.reserve(depth * NR_QUBITS);
-
-  constexpr int GATE_OFFSET = 0;
-  constexpr int PARAM_OFFSET = GATE_OFFSET + NR_GATES;
-  constexpr int CONTROL_INFO_OFFSET = PARAM_OFFSET + MAX_GATE_PARAMS;
-  constexpr int EXTRAS_OFFSET = CONTROL_INFO_OFFSET + QUBIT_ROLE;
-
-  // Greedy ASAP schedule: track next free depth per qubit.
-  std::vector next_free_depth(NR_QUBITS, 0);
-
-  this->circuit_module.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
-      return;
-    }
-
-    std::string gate_name = getOnlyGateName(op);
-    int gate_index = GATE_INDEX(gate_name);
-    if (gate_index < 0) {
-      throw std::runtime_error("Gate: " + gate_name);
-    }
-    std::vector<int> controls = {};
-    std::vector<int> targets = {};
-    std::vector params(MAX_GATE_PARAMS, 0.0);
-    bool isAdj = false;
-
-    if (isMeasurementGate(op)) {
-      targets = getMeasurementTargets(op, NR_QUBITS);
-    } else {
-      std::tie(controls, targets, params, isAdj) =
-          getOperatingControlsTargetsParams(op);
-    }
-
-    // Determine layer = depth cross-section
-    int scheduled_depth = 0;
-    for (int qubit : controls) {
-      scheduled_depth = std::max(scheduled_depth, next_free_depth[qubit]);
-    }
-    for (int qubit : targets) {
-      scheduled_depth = std::max(scheduled_depth, next_free_depth[qubit]);
-    }
-
-    // Populate features for every involved qubit at this depth
-    auto write_cell = [&](int qubit_index, bool is_control_qubit) {
-      std::vector features(observation.shape[2], 0.0);
-
-      // The tensor storage is value-initialized to 0.0; write only non-zeros.
-      if (gate_index >= 0) {
-        features[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
-      }
-
-      // params: [adjoint, angle1, angle2, angle3]
-      for (int i = 0; i < static_cast<int>(params.size()); i++) {
-        features[PARAM_OFFSET + i] = params[i];
-      }
-
-      // control info: [is_control_qubit, is_target_qubit]
-      features[CONTROL_INFO_OFFSET] = is_control_qubit ? -1.0 : 1.0;
-      for (int t : targets) {
-        features[EXTRAS_OFFSET + t] = 1.0;
-      }
-      for (int c : controls) {
-        features[EXTRAS_OFFSET + c] = -1.0;
-      }
-      observation.append(qubit_index, features);
-    };
-    std::vector<char> touched(NR_QUBITS, 0);
-    for (int qubit : targets) {
-      if (!touched[qubit]) {
-        write_cell(qubit, false);
-        touched[qubit] = 1;
-      }
-    }
-    for (int qubit : controls) {
-      if (!touched[qubit]) {
-        write_cell(qubit, true);
-        touched[qubit] = 1;
-      }
-    }
-
-    // Advance next free depth for all qubits touched by this op
-    int new_depth = scheduled_depth + 1;
-    for (int qubit : targets) {
-      next_free_depth[qubit] = std::max(next_free_depth[qubit], new_depth);
-    }
-    for (int qubit : controls) {
-      next_free_depth[qubit] = std::max(next_free_depth[qubit], new_depth);
-    }
-  });
-
   return observation;
 }
 

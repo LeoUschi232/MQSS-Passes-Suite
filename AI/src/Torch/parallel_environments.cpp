@@ -54,8 +54,7 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
   return {std::move(rewards), std::move(terminates)};
 }
 
-torch::Tensor
-ParallelEnvironments::get_batched_instruction_based_observations() const {
+torch::Tensor ParallelEnvironments::get_batched_observations() const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<torch::Tensor>> futures;
@@ -63,35 +62,10 @@ ParallelEnvironments::get_batched_instruction_based_observations() const {
   for (int64_t i = 0; i < B; ++i) {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
       auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
-      auto obs = env.get_instruction_based_observation();
+      auto obs = env.get_observation();
       const int64_t D = obs.shape[0];
       const int64_t W = obs.shape[1];
       auto src = torch::from_blob(obs.raw(), {D, W}, torch::kFloat64);
-      return src.clone();
-    }));
-  }
-  std::vector<torch::Tensor> slices;
-  slices.reserve(B);
-  for (auto &future : futures) {
-    slices.emplace_back(future.get());
-  }
-  return torch::stack(slices, 0);
-}
-
-torch::Tensor
-ParallelEnvironments::get_batched_depth_based_observations() const {
-  const int64_t B = nr_environments;
-
-  std::vector<std::future<torch::Tensor>> futures;
-  futures.reserve(B);
-  for (int64_t i = 0; i < B; ++i) {
-    futures.emplace_back(std::async(std::launch::async, [&, i] {
-      auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
-      auto obs = env.get_depth_based_observation();
-      const int64_t D = obs.shape[0];
-      const int64_t Q = obs.shape[1];
-      const int64_t F = obs.shape[2];
-      auto src = torch::from_blob(obs.raw(), {D, Q, F}, torch::kFloat64);
       return src.clone();
     }));
   }

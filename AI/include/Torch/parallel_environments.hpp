@@ -43,13 +43,7 @@ public:
    *
    * @return
    */
-  torch::Tensor get_batched_instruction_based_observations() const;
-
-  /**
-   *
-   * @return
-   */
-  torch::Tensor get_batched_depth_based_observations() const;
+  torch::Tensor get_batched_observations() const;
 
   /**
    *

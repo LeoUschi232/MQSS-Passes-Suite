@@ -1,15 +1,13 @@
 OPENQASM 2.0;
 include "qelib1.inc";
-gate r(param0,param1) q0 { u(param0,-pi/2 + param1,pi/2 - param1) q0; }
-gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(param0) q1; cx q0,q1; h q1; }
-gate ryy(param0) q0,q1 { sxdg q0; sxdg q1; cx q0,q1; rz(param0) q1; cx q0,q1; sx q0; sx q1; }
+gate xx_plus_yy(param0,param1) q0,q1 { rz(param1) q0; sdg q1; sx q1; s q1; s q0; cx q1,q0; ry((-0.5)*param0) q1; ry((-0.5)*param0) q0; cx q1,q0; sdg q0; sdg q1; sxdg q1; s q1; rz(-param1) q0; }
 qreg q[5];
 creg meas[5];
-r(0.23524400967281567,2.4248815647181114) q[0];
-r(0.232986638071365,-2.647000376699888) q[4];
-rzx(1.0464489585946533) q[3],q[0];
-ryy(-2.422191116045173) q[4],q[0];
-cx q[4],q[0];
+rx(0.9875878529519966) q[3];
+cy q[1],q[0];
+s q[4];
+cry(0.16813836393272963) q[3],q[4];
+xx_plus_yy(1.5920632289129388,0) q[2],q[1];
 barrier q[0],q[1],q[2],q[3],q[4];
 measure q[0] -> meas[0];
 measure q[1] -> meas[1];

@@ -490,16 +490,12 @@ int convertTensortestCircuitToTikz(int index) {
       fs::path(AI_DATASET_DIR) / "Latex/Tensortest";
   const fs::path latex_quake_input_file =
       latex_tensortest_dir / (circuit_name + "_input.qke");
-  const fs::path latex_quake_output_file1 =
-      latex_tensortest_dir / (circuit_name + "_output1.qke");
-  const fs::path latex_quake_output_file2 =
-      latex_tensortest_dir / (circuit_name + "_output2.qke");
+  const fs::path latex_quake_output_file =
+      latex_tensortest_dir / (circuit_name + "_output.qke");
   const fs::path latex_tikz_input_file =
       latex_tensortest_dir / (circuit_name + "_input.tikz");
-  const fs::path latex_tikz_output_file1 =
-      latex_tensortest_dir / (circuit_name + "_output1.tikz");
-  const fs::path latex_tikz_output_file2 =
-      latex_tensortest_dir / (circuit_name + "_output2.tikz");
+  const fs::path latex_tikz_output_file =
+      latex_tensortest_dir / (circuit_name + "_output.tikz");
 
   const fs::path quake_to_tikz_tool_path =
       fs::path(MQSS_BUILD_DIR) / "tools/quake-to-tikz";
@@ -522,42 +518,22 @@ int convertTensortestCircuitToTikz(int index) {
     return -1;
   }
 
-  InstructionsTensor<double> instruction_based_observation =
-      quantum_circuit_enviorment.get_instruction_based_observation();
-
-  DepthsTensor<double> depth_based_observation =
-      quantum_circuit_enviorment.get_depth_based_observation();
+  InstructionsTensor<double> observation =
+      quantum_circuit_enviorment.get_observation();
 
   auto [reconstructed_from_instruction_tensor, ctx_instr] =
-      recreateQuantumCircuitFromInstructionBasedTensorWithContext(
-          instruction_based_observation);
-
-  auto [reconstructed_from_depth_tensor, ctx_depth] =
-      recreateQuantumCircuitFromDepthBasedTensorWithContext(
-          depth_based_observation);
+      recreateQuantumCircuitFromInstructionBasedTensorWithContext(observation);
 
   if (int rc = write_module_to_file(reconstructed_from_instruction_tensor,
-                                    latex_quake_output_file1);
-      rc != 0) {
-    return -1;
-  }
-
-  if (int rc = write_module_to_file(reconstructed_from_depth_tensor,
-                                    latex_quake_output_file2);
+                                    latex_quake_output_file);
       rc != 0) {
     return -1;
   }
 
   // Reconstructed quake → tikz (two variants)
   if (int rc = convert_quake_to_tikz(
-          quake_to_tikz_tool_path, latex_quake_output_file1,
-          latex_tikz_output_file1, "./logs/tensortest_to_tikz_after1.log");
-      rc != 0) {
-    return -1;
-  }
-  if (int rc = convert_quake_to_tikz(
-          quake_to_tikz_tool_path, latex_quake_output_file2,
-          latex_tikz_output_file2, "./logs/tensortest_to_tikz_after2.log");
+          quake_to_tikz_tool_path, latex_quake_output_file,
+          latex_tikz_output_file, "./logs/tensortest_to_tikz_after.log");
       rc != 0) {
     return -1;
   }
@@ -566,10 +542,7 @@ int convertTensortestCircuitToTikz(int index) {
   if (int rc = build_png_from_tikz_file(latex_tikz_input_file); rc != 0) {
     return -1;
   }
-  if (int rc = build_png_from_tikz_file(latex_tikz_output_file1); rc != 0) {
-    return -1;
-  }
-  if (int rc = build_png_from_tikz_file(latex_tikz_output_file2); rc != 0) {
+  if (int rc = build_png_from_tikz_file(latex_tikz_output_file); rc != 0) {
     return -1;
   }
   return 0;

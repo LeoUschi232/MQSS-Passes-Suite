@@ -1,4 +1,3 @@
-// Utils/tensor_utils.cpp
 #include "Utils/tensor_utils.hpp"
 
 // Support includes
@@ -279,36 +278,6 @@ nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor) {
   return max_used_qubit_index + 1;
 }
 
-unsigned int
-nrUsedQubitsInDepthBasedTensor(const DepthsTensor<double> &tensor) {
-  const int depth = tensor.shape[0];
-  const int max_qubits = tensor.shape[1];
-  unsigned int max_used_qubit_index = 0;
-  for (unsigned int layer = 0; layer < depth; layer++) {
-    for (unsigned int qubit = 0; qubit < max_qubits; qubit++) {
-      int j = 0;
-      for (; j < NR_GATES; j++) {
-        if (double value = tensor(layer, qubit, j); std::abs(value) == 1.0) {
-          max_used_qubit_index = std::max(max_used_qubit_index, qubit);
-        } else if (value != 0.0) {
-          throw std::runtime_error("Gate trigger: " + std::to_string(value));
-        }
-      }
-      for (; j < NR_GATES + MAX_GATE_PARAMS; j++) {
-        // angles do not affect used qubits
-      }
-      if (double value = tensor(layer, qubit, j++);
-          value == -1.0 || value == 1.0) {
-        max_used_qubit_index = std::max(max_used_qubit_index, qubit);
-      } else if (value != 0.0) {
-        throw std::runtime_error("Qubit role trigger: " +
-                                 std::to_string(value));
-      }
-    }
-  }
-  return max_used_qubit_index + 1;
-}
-
 // ----------------- High-level “with-context” wrappers -----------------
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 recreateQuantumCircuitFromInstructionBasedTensorWithContext(
@@ -379,101 +348,6 @@ recreateQuantumCircuitFromInstructionBasedTensorWithContext(
     }
     insertGate(rebuildSetup, gateIndex, isAdj, controlIndexes, targetIndexes,
                angles);
-  }
-  return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
-}
-
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
-recreateQuantumCircuitFromDepthBasedTensorWithContext(
-    const DepthsTensor<double> &tensor) {
-  const int depth = tensor.shape[0];
-  const int max_qubits = tensor.shape[1];
-  const int nr_qubits = nrUsedQubitsInDepthBasedTensor(tensor);
-
-  auto rebuildSetup =
-      beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);
-
-  for (int layer = 0; layer < depth; layer++) {
-    std::vector qubitsHandled(nr_qubits, false);
-
-    for (int qubit = 0; qubit < nr_qubits; qubit++) {
-      if (qubitsHandled[qubit]) {
-        continue;
-      }
-
-      int j = 0;
-      int gateIndex = -1;
-      bool isAdj = false;
-      for (; j < NR_GATES; j++) {
-        if (double value = tensor(layer, qubit, j); std::abs(value) == 1.0) {
-          if (gateIndex >= 0) {
-            throw std::runtime_error("Multiple gates triggered in one cell.");
-          }
-          gateIndex = j;
-          if (value < 0.0) {
-            isAdj = true;
-          }
-        } else if (value != 0.0) {
-          throw std::runtime_error("Gate trigger: " + std::to_string(value));
-        }
-      }
-      if (gateIndex < 0) {
-        // There will probably be a lot of empty cells.
-        continue;
-      }
-
-      std::vector<double> angles;
-      for (; j < NR_GATES + MAX_GATE_PARAMS; j++) {
-        angles.push_back(tensor(layer, qubit, j));
-      }
-      if (angles.size() != MAX_GATE_PARAMS) {
-        throw std::runtime_error("Nr gate angles: " +
-                                 std::to_string(angles.size()));
-      }
-      bool isControl = false;
-      bool isTarget = false;
-      if (double value = tensor(layer, qubit, j++); value == -1.0) {
-        isControl = true;
-      } else if (value == 1.0) {
-        isTarget = true;
-      } else if (value != 0.0) {
-        throw std::runtime_error("IsControl trigger: " + std::to_string(value));
-      }
-      if (!isControl && !isTarget) {
-        throw std::runtime_error("Qubit must be either control or target.");
-      }
-
-      constexpr int rolesBase = NR_GATES + MAX_GATE_PARAMS + QUBIT_ROLE;
-      std::vector<int> controlIndexes;
-      std::vector<int> targetIndexes;
-      for (int extraQubit = 0;
-           extraQubit < max_qubits && j < rolesBase + max_qubits;
-           extraQubit++, j++) {
-        if (j >= rolesBase + max_qubits) {
-          throw std::runtime_error("Iterator exceeded qubit roles.");
-        }
-        if (double value = tensor(layer, qubit, j); value == -1.0) {
-          controlIndexes.push_back(extraQubit);
-        } else if (value == 1.0) {
-          targetIndexes.push_back(extraQubit);
-        } else if (value != 0.0) {
-          throw std::runtime_error("Role trigger: " + std::to_string(value));
-        }
-      }
-      if (targetIndexes.empty()) {
-        // There will probably be a lot of empty targets.
-        continue;
-      }
-
-      for (int control : controlIndexes) {
-        qubitsHandled[control] = true;
-      }
-      for (int target : targetIndexes) {
-        qubitsHandled[target] = true;
-      }
-      insertGate(rebuildSetup, gateIndex, isAdj, controlIndexes, targetIndexes,
-                 angles);
-    }
   }
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
 }

@@ -121,13 +121,6 @@ unsigned int
 nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor);
 
 /**
- * Count which qubits are actually used in the depth-based circuit tensor.
- * @param tensor
- * @return
- */
-unsigned int nrUsedQubitsInDepthBasedTensor(const DepthsTensor<double> &tensor);
-
-/**
  *
  * @param tensor
  * @return
@@ -136,14 +129,6 @@ std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 recreateQuantumCircuitFromInstructionBasedTensorWithContext(
     const InstructionsTensor<double> &tensor);
 
-/**
- *
- * @param tensor
- * @return
- */
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
-recreateQuantumCircuitFromDepthBasedTensorWithContext(
-    const DepthsTensor<double> &tensor);
 } // namespace ai_pass_selector
 
 #endif // TENSOR_UTILS_HPP

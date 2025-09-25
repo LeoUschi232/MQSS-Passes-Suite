@@ -2,9 +2,8 @@
 #define CONVERSION_WORKFLOW_HPP
 
 // MLIR includes
-#include "mlir/Pass/Pass.h"
 #include "mlir/IR/BuiltinOps.h"
-
+#include "mlir/Pass/Pass.h"
 
 // Stdandard library includes
 #include <filesystem>
@@ -37,11 +36,10 @@ bool copy_file_and_report(const fs::path &source, const fs::path &destination);
  * @param append_to_log_file
  * @return
  */
-int convert_quake_to_tikz(
-    const fs::path &quake_to_tikz_tool_path,
-    const fs::path &quake_input_path,
-    const fs::path &tikz_output_path,
-    const std::string &append_to_log_file);
+int convert_quake_to_tikz(const fs::path &quake_to_tikz_tool_path,
+                          const fs::path &quake_input_path,
+                          const fs::path &tikz_output_path,
+                          const std::string &append_to_log_file);
 
 /**
  *

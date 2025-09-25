@@ -37,7 +37,8 @@ random_quantum_circuit_by_depth(unsigned int nr_qubits, unsigned int depth);
  * @return
  */
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
-random_quantum_circuit_by_max_depth(unsigned int nr_qubits, unsigned int max_depth);
+random_quantum_circuit_by_max_depth(unsigned int nr_qubits,
+                                    unsigned int max_depth);
 } // namespace ai_pass_selector
 
 #endif // MLIRPASSES_RANDOM_CIRCUIT_GENERATOR_H

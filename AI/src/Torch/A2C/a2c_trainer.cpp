@@ -83,7 +83,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     auto termination_masks = torch::zeros({T, B}, options);
 
     torch::Tensor batched_observations =
-        environments.get_batched_instruction_based_observations();
+        environments.get_batched_observations();
     for (unsigned int update_step = 0; update_step < max_steps_per_episode;
          update_step++) {
       auto [actions, log_action_probs, state_values, step_entropy] =
@@ -96,8 +96,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
         episode_rewards[update_step][b] = rewards[b];
         termination_masks[update_step][b] = terminates[b] ? 0.0 : 1.0;
       }
-      batched_observations =
-          environments.get_batched_instruction_based_observations();
+      batched_observations = environments.get_batched_observations();
     }
 
     auto [critic_loss, actor_loss] =

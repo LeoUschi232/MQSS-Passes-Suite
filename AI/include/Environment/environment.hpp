@@ -110,13 +110,7 @@ public:
    *
    * @return
    */
-  InstructionsTensor<double> get_instruction_based_observation();
-
-  /**
-   *
-   * @return
-   */
-  DepthsTensor<double> get_depth_based_observation();
+  InstructionsTensor<double> get_observation();
 
   /**
    *
