@@ -424,13 +424,8 @@ int convertPasstestCircuitToTikz(std::string passname,
 // ------------------------------------------------------------
 // Tensortest → TikZ PNGs (refactored, same behavior)
 // ------------------------------------------------------------
-void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
-  std::cout << "Converting " << nrTensortestCircuits
-            << " quake tensortest circuits to tikz." << std::endl;
-  if (nrTensortestCircuits == 0) {
-    std::cout << "No circuits found for conversion to TikZ." << std::endl;
-    return;
-  }
+void convertAllTensortestCircuitsToTikz() {
+  std::cout << "Converting quake tensortest circuits to tikz." << std::endl;
   try {
     fs::create_directories("./logs");
     std::string cmd = "echo \"tensortest_to_tikz_before.log:\n\" > "
@@ -446,8 +441,14 @@ void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits) {
     std::cerr << "\nError creating directory: " << e.what() << std::endl;
     return;
   }
+  unsigned int nrTensortestCircuits = 0;
+  while (fs::exists(fs::path(AI_DATASET_DIR) / "Quake/Tensortest" /
+                    ("tensortest" + std::to_string(nrTensortestCircuits + 1) +
+                     "_input.qke"))) {
+    nrTensortestCircuits++;
+  }
 
-  for (int current = 1; current <= nrTensortestCircuits; current++) {
+  for (unsigned int current = 1; current <= nrTensortestCircuits; current++) {
     updateProgress(current - 1, nrTensortestCircuits,
                    "tensortest" + std::to_string(current));
     const pid_t child_pid = fork();

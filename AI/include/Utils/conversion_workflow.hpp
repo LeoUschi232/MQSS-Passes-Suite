@@ -97,9 +97,8 @@ constexpr int TENSORTEST_MAX_DEPTH = 24;
 
 /**
  *
- * @param nrTensortestCircuits
  */
-void convertAllTensortestCircuitsToTikz(int nrTensortestCircuits = 100);
+void convertAllTensortestCircuitsToTikz();
 
 /**
  *
