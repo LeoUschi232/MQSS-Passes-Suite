@@ -431,11 +431,8 @@ void convertAllTensortestCircuitsToTikz() {
     std::string cmd = "echo \"tensortest_to_tikz_before.log:\n\" > "
                       "./logs/tensortest_to_tikz_before.log";
     std::system(cmd.c_str());
-    cmd = "echo \"tensortest_to_tikz_after1.log:\n\" > "
-          "./logs/tensortest_to_tikz_after1.log";
-    std::system(cmd.c_str());
-    cmd = "echo \"tensortest_to_tikz_after2.log:\n\" > "
-          "./logs/tensortest_to_tikz_after2.log";
+    cmd = "echo \"tensortest_to_tikz_after.log:\n\" > "
+          "./logs/tensortest_to_tikz_after.log";
     std::system(cmd.c_str());
   } catch (const fs::filesystem_error &e) {
     std::cerr << "\nError creating directory: " << e.what() << std::endl;
