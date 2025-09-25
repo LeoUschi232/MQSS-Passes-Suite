@@ -2,7 +2,6 @@
 #define CIRCUIT_UTILS_HPP
 
 // Standard Library includes
-#include <limits>
 #include <string>
 #include <unordered_map>
 

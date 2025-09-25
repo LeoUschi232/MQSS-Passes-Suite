@@ -8,6 +8,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
+
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 

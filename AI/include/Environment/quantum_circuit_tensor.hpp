@@ -1,7 +1,10 @@
 #ifndef QUANTUM_CIRCUIT_TENSOR_HPP
 #define QUANTUM_CIRCUIT_TENSOR_HPP
 
-#include <Utils/circuit_utils.hpp>
+// Utils includes
+#include "Utils/circuit_utils.hpp"
+
+// Standard library includes
 #include <array>
 #include <cassert>
 #include <cstddef>

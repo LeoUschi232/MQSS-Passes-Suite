@@ -1,7 +1,26 @@
 #include "Utils/info_utils.hpp"
 
-#include "mlir_utils.hpp"
+// Support includes
+#include "Support/mlir_utils.hpp"
 
+#include <Utils/progress_bar.hpp>
+
+////////////////////////////////////////////////////////////////////////////////
+/// The usages of llvm functions must come before the QuakeOps header which
+/// expects them.
+using llvm::cast;
+using llvm::dyn_cast;
+using llvm::isa;
+////////////////////////////////////////////////////////////////////////////////
+
+// Cudaq includes
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+
+// Utils includes
+#include "Utils/tensor_utils.hpp"
+
+// Standard library includes
+#include <Environment/quantum_circuit_tensor.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -107,10 +126,9 @@ std::vector<fs::path> get_dataset_files(const std::string &dataset_name) {
     quake_dataset_dir = fs::path(AI_DATASET_DIR) / "Quake";
   } else {
     quake_dataset_dir = fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
-    if (!fs::exists(quake_dataset_dir) ||
-        !fs::is_directory(quake_dataset_dir)) {
-      return {};
-    }
+  }
+  if (!fs::exists(quake_dataset_dir) || !fs::is_directory(quake_dataset_dir)) {
+    return {};
   }
   for (auto it = fs::recursive_directory_iterator(
            quake_dataset_dir, fs::directory_options::skip_permission_denied);
@@ -128,122 +146,227 @@ std::vector<fs::path> get_dataset_files(const std::string &dataset_name) {
   return files;
 }
 
-std::optional<
-    std::tuple<unsigned int, unsigned int, double, unsigned int, unsigned int,
-               double, unsigned int, unsigned int, double, unsigned int>>
+std::optional<std::vector<std::pair<std::string, std::string>>>
 get_dataset_info(const std::string &dataset_name) {
-  if (dataset_name.empty()) {
+  std::vector<fs::path> files = get_dataset_files(dataset_name);
+  if (files.empty()) {
     return std::nullopt;
   }
-  fs::path quake_dataset_dir =
-      fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
-  if (!fs::exists(quake_dataset_dir) || !fs::is_directory(quake_dataset_dir)) {
-    return std::nullopt;
-  }
+  unsigned int nr_files = files.size();
   unsigned int max_int = std::numeric_limits<unsigned int>::max();
   unsigned int nr_circuits = 0;
-  unsigned int min_nr_qubits = max_int;
-  double avg_nr_qubits = 0;
-  unsigned int max_nr_qubits = 0;
-  unsigned int min_nr_gates = max_int;
-  double avg_nr_gates = 0;
-  unsigned int max_nr_gates = 0;
-  unsigned int min_depth = max_int;
-  double avg_depth = 0;
-  unsigned int max_depth = 0;
-  for (auto entry_path : get_dataset_files(dataset_name)) {
+  unsigned int min_nr_qubits = max_int, min_nr_gates = max_int,
+               min_depth = max_int;
+  unsigned int max_nr_qubits = 0, max_nr_gates = 0, max_depth = 0,
+               total_nr_qubits = 0, total_nr_gates = 0, total_depth = 0,
+               nr_mx_gates = 0, nr_my_gates = 0, nr_mz_gates = 0;
+  std::array<unsigned int, 2> nr_x_gates{0, 0}, nr_y_gates{0, 0},
+      nr_z_gates{0, 0}, nr_h_gates{0, 0}, nr_s_gates{0, 0}, nr_t_gates{0, 0},
+      nr_rx_gates{0, 0}, nr_ry_gates{0, 0}, nr_rz_gates{0, 0},
+      nr_swap_gates{0, 0}, nr_r1_gates{0, 0}, nr_u2_gates{0, 0},
+      nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
+
+  unsigned int progress = 0;
+  for (auto entry_path : files) {
+    updateProgress(++progress, nr_files, "Retrieving info " + dataset_name);
     std::string quake_module_text = readFileToString(entry_path.string());
-    auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-    unsigned int nr_qubits = getNumberOfQubits(FuncOp(mlir_module));
-    unsigned int nr_gates = getNumberOfGates(FuncOp(mlir_module));
-    unsigned int depth = getCircuitDepth(FuncOp(mlir_module));
-    if (nr_qubits < min_nr_qubits) {
-      min_nr_qubits = nr_qubits;
-    }
-    if (nr_qubits > max_nr_qubits) {
-      max_nr_qubits = nr_qubits;
-    }
-    avg_nr_qubits += nr_qubits;
-    if (nr_gates < min_nr_gates) {
-      min_nr_gates = nr_gates;
-    }
-    if (nr_gates > max_nr_gates) {
-      max_nr_gates = nr_gates;
-    }
-    avg_nr_gates += nr_gates;
-    if (depth < min_depth) {
-      min_depth = depth;
-    }
-    if (depth > max_depth) {
-      max_depth = depth;
-    }
-    avg_depth += depth;
+    auto [circuit, context_ptr] = extractMLIRContext(quake_module_text);
+    unsigned int nr_qubits = 0;
+    unsigned int nr_gates = 0;
+    std::vector<unsigned int> depths;
+    circuit.walk([&](Operation *op) {
+      if (isa<quake::AllocaOp>(op)) {
+        if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
+            allocOp.getType().dyn_cast<quake::RefType>()) {
+          nr_qubits += 1;
+        } else if (auto qvecType =
+                       allocOp.getType().dyn_cast<quake::VeqType>()) {
+          nr_qubits += qvecType.getSize();
+        }
+        depths.resize(nr_qubits, 0);
+        return;
+      }
+      if (!isOperatingGate(op)) {
+        return;
+      }
+      if (isMeasurementGate(op)) {
+        if (isa<quake::MxOp>(op)) {
+          nr_mx_gates++;
+        } else if (isa<quake::MyOp>(op)) {
+          nr_my_gates++;
+        } else if (isa<quake::MzOp>(op)) {
+          nr_mz_gates++;
+        }
+        for (auto operand : op->getOperands()) {
+          if (operand.getType().isa<quake::RefType>()) {
+            auto qubitIndexOpt =
+                extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+            if (!qubitIndexOpt.has_value()) {
+              continue;
+            }
+            if (int qubitIndex = qubitIndexOpt.value();
+                0 <= qubitIndex && qubitIndex < nr_qubits) {
+              nr_gates++;
+              depths[qubitIndex]++;
+            }
+          } else {
+            // Allocations are allowed to be vectorized but applications must be
+            // references.
+            throw std::runtime_error(
+                "Measurement gate op has unsupported operand.");
+          }
+        }
+        return;
+      }
+      nr_gates++;
+      auto gate = dyn_cast<quake::OperatorInterface>(op);
+      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+      unsigned int count_index = controls.empty() ? 0 : 1;
+      targets.insert(targets.end(), controls.begin(), controls.end());
+      unsigned int local_max_depth = 0;
+      for (int qubit : targets) {
+        local_max_depth = std::max(local_max_depth, depths[qubit]);
+      }
+      for (int qubit : targets) {
+        depths[qubit] = local_max_depth + 1;
+      }
+      switch (GATE_INDEX(getOnlyGateName(op))) {
+      case X:
+        nr_x_gates[count_index]++;
+        break;
+      case Y:
+        nr_y_gates[count_index]++;
+        break;
+      case Z:
+        nr_z_gates[count_index]++;
+        break;
+      case H:
+        nr_h_gates[count_index]++;
+        break;
+      case S:
+        nr_s_gates[count_index]++;
+        break;
+      case T:
+        nr_t_gates[count_index]++;
+        break;
+      case RX:
+        nr_rx_gates[count_index]++;
+        break;
+      case RY:
+        nr_ry_gates[count_index]++;
+        break;
+      case RZ:
+        nr_rz_gates[count_index]++;
+        break;
+      case SWAP:
+        nr_swap_gates[count_index]++;
+        break;
+      case R1:
+        nr_r1_gates[count_index]++;
+        break;
+      case U2:
+        nr_u2_gates[count_index]++;
+        break;
+      case U3:
+        nr_u3_gates[count_index]++;
+        break;
+      case PHASED_RX:
+        nr_phased_rx_gates[count_index]++;
+        break;
+      default:
+        throw std::runtime_error("Unsupported gate in dataset.");
+      }
+    });
     nr_circuits++;
+    min_nr_qubits = std::min(min_nr_qubits, nr_qubits);
+    max_nr_qubits = std::max(max_nr_qubits, nr_qubits);
+    total_nr_qubits += nr_qubits;
+    min_nr_gates = std::min(min_nr_gates, nr_gates);
+    max_nr_gates = std::max(max_nr_gates, nr_gates);
+    total_nr_gates += nr_gates;
+    unsigned int depth =
+        depths.empty() ? 0u : *std::max_element(depths.begin(), depths.end());
+    min_depth = std::min(min_depth, depth);
+    max_depth = std::max(max_depth, depth);
+    total_depth += depth;
   }
-  if (nr_circuits <= 0) {
-    return std::nullopt;
-  }
-  avg_nr_qubits /= nr_circuits;
-  avg_nr_gates /= nr_circuits;
-  avg_depth /= nr_circuits;
-  return std::make_tuple(nr_circuits, min_nr_qubits, avg_nr_qubits,
-                         max_nr_qubits, min_nr_gates, avg_nr_gates,
-                         max_nr_gates, min_depth, avg_depth, max_depth);
+  std::cout << std::endl;
+  std::vector<std::pair<std::string, std::string>> info;
+  info.emplace_back("Dataset name", dataset_name);
+  info.emplace_back("Number of circuits", std::to_string(nr_circuits));
+  info.emplace_back("Minimum number of qubits", std::to_string(min_nr_qubits));
+  info.emplace_back("Maximum number of qubits", std::to_string(max_nr_qubits));
+  info.emplace_back("Total number of qubits", std::to_string(total_nr_qubits));
+  info.emplace_back("Minimum number of gates", std::to_string(min_nr_gates));
+  info.emplace_back("Maximum number of gates", std::to_string(max_nr_gates));
+  info.emplace_back("Total number of gates", std::to_string(total_nr_gates));
+  info.emplace_back("Minimum depth", std::to_string(min_depth));
+  info.emplace_back("Maximum depth", std::to_string(max_depth));
+  info.emplace_back("Total depth", std::to_string(total_depth));
+  info.emplace_back("Number of Mx gates", std::to_string(nr_mx_gates));
+  info.emplace_back("Number of My gates", std::to_string(nr_my_gates));
+  info.emplace_back("Number of Mz gates", std::to_string(nr_mz_gates));
+  info.emplace_back("Number of X gates", std::to_string(nr_x_gates[0]));
+  info.emplace_back("Number of controlled-X gates",
+                    std::to_string(nr_x_gates[1]));
+  info.emplace_back("Number of Y gates", std::to_string(nr_y_gates[0]));
+  info.emplace_back("Number of controlled-Y gates",
+                    std::to_string(nr_y_gates[1]));
+  info.emplace_back("Number of Z gates", std::to_string(nr_z_gates[0]));
+  info.emplace_back("Number of controlled-Z gates",
+                    std::to_string(nr_z_gates[1]));
+  info.emplace_back("Number of H gates", std::to_string(nr_h_gates[0]));
+  info.emplace_back("Number of controlled-H gates",
+                    std::to_string(nr_h_gates[1]));
+  info.emplace_back("Number of S gates", std::to_string(nr_s_gates[0]));
+  info.emplace_back("Number of controlled-S gates",
+                    std::to_string(nr_s_gates[1]));
+  info.emplace_back("Number of T gates", std::to_string(nr_t_gates[0]));
+  info.emplace_back("Number of controlled-T gates",
+                    std::to_string(nr_t_gates[1]));
+  info.emplace_back("Number of Rx gates", std::to_string(nr_rx_gates[0]));
+  info.emplace_back("Number of controlled-Rx gates",
+                    std::to_string(nr_rx_gates[1]));
+  info.emplace_back("Number of Ry gates", std::to_string(nr_ry_gates[0]));
+  info.emplace_back("Number of controlled-Ry gates",
+                    std::to_string(nr_ry_gates[1]));
+  info.emplace_back("Number of Rz gates", std::to_string(nr_rz_gates[0]));
+  info.emplace_back("Number of controlled-Rz gates",
+                    std::to_string(nr_rz_gates[1]));
+  info.emplace_back("Number of Swap gates", std::to_string(nr_swap_gates[0]));
+  info.emplace_back("Number of controlled-Swap gates",
+                    std::to_string(nr_swap_gates[1]));
+  info.emplace_back("Number of R1 gates", std::to_string(nr_r1_gates[0]));
+  info.emplace_back("Number of controlled-R1 gates",
+                    std::to_string(nr_r1_gates[1]));
+  info.emplace_back("Number of U2 gates", std::to_string(nr_u2_gates[0]));
+  info.emplace_back("Number of controlled-U2 gates",
+                    std::to_string(nr_u2_gates[1]));
+  info.emplace_back("Number of U3 gates", std::to_string(nr_u3_gates[0]));
+  info.emplace_back("Number of controlled-U3 gates",
+                    std::to_string(nr_u3_gates[1]));
+  info.emplace_back("Number of PhasedRx gates",
+                    std::to_string(nr_phased_rx_gates[0]));
+  info.emplace_back("Number of controlled-PhasedRx gates",
+                    std::to_string(nr_phased_rx_gates[1]));
+
+  return info;
 }
 
 void print_dataset_info(const std::string &dataset_name) {
-  if (dataset_name.empty()) {
+  std::vector<std::pair<std::string, std::string>> info =
+      get_dataset_info(dataset_name)
+          .value_or(std::vector<std::pair<std::string, std::string>>{});
+  if (info.empty()) {
+    std::cerr << "Dataset " + dataset_name + " not found or empty."
+              << std::endl;
     return;
   }
-  fs::path quake_dataset_dir =
-      fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
-
-  if (fs::exists(quake_dataset_dir) && fs::is_directory(quake_dataset_dir)) {
-    std::cout << "Dataset Quake/" + dataset_name << ":" << std::endl;
-    auto dataset_info = get_dataset_info(dataset_name);
-    if (!dataset_info.has_value()) {
-      std::cout << "   No circuits found." << std::endl;
-      return;
-    }
-    auto [nr_circuits, min_nr_qubits, avg_nr_qubits, max_nr_qubits,
-          min_nr_gates, avg_nr_gates, max_nr_gates, min_depth, avg_depth,
-          max_depth] = dataset_info.value();
-    if (nr_circuits <= 0) {
-      std::cout << "   No circuits found." << std::endl;
-      return;
-    }
-    std::cout << "   Number of circuits: " << nr_circuits << "\n"
-              << "   Minimum number of qubits: " << min_nr_qubits << "\n"
-              << "   Average number of qubits: " << avg_nr_qubits << "\n"
-              << "   Maximum number of qubits: " << max_nr_qubits << "\n"
-              << "   Minimum number of gates: " << min_nr_gates << "\n"
-              << "   Average number of gates: " << avg_nr_gates << "\n"
-              << "   Maximum number of gates: " << max_nr_gates << "\n"
-              << "   Minimum depth: " << min_depth << "\n"
-              << "   Average depth: " << avg_depth << "\n"
-              << "   Maximum depth: " << max_depth << std::endl;
-    return;
+  for (const auto &[key, value] : info) {
+    std::cout << key + ": " + value << std::endl;
   }
-  std::cout << "Dataset Quake/" + dataset_name << " not found." << std::endl;
-  fs::path qasm_dataset_dir = fs::path(AI_DATASET_DIR) / "Qasm" / dataset_name;
-  if (fs::exists(qasm_dataset_dir) && fs::is_directory(qasm_dataset_dir)) {
-    unsigned int nr_circuits = 0;
-    for (auto it = fs::recursive_directory_iterator(
-             qasm_dataset_dir, fs::directory_options::skip_permission_denied);
-         it != fs::recursive_directory_iterator(); ++it) {
-      if (const fs::directory_entry &entry = *it; entry.is_regular_file()) {
-        if (entry.path().extension() == ".qasm") {
-          nr_circuits++;
-        }
-      }
-    }
-    std::cout << "Dataset Qasm/" + dataset_name << " found with " << nr_circuits
-              << " circuits.\n"
-              << "Run \"./convert_qasm_dataset_to_quake " << dataset_name
-              << "\" to convert this dataset to Quake." << std::endl;
-    return;
-  }
-  std::cout << "Dataset Qasm/" + dataset_name + " not found." << std::endl;
+  std::cout << std::endl;
 }
 
 void print_agent_info(const std::string &agent_name) {

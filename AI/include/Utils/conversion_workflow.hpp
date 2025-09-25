@@ -91,10 +91,6 @@ void convertAllPasstestCircuitsToTikz();
 int convertPasstestCircuitToTikz(std::string passname,
                                  std::unique_ptr<mlir::Pass> pass);
 
-constexpr int TENSORTEST_MAX_QUBITS = 5;
-constexpr int TENSORTEST_MAX_INSTRUCTIONS = 41;
-constexpr int TENSORTEST_MAX_DEPTH = 24;
-
 /**
  *
  */
