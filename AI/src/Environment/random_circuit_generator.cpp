@@ -52,6 +52,39 @@ namespace ai_pass_selector {
 //   Number of PhasedRx gates: 0
 //   Number of controlled-PhasedRx gates: 0
 
+//                   X: 0.16722248675811477 %
+//       controlled-X: 55.58917731978957 %
+//                  Y: 0.0561141372554548 %
+//       controlled-Y: 0.1608369494303757 %
+//                  Z: 0.05912025175128273 %
+//       controlled-Z: 0.4336074562642268 %
+//                  H: 3.3831853869827184 %
+//       controlled-H: 0.16156391829537983 %
+//                  S: 0.43100412181522557 %
+//       controlled-S: 0.0 %
+//                 Sdg: 0.2487805342887145 %
+//      controlled-Sdg: 0.0 %
+//                  T: 0.36760064810256704 %
+//       controlled-T: 0.0 %
+//                 Tdg: 0.3675810002954048 %
+//      controlled-Tdg: 0.0 %
+//                 Rx: 0.26393881751440895 %
+//      controlled-Rx: 0.1598840307830054 %
+//                 Ry: 1.8861993114818936 %
+//      controlled-Ry: 0.16714389552946568 %
+//                 Rz: 0.725446159949065 %
+//      controlled-Rz: 0.17015983392887474 %
+//               Swap: 0.3309083682270202 %
+//    controlled-Swap: 0.16516929090965712 %
+//                 R1: 8.634965650229933 %
+//      controlled-R1: 21.861437180115278 %
+//                 U2: 2.500625537060529 %
+//      controlled-U2: 0.0 %
+//                 U3: 1.3892276771193328 %
+//      controlled-U3: 0.3191000361224935 %
+//           PhasedRx: 0.0 %
+//controlled-PhasedRx: 0.0 %
+
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
 random_quantum_circuit_by_nr_instructions(unsigned int nr_qubits,
                                           unsigned int nr_instructions) {
