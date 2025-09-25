@@ -13,6 +13,9 @@ using llvm::dyn_cast;
 using llvm::isa;
 ////////////////////////////////////////////////////////////////////////////////
 
+// Environment includes
+#include "Environment/quantum_circuit_tensor.hpp"
+
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
@@ -20,10 +23,10 @@ using llvm::isa;
 #include "Utils/tensor_utils.hpp"
 
 // Standard library includes
-#include <Environment/quantum_circuit_tensor.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
@@ -160,10 +163,16 @@ get_dataset_info(const std::string &dataset_name) {
   unsigned int max_nr_qubits = 0, max_nr_gates = 0, max_depth = 0,
                total_nr_qubits = 0, total_nr_gates = 0, total_depth = 0,
                nr_mx_gates = 0, nr_my_gates = 0, nr_mz_gates = 0;
-  std::array<unsigned int, 2> nr_x_gates{0, 0}, nr_y_gates{0, 0},
-      nr_z_gates{0, 0}, nr_h_gates{0, 0}, nr_rx_gates{0, 0}, nr_ry_gates{0, 0},
-      nr_rz_gates{0, 0}, nr_swap_gates{0, 0}, nr_r1_gates{0, 0},
-      nr_u2_gates{0, 0}, nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
+  std::unordered_set<std::string> gates_with_more_than_1_targets = {};
+  std::unordered_set<std::string> gates_with_more_than_1_controls = {};
+  unsigned int nr_gates_with_more_than_1_targets = 0,
+               nr_gates_with_more_than_1_controls = 0, most_targets = 0,
+               most_controls = 0;
+  std::array<unsigned int, 4> nr_x_gates{0, 0, 0, 0};
+  std::array<unsigned int, 2> nr_y_gates{0, 0}, nr_z_gates{0, 0},
+      nr_h_gates{0, 0}, nr_rx_gates{0, 0}, nr_ry_gates{0, 0}, nr_rz_gates{0, 0},
+      nr_swap_gates{0, 0}, nr_r1_gates{0, 0}, nr_u2_gates{0, 0},
+      nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
   std::array<unsigned int, 4> nr_s_gates{0, 0, 0, 0}, nr_t_gates{0, 0, 0, 0};
 
   unsigned int progress = 0;
@@ -220,9 +229,26 @@ get_dataset_info(const std::string &dataset_name) {
       }
       nr_gates++;
       auto gate = dyn_cast<quake::OperatorInterface>(op);
+      std::string gate_name = getOnlyGateName(op);
+      int gate_index = GATE_INDEX(gate_name);
       std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+      most_targets =
+          std::max(most_targets, static_cast<unsigned int>(targets.size()));
+      if (targets.size() > 1) {
+        gates_with_more_than_1_targets.insert(gate_name);
+        nr_gates_with_more_than_1_targets++;
+      }
       std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
       unsigned int count_index = controls.empty() ? 0 : 1;
+      if (gate_index == X) {
+        count_index = std::min(static_cast<unsigned int>(controls.size()), 3u);
+      }
+      most_controls =
+          std::max(most_controls, static_cast<unsigned int>(controls.size()));
+      if (controls.size() > 1) {
+        gates_with_more_than_1_controls.insert(gate_name);
+        nr_gates_with_more_than_1_controls++;
+      }
       targets.insert(targets.end(), controls.begin(), controls.end());
       unsigned int local_max_depth = 0;
       for (int qubit : targets) {
@@ -238,7 +264,7 @@ get_dataset_info(const std::string &dataset_name) {
           throw std::runtime_error("Only S and T gates can be daggered.");
         }
       }
-      switch (GATE_INDEX(getOnlyGateName(op))) {
+      switch (gate_index) {
       case X:
         nr_x_gates[count_index]++;
         break;
@@ -297,6 +323,18 @@ get_dataset_info(const std::string &dataset_name) {
     min_depth = std::min(min_depth, depth);
     max_depth = std::max(max_depth, depth);
     total_depth += depth;
+    if (nr_qubits < 2) {
+      std::cout << "\nCircuit with perceived 0 or 1 qubits: " << entry_path
+                << std::endl;
+    }
+    if (nr_gates < 2) {
+      std::cout << "\nCircuit with perceived 0 or 1 gates: " << entry_path
+                << std::endl;
+    }
+    if (depth < 2) {
+      std::cout << "\nCircuit with perceived 0 or 1 depth: " << entry_path
+                << std::endl;
+    }
   }
   std::cout << std::endl;
   std::vector<std::pair<std::string, std::string>> info;
@@ -315,8 +353,10 @@ get_dataset_info(const std::string &dataset_name) {
   info.emplace_back("Number of My gates", std::to_string(nr_my_gates));
   info.emplace_back("Number of Mz gates", std::to_string(nr_mz_gates));
   info.emplace_back("Number of X gates", std::to_string(nr_x_gates[0]));
-  info.emplace_back("Number of controlled-X gates",
-                    std::to_string(nr_x_gates[1]));
+  info.emplace_back("Number of CX gates", std::to_string(nr_x_gates[1]));
+  info.emplace_back("Number of CCX gates", std::to_string(nr_x_gates[2]));
+  info.emplace_back("Number of (3+)-controlled-X gates",
+                    std::to_string(nr_x_gates[3]));
   info.emplace_back("Number of Y gates", std::to_string(nr_y_gates[0]));
   info.emplace_back("Number of controlled-Y gates",
                     std::to_string(nr_y_gates[1]));
@@ -363,7 +403,16 @@ get_dataset_info(const std::string &dataset_name) {
                     std::to_string(nr_phased_rx_gates[0]));
   info.emplace_back("Number of controlled-PhasedRx gates",
                     std::to_string(nr_phased_rx_gates[1]));
-
+  info.emplace_back("Number of gates with more than 1 target",
+                    std::to_string(nr_gates_with_more_than_1_targets));
+  info.emplace_back("Gates with more than 1 target",
+                    setToString(gates_with_more_than_1_targets));
+  info.emplace_back("Number of gates with more than 1 control",
+                    std::to_string(nr_gates_with_more_than_1_controls));
+  info.emplace_back("Gates with more than 1 control",
+                    setToString(gates_with_more_than_1_controls));
+  info.emplace_back("Most targets in a gate", std::to_string(most_targets));
+  info.emplace_back("Most controls in a gate", std::to_string(most_controls));
   return info;
 }
 

@@ -20,7 +20,9 @@ namespace ai_pass_selector {
 //   Number of My gates: 0
 //   Number of Mz gates: 120325
 //   Number of X gates: 17022
-//   Number of controlled-X gates: 5658563
+//   Number of CX gates: 5623760
+//   Number of CCX gates: 34803
+//   Number of (3+)-controlled-X gates: 0
 //   Number of Y gates: 5712
 //   Number of controlled-Y gates: 16372
 //   Number of Z gates: 6018
@@ -51,43 +53,18 @@ namespace ai_pass_selector {
 //   Number of controlled-U3 gates: 32482
 //   Number of PhasedRx gates: 0
 //   Number of controlled-PhasedRx gates: 0
+//   Number of gates with more than 1 target: 50497
+//   Gates with more than 1 target: swap
+//   Number of gates with more than 1 control: 34803
+//   Gates with more than 1 control: x
+//   Most targets in a gate: 2
+//   Most controls in a gate: 2
 
-//                   X: 0.16716397936533683 %
-//        controlled-X: 55.56972791501929 %
-//                   Y: 0.05609450417899213 %
-//        controlled-Y: 0.16078067619370784 %
-//                   Z: 0.059099566902866704 %
-//        controlled-Z: 0.43345574675286325 %
-//                   H: 3.38200168639248 %
-//        controlled-H: 0.16150739070863177 %
-//                   S: 0.4308533231521222 %
-//        controlled-S: 0.004998250612285699 %
-//                  Sdg: 0.24869349156666612 %
-//       controlled-Sdg: 0.004998250612285699 %
-//                   T: 0.3674720328910551 %
-//        controlled-T: 0.004998250612285699 %
-//                  Tdg: 0.3674523919582193 %
-//       controlled-Tdg: 0.004998250612285699 %
-//                  Rx: 0.2638464712494716 %
-//       controlled-Rx: 0.15982809095117245 %
-//                  Ry: 1.8855393727014476 %
-//       controlled-Ry: 0.1670854156339937 %
-//                  Rz: 0.7251923426291446 %
-//       controlled-Rz: 0.1701002988242862 %
-//                Swap: 0.33079259082023305 %
-//     controlled-Swap: 0.16511150188399767 %
-//                  R1: 8.631944469665548 %
-//       controlled-R1: 21.853788354191305 %
-//                  U2: 2.499750624342008 %
-//       controlled-U2: 0.004998250612285699 %
-//                  U3: 1.3887416175531888 %
-//       controlled-U3: 0.31898839018592834 %
-//            PhasedRx: 0.004998250612285699 %
-// controlled-PhasedRx: 0.004998250612285699 %
 
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
-random_quantum_circuit_by_nr_instructions(unsigned int nr_qubits,
-                                          unsigned int nr_instructions) {
+random_circuit_with_mqt_bench_statistics(int seed) {
+  unsigned int nr_qubits = 130;
+  unsigned int nr_instructions = 98338;
 
   for (int instr = 0; instr < nr_instructions; instr++) {
   }
@@ -97,17 +74,7 @@ random_quantum_circuit_by_nr_instructions(unsigned int nr_qubits,
 }
 
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
-random_quantum_circuit_by_max_instructions(unsigned int nr_qubits,
-                                           unsigned int max_instructions) {
-  throw std::runtime_error("Not implemented yet.");
-}
-std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
-random_quantum_circuit_by_depth(unsigned int nr_qubits, unsigned int depth) {
-  throw std::runtime_error("Not implemented yet.");
-}
-std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
-random_quantum_circuit_by_max_depth(unsigned int nr_qubits,
-                                    unsigned int max_depth) {
+random_quantum_circuit(int seed, unsigned int nr_qubits, unsigned int nr_instructions) {
   throw std::runtime_error("Not implemented yet.");
 }
 } // namespace ai_pass_selector

@@ -19,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 
 using mlir::FloatAttr;
 using mlir::IntegerAttr;
@@ -203,6 +204,18 @@ std::string vectorToString(const std::vector<double> &vec) {
     }
   }
   oss << "]";
+  return oss.str();
+}
+
+std::string setToString(const std::unordered_set<std::string> &set) {
+  std::ostringstream oss;
+  bool first = true;
+  for (const auto &element : set) {
+    if (!first)
+      oss << ", ";
+    oss << element;
+    first = false;
+  }
   return oss.str();
 }
 

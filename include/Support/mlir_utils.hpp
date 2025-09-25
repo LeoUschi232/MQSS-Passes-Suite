@@ -10,6 +10,7 @@
 // Stdandard library includes
 #include <string>
 #include <tuple>
+#include <unordered_set>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
@@ -131,6 +132,13 @@ std::string vectorToString(const std::vector<double> &vec);
  * @return
  */
 std::string valueRangeToString(ValueRange range);
+
+/**
+ *
+ * @param set
+ * @return
+ */
+std::string setToString(const std::unordered_set<std::string> &set);
 
 /**
  *
