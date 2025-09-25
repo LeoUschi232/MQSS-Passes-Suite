@@ -118,12 +118,11 @@ public:
 #ifdef DEBUG
     llvm::outs() << "Gates were inserted!\n";
 #endif
-    //// TODO Insert barriers if required
     if (measureAllQubits) {
-      // apply measurements in all allocated qubiti vectors
-      builder.setInsertionPoint(returnOp); // Set insertion before return
+      // Apply measurements in all allocated qubit vectors
+      builder.setInsertionPoint(returnOp);
+      Type measTy = quake::MeasureType::get(builder.getContext());
       for (const auto &key : orderVectors | std::views::keys) {
-        Type measTy = quake::MeasureType::get(builder.getContext());
         auto stdVectType = cudaq::cc::StdvecType::get(measTy);
         builder.create<quake::MzOp>(loc, stdVectType,
                                     allocatedQubitVectors.at(key));
