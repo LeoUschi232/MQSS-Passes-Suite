@@ -163,10 +163,10 @@ get_dataset_info(const std::string &dataset_name) {
   unsigned int max_nr_qubits = 0, max_nr_gates = 0, max_depth = 0,
                total_nr_qubits = 0, total_nr_gates = 0, total_depth = 0,
                nr_mx_gates = 0, nr_my_gates = 0, nr_mz_gates = 0;
-  std::unordered_set<std::string> gates_with_more_than_1_targets = {};
-  std::unordered_set<std::string> gates_with_more_than_1_controls = {};
-  unsigned int nr_gates_with_more_than_1_targets = 0,
-               nr_gates_with_more_than_1_controls = 0, most_targets = 0,
+  std::unordered_set<std::string> gates_with_2plus_targets = {};
+  std::unordered_set<std::string> gates_with_2plus_controls = {};
+  unsigned int nr_gates_with_2plus_targets = 0,
+               nr_gates_with_2plus_controls = 0, most_targets = 0,
                most_controls = 0;
   std::array<unsigned int, 4> nr_x_gates{0, 0, 0, 0};
   std::array<unsigned int, 2> nr_y_gates{0, 0}, nr_z_gates{0, 0},
@@ -235,8 +235,8 @@ get_dataset_info(const std::string &dataset_name) {
       most_targets =
           std::max(most_targets, static_cast<unsigned int>(targets.size()));
       if (targets.size() > 1) {
-        gates_with_more_than_1_targets.insert(gate_name);
-        nr_gates_with_more_than_1_targets++;
+        gates_with_2plus_targets.insert(gate_name);
+        nr_gates_with_2plus_targets++;
       }
       std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
       unsigned int count_index = controls.empty() ? 0 : 1;
@@ -246,8 +246,8 @@ get_dataset_info(const std::string &dataset_name) {
       most_controls =
           std::max(most_controls, static_cast<unsigned int>(controls.size()));
       if (controls.size() > 1) {
-        gates_with_more_than_1_controls.insert(gate_name);
-        nr_gates_with_more_than_1_controls++;
+        gates_with_2plus_controls.insert(gate_name);
+        nr_gates_with_2plus_controls++;
       }
       targets.insert(targets.end(), controls.begin(), controls.end());
       unsigned int local_max_depth = 0;
@@ -403,14 +403,14 @@ get_dataset_info(const std::string &dataset_name) {
                     std::to_string(nr_phased_rx_gates[0]));
   info.emplace_back("Number of controlled-PhasedRx gates",
                     std::to_string(nr_phased_rx_gates[1]));
-  info.emplace_back("Number of gates with more than 1 target",
-                    std::to_string(nr_gates_with_more_than_1_targets));
-  info.emplace_back("Gates with more than 1 target",
-                    setToString(gates_with_more_than_1_targets));
-  info.emplace_back("Number of gates with more than 1 control",
-                    std::to_string(nr_gates_with_more_than_1_controls));
-  info.emplace_back("Gates with more than 1 control",
-                    setToString(gates_with_more_than_1_controls));
+  info.emplace_back("Number of gates with 2+ target",
+                    std::to_string(nr_gates_with_2plus_targets));
+  info.emplace_back("Gates with more 2+ targets",
+                    setToString(gates_with_2plus_targets));
+  info.emplace_back("Number of gates with 2+ controls",
+                    std::to_string(nr_gates_with_2plus_controls));
+  info.emplace_back("Gates with 2+ control",
+                    setToString(gates_with_2plus_controls));
   info.emplace_back("Most targets in a gate", std::to_string(most_targets));
   info.emplace_back("Most controls in a gate", std::to_string(most_controls));
   return info;
