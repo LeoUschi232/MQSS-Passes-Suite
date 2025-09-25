@@ -216,10 +216,10 @@ random_quantum_circuit(int seed, unsigned int nr_qubits, unsigned int nr_gates,
   }
 
   // Measure every qubit once
-  for (unsigned q = 0; q < nr_qubits; ++q) {
-    unsigned m = static_cast<unsigned>(measure_distribution(rng));
-    int gateIndex = m == 0 ? MX : m == 1 ? MY : MZ;
-    std::vector targets{static_cast<int>(q)};
+  for (unsigned qubit = 0; qubit < nr_qubits; ++qubit) {
+    unsigned measure = static_cast<unsigned>(measure_distribution(rng));
+    int gateIndex = measure == 0 ? MX : measure == 1 ? MY : MZ;
+    std::vector targets{static_cast<int>(qubit)};
     std::vector<int> controls;
     std::vector<double> angles;
     insertGate(setup, gateIndex, /*isAdj=*/false, controls, targets, angles);

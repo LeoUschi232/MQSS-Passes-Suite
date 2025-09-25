@@ -1,9 +1,8 @@
-#ifndef CONVERSION_WORKFLOW_HPP
-#define CONVERSION_WORKFLOW_HPP
+#ifndef DATASET_CONVERSION_HPP
+#define DATASET_CONVERSION_HPP
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/Pass.h"
 
 // Stdandard library includes
 #include <filesystem>
@@ -71,37 +70,6 @@ void convertAllQasmDatasetsToQuake();
  * @return 0 on success, -1 on failure.
  */
 int convertQasmDatasetToQuake(const std::string &subdirectory);
-
-/**
- * Convert all pass test circuits in the AI/Dataset/Quake/Passtest directory
- * to LaTeX files in the AI/Dataset/Latex/Passtest directory.
- * This function iterates over all pass test circuits, applies the
- * decompositions and transformations defined in the MQSS passes,
- * and generates LaTeX files for each circuit.
- */
-void convertAllPasstestCircuitsToTikz();
-
-/**
- * Convert q pass test circuit in the AI/Dataset/Quake/Passtest directory
- * to LaTeX files in the AI/Dataset/Latex/Passtest directory.
- * @param passname Name of the pass to be applied to the circuits.
- * @param pass The MLIR pass to be applied to the circuits.
- * @return 0 on success, -1 on failure.
- */
-int convertPasstestCircuitToTikz(std::string passname,
-                                 std::unique_ptr<mlir::Pass> pass);
-
-/**
- *
- */
-void convertAllTensortestCircuitsToTikz();
-
-/**
- *
- * @param index
- * @return
- */
-int convertTensortestCircuitToTikz(int index);
 } // namespace ai_pass_selector
 
-#endif // CONVERSION_WORKFLOW_HPP
+#endif // DATASET_CONVERSION_HPP
