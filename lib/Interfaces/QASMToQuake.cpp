@@ -60,7 +60,11 @@ bool mqss::interfaces::isMultiQubitGate(const std::string &gate) {
   std::string gatename = gate;
   std::ranges::transform(gatename, gatename.begin(),
                          [](unsigned char c) { return std::tolower(c); });
-  return gatename[0] == 'c';
+  unsigned int i = 0;
+  while (i < gatename.size() && gatename[i] == 'r') {
+    i++;
+  }
+  return i < gatename.size() && gatename[i] == 'c';
 }
 
 // Function to get the number of controls for a gate
@@ -68,11 +72,13 @@ size_t mqss::interfaces::getNumControls(const std::string &gate) {
   std::string gatename = gate;
   std::ranges::transform(gatename, gatename.begin(),
                          [](unsigned char c) { return std::tolower(c); });
-  size_t n = 0;
-  while (n < gatename.size()) {
-    if (gate[n] != 'c') {
-      break;
-    }
+  unsigned int i = 0;
+  unsigned int n = 0;
+  while (i < gatename.size() && gatename[i] == 'r') {
+    i++;
+  }
+  while (i < gatename.size() && gatename[i] == 'c') {
+    i++;
     n++;
   }
   return n;

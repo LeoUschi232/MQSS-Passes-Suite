@@ -30,12 +30,12 @@ input circuit
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
 // includes in runtime
-#include "mlir_utils.hpp"
 #include "Passes/CodeGen.hpp"
+#include "mlir_utils.hpp"
 
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -92,8 +92,7 @@ std::string lowerCppToQuake(const std::string &cppFile) {
   if (retCode)
     throw std::runtime_error("Quake transformation failed!!!");
   // loading the generated mlir kernel of the given cpp
-  std::string quakeModule = readFileToString(
-      "./kernel.qke");
+  std::string quakeModule = readFileToString("./kernel.qke");
   std::remove("./o.qke");
   std::remove("./kernel.qke");
   return quakeModule;
@@ -132,14 +131,14 @@ int main(int argc, char *argv[]) {
   if (vm.contains("input")) {
     if (!hasExtension(vm["input"].as<std::string>(), ".qasm")) {
       std::cout << "File " << vm["input"].as<std::string>()
-          << " is not a valid supported file!" << std::endl;
+                << " is not a valid supported file!" << std::endl;
       return 1;
     }
     // read the input file and stored into qasmProgram
     std::ifstream inputQASMFile(vm["input"].as<std::string>());
     buffer << inputQASMFile.rdbuf();
     std::cout << "Input file name " << vm["input"].as<std::string>()
-        << std::endl;
+              << std::endl;
   } else {
     std::cout << "Input file name was not set." << std::endl;
     return 1;
@@ -150,7 +149,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
     std::cout << "Output file name " << vm["output"].as<std::string>()
-        << std::endl;
+              << std::endl;
   } else {
     std::cout << "Output file name was not set." << std::endl;
     return 1;
@@ -182,9 +181,9 @@ int main(int argc, char *argv[]) {
   pm.nest<FuncOp>().addPass(createQASM3ToQuakePass(qasmStream));
 
   // 2) Clean up
-  pm.addPass(mlir::createSCCPPass()); // fold constants & mark dead
-  pm.addPass(mlir::createSymbolDCEPass()); // drop dead symbols/globals
-  pm.addPass(mlir::createCSEPass()); // merge duplicate constants etc.
+  pm.addPass(mlir::createSCCPPass());          // fold constants & mark dead
+  pm.addPass(mlir::createSymbolDCEPass());     // drop dead symbols/globals
+  pm.addPass(mlir::createCSEPass());           // merge duplicate constants etc.
   pm.addPass(mlir::createCanonicalizerPass()); // general canonicalization
 
   // running the pass
@@ -198,17 +197,17 @@ int main(int argc, char *argv[]) {
 
   // Open the file in output mode (create or overwrite)
   // Check if the file was opened successfully
-  if (std::ofstream outFile(vm["output"].as<std::string>()); outFile.
-    is_open()) {
+  if (std::ofstream outFile(vm["output"].as<std::string>());
+      outFile.is_open()) {
     // Write the content to the file
     outFile << moduleOutput;
     // Close the file
     outFile.close();
     std::cout << "Content successfully written to "
-        << vm["output"].as<std::string>() << std::endl;
+              << vm["output"].as<std::string>() << std::endl;
   } else
     std::cerr << "Failed to open" << vm["output"].as<std::string>()
-        << " for writing" << std::endl;
+              << " for writing" << std::endl;
 
   return 0;
 }

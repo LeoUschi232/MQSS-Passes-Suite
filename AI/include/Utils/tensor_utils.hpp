@@ -118,7 +118,7 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
  * @return
  */
 unsigned int
-nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor);
+nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
 
 /**
  *
@@ -126,7 +126,7 @@ nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor);
  * @return
  */
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
-recreateQuantumCircuitFromInstructionBasedTensorWithContext(
+recreateQuantumCircuitFromTensor(
     const InstructionsTensor<double> &tensor);
 
 } // namespace ai_pass_selector

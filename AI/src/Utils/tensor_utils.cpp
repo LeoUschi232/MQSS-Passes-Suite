@@ -258,8 +258,7 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
   }
 }
 
-unsigned int
-nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor) {
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
   const int nr_instructions = tensor.shape[0];
   const int instruction_features = tensor.shape[1];
   const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
@@ -278,15 +277,12 @@ nrUsedQubitsInInstructionBasedTensor(const InstructionsTensor<double> &tensor) {
   return max_used_qubit_index + 1;
 }
 
-// ----------------- High-level “with-context” wrappers -----------------
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
-recreateQuantumCircuitFromInstructionBasedTensorWithContext(
-    const InstructionsTensor<double> &tensor) {
-  // Decide maxQubits from tensor shape
+recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
   const int nr_instructions = tensor.shape[0];
   const int instruction_features = tensor.shape[1];
   const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
-  const int nr_qubits = nrUsedQubitsInInstructionBasedTensor(tensor);
+  const int nr_qubits = nrUsedQubitsInTensor(tensor);
 
   auto rebuildSetup =
       beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);

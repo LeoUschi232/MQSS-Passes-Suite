@@ -520,7 +520,7 @@ int convertTensortestCircuitToTikz(int index) {
       quantum_circuit_enviorment.get_observation();
 
   auto [reconstructed_from_instruction_tensor, ctx_instr] =
-      recreateQuantumCircuitFromInstructionBasedTensorWithContext(observation);
+      recreateQuantumCircuitFromTensor(observation);
 
   if (int rc = write_module_to_file(reconstructed_from_instruction_tensor,
                                     latex_quake_output_file);

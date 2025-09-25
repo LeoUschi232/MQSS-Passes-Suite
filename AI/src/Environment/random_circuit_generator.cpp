@@ -1,11 +1,18 @@
 #include "Environment/random_circuit_generator.hpp"
 
+// Utils includes
+#include "Utils/tensor_utils.hpp"
+
 namespace ai_pass_selector {
 
 std::tuple<ModuleOp, std::unique_ptr<MLIRContext *>>
 random_quantum_circuit_by_nr_instructions(unsigned int nr_qubits,
                                           unsigned int nr_instructions) {
 
+  for (int instr = 0; instr < nr_instructions; instr++) {
+  }
+  auto rebuildSetup =
+      beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);
   return {};
 }
 
