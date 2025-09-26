@@ -24,6 +24,7 @@ target_compile_definitions(common_ai_props INTERFACE
         AI_DATASET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Datasets"
         AI_AGENTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Agents"
         AI_CIRCUITS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Circuits"
+        RQCG_STATISTICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/include/Environment/StatisticsForRQCG"
         MQSS_BUILD_DIR="${CMAKE_BINARY_DIR}"
 )
 target_link_libraries(common_ai_props INTERFACE

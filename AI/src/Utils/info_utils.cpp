@@ -158,261 +158,54 @@ get_dataset_info(const std::string &dataset_name) {
   unsigned int nr_files = files.size();
   unsigned int max_int = std::numeric_limits<unsigned int>::max();
   unsigned int nr_circuits = 0;
-  unsigned int min_nr_qubits = max_int, min_nr_gates = max_int,
-               min_depth = max_int;
-  unsigned int max_nr_qubits = 0, max_nr_gates = 0, max_depth = 0,
-               total_nr_qubits = 0, total_nr_gates = 0, total_depth = 0,
-               nr_mx_gates = 0, nr_my_gates = 0, nr_mz_gates = 0;
-  std::unordered_set<std::string> gates_with_2plus_targets = {};
-  std::unordered_set<std::string> gates_with_2plus_controls = {};
-  unsigned int nr_gates_with_2plus_targets = 0,
-               nr_gates_with_2plus_controls = 0, most_targets = 0,
-               most_controls = 0;
-  std::array<unsigned int, 4> nr_x_gates{0, 0, 0, 0};
-  std::array<unsigned int, 2> nr_y_gates{0, 0}, nr_z_gates{0, 0},
-      nr_h_gates{0, 0}, nr_rx_gates{0, 0}, nr_ry_gates{0, 0}, nr_rz_gates{0, 0},
-      nr_swap_gates{0, 0}, nr_r1_gates{0, 0}, nr_u2_gates{0, 0},
-      nr_u3_gates{0, 0}, nr_phased_rx_gates{0, 0};
-  std::array<unsigned int, 4> nr_s_gates{0, 0, 0, 0}, nr_t_gates{0, 0, 0, 0};
+  unsigned int min_nr_qubits = max_int;
+  double avg_nr_qubits = 0;
+  unsigned int max_nr_qubits = 0;
+  unsigned int min_nr_gates = max_int;
+  double avg_nr_gates = 0;
+  unsigned int max_nr_gates = 0;
+  unsigned int min_depth = max_int;
+  double avg_depth = 0;
+  unsigned int max_depth = 0;
 
   unsigned int progress = 0;
   for (auto entry_path : files) {
-    updateProgress(++progress, nr_files, "Retrieving info " + dataset_name);
+    updateProgress(++progress, nr_files, "Retrieving info of:" + dataset_name);
     std::string quake_module_text = readFileToString(entry_path.string());
     auto [circuit, context_ptr] = extractMLIRContext(quake_module_text);
-    unsigned int nr_qubits = 0;
-    unsigned int nr_gates = 0;
-    std::vector<unsigned int> depths;
-    circuit.walk([&](Operation *op) {
-      if (isa<quake::AllocaOp>(op)) {
-        if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
-            allocOp.getType().dyn_cast<quake::RefType>()) {
-          nr_qubits += 1;
-        } else if (auto qvecType =
-                       allocOp.getType().dyn_cast<quake::VeqType>()) {
-          nr_qubits += qvecType.getSize();
-        }
-        depths.resize(nr_qubits, 0);
-        return;
-      }
-      if (!isOperatingGate(op)) {
-        return;
-      }
-      if (isMeasurementGate(op)) {
-        if (isa<quake::MxOp>(op)) {
-          nr_mx_gates++;
-        } else if (isa<quake::MyOp>(op)) {
-          nr_my_gates++;
-        } else if (isa<quake::MzOp>(op)) {
-          nr_mz_gates++;
-        }
-        for (auto operand : op->getOperands()) {
-          if (operand.getType().isa<quake::RefType>()) {
-            auto qubitIndexOpt =
-                extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
-            if (!qubitIndexOpt.has_value()) {
-              continue;
-            }
-            if (int qubitIndex = qubitIndexOpt.value();
-                0 <= qubitIndex && qubitIndex < nr_qubits) {
-              nr_gates++;
-              depths[qubitIndex]++;
-            }
-          } else {
-            // Allocations are allowed to be vectorized but applications must be
-            // references.
-            throw std::runtime_error(
-                "Measurement gate op has unsupported operand.");
-          }
-        }
-        return;
-      }
-      nr_gates++;
-      auto gate = dyn_cast<quake::OperatorInterface>(op);
-      std::string gate_name = getOnlyGateName(op);
-      int gate_index = GATE_INDEX(gate_name);
-      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
-      most_targets =
-          std::max(most_targets, static_cast<unsigned int>(targets.size()));
-      if (targets.size() > 1) {
-        gates_with_2plus_targets.insert(gate_name);
-        nr_gates_with_2plus_targets++;
-      }
-      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
-      unsigned int count_index = controls.empty() ? 0 : 1;
-      if (gate_index == X) {
-        count_index = std::min(static_cast<unsigned int>(controls.size()), 3u);
-      }
-      most_controls =
-          std::max(most_controls, static_cast<unsigned int>(controls.size()));
-      if (controls.size() > 1) {
-        gates_with_2plus_controls.insert(gate_name);
-        nr_gates_with_2plus_controls++;
-      }
-      targets.insert(targets.end(), controls.begin(), controls.end());
-      unsigned int local_max_depth = 0;
-      for (int qubit : targets) {
-        local_max_depth = std::max(local_max_depth, depths[qubit]);
-      }
-      for (int qubit : targets) {
-        depths[qubit] = local_max_depth + 1;
-      }
-      if (gate.isAdj()) {
-        if (isa<quake::SOp>(op) || isa<quake::TOp>(op)) {
-          count_index += 2;
-        } else {
-          throw std::runtime_error("Only S and T gates can be daggered.");
-        }
-      }
-      switch (gate_index) {
-      case X:
-        nr_x_gates[count_index]++;
-        break;
-      case Y:
-        nr_y_gates[count_index]++;
-        break;
-      case Z:
-        nr_z_gates[count_index]++;
-        break;
-      case H:
-        nr_h_gates[count_index]++;
-        break;
-      case S:
-        nr_s_gates[count_index]++;
-        break;
-      case T:
-        nr_t_gates[count_index]++;
-        break;
-      case RX:
-        nr_rx_gates[count_index]++;
-        break;
-      case RY:
-        nr_ry_gates[count_index]++;
-        break;
-      case RZ:
-        nr_rz_gates[count_index]++;
-        break;
-      case SWAP:
-        nr_swap_gates[count_index]++;
-        break;
-      case R1:
-        nr_r1_gates[count_index]++;
-        break;
-      case U2:
-        nr_u2_gates[count_index]++;
-        break;
-      case U3:
-        nr_u3_gates[count_index]++;
-        break;
-      case PHASED_RX:
-        nr_phased_rx_gates[count_index]++;
-        break;
-      default:
-        throw std::runtime_error("Unsupported gate in dataset.");
-      }
-    });
-    nr_circuits++;
+    auto [nr_qubits, nr_gates, depth] =
+        getQubitsInstructionsDepth(FuncOp(circuit));
     min_nr_qubits = std::min(min_nr_qubits, nr_qubits);
+    avg_nr_qubits += nr_qubits;
     max_nr_qubits = std::max(max_nr_qubits, nr_qubits);
-    total_nr_qubits += nr_qubits;
     min_nr_gates = std::min(min_nr_gates, nr_gates);
+    avg_nr_gates += nr_gates;
     max_nr_gates = std::max(max_nr_gates, nr_gates);
-    total_nr_gates += nr_gates;
-    unsigned int depth =
-        depths.empty() ? 0u : *std::max_element(depths.begin(), depths.end());
     min_depth = std::min(min_depth, depth);
+    avg_depth += depth;
     max_depth = std::max(max_depth, depth);
-    total_depth += depth;
-    if (nr_qubits < 2) {
-      std::cout << "\nCircuit with perceived 0 or 1 qubits: " << entry_path
-                << std::endl;
-    }
-    if (nr_gates < 2) {
-      std::cout << "\nCircuit with perceived 0 or 1 gates: " << entry_path
-                << std::endl;
-    }
-    if (depth < 2) {
-      std::cout << "\nCircuit with perceived 0 or 1 depth: " << entry_path
-                << std::endl;
-    }
+    nr_circuits++;
   }
+  std::cout << std::endl;
+  if (nr_circuits <= 0) {
+    return std::nullopt;
+  }
+  avg_nr_qubits /= nr_circuits;
+  avg_nr_gates /= nr_circuits;
+  avg_depth /= nr_circuits;
   std::cout << std::endl;
   std::vector<std::pair<std::string, std::string>> info;
   info.emplace_back("Dataset name", dataset_name);
   info.emplace_back("Number of circuits", std::to_string(nr_circuits));
   info.emplace_back("Minimum number of qubits", std::to_string(min_nr_qubits));
+  info.emplace_back("Average number of qubits", std::to_string(avg_nr_qubits));
   info.emplace_back("Maximum number of qubits", std::to_string(max_nr_qubits));
-  info.emplace_back("Total number of qubits", std::to_string(total_nr_qubits));
   info.emplace_back("Minimum number of gates", std::to_string(min_nr_gates));
+  info.emplace_back("Average number of gates", std::to_string(avg_nr_gates));
   info.emplace_back("Maximum number of gates", std::to_string(max_nr_gates));
-  info.emplace_back("Total number of gates", std::to_string(total_nr_gates));
   info.emplace_back("Minimum depth", std::to_string(min_depth));
+  info.emplace_back("Average depth", std::to_string(avg_depth));
   info.emplace_back("Maximum depth", std::to_string(max_depth));
-  info.emplace_back("Total depth", std::to_string(total_depth));
-  info.emplace_back("Number of Mx gates", std::to_string(nr_mx_gates));
-  info.emplace_back("Number of My gates", std::to_string(nr_my_gates));
-  info.emplace_back("Number of Mz gates", std::to_string(nr_mz_gates));
-  info.emplace_back("Number of X gates", std::to_string(nr_x_gates[0]));
-  info.emplace_back("Number of CX gates", std::to_string(nr_x_gates[1]));
-  info.emplace_back("Number of CCX gates", std::to_string(nr_x_gates[2]));
-  info.emplace_back("Number of (3+)-controlled-X gates",
-                    std::to_string(nr_x_gates[3]));
-  info.emplace_back("Number of Y gates", std::to_string(nr_y_gates[0]));
-  info.emplace_back("Number of controlled-Y gates",
-                    std::to_string(nr_y_gates[1]));
-  info.emplace_back("Number of Z gates", std::to_string(nr_z_gates[0]));
-  info.emplace_back("Number of controlled-Z gates",
-                    std::to_string(nr_z_gates[1]));
-  info.emplace_back("Number of H gates", std::to_string(nr_h_gates[0]));
-  info.emplace_back("Number of controlled-H gates",
-                    std::to_string(nr_h_gates[1]));
-  info.emplace_back("Number of S gates", std::to_string(nr_s_gates[0]));
-  info.emplace_back("Number of controlled-S gates",
-                    std::to_string(nr_s_gates[1]));
-  info.emplace_back("Number of Sdg gates", std::to_string(nr_s_gates[2]));
-  info.emplace_back("Number of controlled-Sdg gates",
-                    std::to_string(nr_s_gates[3]));
-  info.emplace_back("Number of T gates", std::to_string(nr_t_gates[0]));
-  info.emplace_back("Number of controlled-T gates",
-                    std::to_string(nr_t_gates[1]));
-  info.emplace_back("Number of Tdg gates", std::to_string(nr_t_gates[2]));
-  info.emplace_back("Number of controlled-Tdg gates",
-                    std::to_string(nr_t_gates[3]));
-  info.emplace_back("Number of Rx gates", std::to_string(nr_rx_gates[0]));
-  info.emplace_back("Number of controlled-Rx gates",
-                    std::to_string(nr_rx_gates[1]));
-  info.emplace_back("Number of Ry gates", std::to_string(nr_ry_gates[0]));
-  info.emplace_back("Number of controlled-Ry gates",
-                    std::to_string(nr_ry_gates[1]));
-  info.emplace_back("Number of Rz gates", std::to_string(nr_rz_gates[0]));
-  info.emplace_back("Number of controlled-Rz gates",
-                    std::to_string(nr_rz_gates[1]));
-  info.emplace_back("Number of Swap gates", std::to_string(nr_swap_gates[0]));
-  info.emplace_back("Number of controlled-Swap gates",
-                    std::to_string(nr_swap_gates[1]));
-  info.emplace_back("Number of R1 gates", std::to_string(nr_r1_gates[0]));
-  info.emplace_back("Number of controlled-R1 gates",
-                    std::to_string(nr_r1_gates[1]));
-  info.emplace_back("Number of U2 gates", std::to_string(nr_u2_gates[0]));
-  info.emplace_back("Number of controlled-U2 gates",
-                    std::to_string(nr_u2_gates[1]));
-  info.emplace_back("Number of U3 gates", std::to_string(nr_u3_gates[0]));
-  info.emplace_back("Number of controlled-U3 gates",
-                    std::to_string(nr_u3_gates[1]));
-  info.emplace_back("Number of PhasedRx gates",
-                    std::to_string(nr_phased_rx_gates[0]));
-  info.emplace_back("Number of controlled-PhasedRx gates",
-                    std::to_string(nr_phased_rx_gates[1]));
-  info.emplace_back("Number of gates with 2+ target",
-                    std::to_string(nr_gates_with_2plus_targets));
-  info.emplace_back("Gates with more 2+ targets",
-                    setToString(gates_with_2plus_targets));
-  info.emplace_back("Number of gates with 2+ controls",
-                    std::to_string(nr_gates_with_2plus_controls));
-  info.emplace_back("Gates with 2+ control",
-                    setToString(gates_with_2plus_controls));
-  info.emplace_back("Most targets in a gate", std::to_string(most_targets));
-  info.emplace_back("Most controls in a gate", std::to_string(most_controls));
   return info;
 }
 

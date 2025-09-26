@@ -1,7 +1,13 @@
 #include "Utils/info_utils.hpp"
 
-#include <Torch/agent_utils.hpp>
-#include <Torch/training_and_run_manager.hpp>
+// Environemnt includes
+#include "Environment/statistics_for_rqcg.hpp"
+
+// Torch includes
+#include "Torch/agent_utils.hpp"
+#include "Torch/training_and_run_manager.hpp"
+
+// Standard library includes
 #include <iostream>
 #include <string>
 #include <torch/torch.h>
@@ -105,6 +111,7 @@ int main(int argc, char **argv) {
     }
     if (!dataset.empty()) {
       print_dataset_info(dataset);
+      print_dataset_statistics(dataset);
     }
     if (!agent.empty()) {
       print_agent_info(agent);

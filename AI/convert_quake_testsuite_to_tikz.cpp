@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   } else if (testsuite == "tensortest") {
     ai_pass_selector::convertAllTensortestCircuitsToTikz();
   }else if (testsuite == "randomtest") {
-    ai_pass_selector::convertAllRandomtestCircuitsToTikz();
+    ai_pass_selector::createAndConvertRandomCircuitsToTikz();
   } else {
     std::cout << "Unknown test suit: " << argv[1] << std::endl;
     return -1;
