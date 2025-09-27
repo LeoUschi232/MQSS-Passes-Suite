@@ -32,24 +32,21 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
-
 // MLIR includes
-#include "mlir/IR/BuiltinOps.h"
-
 #include "ir/parsers/qasm3_parser/Parser.hpp"
 #include "ir/parsers/qasm3_parser/Statement.hpp"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
 /// namespace, so every mlir type has to be included seperately.
-using mlir::ModuleOp;
-using mlir::Value;
-using mlir::OpBuilder;
 using mlir::Location;
+using mlir::ModuleOp;
+using mlir::OpBuilder;
 using mlir::Operation;
+using mlir::Value;
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -68,7 +65,7 @@ using QASMVectorToQuakeVector = std::unordered_map<std::string, Value>;
  * composed of a string that is the id in the AST associated to the quantum
  * vector and the `int` value is the number of qubits in the register.
  */
-using QuantumVectorsOrder = std::vector<std::pair<std::string, int> >;
+using QuantumVectorsOrder = std::vector<std::pair<std::string, int>>;
 
 namespace mqss::interfaces {
 
@@ -88,10 +85,10 @@ namespace mqss::interfaces {
     @param[in] vecTargets is the vector of target qubits.
     @param[in] adj determines is the gate is an adjoint operation.
 */
-void insertQASMGateIntoQuakeModule(
-    std::string gateId, OpBuilder &builder, Location loc,
-    std::vector<Value> vecParams, std::vector<Value> vecControls,
-    std::vector<Value> vecTargets, bool adj);
+void insertQASMGateIntoQuakeModule(std::string gateId, OpBuilder &builder,
+                                   Location loc, std::vector<Value> vecParams,
+                                   std::vector<Value> vecControls,
+                                   std::vector<Value> vecTargets, bool adj);
 
 /**
  * @brief Given a gate type as a string, this functions checks if the given gate
@@ -154,7 +151,7 @@ void insertGate(const std::shared_ptr<qasm3::GateCallStatement> &gateCall,
  declared quantum vector, given the QASM quantum vector declaration.
 */
 void parseAndInsertMeasurements(
-    const std::vector<std::shared_ptr<qasm3::Statement> > &statements,
+    const std::vector<std::shared_ptr<qasm3::Statement>> &statements,
     OpBuilder &builder, Location loc, Operation *inOp,
     const QASMVectorToQuakeVector &QASMToVectors);
 
@@ -182,6 +179,6 @@ void parseAndInsertMeasurements(
  vector id, and the size of the quantum vector.
 */
 std::tuple<QASMVectorToQuakeVector, QuantumVectorsOrder> insertAllocatedQubits(
-    const std::vector<std::shared_ptr<qasm3::Statement> > &program,
+    const std::vector<std::shared_ptr<qasm3::Statement>> &program,
     OpBuilder &builder, Location loc, Operation *inOp);
 } // namespace mqss::interfaces

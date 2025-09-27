@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -41,6 +41,7 @@ namespace mqss::opt {
 #include "Passes/Transforms.h.inc"
 } // namespace mqss::opt
 using namespace mlir;
+using namespace mqss::support::quakeDialect;
 
 namespace {
 
@@ -54,7 +55,7 @@ void normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
   IRRewriter rewriter(gate->getContext());
   for (auto parameter : gate.getParameters()) {
     auto optional_param_value
-        = supportQuake::extractDoubleArgumentValue(parameter.getDefiningOp());
+        = extractDoubleArgumentValue(parameter.getDefiningOp());
     if (!optional_param_value.has_value()) {
       return;
     }
@@ -62,7 +63,7 @@ void normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
     param =
         param - std::floor(param / (2 * pi)) * 2 * pi;
     nParameters.push_back(
-        supportQuake::createFloatValue(builder, gate.getLoc(), param));
+        createFloatValue(builder, gate.getLoc(), param));
   }
   ValueRange normParameters(nParameters);
   rewriter.setInsertionPointAfter(gate);

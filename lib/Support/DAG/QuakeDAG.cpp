@@ -29,12 +29,13 @@ representation.
 ******************************************************************************/
 
 #include "Support/DAG/Quake-DAG.hpp"
+#include "Support/mlir_utils.hpp"
 
 #include <ranges>
 
 using namespace mqss::support::quakeDialect;
 
-void QuakeDAG::parse_mlir(func::FuncOp kernel) {
+void QuakeDAG::parse_mlir(FuncOp kernel) {
   const int numQubits = getNumberOfQubits(kernel);
   std::map<size_t, Vertex>
       qubitsHistory; // this map stores the last inserted vertex in the graph on

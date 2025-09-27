@@ -1,58 +1,39 @@
 #ifndef CIRCUIT_UTILS_HPP
 #define CIRCUIT_UTILS_HPP
 
+// Standard Library includes
 #include <string>
-#include <limits>
 #include <unordered_map>
 
 namespace ai_pass_selector {
-    /// Circuit classes
-    constexpr int TINY = 1;
-    constexpr int SMALL = 2;
-    constexpr int MODERATE = 3;
-    constexpr int BIG = 4;
-    constexpr int HUGE = 5;
+/// Circuit size classes
+constexpr int SMALL = 1;
+constexpr int MODERATE = 2;
+constexpr int BIG = 3;
+constexpr int HUGE = 4;
+constexpr int TOO_BIG = -1;
 
-    const std::unordered_map<std::string, int>
-    CIRCUIT_SIZE_TO_CLASS = {
-        {"tiny", TINY},
-        {"small", SMALL},
-        {"moderate", MODERATE},
-        {"big", BIG},
-        {"huge", HUGE}
-    };
+const std::unordered_map<std::string, int> CIRCUIT_SIZE_NAME_TO_CLASS = {
+    {"small", SMALL}, {"moderate", MODERATE}, {"big", BIG}, {"huge", HUGE}};
+const std::unordered_map<int, std::string> CIRCUIT_SIZE_CLASS_TO_NAME = {
+    {SMALL, "small"}, {MODERATE, "moderate"}, {BIG, "big"}, {HUGE, "huge"}};
 
-    /// Circuit specifications [max_qubits, max_instructions, max_depth]
-    using CircuitSpecs = std::tuple<unsigned int, unsigned int, unsigned int>;
-    constexpr CircuitSpecs TINY_CIRCUIT_SPECS = {5, 25, 10};
-    constexpr CircuitSpecs SMALL_CIRCUIT_SPECS = {20, 500, 50};
-    constexpr CircuitSpecs MODERATE_CIRCUIT_SPECS = {100, 1000, 200};
-    constexpr CircuitSpecs BIG_CIRCUIT_SPECS = {250, 30000, 250};
-    constexpr CircuitSpecs HUGE_CIRCUIT_SPECS = {
-        std::numeric_limits<unsigned int>::max(),
-        std::numeric_limits<unsigned int>::max(),
-        std::numeric_limits<unsigned int>::max()
-    };
+constexpr unsigned int SMALL_CIRCUIT_MAX_QUBITS = 16;
+constexpr unsigned int MODERATE_CIRCUIT_MAX_QUBITS = 64;
+constexpr unsigned int BIG_CIRCUIT_MAX_QUBITS = 256;
+constexpr unsigned int HUGE_CIRCUIT_MAX_QUBITS = 1024;
 
-    const std::unordered_map<int, CircuitSpecs>
-    CIRCUIT_CLASS_TO_SPECS = {
-        {TINY, TINY_CIRCUIT_SPECS},
-        {SMALL, SMALL_CIRCUIT_SPECS},
-        {MODERATE, MODERATE_CIRCUIT_SPECS},
-        {BIG, BIG_CIRCUIT_SPECS},
-        {HUGE, HUGE_CIRCUIT_SPECS}
-    };
+const std::unordered_map<int, unsigned int> CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS = {
+    {SMALL, SMALL_CIRCUIT_MAX_QUBITS},
+    {MODERATE, MODERATE_CIRCUIT_MAX_QUBITS},
+    {BIG, BIG_CIRCUIT_MAX_QUBITS},
+    {HUGE, HUGE_CIRCUIT_MAX_QUBITS}};
 
-    /**
-     *
-     * @param nr_qubits
-     * @param nr_instructions
-     * @param depth
-     * @return
-     */
-    unsigned int classify_circuit(
-        unsigned int nr_qubits,
-        unsigned int nr_instructions,
-        unsigned int depth);
+/**
+ *
+ * @param nr_qubits
+ * @return
+ */
+int classify_circuit(unsigned int nr_qubits);
 } // namespace ai_pass_selector
 #endif // CIRCUIT_UTILS_HPP

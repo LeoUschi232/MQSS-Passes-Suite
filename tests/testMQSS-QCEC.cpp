@@ -123,7 +123,7 @@ protected:
 };
 
 // TEST_F(EqualityTest, TestQuakeQMapPass01) {
-//   std::string quakeModule =  getQuake("./quake/QuakeQMapPass-01.qke");
+//   std::string quakeModule =  readFileToString("./quake/QuakeQMapPass-01.qke");
 //   // get the QASM of the input module
 //   std::string qasmInput = lowerQuakeCodeToOpenQASM(quakeModule);
 //   #ifdef DEBUG
@@ -289,7 +289,7 @@ verificationTest(std::tuple<std::string, std::string,
   std::unique_ptr<mlir::Pass> pass = passMlir();
 
   // load mlir module
-  std::string quakeModule = getQuake(fileInputTest);
+  std::string quakeModule = readFileToString(fileInputTest);
   // get the QASM of the input module
   std::string qasmInput = lowerQuakeCodeToOpenQASM(quakeModule);
 
@@ -298,7 +298,7 @@ verificationTest(std::tuple<std::string, std::string,
   std::cout << "QASM input module:" << std::endl << qasmInput << std::endl;
 #endif
   auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
-  mlir::MLIRContext &context = *contextPtr;
+  MLIRContext &context = *contextPtr;
   // creating pass manager
   mlir::PassManager pm(&context);
   // Adding the pass to the PassManager

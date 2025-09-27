@@ -30,7 +30,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Interfaces/QuakeToLinAlg.hpp"
 
 #include "Passes/CodeGen.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"

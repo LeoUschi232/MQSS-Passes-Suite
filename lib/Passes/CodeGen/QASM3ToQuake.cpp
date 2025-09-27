@@ -35,7 +35,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "cudaq/Support/Plugin.h"
 #include "ir/parsers/qasm3_parser/Parser.hpp"
 #include "ir/parsers/qasm3_parser/Statement.hpp"
-#include "ir/parsers/qasm3_parser/Types.hpp"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -53,17 +52,14 @@ using namespace mqss::interfaces;
 namespace {
 
 class QASM3ToQuake final
-    : public PassWrapper<QASM3ToQuake, OperationPass<func::FuncOp> > {
+    : public PassWrapper<QASM3ToQuake, OperationPass<func::FuncOp>> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QASM3ToQuake)
 
   QASM3ToQuake(std::istringstream &qasmStream, bool measureAllQubits)
-    : qasmStream(qasmStream), measureAllQubits(measureAllQubits) {
-  }
+      : qasmStream(qasmStream), measureAllQubits(measureAllQubits) {}
 
-  StringRef getArgument() const override {
-    return "convert-qasm3-to-quake";
-  }
+  StringRef getArgument() const override { return "convert-qasm3-to-quake"; }
 
   StringRef getDescription() const override {
     return "Convert QASM3 to Quake Operations";
@@ -73,12 +69,12 @@ public:
     auto circuit = getOperation();
     // Get the function name
     if (StringRef funcName = circuit.getName();
-      funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
+        funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
     // Create the parser
     qasm3::Parser parser(&qasmStream, true);
     // Parse the program to get the AST
-    std::vector<std::shared_ptr<qasm3::Statement> > program;
+    std::vector<std::shared_ptr<qasm3::Statement>> program;
     // Parse the program
     try {
       program = parser.parseProgram();
@@ -116,18 +112,17 @@ public:
     for (const auto &statement : program)
       // Check if the statement is a GateCallStatement
       if (auto gateCall =
-          std::dynamic_pointer_cast<qasm3::GateCallStatement>(statement)) {
+              std::dynamic_pointer_cast<qasm3::GateCallStatement>(statement)) {
         insertGate(gateCall, builder, loc, returnOp, allocatedQubitVectors);
       }
 #ifdef DEBUG
     llvm::outs() << "Gates were inserted!\n";
 #endif
-    //// TODO Insert barriers if required
     if (measureAllQubits) {
-      // apply measurements in all allocated qubiti vectors
-      builder.setInsertionPoint(returnOp); // Set insertion before return
+      // Apply measurements in all allocated qubit vectors
+      builder.setInsertionPoint(returnOp);
+      Type measTy = quake::MeasureType::get(builder.getContext());
       for (const auto &key : orderVectors | std::views::keys) {
-        Type measTy = quake::MeasureType::get(builder.getContext());
         auto stdVectType = cudaq::cc::StdvecType::get(measTy);
         builder.create<quake::MzOp>(loc, stdVectType,
                                     allocatedQubitVectors.at(key));
@@ -146,7 +141,7 @@ private:
 } // namespace
 
 std::unique_ptr<Pass>
-mqss::opt::createQASM3ToQuakePass(
-    std::istringstream &qasmStream, bool measureAllQubits) {
+mqss::opt::createQASM3ToQuakePass(std::istringstream &qasmStream,
+                                  bool measureAllQubits) {
   return std::make_unique<QASM3ToQuake>(qasmStream, measureAllQubits);
 }

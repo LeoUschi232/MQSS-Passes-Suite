@@ -1,6 +1,6 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"

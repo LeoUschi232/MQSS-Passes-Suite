@@ -31,16 +31,16 @@ mapping configurations.
 ******************************************************************************/
 
 #include "Passes/Transforms.hpp"
-#include "Support/CodeGen/Quake.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
+using namespace mqss::support::quakeDialect;
 
 // loading rotation gates
 void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
@@ -48,7 +48,7 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
 
-    auto optional_angle = supportQuake::extractDoubleArgumentValue(
+    auto optional_angle = extractDoubleArgumentValue(
         operand1.getDefiningOp());
     if (!optional_angle.has_value()) {
       llvm::errs() << "Error: Rotation angle is not a constant float.\n";
@@ -56,7 +56,7 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     }
     double angle = optional_angle.value();
     Value operand2 = op->getOperands()[1];
-    auto optional_qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+    auto optional_qubit = extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
     if (!optional_qubit.has_value()) {
       llvm::errs() << "Error: Qubit index could not be extracted.\n";
@@ -92,7 +92,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     if (op->getOperands().size() == 2) {
       Value operand1 = op->getOperands()[0];
       auto optional_qubit_ctrl =
-          supportQuake::extractIndexFromQuakeExtractRefOp(
+          extractIndexFromQuakeExtractRefOp(
               operand1.getDefiningOp());
       if (!optional_qubit_ctrl.has_value()) {
         llvm::errs() << "Error: Control qubit index could not be extracted.\n";
@@ -102,7 +102,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
 
       Value operand2 = op->getOperands()[1];
       auto optional_qubit_target =
-          supportQuake::extractIndexFromQuakeExtractRefOp(
+          extractIndexFromQuakeExtractRefOp(
               operand2.getDefiningOp());
       if (!optional_qubit_target.has_value()) {
         llvm::errs() << "Error: Target qubit index could not be extracted.\n";
@@ -129,7 +129,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      auto optional_qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto optional_qubit = extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
       if (!optional_qubit.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
@@ -159,7 +159,7 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      auto optional_qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      auto optional_qubit = extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
       if (!optional_qubit.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
@@ -196,7 +196,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
     if (Value operand = op->getOperands()[0];
       operand.getType().isa<quake::RefType>()) {
       auto optional_qubitIndex =
-          supportQuake::extractIndexFromQuakeExtractRefOp(
+          extractIndexFromQuakeExtractRefOp(
               operand.getDefiningOp());
       if (!optional_qubitIndex.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
@@ -255,8 +255,8 @@ public:
       return; // do nothing if the function is not cudaq kernel
 
     std::map<int, int> measurements; // key: qubit, value register index
-    int numQubits = supportQuake::getNumberOfQubits(circuit);
-    int numBits = supportQuake::getNumberOfClassicalBits(circuit, measurements);
+    int numQubits = getNumberOfQubits(circuit);
+    int numBits = getNumberOfClassicalBits(circuit, measurements);
 #ifdef DEBUG
     llvm::outs() << "Kernel name: " << funcName << "\n";
     llvm::errs() << "Number of input qubits " << numQubits << "\n";

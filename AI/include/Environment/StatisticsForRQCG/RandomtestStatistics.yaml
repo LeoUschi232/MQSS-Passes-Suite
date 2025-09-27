@@ -1,0 +1,45 @@
+dataset_name: "Randomtest"
+qubits_and_gates_distribution_params:
+  mean_qubits: 4.95
+  mean_gates: 21.1
+  cholesky_L11: 0.825578
+  cholesky_L21: 0.898892
+  cholesky_L22: 6.66668
+gates_weights:
+  X: 4
+  CX: 42
+  CCX: 2
+  C3plus_X: 3
+  Y: 1
+  controlled_Y: 7
+  Z: 1
+  controlled_Z: 3
+  H: 31
+  controlled_H: 0
+  S: 49
+  controlled_S: 1
+  SDG: 41
+  controlled_SDG: 5
+  T: 1
+  controlled_T: 0
+  TDG: 10
+  controlled_TDG: 1
+  RX: 36
+  controlled_RX: 4
+  RY: 25
+  controlled_RY: 10
+  RZ: 29
+  controlled_RZ: 3
+  SWAP: 3
+  controlled_SWAP: 2
+  R1: 2
+  controlled_R1: 0
+  U2: 0
+  controlled_U2: 1
+  U3: 0
+  controlled_U3: 0
+  PHASED_RX: 5
+  controlled_PHASED_RX: 1
+  MX: 8
+  MY: 13
+  MZ: 78

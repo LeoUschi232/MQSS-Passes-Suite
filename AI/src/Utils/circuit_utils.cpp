@@ -6,37 +6,20 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-
-unsigned int classify_circuit(
-    unsigned int nr_qubits,
-    unsigned int nr_instructions,
-    unsigned int depth) {
-  auto [max_qubits, max_instructions, max_depth] = TINY_CIRCUIT_SPECS;
-  if (nr_qubits <= max_qubits
-      && nr_instructions <= max_instructions
-      && depth <= max_depth) {
-    return TINY;
-  }
-  std::tie(max_qubits, max_instructions, max_depth) = SMALL_CIRCUIT_SPECS;
-  if (nr_qubits <= max_qubits
-      && nr_instructions <= max_instructions
-      && depth <= max_depth) {
+int classify_circuit(unsigned int nr_qubits) {
+  if (nr_qubits <= SMALL_CIRCUIT_MAX_QUBITS) {
     return SMALL;
   }
-  std::tie(max_qubits, max_instructions, max_depth) = MODERATE_CIRCUIT_SPECS;
-  if (nr_qubits <= max_qubits
-      && nr_instructions <= max_instructions
-      && depth <= max_depth) {
+  if (nr_qubits <= MODERATE_CIRCUIT_MAX_QUBITS) {
     return MODERATE;
   }
-  std::tie(max_qubits, max_instructions, max_depth) = BIG_CIRCUIT_SPECS;
-  if (nr_qubits <= max_qubits
-      && nr_instructions <= max_instructions
-      && depth <= max_depth) {
+  if (nr_qubits <= BIG_CIRCUIT_MAX_QUBITS) {
     return BIG;
   }
-  return HUGE;
+  if (nr_qubits <= HUGE_CIRCUIT_MAX_QUBITS) {
+    return HUGE;
+  }
+  return TOO_BIG;
 }
-
 
 } // namespace ai_pass_selector

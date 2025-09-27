@@ -10,7 +10,7 @@ list(APPEND CMAKE_PREFIX_PATH
 # Find each SDK, but we will not mix them in a single target
 find_package(TensorFlow CONFIG REQUIRED)
 find_package(Torch REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +24,7 @@ target_compile_definitions(common_ai_props INTERFACE
         AI_DATASET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Datasets"
         AI_AGENTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Agents"
         AI_CIRCUITS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Circuits"
+        RQCG_STATISTICS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/include/Environment/StatisticsForRQCG"
         MQSS_BUILD_DIR="${CMAKE_BINARY_DIR}"
 )
 target_link_libraries(common_ai_props INTERFACE
@@ -34,6 +35,7 @@ target_link_libraries(common_ai_props INTERFACE
         SupportQuake
         Optimizer
         Interfaces
+        yaml-cpp
 )
 if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(common_ai_props INTERFACE -Ofast)
@@ -47,8 +49,13 @@ file(GLOB_RECURSE ENV_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/inc
 file(GLOB_RECURSE ENV_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Environment/*.cpp")
 file(GLOB UTILS_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Utils/*.hpp")
 file(GLOB UTILS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/*.cpp")
+file(GLOB TESTSUITES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Testsuites/*.hpp")
+file(GLOB TESTSUITES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Testsuites/*.cpp")
 
-add_library(ai_core STATIC ${UTILS_HEADERS} ${UTILS_SOURCES} ${ENV_HEADERS} ${ENV_SOURCES})
+add_library(ai_core STATIC
+        ${UTILS_HEADERS} ${UTILS_SOURCES}
+        ${ENV_HEADERS} ${ENV_SOURCES}
+        ${TESTSUITES_HEADERS} ${TESTSUITES_SOURCES})
 target_link_libraries(ai_core PUBLIC common_ai_props)
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
