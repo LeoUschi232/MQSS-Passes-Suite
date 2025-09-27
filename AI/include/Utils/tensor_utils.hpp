@@ -102,23 +102,22 @@ static void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
  *
  * @param rebuildSetup
  * @param gateIndex
- * @param isAdj
- * @param controlIndexes
  * @param targetIndexes
+ * @param controlIndexes
  * @param angles
+ * @param isAdj
  */
-void insertGate(RebuildSetup &rebuildSetup, int gateIndex, bool isAdj,
-                const std::vector<int> &controlIndexes,
+void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
                 const std::vector<int> &targetIndexes,
-                const std::vector<double> &angles);
+                const std::vector<int> &controlIndexes = {},
+                const std::vector<double> &angles = {}, bool isAdj = false);
 
 /**
  * Count which qubits are actually used in the instruction-based circuit tensor.
  * @param tensor
  * @return
  */
-unsigned int
-nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
 
 /**
  *
@@ -126,8 +125,7 @@ nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
  * @return
  */
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
-recreateQuantumCircuitFromTensor(
-    const InstructionsTensor<double> &tensor);
+recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor);
 
 } // namespace ai_pass_selector
 

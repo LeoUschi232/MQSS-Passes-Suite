@@ -1,37 +1,41 @@
-"builtin.module"() ({
-  "func.func"() ({
-    %0 = "quake.alloca"() : () -> !quake.veq<6>
-    %1 = "quake.extract_ref"(%0) {rawIndex = 5 : i64} : (!quake.veq<6>) -> !quake.ref
-    %2 = "arith.constant"() {value = 3.8267266553963188 : f64} : () -> f64
-    "quake.rz"(%2, %1) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    %3 = "quake.extract_ref"(%0) {rawIndex = 4 : i64} : (!quake.veq<6>) -> !quake.ref
-    %4 = "arith.constant"() {value = 4.1589167627593513 : f64} : () -> f64
-    "quake.ry"(%4, %3) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    %5 = "quake.extract_ref"(%0) {rawIndex = 0 : i64} : (!quake.veq<6>) -> !quake.ref
-    %6 = "arith.constant"() {value = 4.2716106710287676 : f64} : () -> f64
-    "quake.rz"(%6, %5) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    %7 = "quake.extract_ref"(%0) {rawIndex = 3 : i64} : (!quake.veq<6>) -> !quake.ref
-    "quake.h"(%7) {operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    %8 = "quake.extract_ref"(%0) {rawIndex = 1 : i64} : (!quake.veq<6>) -> !quake.ref
-    %9 = "quake.extract_ref"(%0) {rawIndex = 2 : i64} : (!quake.veq<6>) -> !quake.ref
-    "quake.x"(%8, %7, %9, %1) {operand_segment_sizes = array<i32: 0, 3, 1>} : (!quake.ref, !quake.ref, !quake.ref, !quake.ref) -> ()
-    %10 = "arith.constant"() {value = 4.6908831129312363 : f64} : () -> f64
-    "quake.rx"(%10, %7) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    %11 = "arith.constant"() {value = 2.8368030337322785 : f64} : () -> f64
-    "quake.ry"(%11, %8) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    "quake.s"(%1, %5) {is_adj, operand_segment_sizes = array<i32: 0, 0, 2>} : (!quake.ref, !quake.ref) -> ()
-    "quake.h"(%8) {operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    "quake.h"(%8) {operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    "quake.s"(%7) {is_adj, operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    %12 = "arith.constant"() {value = 4.4885198308404837 : f64} : () -> f64
-    "quake.rx"(%12, %7) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    "quake.z"(%8, %5) {operand_segment_sizes = array<i32: 0, 1, 1>} : (!quake.ref, !quake.ref) -> ()
-    "quake.s"(%7) {is_adj, operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    %13 = "arith.constant"() {value = 3.0827828881840778 : f64} : () -> f64
-    "quake.ry"(%13, %5, %9) {operand_segment_sizes = array<i32: 1, 1, 1>} : (f64, !quake.ref, !quake.ref) -> ()
-    %14 = "arith.constant"() {value = 6.2233202248486412 : f64} : () -> f64
-    "quake.rx"(%14, %3) {operand_segment_sizes = array<i32: 1, 0, 1>} : (f64, !quake.ref) -> ()
-    "quake.y"(%1) {operand_segment_sizes = array<i32: 0, 0, 1>} : (!quake.ref) -> ()
-    "func.return"() : () -> ()
-  }) {"cudaq-entrypoint", "cudaq-kernel", function_type = () -> (), sym_name = "__nvqpp__mlirgen__Random"} : () -> ()
-}) : () -> ()
+module {
+  func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<6>
+    %1 = quake.extract_ref %0[5] : (!quake.veq<6>) -> !quake.ref
+    %cst = arith.constant 6.1110330109389492 : f64
+    quake.rz (%cst) %1 : (f64, !quake.ref) -> ()
+    %2 = quake.extract_ref %0[4] : (!quake.veq<6>) -> !quake.ref
+    quake.s<adj> %2 : (!quake.ref) -> ()
+    quake.t<adj> %2 : (!quake.ref) -> ()
+    %3 = quake.extract_ref %0[2] : (!quake.veq<6>) -> !quake.ref
+    %cst_0 = arith.constant 2.1384644524099614 : f64
+    quake.rx (%cst_0) %3 : (f64, !quake.ref) -> ()
+    %4 = quake.extract_ref %0[1] : (!quake.veq<6>) -> !quake.ref
+    %cst_1 = arith.constant 0.36764479689759799 : f64
+    quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
+    %cst_2 = arith.constant 3.1227766105772221 : f64
+    quake.rz (%cst_2) %3 : (f64, !quake.ref) -> ()
+    quake.s<adj> %4 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    quake.t<adj> %3 : (!quake.ref) -> ()
+    quake.swap %2, %4 : (!quake.ref, !quake.ref) -> ()
+    %5 = quake.extract_ref %0[3] : (!quake.veq<6>) -> !quake.ref
+    quake.s %5 : (!quake.ref) -> ()
+    %6 = quake.extract_ref %0[0] : (!quake.veq<6>) -> !quake.ref
+    quake.s<adj> %6 : (!quake.ref) -> ()
+    quake.x [%5] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst_3 = arith.constant 4.9490779006524441 : f64
+    quake.rz (%cst_3) %6 : (f64, !quake.ref) -> ()
+    quake.s<adj> %2 : (!quake.ref) -> ()
+    quake.x [%2] %5 : (!quake.ref, !quake.ref) -> ()
+    quake.s<adj> %3 : (!quake.ref) -> ()
+    quake.s<adj> %1 : (!quake.ref) -> ()
+    %measOut = quake.mx %6 : (!quake.ref) -> !quake.measure
+    %measOut_4 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_8 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    return
+  }
+}

@@ -1,33 +1,20 @@
 module {
   func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %0 = quake.alloca !quake.veq<4>
-    %1 = quake.extract_ref %0[0] : (!quake.veq<4>) -> !quake.ref
-    %cst = arith.constant 6.1747495445095968 : f64
+    %0 = quake.alloca !quake.veq<3>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+    %cst = arith.constant 2.0825401905581522 : f64
     quake.rx (%cst) %1 : (f64, !quake.ref) -> ()
-    %2 = quake.extract_ref %0[2] : (!quake.veq<4>) -> !quake.ref
-    %cst_0 = arith.constant 0.32530393437268224 : f64
-    quake.rx (%cst_0) %2 : (f64, !quake.ref) -> ()
-    %cst_1 = arith.constant 3.346965358850067 : f64
-    quake.rx (%cst_1) %1 : (f64, !quake.ref) -> ()
-    quake.s %1 : (!quake.ref) -> ()
-    %3 = quake.extract_ref %0[3] : (!quake.veq<4>) -> !quake.ref
+    %2 = quake.extract_ref %0[2] : (!quake.veq<3>) -> !quake.ref
+    quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
+    %cst_0 = arith.constant 6.1606290802755606 : f64
+    quake.ry (%cst_0) %1 : (f64, !quake.ref) -> ()
+    quake.t<adj> %1 : (!quake.ref) -> ()
+    %3 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
     quake.s<adj> %3 : (!quake.ref) -> ()
-    %cst_2 = arith.constant 3.8396609556761474 : f64
-    quake.rx (%cst_2) %3 : (f64, !quake.ref) -> ()
-    %cst_3 = arith.constant 3.4797943679586694 : f64
-    quake.ry (%cst_3) %1 : (f64, !quake.ref) -> ()
-    %4 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
-    quake.s %4 : (!quake.ref) -> ()
-    quake.s %3 : (!quake.ref) -> ()
-    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
-    quake.x [%3, %4, %1] %2 : (!quake.ref, !quake.ref, !quake.ref, !quake.ref) -> ()
-    %cst_4 = arith.constant 4.7864216945685678 : f64
-    quake.rz (%cst_4) %3 : (f64, !quake.ref) -> ()
-    quake.x [%4] %2 : (!quake.ref, !quake.ref) -> ()
-    %cst_5 = arith.constant 5.6442842832351801 : f64
-    quake.ry (%cst_5) %1 : (f64, !quake.ref) -> ()
-    %cst_6 = arith.constant 2.0440489875117738 : f64
-    quake.ry (%cst_6) [%1] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_1 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_2 = quake.mz %2 : (!quake.ref) -> !quake.measure
     return
   }
 }

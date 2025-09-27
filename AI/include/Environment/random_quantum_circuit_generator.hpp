@@ -38,16 +38,15 @@ static GateSpec gateSpecFromIndex(unsigned int idx);
 
 /**
  *
- * @param universe
- * @param required
- * @param extra_probability
- * @param forbidden
+ * @param nr_targets
+ * @param nr_controls
+ * @param nr_qubits
  * @return
  */
-std::vector<int>
-sampleDistinctQubits(unsigned universe, unsigned required,
-                     double extra_probability,
-                     const std::unordered_set<int> &forbidden = {});
+std::pair<std::vector<int>, std::vector<int>>
+sampleDistinctTargetsAndControls(unsigned int nr_targets,
+                                 unsigned int nr_controls,
+                                 unsigned int nr_qubits);
 
 /**
  *

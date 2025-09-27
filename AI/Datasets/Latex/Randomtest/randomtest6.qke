@@ -2,13 +2,35 @@ module {
   func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
     %0 = quake.alloca !quake.veq<5>
     %1 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
-    %cst = arith.constant 2.1074296705835551 : f64
-    %cst_0 = arith.constant 3.9114049294387803 : f64
+    %cst = arith.constant 3.328940653371494 : f64
+    %cst_0 = arith.constant 2.6314446942782834 : f64
     quake.phased_rx (%cst, %cst_0) %1 : (f64, f64, !quake.ref) -> ()
-    %2 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
-    quake.s %2 : (!quake.ref) -> ()
-    %3 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
-    quake.x [%3] %2 : (!quake.ref, !quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    %2 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    %3 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    %cst_1 = arith.constant 1.506794510077289 : f64
+    quake.ry (%cst_1) [%2] %3 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.y %3 : (!quake.ref) -> ()
+    %4 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %cst_2 = arith.constant 2.9721109401097645 : f64
+    %cst_3 = arith.constant 4.2631657202829345 : f64
+    quake.phased_rx (%cst_2, %cst_3) %4 : (f64, f64, !quake.ref) -> ()
+    %cst_4 = arith.constant 0.34227340214273955 : f64
+    quake.ry (%cst_4) %4 : (f64, !quake.ref) -> ()
+    %5 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+    %cst_5 = arith.constant 2.2436957619136422 : f64
+    quake.rx (%cst_5) %5 : (f64, !quake.ref) -> ()
+    quake.t<adj> %3 : (!quake.ref) -> ()
+    quake.s<adj> %1 : (!quake.ref) -> ()
+    quake.x [%2] %4 : (!quake.ref, !quake.ref) -> ()
+    quake.h %2 : (!quake.ref) -> ()
+    %cst_6 = arith.constant 3.4286863167790438 : f64
+    quake.rx (%cst_6) %1 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_8 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_9 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_10 = quake.mz %4 : (!quake.ref) -> !quake.measure
     return
   }
 }

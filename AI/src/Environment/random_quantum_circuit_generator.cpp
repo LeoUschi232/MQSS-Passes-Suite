@@ -111,29 +111,41 @@ static GateSpec gateSpecFromIndex(unsigned int idx) {
   return {0, false, 0, 0, false, false};
 }
 
-std::vector<int>
-sampleDistinctQubits(unsigned universe, unsigned required,
-                     double extra_probability,
-                     const std::unordered_set<int> &forbidden) {
-  if (required > universe - forbidden.size()) {
-    required = universe - static_cast<unsigned>(forbidden.size());
+std::pair<std::vector<int>, std::vector<int>> sampleDistinctTargetsAndControls(
+    unsigned int nr_targets, unsigned int nr_controls, unsigned int nr_qubits) {
+  if (nr_targets + nr_controls > nr_qubits) {
+    throw std::runtime_error(
+        "sampleDistinctTargetsAndControls: not enough qubits");
   }
-  std::uniform_int_distribution qubit_distribution(
-      0, static_cast<int>(universe) - 1);
-  std::unordered_set<int> chosen = forbidden;
-  std::vector<int> out;
-  out.reserve(required + 4);
-  while (out.size() < required) {
-    if (int qubit = qubit_distribution(qc_rng()); chosen.insert(qubit).second) {
-      out.push_back(qubit);
+  std::vector<int> targets;
+  targets.reserve(nr_targets);
+  std::vector<int> controls;
+  controls.reserve(nr_controls);
+  std::unordered_set<unsigned int> used{};
+  std::uniform_int_distribution qubit_distribution(0u, nr_qubits - 1);
+  for (unsigned int i = 0; i < nr_targets; i++) {
+    unsigned int qubit = qubit_distribution(qc_rng());
+    while (!used.insert(qubit).second) {
+      // On collisions instead of resampling to infinity, just keep trying the
+      // next qubit in the cycle until we find a free one. This is certain to
+      // terminate in O(nr_qubits) time whereas resampling again has a
+      // probability of repikcing used qubits more often.
+      qubit = (qubit + 1) % nr_qubits;
     }
+    targets.push_back(qubit);
   }
-  while (random01() < extra_probability && chosen.size() < universe) {
-    if (int qubit = qubit_distribution(qc_rng()); chosen.insert(qubit).second) {
-      out.push_back(qubit);
+  for (unsigned int i = 0; i < nr_controls; i++) {
+    unsigned int qubit = qubit_distribution(qc_rng());
+    while (!used.insert(qubit).second) {
+      qubit = (qubit + 1) % nr_qubits;
     }
+    controls.push_back(qubit);
   }
-  return out;
+  if (targets.size() != nr_targets || controls.size() != nr_controls) {
+    throw std::runtime_error("sampleDistinctTargetsAndControls: targets or "
+                             "controls didn't aquire desired sizes.");
+  }
+  return {targets, controls};
 }
 
 std::vector<double> makeAngles(int baseGate) {
@@ -195,35 +207,62 @@ random_quantum_circuit_from_embedded_statistics(
   }
   auto [nr_qubits, nr_gates] = sample_nr_qubits_and_gates_from_cholesky(
       qubits_and_gates_distribution_params);
+  // At least 2 qubits and more gates than qubits.
+  nr_qubits = std::max(2u, nr_qubits);
+  nr_gates = std::max(nr_gates, nr_qubits + 1);
 
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
+
+  // Sample a gate according to operations-only subset of gates_weights and
+  // later according to measurements-only subset of gates_weights.
+  std::discrete_distribution<size_t> operations_distribution(
+      gates_weights.begin(), gates_weights.begin() + OPERATIONS_SUBSET_SIZE);
+  std::discrete_distribution<size_t> measurements_distribution(
+      gates_weights.begin() + OPERATIONS_SUBSET_SIZE, gates_weights.end());
+
   for (unsigned int i = 0; i < nr_gates - nr_qubits; i++) {
-    // Sample a gate according to operations-only subset of gates_weights.
-    std::discrete_distribution<size_t> operations_distribution(
-        gates_weights.begin(), gates_weights.begin() + OPERATIONS_SUBSET_SIZE);
-    const unsigned int idx =
-        static_cast<unsigned int>(operations_distribution(qc_rng()));
+    const unsigned int idx = operations_distribution(qc_rng());
     const auto [baseGate, isAdj, exactControls, minControls, allowExtraControls,
                 isSwap] = gateSpecFromIndex(idx);
 
-    std::vector<int> targets =
-        isSwap ? sampleDistinctQubits(nr_qubits, /*required=*/2, /*extra=*/0.0)
-               : sampleDistinctQubits(nr_qubits, /*required=*/1,
-                                      /*extra=*/probability_additionals_qubits);
-    std::unordered_set forbid(targets.begin(), targets.end());
-    std::vector<int> controls;
+    unsigned int nr_targets = isSwap ? 2 : 1;
+    unsigned int nr_controls = 0;
+    // Regardless of what exactControls and minControls are, we cannot be using
+    // more qubits than are available for use.
     if (exactControls >= 0) {
-      controls =
-          sampleDistinctQubits(nr_qubits, static_cast<unsigned>(exactControls),
-                               /*extra=*/0.0, forbid);
+      nr_controls = std::min(static_cast<unsigned>(exactControls),
+                             nr_qubits - nr_targets);
     } else if (minControls > 0) {
-      controls = sampleDistinctQubits(
-          nr_qubits, static_cast<unsigned>(minControls),
-          allowExtraControls ? probability_additionals_qubits : 0.0, forbid);
+      nr_controls =
+          std::min(static_cast<unsigned>(minControls), nr_qubits - nr_targets);
     }
+    if (exactControls < 0 && allowExtraControls &&
+        probability_additionals_qubits > 0.0) {
+      while (nr_controls + nr_targets < nr_qubits &&
+             random01() < probability_additionals_qubits) {
+        nr_controls++;
+      }
+    }
+    auto [targets, controls] =
+        sampleDistinctTargetsAndControls(nr_targets, nr_controls, nr_qubits);
     // Angles if any and emit the operation.
     std::vector<double> angles = makeAngles(baseGate);
-    insertGate(buildSetup, baseGate, isAdj, controls, targets, angles);
+    insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
+  }
+  for (unsigned int qubit = 0; qubit < nr_qubits; qubit++) {
+    std::vector targets{static_cast<int>(qubit)};
+    if (const unsigned int idx =
+            measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
+        idx == MX_INDEX) {
+      insertGate(buildSetup, MX, targets);
+    } else if (idx == MY_INDEX) {
+      insertGate(buildSetup, MY, targets);
+    } else if (idx == MZ_INDEX) {
+      insertGate(buildSetup, MZ, targets);
+    } else {
+      throw std::runtime_error("Unknown measurement index " +
+                               std::to_string(idx));
+    }
   }
   return {buildSetup.module, std::move(buildSetup.ctxOwner)};
 }
