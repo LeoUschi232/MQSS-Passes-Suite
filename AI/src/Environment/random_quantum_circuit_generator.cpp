@@ -124,12 +124,12 @@ sampleDistinctQubits(unsigned universe, unsigned required,
   std::vector<int> out;
   out.reserve(required + 4);
   while (out.size() < required) {
-    if (int qubit = qubit_distribution(rng); chosen.insert(qubit).second) {
+    if (int qubit = qubit_distribution(qc_rng()); chosen.insert(qubit).second) {
       out.push_back(qubit);
     }
   }
   while (random01() < extra_probability && chosen.size() < universe) {
-    if (int qubit = qubit_distribution(rng); chosen.insert(qubit).second) {
+    if (int qubit = qubit_distribution(qc_rng()); chosen.insert(qubit).second) {
       out.push_back(qubit);
     }
   }
@@ -163,7 +163,7 @@ std::pair<unsigned int, unsigned int> sample_nr_qubits_and_gates_from_cholesky(
   double nr_gates = 0.0;
   while (nr_qubits < 2.0 || nr_gates < 2.0) {
     std::normal_distribution ndist(0.0, 1.0);
-    double z1 = ndist(qc_rng), z2 = ndist(qc_rng);
+    double z1 = ndist(qc_rng()), z2 = ndist(qc_rng());
     nr_qubits = mean_qubits + L11 * z1;
     nr_gates = mean_gates + L21 * z1 + L22 * z2;
   }
@@ -202,7 +202,7 @@ random_quantum_circuit_from_embedded_statistics(
     std::discrete_distribution<size_t> operations_distribution(
         gates_weights.begin(), gates_weights.begin() + OPERATIONS_SUBSET_SIZE);
     const unsigned int idx =
-        static_cast<unsigned int>(operations_distribution(qc_rng));
+        static_cast<unsigned int>(operations_distribution(qc_rng()));
     const auto [baseGate, isAdj, exactControls, minControls, allowExtraControls,
                 isSwap] = gateSpecFromIndex(idx);
 

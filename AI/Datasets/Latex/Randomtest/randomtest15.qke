@@ -1,0 +1,45 @@
+module {
+  func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %2 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst = arith.constant 5.7656387058996419 : f64
+    quake.ry (%cst) %2 : (f64, !quake.ref) -> ()
+    %3 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    quake.h %3 : (!quake.ref) -> ()
+    quake.s %2 : (!quake.ref) -> ()
+    %4 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%1] %4 : (!quake.ref, !quake.ref) -> ()
+    %cst_0 = arith.constant 1.4326753858571868 : f64
+    quake.ry (%cst_0) %4 : (f64, !quake.ref) -> ()
+    quake.s<adj> %3 : (!quake.ref) -> ()
+    quake.h %2 : (!quake.ref) -> ()
+    %5 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    %cst_1 = arith.constant 2.5336469340609789 : f64
+    quake.rz (%cst_1) %5 : (f64, !quake.ref) -> ()
+    quake.s %4 : (!quake.ref) -> ()
+    %cst_2 = arith.constant 3.1384034270530408 : f64
+    quake.rx (%cst_2) %4 : (f64, !quake.ref) -> ()
+    quake.x [%4] %5 : (!quake.ref, !quake.ref) -> ()
+    quake.s %2 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    %cst_3 = arith.constant 0.61406121888769694 : f64
+    quake.rz (%cst_3) %2 : (f64, !quake.ref) -> ()
+    %cst_4 = arith.constant 3.7551092769011785 : f64
+    quake.rx (%cst_4) %3 : (f64, !quake.ref) -> ()
+    quake.x [%3] %5 : (!quake.ref, !quake.ref) -> ()
+    quake.s<adj> %2 : (!quake.ref) -> ()
+    %cst_5 = arith.constant 3.8002790009439136 : f64
+    quake.rz (%cst_5) %1 : (f64, !quake.ref) -> ()
+    %cst_6 = arith.constant 1.8554030673711857 : f64
+    quake.rx (%cst_6) %1 : (f64, !quake.ref) -> ()
+    quake.s<adj> %4 : (!quake.ref) -> ()
+    %cst_7 = arith.constant 0.010334312319178167 : f64
+    quake.rx (%cst_7) %3 : (f64, !quake.ref) -> ()
+    quake.x [%3] %5 : (!quake.ref, !quake.ref) -> ()
+    %cst_8 = arith.constant 5.7549979226415715 : f64
+    quake.rz (%cst_8) %4 : (f64, !quake.ref) -> ()
+    return
+  }
+}

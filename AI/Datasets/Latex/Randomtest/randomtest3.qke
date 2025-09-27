@@ -1,0 +1,8 @@
+module {
+  func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    quake.s %1 : (!quake.ref) -> ()
+    return
+  }
+}

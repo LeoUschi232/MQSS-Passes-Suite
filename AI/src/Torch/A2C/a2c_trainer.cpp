@@ -69,7 +69,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
     for (unsigned int i = 0; i < nr_parallel_environments; i++) {
       fs::path random_dataset_entry =
-          filtered_dataset_files[random_int(0, dataset_size)];
+          filtered_dataset_files[randomInt(0, dataset_size)];
       environments.register_quantum_circuit(i, random_dataset_entry);
     }
     int64_t T = max_steps_per_episode;

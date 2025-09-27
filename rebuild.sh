@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+# Clear console log
 set -euo pipefail
+clear
 
 # Rebuild MQSS only. Assumes: AI/external/libtorch + tensorflow + _deps/cuda-quantum built.
 CURRENT_DIR="$(pwd)"

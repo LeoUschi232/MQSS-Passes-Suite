@@ -60,46 +60,23 @@ matches.
 // test includes
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir_utils.hpp>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
+using namespace mqss::support::quakeDialect;
+
+std::tuple<ModuleOp, MLIRContext *> createEmptyMLIRModule() {
   auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
+  MLIRContext &context = *contextPtr.get();
   // Create an empty MLIR module
-  mlir::OwningOpRef<mlir::ModuleOp> m_module =
-      mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
+  mlir::OwningOpRef m_module =
+      ModuleOp::create(mlir::UnknownLoc::get(&context));
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str(); // Convert the string stream to a string
-}
-
-std::tuple<std::string, std::string> getQuakeAndGolden(
-    const std::string &inputFile,
-    const std::string &goldenFile) {
+std::tuple<std::string, std::string>
+getQuakeAndGolden(const std::string &inputFile, const std::string &goldenFile) {
   std::string quakeModule = readFileToString(inputFile);
   std::string goldenOutput = readFileToString(goldenFile);
   return std::make_tuple(quakeModule, goldenOutput);
@@ -147,6 +124,6 @@ TEST(TestLinAlgPass, TestQuakeToLinAlg) {
 }
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

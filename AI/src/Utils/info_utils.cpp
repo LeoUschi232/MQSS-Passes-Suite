@@ -19,9 +19,6 @@ using llvm::isa;
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
-// Utils includes
-#include "Utils/tensor_utils.hpp"
-
 // Standard library includes
 #include <filesystem>
 #include <iostream>
@@ -32,11 +29,6 @@ namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
-int random_int(int start, int end) {
-  std::uniform_int_distribution<std::size_t> dist(start, end - 1);
-  return dist(rng);
-}
-
 std::vector<std::string> split_string(const std::string &str, char delimiter) {
   std::vector<std::string> parts;
   std::stringstream ss(str);

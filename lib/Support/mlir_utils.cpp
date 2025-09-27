@@ -61,7 +61,7 @@ extractMLIRContext(const std::string &quakeModule) {
   auto quakeCode = quakeModule;
   auto m_module = mlir::parseSourceString<ModuleOp>(quakeCode, &context);
   if (!m_module) {
-    throw std::runtime_error("Module cannot be parsed");
+    throw std::runtime_error("Module cannot be parsed in extractMLIRContext.");
   }
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
@@ -74,7 +74,8 @@ extractModuleOpAndContextPointer(const std::string &quakeModule) {
   auto quakeCode = quakeModule;
   auto m_module = mlir::parseSourceString<ModuleOp>(quakeCode, &context);
   if (!m_module) {
-    throw std::runtime_error("Module cannot be parsed");
+    throw std::runtime_error(
+        "Module cannot be parsed in extractModuleOpAndContextPointer.");
   }
   return {m_module.release(),
           std::make_unique<MLIRContext *>(contextPtr.release())};

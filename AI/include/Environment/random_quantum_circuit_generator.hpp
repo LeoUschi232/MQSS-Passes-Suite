@@ -5,7 +5,6 @@
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Support includes
-#include "Interfaces/Constants.hpp"
 #include "Support/mlir_utils.hpp"
 
 // Standard library includes
@@ -15,14 +14,6 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-/// Mersenne Twister RNG
-static std::mt19937 qc_rng(0);
-static std::uniform_real_distribution distribution01(0.0, 1.0);
-static std::uniform_real_distribution distributionAngle(0.0, 2.0 * PI);
-inline void seed_rng(int seed) { qc_rng.seed(seed); }
-inline double random01() { return distribution01(qc_rng); }
-inline double randomAngle() { return distributionAngle(qc_rng); }
-
 struct GateSpec {
   // X,Y,Z,H,S,T,RX,RY,RZ,SWAP,R1,U2,U3,PHASED_RX
   int baseGate;

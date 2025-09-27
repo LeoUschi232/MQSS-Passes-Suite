@@ -42,19 +42,26 @@ target_include_directories(
 add_test(NAME Tesst-MQSS-passes COMMAND test-mqss-passes)
 
 add_executable(test-decomposition-passes testCudaQDecompositionPasses.cpp)
-target_link_libraries(test-decomposition-passes PRIVATE ${COMMON_LIBRARIES})
+target_link_libraries(test-decomposition-passes PRIVATE
+        ${COMMON_LIBRARIES}
+        MQSS::SupportQuake)
 target_include_directories(
         test-decomposition-passes PRIVATE ${CMAKE_SOURCE_DIR}/include
         ${CUDAQ_MLIR_RUNTIME_PATH})
 
 add_executable(test-transpiler testCudaQTranspiler.cpp)
-target_link_libraries(test-transpiler PRIVATE ${COMMON_LIBRARIES})
+target_link_libraries(test-transpiler PRIVATE
+        ${COMMON_LIBRARIES}
+        MQSS::SupportQuake)
 target_include_directories(test-transpiler PRIVATE ${CMAKE_SOURCE_DIR}/include
         ${CUDAQ_MLIR_RUNTIME_PATH})
 
 add_executable(test-verification-qcec testMQSS-QCEC.cpp)
-target_link_libraries(test-verification-qcec PRIVATE ${COMMON_LIBRARIES}
-        MQT::QCEC MLIRPasses)
+target_link_libraries(test-verification-qcec PRIVATE
+        ${COMMON_LIBRARIES}
+        MQT::QCEC
+        MLIRPasses
+        MQSS::SupportQuake)
 
 target_include_directories(
         test-verification-qcec
@@ -71,9 +78,13 @@ set_target_properties(test-qasm-parser PROPERTIES GOOGLE_TEST_FLAGS
         "--gtest_disable_parallel")
 target_compile_options(test-qasm-parser PRIVATE -fsanitize=address -g -O1
         -fno-omit-frame-pointer)
-target_link_libraries(
-        test-qasm-parser PRIVATE ${COMMON_LIBRARIES} ${LIBZIP_LIBRARIES} MQT::QCEC
-        MLIRPasses -fsanitize=address) # sanitize is useful
+# sanitize is useful
+target_link_libraries(test-qasm-parser PRIVATE
+        ${COMMON_LIBRARIES}
+        ${LIBZIP_LIBRARIES}
+        MQT::QCEC
+        MLIRPasses
+        -fsanitize=address)
 # when struggling with
 # memory problems
 target_include_directories(
@@ -90,13 +101,16 @@ target_include_directories(
 add_executable(test-qasm-parser-simple testQASMParserSimple.cpp)
 set_target_properties(test-qasm-parser-simple
         PROPERTIES GOOGLE_TEST_FLAGS "--gtest_disable_parallel")
-target_compile_options(
-        test-qasm-parser-simple PRIVATE -fsanitize=address -g -O1
+target_compile_options(test-qasm-parser-simple PRIVATE
+        -fsanitize=address -g -O1
         -fno-omit-frame-pointer)
-target_link_libraries(
-        test-qasm-parser-simple PRIVATE ${COMMON_LIBRARIES} ${LIBZIP_LIBRARIES}
-        MQT::QCEC MLIRPasses -fsanitize=address
-)# sanitize is useful when struggling with memory problems
+# sanitize is useful when struggling with memory problems
+target_link_libraries(test-qasm-parser-simple PRIVATE
+        ${COMMON_LIBRARIES}
+        ${LIBZIP_LIBRARIES}
+        MQT::QCEC
+        MLIRPasses
+        -fsanitize=address)
 target_include_directories(
         test-qasm-parser-simple
         PRIVATE ${LIBZIP_INCLUDE_DIRS}

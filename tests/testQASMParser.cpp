@@ -44,9 +44,7 @@ matches.
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Import.h"
@@ -59,10 +57,13 @@ matches.
 
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir_utils.hpp>
 #include <regex>
 #include <zip.h>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
+
+using namespace mqss::support::quakeDialect;
 
 std::string getEmptyQuakeKernel(const std::string &kernelName,
                                 const std::string &functionName) {
@@ -95,35 +96,8 @@ std::string getEmptyQuakeKernel(const std::string &kernelName,
   return templateEmptyQuake;
 }
 
-std::tuple<std::unique_ptr<mlir::MLIRContext>,
-           mlir::OwningOpRef<mlir::ModuleOp> >
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(std::move(contextPtr), std::move(m_module));
-  //  return std::make_tuple(std::move(m_module), std::move(contextPtr));
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str(); // Convert the string stream to a string
-}
-
 std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
-  auto [contextPtr, m_module] = extractMLIRContext(quantumTask);
+  auto [m_module, contextPtr] = extractMLIRContext(quantumTask);
 
   std::string postCodeGenPasses = "";
 
@@ -134,10 +108,9 @@ std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
     bool enablePassStatistics = false;
     llvm::raw_string_ostream outStr(codeStr);
     m_module->getContext()->disableMultithreading();
-    if (bool printIR = false; mlir::failed(translation(
-        m_module.get(), outStr, postCodeGenPasses,
-        printIR, enablePrintMLIREachPass,
-        enablePassStatistics)))
+    if (bool printIR = false; mlir::failed(
+            translation(m_module, outStr, postCodeGenPasses, printIR,
+                        enablePrintMLIREachPass, enablePassStatistics)))
       throw std::runtime_error("Could not successfully translate to OpenQASM2");
   }
   // Regular expression to match the gate definition
@@ -166,7 +139,7 @@ std::vector<std::string> extractQASMFiles(const std::string &zipFilePath,
     if (!fileName)
       continue;
     if (std::string fileStr(fileName);
-      fileStr.size() >= 5 && fileStr.substr(fileStr.size() - 5) == ".qasm") {
+        fileStr.size() >= 5 && fileStr.substr(fileStr.size() - 5) == ".qasm") {
       // Extract the file
       zip_file *zFile = zip_fopen_index(archive, i, 0);
       if (!zFile) {
@@ -228,21 +201,19 @@ std::string convertQASMToQuake(std::string qasmFile) {
   // Convert to istringstream
   std::istringstream qasmStream(buffer.str());
   // creating empty mlir module
-  mlir::OwningOpRef<mlir::ModuleOp> mlirModule;
-  std::unique_ptr<mlir::MLIRContext> contextPtr;
-  std::tie(contextPtr, mlirModule) = extractMLIRContext(templateEmptyQuake);
+  auto [mlirModule, contextPtr] = extractMLIRContext(templateEmptyQuake);
   mlirModule->getContext()->disableMultithreading();
-  mlir::MLIRContext &context = *contextPtr;
+  MLIRContext &context = *contextPtr;
 #ifdef DEBUG
   std::cout << "Empty mlir module:\n";
   mlirModule->dump();
 #endif
   // creating pass manager
   mlir::PassManager pm(&context);
-  pm.nest<mlir::func::FuncOp>().addPass(
+  pm.nest<FuncOp>().addPass(
       mqss::opt::createQASM3ToQuakePass(qasmStream, false));
   // running the pass
-  if (mlir::failed(pm.run(mlirModule.get()))) {
+  if (mlir::failed(pm.run(mlirModule))) {
     throw std::runtime_error("The pass failed...");
   }
 #ifdef DEBUG
@@ -267,8 +238,8 @@ std::string convertQASMToQuake(std::string qasmFile) {
 //  string containing the qasm file obtained by the parser
 //  The parser first converts the QASM file into quake, thenk the quake code is
 //  lowered again to QASM
-std::tuple<std::string, std::string> verificationTest(
-    const std::string &qasmFile) {
+std::tuple<std::string, std::string>
+verificationTest(const std::string &qasmFile) {
   // assign the kernel name and the function name
   std::string quakeCode = convertQASMToQuake(qasmFile);
   // dump output to qasm
@@ -280,8 +251,7 @@ std::tuple<std::string, std::string> verificationTest(
 }
 
 class VerificationTestPassesMQSS
-    : public ::testing::TestWithParam<std::string> {
-};
+    : public ::testing::TestWithParam<std::string> {};
 
 TEST_P(VerificationTestPassesMQSS, Run) {
   std::string fileName = GetParam();
@@ -335,23 +305,23 @@ TEST_P(VerificationTestPassesMQSS, Run) {
 INSTANTIATE_TEST_SUITE_P(
     MQSSPassTests, VerificationTestPassesMQSS,
     ::testing::ValuesIn(
-      extractQASMFiles("./qasm/MQTBench-qasm-parser-testbed.zip", "./qasm/")),
+        extractQASMFiles("./qasm/MQTBench-qasm-parser-testbed.zip", "./qasm/")),
     [](const ::testing::TestParamInfo<VerificationTestPassesMQSS::ParamType>
-      &info) {
-    // Assign the test name
-    std::filesystem::path pathObj(info.param);
-    std::string inputFileName = pathObj.filename().string();
-    std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
-    std::smatch match;
-    if (!std::regex_match(inputFileName, match, pattern))
-    throw std::runtime_error("Fatal error!");
-    std::string testName = match[1];
-    std::regex pattern2(R"([-_])");
-    // Replace all occurrences of "-" and "_"
-    testName = std::regex_replace(testName, pattern2, "");
+           &info) {
+      // Assign the test name
+      std::filesystem::path pathObj(info.param);
+      std::string inputFileName = pathObj.filename().string();
+      std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
+      std::smatch match;
+      if (!std::regex_match(inputFileName, match, pattern))
+        throw std::runtime_error("Fatal error!");
+      std::string testName = match[1];
+      std::regex pattern2(R"([-_])");
+      // Replace all occurrences of "-" and "_"
+      testName = std::regex_replace(testName, pattern2, "");
 
-    // Use the first element of the tuple (testName) as the custom test name
-    return testName;
+      // Use the first element of the tuple (testName) as the custom test name
+      return testName;
     });
 
 int main(int argc, char **argv) {

@@ -1,6 +1,9 @@
 #ifndef INFO_UTILS_HPP
 #define INFO_UTILS_HPP
 
+// Support includes
+#include "Interfaces/Constants.hpp"
+
 // Standard Library includes
 #include <filesystem>
 #include <map>
@@ -11,15 +14,26 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-static std::mt19937 rng(std::random_device{}());
-
-/**
- *
- * @param start
- * @param end
- * @return
- */
-int random_int(int start, int end);
+////////////////////////////////////////////////////////////////////////////////
+/// Mersenne Twister RNG
+inline std::mt19937 &qc_rng() {
+  static std::mt19937 rng_engine{std::random_device{}()};
+  return rng_engine;
+}
+inline void seed_qc_rng(uint32_t seed) { qc_rng().seed(seed); }
+inline double random01() {
+  thread_local std::uniform_real_distribution dist01(0.0, 1.0);
+  return dist01(qc_rng());
+}
+inline double randomAngle() {
+  thread_local std::uniform_real_distribution distAngle(0.0, 2.0 * PI);
+  return distAngle(qc_rng());
+}
+inline int randomInt(int start, int end) {
+  std::uniform_int_distribution distInt(start, end - 1);
+  return distInt(qc_rng());
+}
+////////////////////////////////////////////////////////////////////////////////
 
 /**
  *
@@ -38,12 +52,10 @@ std::vector<std::string> split_string(const std::string &str, char delimiter);
 std::optional<fs::path> search_circuit(const std::string &circuit);
 
 /**
-
-/**
  *
  * @param circuit
  * @return
-*/
+ */
 std::optional<std::tuple<fs::path, unsigned int, unsigned int, unsigned int>>
 get_circuit_info(const std::string &circuit);
 
