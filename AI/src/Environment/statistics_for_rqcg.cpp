@@ -97,7 +97,7 @@ extract_dataset_statistics(const std::string &dataset_name) {
       unsigned int nr_controls = controls.size();
       bool isAdj = gate.isAdj();
       if (isAdj && !isa<quake::SOp>(op) && !isa<quake::TOp>(op)) {
-        std::cerr << "Warning: Spotted non-S or non-T adjoint gate possibly "
+        std::cerr << "\nWarning: Spotted non-S or non-T adjoint gate possibly "
                      "inverting angle of rotation gates."
                   << std::endl;
       }
@@ -227,7 +227,7 @@ extract_dataset_statistics(const std::string &dataset_name) {
       }
     });
     if (nr_qubits < 2 || nr_gates < 2) {
-      std::cerr << "Warning: Circuit with perceived 0 or 1 qubits or gates: "
+      std::cerr << "\nWarning: Circuit with perceived 0 or 1 qubits or gates: "
                 << entry_path << std::endl;
     }
     qubits_and_gates.emplace_back(nr_qubits, nr_gates);
@@ -256,8 +256,21 @@ extract_dataset_statistics(const std::string &dataset_name) {
   var_qubits /= N - 1;
   var_gates /= N - 1;
   covariance /= N - 1;
-  if (mean_qubits < 2.0 || mean_gates < 2.0 || var_qubits <= 0.0 ||
-      var_gates <= 0.0) {
+  if (var_qubits <= 0.0) {
+    return std::make_pair(std::make_tuple(mean_qubits, mean_gates, 0.0, 0.0,
+                                          std::sqrt(var_gates)),
+                          gates_weights);
+  }
+  if (var_gates <= 0.0) {
+    return std::make_pair(std::make_tuple(mean_qubits, mean_gates,
+                                          std::sqrt(var_qubits), 0.0, 0.0),
+                          gates_weights);
+  }
+  if (mean_qubits < 2.0 || mean_gates < 2.0) {
+    // Rasonable quanbtum circuits should have at least 2 qubits and at least 2
+    // gates. If a dataset has most circuit with either only 1 qubit or 1 gate
+    // or is empty alltogether, that dataset is not worth analysing, using or
+    // keeping.
     return std::nullopt;
   }
   if (double determinant = var_qubits * var_gates - covariance * covariance;
@@ -273,13 +286,14 @@ extract_dataset_statistics(const std::string &dataset_name) {
 void print_dataset_statistics(const std::string &dataset_name) {
   auto dataset_statistics = extract_dataset_statistics(dataset_name);
   if (!dataset_statistics.has_value()) {
-    std::cerr << "Dataset " << dataset_name
-              << " either does not exist or has weak statistics." << std::endl;
+    std::cerr << "Dataset \"" << dataset_name
+              << "\" either does not exist or has weak statistics."
+              << std::endl;
     return;
   }
   auto [qubits_and_gates_distribution_params, gates_weights] =
       dataset_statistics.value();
-  std::cout << "dataset_name: " << dataset_name << std::endl;
+  std::cout << "dataset_name: \"" << dataset_name << "\"" << std::endl;
   std::cout << "qubits_and_gates_distribution_params: " << std::endl;
   auto [mean_qubits, mean_gates, L11, L21, L22] =
       qubits_and_gates_distribution_params;
@@ -289,58 +303,58 @@ void print_dataset_statistics(const std::string &dataset_name) {
   std::cout << "  cholesky_L21: " << L21 << std::endl;
   std::cout << "  cholesky_L22: " << L22 << std::endl;
   std::cout << "gates_weights:" << std::endl;
-  std::cout << "  X:" << gates_weights[X_INDEX] << std::endl;
-  std::cout << "  CX:" << gates_weights[CX_INDEX] << std::endl;
-  std::cout << "  CCX:" << gates_weights[CCX_INDEX] << std::endl;
-  std::cout << "  C3plus_X:" << gates_weights[C3plus_X_INDEX] << std::endl;
-  std::cout << "  Y:" << gates_weights[Y_INDEX] << std::endl;
-  std::cout << "  controlled_Y:" << gates_weights[controlled_Y_INDEX]
+  std::cout << "  X: " << gates_weights[X_INDEX] << std::endl;
+  std::cout << "  CX: " << gates_weights[CX_INDEX] << std::endl;
+  std::cout << "  CCX: " << gates_weights[CCX_INDEX] << std::endl;
+  std::cout << "  C3plus_X: " << gates_weights[C3plus_X_INDEX] << std::endl;
+  std::cout << "  Y: " << gates_weights[Y_INDEX] << std::endl;
+  std::cout << "  controlled_Y: " << gates_weights[controlled_Y_INDEX]
             << std::endl;
-  std::cout << "  Z:" << gates_weights[Z_INDEX] << std::endl;
-  std::cout << "  controlled_Z:" << gates_weights[controlled_Z_INDEX]
+  std::cout << "  Z: " << gates_weights[Z_INDEX] << std::endl;
+  std::cout << "  controlled_Z: " << gates_weights[controlled_Z_INDEX]
             << std::endl;
-  std::cout << "  H:" << gates_weights[H_INDEX] << std::endl;
-  std::cout << "  controlled_H:" << gates_weights[controlled_H_INDEX]
+  std::cout << "  H: " << gates_weights[H_INDEX] << std::endl;
+  std::cout << "  controlled_H: " << gates_weights[controlled_H_INDEX]
             << std::endl;
-  std::cout << "  S:" << gates_weights[S_INDEX] << std::endl;
-  std::cout << "  controlled_S:" << gates_weights[controlled_S_INDEX]
+  std::cout << "  S: " << gates_weights[S_INDEX] << std::endl;
+  std::cout << "  controlled_S: " << gates_weights[controlled_S_INDEX]
             << std::endl;
-  std::cout << "  SDG:" << gates_weights[SDG_INDEX] << std::endl;
-  std::cout << "  controlled_SDG:" << gates_weights[controlled_SDG_INDEX]
+  std::cout << "  SDG: " << gates_weights[SDG_INDEX] << std::endl;
+  std::cout << "  controlled_SDG: " << gates_weights[controlled_SDG_INDEX]
             << std::endl;
-  std::cout << "  T:" << gates_weights[T_INDEX] << std::endl;
-  std::cout << "  controlled_T:" << gates_weights[controlled_T_INDEX]
+  std::cout << "  T: " << gates_weights[T_INDEX] << std::endl;
+  std::cout << "  controlled_T: " << gates_weights[controlled_T_INDEX]
             << std::endl;
-  std::cout << "  TDG:" << gates_weights[TDG_INDEX] << std::endl;
-  std::cout << "  controlled_TDG:" << gates_weights[controlled_TDG_INDEX]
+  std::cout << "  TDG: " << gates_weights[TDG_INDEX] << std::endl;
+  std::cout << "  controlled_TDG: " << gates_weights[controlled_TDG_INDEX]
             << std::endl;
-  std::cout << "  RX:" << gates_weights[RX_INDEX] << std::endl;
-  std::cout << "  controlled_RX:" << gates_weights[controlled_RX_INDEX]
+  std::cout << "  RX: " << gates_weights[RX_INDEX] << std::endl;
+  std::cout << "  controlled_RX: " << gates_weights[controlled_RX_INDEX]
             << std::endl;
-  std::cout << "  RY:" << gates_weights[RY_INDEX] << std::endl;
-  std::cout << "  controlled_RY:" << gates_weights[controlled_RY_INDEX]
+  std::cout << "  RY: " << gates_weights[RY_INDEX] << std::endl;
+  std::cout << "  controlled_RY: " << gates_weights[controlled_RY_INDEX]
             << std::endl;
-  std::cout << "  RZ:" << gates_weights[RZ_INDEX] << std::endl;
-  std::cout << "  controlled_RZ:" << gates_weights[controlled_RZ_INDEX]
+  std::cout << "  RZ: " << gates_weights[RZ_INDEX] << std::endl;
+  std::cout << "  controlled_RZ: " << gates_weights[controlled_RZ_INDEX]
             << std::endl;
-  std::cout << "  SWAP:" << gates_weights[SWAP_INDEX] << std::endl;
-  std::cout << "  controlled_SWAP:" << gates_weights[controlled_SWAP_INDEX]
+  std::cout << "  SWAP: " << gates_weights[SWAP_INDEX] << std::endl;
+  std::cout << "  controlled_SWAP: " << gates_weights[controlled_SWAP_INDEX]
             << std::endl;
-  std::cout << "  R1:" << gates_weights[R1_INDEX] << std::endl;
-  std::cout << "  controlled_R1:" << gates_weights[controlled_R1_INDEX]
+  std::cout << "  R1: " << gates_weights[R1_INDEX] << std::endl;
+  std::cout << "  controlled_R1: " << gates_weights[controlled_R1_INDEX]
             << std::endl;
-  std::cout << "  U2:" << gates_weights[U2_INDEX] << std::endl;
-  std::cout << "  controlled_U2:" << gates_weights[controlled_U2_INDEX]
+  std::cout << "  U2: " << gates_weights[U2_INDEX] << std::endl;
+  std::cout << "  controlled_U2: " << gates_weights[controlled_U2_INDEX]
             << std::endl;
-  std::cout << "  U3:" << gates_weights[U3_INDEX] << std::endl;
-  std::cout << "  controlled_U3:" << gates_weights[controlled_U3_INDEX]
+  std::cout << "  U3: " << gates_weights[U3_INDEX] << std::endl;
+  std::cout << "  controlled_U3: " << gates_weights[controlled_U3_INDEX]
             << std::endl;
-  std::cout << "  PHASED_RX:" << gates_weights[PHASED_RX_INDEX] << std::endl;
-  std::cout << "  controlled_PHASED_RX:"
+  std::cout << "  PHASED_RX: " << gates_weights[PHASED_RX_INDEX] << std::endl;
+  std::cout << "  controlled_PHASED_RX: "
             << gates_weights[controlled_PHASED_RX_INDEX] << std::endl;
-  std::cout << "  MX:" << gates_weights[MX_INDEX] << std::endl;
-  std::cout << "  MY:" << gates_weights[MY_INDEX] << std::endl;
-  std::cout << "  MZ:" << gates_weights[MZ_INDEX] << std::endl;
+  std::cout << "  MX: " << gates_weights[MX_INDEX] << std::endl;
+  std::cout << "  MY: " << gates_weights[MY_INDEX] << std::endl;
+  std::cout << "  MZ: " << gates_weights[MZ_INDEX] << std::endl;
 }
 
 } // namespace ai_pass_selector
