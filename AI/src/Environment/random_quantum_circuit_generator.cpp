@@ -18,6 +18,9 @@ using llvm::isa;
 #include "Utils/info_utils.hpp"
 #include "Utils/tensor_utils.hpp"
 
+// Yaml include
+#include <yaml-cpp/yaml.h>
+
 // Standard library includes
 #include <filesystem>
 #include <iostream>
@@ -223,6 +226,107 @@ random_quantum_circuit_from_embedded_statistics(
     insertGate(buildSetup, baseGate, isAdj, controls, targets, angles);
   }
   return {buildSetup.module, std::move(buildSetup.ctxOwner)};
+}
+
+std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+random_quantum_circuit_from_yaml_statistics(
+    const fs::path &statistics_yaml_file_path,
+    bool give_small_probability_to_unoccurring_gates,
+    double probability_additionals_qubits) {
+  if (!fs::exists(statistics_yaml_file_path) ||
+      !fs::is_regular_file(statistics_yaml_file_path)) {
+    std::cerr << "File: " << statistics_yaml_file_path
+              << " does not exist or is not a regular file." << std::endl;
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  // Load from YAML
+  YAML::Node statistics = YAML::LoadFile(statistics_yaml_file_path.string());
+
+  auto params = statistics["qubits_and_gates_distribution_params"];
+  if (!params || !statistics["gates_weights"]) {
+    throw std::runtime_error("YAML missing required sections.");
+  }
+
+  auto get_double = [](const YAML::Node &node, const char *key) -> double {
+    if (!node[key]) {
+      throw std::runtime_error(std::string("Missing key: ") + key);
+    }
+    return node[key].as<double>();
+  };
+  auto get_unsigned = [](const YAML::Node &node,
+                         const char *key) -> unsigned int {
+    if (!node[key]) {
+      return 0u;
+    }
+    return node[key].as<unsigned int>();
+  };
+
+  std::tuple qubits_and_gates_distribution_params = {
+      get_double(params, "mean_qubits"), get_double(params, "mean_gates"),
+      get_double(params, "cholesky_L11"), get_double(params, "cholesky_L21"),
+      get_double(params, "cholesky_L22")};
+
+  std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights{};
+  const YAML::Node &yaml_gates_weights = statistics["gates_weights"];
+
+  gates_weights[X_INDEX] = get_unsigned(yaml_gates_weights, "X");
+  gates_weights[CX_INDEX] = get_unsigned(yaml_gates_weights, "CX");
+  gates_weights[CCX_INDEX] = get_unsigned(yaml_gates_weights, "CCX");
+  gates_weights[C3plus_X_INDEX] = get_unsigned(yaml_gates_weights, "C3plus_X");
+  gates_weights[Y_INDEX] = get_unsigned(yaml_gates_weights, "Y");
+  gates_weights[controlled_Y_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_Y");
+  gates_weights[Z_INDEX] = get_unsigned(yaml_gates_weights, "Z");
+  gates_weights[controlled_Z_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_Z");
+  gates_weights[H_INDEX] = get_unsigned(yaml_gates_weights, "H");
+  gates_weights[controlled_H_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_H");
+  gates_weights[S_INDEX] = get_unsigned(yaml_gates_weights, "S");
+  gates_weights[controlled_S_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_S");
+  gates_weights[SDG_INDEX] = get_unsigned(yaml_gates_weights, "SDG");
+  gates_weights[controlled_SDG_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_SDG");
+  gates_weights[T_INDEX] = get_unsigned(yaml_gates_weights, "T");
+  gates_weights[controlled_T_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_T");
+  gates_weights[TDG_INDEX] = get_unsigned(yaml_gates_weights, "TDG");
+  gates_weights[controlled_TDG_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_TDG");
+  gates_weights[RX_INDEX] = get_unsigned(yaml_gates_weights, "RX");
+  gates_weights[controlled_RX_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_RX");
+  gates_weights[RY_INDEX] = get_unsigned(yaml_gates_weights, "RY");
+  gates_weights[controlled_RY_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_RY");
+  gates_weights[RZ_INDEX] = get_unsigned(yaml_gates_weights, "RZ");
+  gates_weights[controlled_RZ_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_RZ");
+  gates_weights[SWAP_INDEX] = get_unsigned(yaml_gates_weights, "SWAP");
+  gates_weights[controlled_SWAP_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_SWAP");
+  gates_weights[R1_INDEX] = get_unsigned(yaml_gates_weights, "R1");
+  gates_weights[controlled_R1_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_R1");
+  gates_weights[U2_INDEX] = get_unsigned(yaml_gates_weights, "U2");
+  gates_weights[controlled_U2_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_U2");
+  gates_weights[U3_INDEX] = get_unsigned(yaml_gates_weights, "U3");
+  gates_weights[controlled_U3_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_U3");
+  gates_weights[PHASED_RX_INDEX] =
+      get_unsigned(yaml_gates_weights, "PHASED_RX");
+  gates_weights[controlled_PHASED_RX_INDEX] =
+      get_unsigned(yaml_gates_weights, "controlled_PHASED_RX");
+  gates_weights[MX_INDEX] = get_unsigned(yaml_gates_weights, "MX");
+  gates_weights[MY_INDEX] = get_unsigned(yaml_gates_weights, "MY");
+  gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
+
+  return random_quantum_circuit_from_embedded_statistics(
+      qubits_and_gates_distribution_params, gates_weights,
+      give_small_probability_to_unoccurring_gates,
+      probability_additionals_qubits);
 }
 
 } // namespace ai_pass_selector

@@ -89,6 +89,19 @@ random_quantum_circuit_from_embedded_statistics(
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     bool give_small_probability_to_unoccurring_gates = true,
     double probability_additionals_qubits = 0.01);
+
+/**
+ *
+ * @param statistics_yaml_file_path
+ * @param give_small_probability_to_unoccurring_gates
+ * @param probability_additionals_qubits
+ * @return
+ */
+std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+random_quantum_circuit_from_yaml_statistics(
+    const fs::path &statistics_yaml_file_path,
+    bool give_small_probability_to_unoccurring_gates = true,
+    double probability_additionals_qubits = 0.01);
 } // namespace ai_pass_selector
 
 #endif // RANDOM_QUANTUM_CIRCUIT_GENERATOR_HPP

@@ -10,7 +10,7 @@ list(APPEND CMAKE_PREFIX_PATH
 # Find each SDK, but we will not mix them in a single target
 find_package(TensorFlow CONFIG REQUIRED)
 find_package(Torch REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +35,7 @@ target_link_libraries(common_ai_props INTERFACE
         SupportQuake
         Optimizer
         Interfaces
+        yaml-cpp
 )
 if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(common_ai_props INTERFACE -Ofast)
