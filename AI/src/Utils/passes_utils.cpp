@@ -1,12 +1,18 @@
-#include "Environment/quantum_circuit_tensor.hpp"
 #include "Utils/passes_utils.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_tensor.hpp"
+
+// Cudaq includes
+#include "cudaq/Optimizer/Transforms/Passes.h"
 
 namespace ai_pass_selector {
 
-
-std::pair<std::string, std::unique_ptr<mlir::Pass> >
+std::pair<std::string, std::unique_ptr<mlir::Pass>>
 getPassNameAndPointer(unsigned int index) {
+  DecompositionPassOptions options;
+  options.enabledPatterns = {"CXToCZ"};
+
   if (index >= NR_PASSES) {
     std::cerr << "In getPassByIndex: " << index << std::endl;
     return {"", nullptr};
