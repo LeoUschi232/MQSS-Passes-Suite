@@ -16,6 +16,7 @@ namespace ai_pass_selector {
     constexpr unsigned int NR_PASSES = 65;
 
     constexpr std::array<std::unique_ptr<mlir::Pass>(*)(), NR_PASSES> PASS_FUNCTIONS = {
+        // Custom passes
         &createZeroRxToIdPass, // 1
         &createZeroRyToIdPass, // 2
         &createZeroRzToIdPass, // 3
@@ -81,6 +82,8 @@ namespace ai_pass_selector {
         &createSToTTPass, // 63
         &createSwapToLowerCxCxCxPass, // 64
         &createSwapToUpperCxCxCxPass // 65
+        // Already existing Cudaq passes
+
     };
 
 
