@@ -187,8 +187,9 @@ random_quantum_circuit_from_embedded_statistics(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
+    std::pair<int, int> cap_nr_qubits, std::pair<int, int> cap_nr_gates,
     bool give_small_probability_to_unoccurring_gates,
-    double probability_additionals_qubits) {
+    double probability_additionals_controls) {
   if (give_small_probability_to_unoccurring_gates) {
     // If a specific type of gate doesn't occur in the statistics, give it 1/10
     // of the weight of the least occurring gate but at least a weight of 1.
@@ -208,8 +209,25 @@ random_quantum_circuit_from_embedded_statistics(
   auto [nr_qubits, nr_gates] = sample_nr_qubits_and_gates_from_cholesky(
       qubits_and_gates_distribution_params);
   // At least 2 qubits and more gates than qubits.
-  nr_qubits = std::max(2u, nr_qubits);
+  auto [min_qubits, max_qubits] = cap_nr_qubits;
+  auto [min_gates, max_gates] = cap_nr_gates;
+  if (min_qubits > 2) {
+    nr_qubits = std::max(static_cast<unsigned>(min_qubits), nr_qubits);
+  } else {
+    nr_qubits = std::max(2u, nr_qubits);
+  }
+  if (max_qubits > 2) {
+    nr_qubits = std::min(static_cast<unsigned>(max_qubits), nr_qubits);
+  }
   nr_gates = std::max(nr_gates, nr_qubits + 1);
+  if (min_gates > nr_qubits) {
+    nr_gates = std::max(static_cast<unsigned>(min_gates), nr_gates);
+  } else {
+    nr_gates = std::max(nr_gates, nr_qubits + 1);
+  }
+  if (max_gates > nr_qubits) {
+    nr_gates = std::min(static_cast<unsigned>(max_gates), nr_gates);
+  }
 
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
 
@@ -237,9 +255,9 @@ random_quantum_circuit_from_embedded_statistics(
           std::min(static_cast<unsigned>(minControls), nr_qubits - nr_targets);
     }
     if (exactControls < 0 && allowExtraControls &&
-        probability_additionals_qubits > 0.0) {
+        probability_additionals_controls > 0.0) {
       while (nr_controls + nr_targets < nr_qubits &&
-             random01() < probability_additionals_qubits) {
+             random01() < probability_additionals_controls) {
         nr_controls++;
       }
     }
@@ -270,6 +288,7 @@ random_quantum_circuit_from_embedded_statistics(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
+    std::pair<int, int> cap_nr_qubits, std::pair<int, int> cap_nr_gates,
     bool give_small_probability_to_unoccurring_gates,
     double probability_additionals_qubits) {
   if (!fs::exists(statistics_yaml_file_path) ||
@@ -363,8 +382,8 @@ random_quantum_circuit_from_yaml_statistics(
   gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
 
   return random_quantum_circuit_from_embedded_statistics(
-      qubits_and_gates_distribution_params, gates_weights,
-      give_small_probability_to_unoccurring_gates,
+      qubits_and_gates_distribution_params, gates_weights, cap_nr_qubits,
+      cap_nr_gates, give_small_probability_to_unoccurring_gates,
       probability_additionals_qubits);
 }
 

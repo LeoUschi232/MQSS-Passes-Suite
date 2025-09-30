@@ -43,10 +43,8 @@ static GateSpec gateSpecFromIndex(unsigned int idx);
  * @param nr_qubits
  * @return
  */
-std::pair<std::vector<int>, std::vector<int>>
-sampleDistinctTargetsAndControls(unsigned int nr_targets,
-                                 unsigned int nr_controls,
-                                 unsigned int nr_qubits);
+std::pair<std::vector<int>, std::vector<int>> sampleDistinctTargetsAndControls(
+    unsigned int nr_targets, unsigned int nr_controls, unsigned int nr_qubits);
 
 /**
  *
@@ -68,8 +66,10 @@ std::pair<unsigned int, unsigned int> sample_nr_qubits_and_gates_from_cholesky(
  *
  * @param qubits_and_gates_distribution_params
  * @param gates_weights
+ * @param cap_nr_qubits
+ * @param cap_nr_gates
  * @param give_small_probability_to_unoccurring_gates
- * @param probability_additionals_qubits
+ * @param probability_additionals_controls
  * @return
  */
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
@@ -77,12 +77,16 @@ random_quantum_circuit_from_embedded_statistics(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
+    std::pair<int, int> cap_nr_qubits = {-1, -1},
+    std::pair<int, int> cap_nr_gates = {-1, -1},
     bool give_small_probability_to_unoccurring_gates = true,
-    double probability_additionals_qubits = 0.01);
+    double probability_additionals_controls = 0.01);
 
 /**
  *
  * @param statistics_yaml_file_path
+ * @param cap_nr_qubits
+ * @param cap_nr_gates
  * @param give_small_probability_to_unoccurring_gates
  * @param probability_additionals_qubits
  * @return
@@ -90,6 +94,8 @@ random_quantum_circuit_from_embedded_statistics(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
+    std::pair<int, int> cap_nr_qubits = {-1, -1},
+    std::pair<int, int> cap_nr_gates = {-1, -1},
     bool give_small_probability_to_unoccurring_gates = true,
     double probability_additionals_qubits = 0.01);
 } // namespace ai_pass_selector

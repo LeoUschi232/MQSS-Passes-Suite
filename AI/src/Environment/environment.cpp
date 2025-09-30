@@ -210,7 +210,11 @@ InstructionsTensor<double> QuantumCircuitEnviorment::get_observation() {
   }
   const unsigned int nr_instructions =
       getNumberOfGates(FuncOp(this->circuit_module));
-  if (nr_instructions == 0) {
+  if (nr_instructions <= 0) {
+    // Make N=1 dummy row to allow agent to eat this observation with smaller
+    // padding.
+    observation.reserve(1);
+    observation.append(std::vector(observation.shape[1], 0.0));
     return observation;
   }
   observation.reserve(nr_instructions);

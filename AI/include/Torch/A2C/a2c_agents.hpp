@@ -16,6 +16,10 @@
   };
 
 namespace torch::nn {
+/// Custom torch LeakyReLU layer with learnable parameter for negative inputs.
+inline PReLU HalfScalingLayer(double prelu_init = 1.0) {
+  return PReLU(PReLUOptions().init(prelu_init));
+}
 /// Instruction tensor will have shape {B, N, IRP}
 /// B = Batch size / Nr of parallel environments
 /// N = Nr of instructions in the quantum circuit
@@ -35,8 +39,12 @@ namespace ai_pass_selector {
 /// A2C = Advantage Actor-Critic
 /// CONV{X} = Convolutional with depth X
 /// NPI = Normlize per instruction
-/// NFULL = Normlize the full chain of instructions
-DECLARE_A2C_AGENT(A2C_CONV2_NPI)
-DECLARE_A2C_AGENT(A2C_CONV2_NFULL)
+/// NFULL = Normlize over full chain of instructions
+DECLARE_A2C_AGENT(A2C_CONV2NPI)
+DECLARE_A2C_AGENT(A2C_CONV2NFULL)
+DECLARE_A2C_AGENT(A2C_CONV3NPI)
+DECLARE_A2C_AGENT(A2C_CONV3NFULL)
+DECLARE_A2C_AGENT(A2C_CONV4NPI)
+DECLARE_A2C_AGENT(A2C_CONV4NFULL)
 } // namespace ai_pass_selector
 #endif // A2C_TRAINER_HPP
