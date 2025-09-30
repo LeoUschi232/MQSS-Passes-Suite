@@ -20,98 +20,172 @@ using namespace mqss::opt;
 using namespace cudaq::opt;
 
 namespace ai_pass_selector {
-constexpr unsigned int NR_PASSES = 78;
+constexpr unsigned int NR_PASSES = 103;
 
-constexpr std::array<std::unique_ptr<mlir::Pass> (*)(), NR_PASSES>
+const std::array<std::function<std::unique_ptr<mlir::Pass>()>, NR_PASSES>
     PASS_FUNCTIONS = {
         // MQSS Custom passes
-        &createZeroRxToIdPass,        // 1
-        &createZeroRyToIdPass,        // 2
-        &createZeroRzToIdPass,        // 3
-        &createCxCxToIdPass,          // 4
-        &createCyCyToIdPass,          // 5
-        &createCzCzToIdPass,          // 6
-        &createXXToIdPass,            // 7
-        &createYYToIdPass,            // 8
-        &createZZToIdPass,            // 9
-        &createSSdgToIdPass,          // 10
-        &createSdgSToIdPass,          // 11
-        &createTTdgToIdPass,          // 12
-        &createTdgTToIdPass,          // 13
-        &createHHToIdPass,            // 14
-        &createRxRxToRxPass,          // 15
-        &createRyRyToRyPass,          // 16
-        &createRzRzToRzPass,          // 17
-        &createHXHToZPass,            // 18
-        &createHZHToXPass,            // 19
-        &createXHZToHPass,            // 20
-        &createZHXToHPass,            // 21
-        &createHRxHToRzPass,          // 22
-        &createHRzHToRxPass,          // 23
-        &createHCxHToCzPass,          // 24
-        &createHCzHToCxPass,          // 25
-        &createHCrxHToCrzPass,        // 26
-        &createHCrzHToCrxPass,        // 27
-        &createXHToHZPass,            // 28
-        &createHXToZHPass,            // 29
-        &createYHToHYPass,            // 30
-        &createHYToYHPass,            // 31
-        &createZHToHXPass,            // 32
-        &createHZToXHPass,            // 33
-        &createSSSToSdgPass,          // 34
-        &createSdgSdgSdgToSPass,      // 35
-        &createSSToZPass,             // 36
-        &createSdgSdgToZPass,         // 37
-        &createSZToSdgPass,           // 38
-        &createZSToSdgPass,           // 39
-        &createSdgZToSPass,           // 40
-        &createZSdgToSPass,           // 41
-        &createTTToSPass,             // 42
-        &createCxCxCxToSwapPass,      // 43
-        &createCxZToZCxPass,          // 44
-        &createZCxToCxZPass,          // 45
-        &createCxXToXCxPass,          // 46
-        &createXCxToCxXPass,          // 47
-        &createCxRxToRxCxPass,        // 48
-        &createRxCxToCxRxPass,        // 49
-        &createReverseCxPass,         // 50
-        &createXToHZHPass,            // 51
-        &createZToHXHPass,            // 52
-        &createRxToHRzHPass,          // 53
-        &createRzToHRxHPass,          // 54
-        &createCxToUpperHCzHPass,     // 55
-        &createCxToLowerHCzHPass,     // 56
-        &createCzToUpperHCxHPass,     // 57
-        &createCzToLowerHCxHPass,     // 58
-        &createCrxToHCrzHPass,        // 59
-        &createCrzToHCrxHPass,        // 60
-        &createSdgToSSSPass,          // 61
-        &createSToSdgSdgSdgPass,      // 62
-        &createSToTTPass,             // 63
-        &createSwapToLowerCxCxCxPass, // 64
-        &createSwapToUpperCxCxCxPass, // 65
+        [] { return createZeroRxToIdPass(); },        // 1
+        [] { return createZeroRyToIdPass(); },        // 2
+        [] { return createZeroRzToIdPass(); },        // 3
+        [] { return createCxCxToIdPass(); },          // 4
+        [] { return createCyCyToIdPass(); },          // 5
+        [] { return createCzCzToIdPass(); },          // 6
+        [] { return createXXToIdPass(); },            // 7
+        [] { return createYYToIdPass(); },            // 8
+        [] { return createZZToIdPass(); },            // 9
+        [] { return createSSdgToIdPass(); },          // 10
+        [] { return createSdgSToIdPass(); },          // 11
+        [] { return createTTdgToIdPass(); },          // 12
+        [] { return createTdgTToIdPass(); },          // 13
+        [] { return createHHToIdPass(); },            // 14
+        [] { return createRxRxToRxPass(); },          // 15
+        [] { return createRyRyToRyPass(); },          // 16
+        [] { return createRzRzToRzPass(); },          // 17
+        [] { return createHXHToZPass(); },            // 18
+        [] { return createHZHToXPass(); },            // 19
+        [] { return createXHZToHPass(); },            // 20
+        [] { return createZHXToHPass(); },            // 21
+        [] { return createHRxHToRzPass(); },          // 22
+        [] { return createHRzHToRxPass(); },          // 23
+        [] { return createHCxHToCzPass(); },          // 24
+        [] { return createHCzHToCxPass(); },          // 25
+        [] { return createHCrxHToCrzPass(); },        // 26
+        [] { return createHCrzHToCrxPass(); },        // 27
+        [] { return createXHToHZPass(); },            // 28
+        [] { return createHXToZHPass(); },            // 29
+        [] { return createYHToHYPass(); },            // 30
+        [] { return createHYToYHPass(); },            // 31
+        [] { return createZHToHXPass(); },            // 32
+        [] { return createHZToXHPass(); },            // 33
+        [] { return createSSSToSdgPass(); },          // 34
+        [] { return createSdgSdgSdgToSPass(); },      // 35
+        [] { return createSSToZPass(); },             // 36
+        [] { return createSdgSdgToZPass(); },         // 37
+        [] { return createSZToSdgPass(); },           // 38
+        [] { return createZSToSdgPass(); },           // 39
+        [] { return createSdgZToSPass(); },           // 40
+        [] { return createZSdgToSPass(); },           // 41
+        [] { return createTTToSPass(); },             // 42
+        [] { return createCxCxCxToSwapPass(); },      // 43
+        [] { return createCxZToZCxPass(); },          // 44
+        [] { return createZCxToCxZPass(); },          // 45
+        [] { return createCxXToXCxPass(); },          // 46
+        [] { return createXCxToCxXPass(); },          // 47
+        [] { return createCxRxToRxCxPass(); },        // 48
+        [] { return createRxCxToCxRxPass(); },        // 49
+        [] { return createReverseCxPass(); },         // 50
+        [] { return createXToHZHPass(); },            // 51
+        [] { return createZToHXHPass(); },            // 52
+        [] { return createRxToHRzHPass(); },          // 53
+        [] { return createRzToHRxHPass(); },          // 54
+        [] { return createCxToUpperHCzHPass(); },     // 55
+        [] { return createCxToLowerHCzHPass(); },     // 56
+        [] { return createCzToUpperHCxHPass(); },     // 57
+        [] { return createCzToLowerHCxHPass(); },     // 58
+        [] { return createCrxToHCrzHPass(); },        // 59
+        [] { return createCrzToHCrxHPass(); },        // 60
+        [] { return createSdgToSSSPass(); },          // 61
+        [] { return createSToSdgSdgSdgPass(); },      // 62
+        [] { return createSToTTPass(); },             // 63
+        [] { return createSwapToLowerCxCxCxPass(); }, // 64
+        [] { return createSwapToUpperCxCxCxPass(); }, // 65
 
         // MLIR Passes under mlir/Transforms/Passes.h
-        &mlir::createCanonicalizerPass,   // 66
-        &mlir::createControlFlowSinkPass, // 67
-        &mlir::createCSEPass,             // 68
-        &mlir::createInlinerPass,         // 69
-        &mlir::createSCCPPass,            // 70
+        [] { return mlir::createCanonicalizerPass(); },   // 66
+        [] { return mlir::createControlFlowSinkPass(); }, // 67
+        [] { return mlir::createCSEPass(); },             // 68
+        [] { return mlir::createInlinerPass(); },         // 69
+        [] { return mlir::createSCCPPass(); },            // 70
 
         // Cudaq passes under include/cudaq/Optimizer/Transforms/Passes.td
-        &createApplyControlNegations,         // 71
-        &createClassicalOptimization,         // 72
-        &createDelayMeasurementsPass,         // 73
-        &createEraseNoise,                    // 74
-        &createEraseNopCalls,                 // 75
-        &createMultiControlDecompositionPass, // 76
-        &createPruneCtrlRelations,            // 77
-        &createQuakeSimplify,                 // 78
+        [] { return createApplyControlNegations(); },         // 71
+        [] { return createClassicalOptimization(); },         // 72
+        [] { return createDelayMeasurementsPass(); },         // 73
+        [] { return createEraseNoise(); },                    // 74
+        [] { return createEraseNopCalls(); },                 // 75
+        [] { return createMultiControlDecompositionPass(); }, // 76
+        [] { return createPruneCtrlRelations(); },            // 77
+        [] { return createQuakeSimplify(); },                 // 78
 
         // Cudaq Decomposition patterns passes
-        [] -> {
-          return createDecompositionPass
-        }
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CCXToCCZ"}});
+        }, // 79
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CCZToCX"}});
+        }, // 80
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CHToCX"}});
+        }, // 81
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CR1ToCX"}});
+        }, // 82
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CRxToCX"}});
+        }, // 83
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CRyToCX"}});
+        }, // 84
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CRzToCX"}});
+        }, // 85
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CXToCZ"}});
+        }, // 86
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"CZToCX"}});
+        }, // 87
+        [] {
+          return createDecompositionPass(
+              {.enabledPatterns = {"ExpPauliDecomposition"}});
+        }, // 88
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"HToPhasedRx"}});
+        }, // 89
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"R1ToPhasedRx"}});
+        }, // 90
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"R1ToRz"}});
+        }, // 91
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"RxToPhasedRx"}});
+        }, // 92
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"RyToPhasedRx"}});
+        }, // 93
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"RzToPhasedRx"}});
+        }, // 94
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"SToPhasedRx"}});
+        }, // 95
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"SToR1"}});
+        }, // 96
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"SwapToCX"}});
+        }, // 97
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"TToPhasedRx"}});
+        }, // 98
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"TToR1"}});
+        }, // 99
+        [] {
+          return createDecompositionPass(
+              {.enabledPatterns = {"U3ToRotations"}});
+        }, // 100
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"XToPhasedRx"}});
+        }, // 101
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"YToPhasedRx"}});
+        }, // 102
+        [] {
+          return createDecompositionPass({.enabledPatterns = {"ZToPhasedRx"}});
+        } // 103
 };
 
 /**
