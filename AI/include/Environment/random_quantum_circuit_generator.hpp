@@ -94,8 +94,8 @@ random_quantum_circuit_from_embedded_statistics(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
-    std::pair<int, int> cap_nr_qubits = {-1, -1},
-    std::pair<int, int> cap_nr_gates = {-1, -1},
+    const std::pair<int, int> &cap_nr_qubits = {-1, -1},
+    const std::pair<int, int> &cap_nr_gates = {-1, -1},
     bool give_small_probability_to_unoccurring_gates = true,
     double probability_additionals_qubits = 0.01);
 } // namespace ai_pass_selector

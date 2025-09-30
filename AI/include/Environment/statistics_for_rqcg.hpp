@@ -70,6 +70,14 @@ void print_dataset_statistics(const std::string &dataset_name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Dataset statistics embedded as available C++ data.
+///
+constexpr std::tuple MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
+    /* mean_qubits */ 62.1292,
+    /* mean_gates */ 5300.87,
+    /* cholesky_L11 */ 38.598,
+    /* cholesky_L21 */ 4260.97,
+    /* cholesky_L22 */ 7922.95};
+
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
     {/* X */ 17022u,
      /* CX */ 5623760u,
@@ -108,12 +116,53 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
      /* MX */ 0u,
      /* MY */ 0u,
      /* MZ */ 120330u};
-constexpr std::tuple MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
-    /* mean_qubits */ 62.1292,
-    /* mean_gates */ 5300.87,
-    /* cholesky_L11 */ 38.598,
-    /* cholesky_L21 */ 4260.97,
-    /* cholesky_L22 */ 7922.95};
+
+constexpr std::tuple
+    RANDOMTEST_PREEMPTIVE_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
+        /* mean_qubits */ 4.95,
+        /* mean_gates */ 21.1,
+        /* cholesky_L11 */ 0.825578,
+        /* cholesky_L21 */ 0.898892,
+        /* cholesky_L22 */ 6.66668};
+
+constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE>
+    RANDOMTEST_PREEMPTIVE_GATES_WEIGHTS = {/* X */ 4u,
+                                           /* CX */ 42u,
+                                           /* CCX */ 2u,
+                                           /* C3plus_X */ 3u,
+                                           /* Y */ 1u,
+                                           /* controlled_Y */ 7u,
+                                           /* Z */ 1u,
+                                           /* controlled_Z */ 3u,
+                                           /* H */ 31u,
+                                           /* controlled_H */ 0u,
+                                           /* S */ 49u,
+                                           /* controlled_S */ 1u,
+                                           /* SDG */ 41u,
+                                           /* controlled_SDG */ 5u,
+                                           /* T */ 1u,
+                                           /* controlled_T */ 0u,
+                                           /* TDG */ 10u,
+                                           /* controlled_TDG */ 1u,
+                                           /* RX */ 36u,
+                                           /* controlled_RX */ 4u,
+                                           /* RY */ 25u,
+                                           /* controlled_RY */ 10u,
+                                           /* RZ */ 29u,
+                                           /* controlled_RZ */ 3u,
+                                           /* SWAP */ 3u,
+                                           /* controlled_SWAP */ 2u,
+                                           /* R1 */ 2u,
+                                           /* controlled_R1 */ 0u,
+                                           /* U2 */ 0u,
+                                           /* controlled_U2 */ 1u,
+                                           /* U3 */ 0u,
+                                           /* controlled_U3 */ 0u,
+                                           /* PHASED_RX */ 5u,
+                                           /* controlled_PHASED_RX */ 1u,
+                                           /* MX */ 8u,
+                                           /* MY */ 13u,
+                                           /* MZ */ 78u};
 } // namespace ai_pass_selector
 
 #endif // STATISTICS_FOR_RQCG_HPP

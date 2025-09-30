@@ -209,25 +209,27 @@ random_quantum_circuit_from_embedded_statistics(
   auto [nr_qubits, nr_gates] = sample_nr_qubits_and_gates_from_cholesky(
       qubits_and_gates_distribution_params);
   // At least 2 qubits and more gates than qubits.
+  // DO NOT Compare unsigned int to int
   auto [min_qubits, max_qubits] = cap_nr_qubits;
   auto [min_gates, max_gates] = cap_nr_gates;
   if (min_qubits > 2) {
     nr_qubits = std::max(static_cast<unsigned>(min_qubits), nr_qubits);
-  } else {
-    nr_qubits = std::max(2u, nr_qubits);
   }
   if (max_qubits > 2) {
     nr_qubits = std::min(static_cast<unsigned>(max_qubits), nr_qubits);
   }
-  nr_gates = std::max(nr_gates, nr_qubits + 1);
-  if (min_gates > nr_qubits) {
+  // Even if min_qubits and max_qubits are set, the number of qubits must be at
+  // least 2.
+  nr_qubits = std::max(2u, nr_qubits);
+  if (min_gates > 2) {
     nr_gates = std::max(static_cast<unsigned>(min_gates), nr_gates);
-  } else {
-    nr_gates = std::max(nr_gates, nr_qubits + 1);
   }
-  if (max_gates > nr_qubits) {
+  if (max_gates > 2) {
     nr_gates = std::min(static_cast<unsigned>(max_gates), nr_gates);
   }
+  // Even if min_gates and max_gates are set, the number of gates must be at
+  // least 1 plus all measurements at the end.
+  nr_gates = std::max(nr_gates, nr_qubits + 1);
 
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
 
@@ -288,7 +290,8 @@ random_quantum_circuit_from_embedded_statistics(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
-    std::pair<int, int> cap_nr_qubits, std::pair<int, int> cap_nr_gates,
+    const std::pair<int, int> &cap_nr_qubits,
+    const std::pair<int, int> &cap_nr_gates,
     bool give_small_probability_to_unoccurring_gates,
     double probability_additionals_qubits) {
   if (!fs::exists(statistics_yaml_file_path) ||
