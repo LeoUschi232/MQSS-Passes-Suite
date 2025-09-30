@@ -17,7 +17,6 @@ namespace ai_pass_selector {
 class BaseA2CAgent : public torch::nn::Module {
 protected:
   /// Attributes on configuration
-  int size_class = 0;
   unsigned int max_qubits = 0;
   int critic_optimizer_type = 0;
   int actor_optimizer_type = 0;
@@ -38,29 +37,25 @@ protected:
 
 public:
   /// Constructors
-  BaseA2CAgent(int circuit_size_class,
-               std::unordered_map<std::string, std::string> params);
-
-  BaseA2CAgent(const std::string &circuit_size,
+  BaseA2CAgent(unsigned int max_qubits,
                std::unordered_map<std::string, std::string> params);
 
   /**
    *
-   * @param circuit_size_class
+   * @param max_qubits
    * @param params
    */
-  void configure(int circuit_size_class,
+  void configure(unsigned int max_qubits,
                  std::unordered_map<std::string, std::string> params);
 
   /**
    *
-   * @param nr_input_values
-   * @param critic
    * @param actor
+   * @param critic
    * @return
    */
-  bool initialize(int nr_input_values, const torch::nn::Sequential &critic,
-                  const torch::nn::Sequential &actor);
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic);
 
   /// Destructor
   ~BaseA2CAgent() override = default;
@@ -76,8 +71,6 @@ public:
 
   /// Getters
   unsigned int getMaxQubits() const;
-
-  unsigned int getNrInputValues() const;
 
   /**
    *
@@ -133,6 +126,10 @@ public:
    */
   void load_model();
 
+  /**
+   *
+   * @return
+   */
   virtual std::string agentName() const = 0;
 };
 } // namespace ai_pass_selector

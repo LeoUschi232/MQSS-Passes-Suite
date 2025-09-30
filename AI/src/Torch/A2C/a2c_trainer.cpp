@@ -35,7 +35,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
   double entropy_coefficient = std::stod(params["entropy_coefficient"]);
   torch::Device device = DEVICE_NAME_TO_TORCH.at(params["device"]);
 
-  if (agent.getNrInputValues() <= 0 || nr_parallel_environments <= 0) {
+  if (nr_parallel_environments <= 0) {
     std::cerr << "No agent to train." << std::endl;
     return {};
   }

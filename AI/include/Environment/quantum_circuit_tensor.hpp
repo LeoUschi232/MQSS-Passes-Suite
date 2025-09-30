@@ -1,9 +1,6 @@
 #ifndef QUANTUM_CIRCUIT_TENSOR_HPP
 #define QUANTUM_CIRCUIT_TENSOR_HPP
 
-// Utils includes
-#include "Utils/circuit_utils.hpp"
-
 // Standard library includes
 #include <array>
 #include <cassert>
@@ -66,20 +63,10 @@ index_to_one_hot(unsigned int size, const std::vector<unsigned int> &indexes) {
   return multi_hot;
 }
 
-constexpr unsigned int SMALL_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + SMALL_CIRCUIT_MAX_QUBITS;
-constexpr unsigned int MODERATE_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + MODERATE_CIRCUIT_MAX_QUBITS;
-constexpr unsigned int BIG_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + BIG_CIRCUIT_MAX_QUBITS;
-constexpr unsigned int HUGE_MAIN_INSTR_REPR_SIZE =
-    NR_GATES + MAX_GATE_PARAMS + HUGE_CIRCUIT_MAX_QUBITS;
-const std::unordered_map<int, unsigned int>
-    CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE = {
-        {SMALL, SMALL_MAIN_INSTR_REPR_SIZE},
-        {MODERATE, MODERATE_MAIN_INSTR_REPR_SIZE},
-        {BIG, BIG_MAIN_INSTR_REPR_SIZE},
-        {HUGE, HUGE_MAIN_INSTR_REPR_SIZE}};
+constexpr unsigned int
+MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(unsigned int max_qubits) {
+  return NR_GATES + MAX_GATE_PARAMS + max_qubits;
+}
 
 template <class T> struct InstructionsTensor {
   std::array<unsigned int, 2> shape{};
@@ -87,9 +74,8 @@ template <class T> struct InstructionsTensor {
 
   // Controls qubits triggered negative.
   // Target qubits triggered positive.
-  explicit InstructionsTensor(int circuit_size_class)
-      : shape{0, CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE.at(
-                     circuit_size_class)} {}
+  explicit InstructionsTensor(unsigned int max_qubits)
+      : shape{0, MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits)} {}
 
   void reserve(unsigned int nr_instructions) {
     quantum_circuit_data.reserve(nr_instructions * shape[1]);

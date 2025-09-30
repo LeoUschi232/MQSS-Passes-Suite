@@ -7,7 +7,6 @@
 #include "Torch/parallel_environments.hpp"
 
 // Utils includes
-#include "Utils/circuit_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
 // Standard library includes

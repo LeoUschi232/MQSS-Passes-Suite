@@ -1,13 +1,10 @@
 #include "Torch/A2C/base_a2c_agent.hpp"
 
 // Torch includes
-#include <torch/torch.h>
-
-// Utils includes
 #include "Torch/agent_utils.hpp"
+#include "torch/torch.h"
 
 // Standard library includes
-#include <Utils/circuit_utils.hpp>
 #include <cmath>
 #include <memory>
 #include <tuple>
@@ -16,32 +13,15 @@
 namespace ai_pass_selector {
 
 BaseA2CAgent::BaseA2CAgent(
-    int circuit_size_class,
+    unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params) {
-  this->configure(circuit_size_class, std::move(params));
-}
-
-BaseA2CAgent::BaseA2CAgent(
-    const std::string &circuit_size,
-    std::unordered_map<std::string, std::string> params) {
-  if (CIRCUIT_SIZE_NAME_TO_CLASS.find(circuit_size) ==
-      CIRCUIT_SIZE_NAME_TO_CLASS.end()) {
-    throw std::runtime_error("Unsupported size: " + circuit_size);
-  }
-  int circuit_size_class = CIRCUIT_SIZE_NAME_TO_CLASS.at(circuit_size);
-  this->configure(circuit_size_class, std::move(params));
+  this->configure(max_qubits, std::move(params));
 }
 
 void BaseA2CAgent::configure(
-    int circuit_size_class,
+    unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params) {
-  if (CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.find(circuit_size_class) ==
-      CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.end()) {
-    throw std::runtime_error("Unsupported size class: " + circuit_size_class);
-  }
-  this->size_class = circuit_size_class;
-  this->max_qubits = CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class);
-
+  this->max_qubits = max_qubits;
   this->critic_optimizer_type =
       OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
   this->actor_optimizer_type =
@@ -56,13 +36,11 @@ void BaseA2CAgent::configure(
                      : torch::kCPU;
 }
 
-bool BaseA2CAgent::initialize(int nr_input_values,
-                              const torch::nn::Sequential &critic,
-                              const torch::nn::Sequential &actor) {
+bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
+                              const torch::nn::Sequential &critic) {
   try {
-    this->nr_input_values = nr_input_values;
-    this->critic = critic;
     this->actor = actor;
+    this->critic = critic;
     register_module("critic", this->critic);
     register_module("actor", this->actor);
     this->critic->to(this->device);
@@ -81,18 +59,11 @@ bool BaseA2CAgent::initialize(int nr_input_values,
 
 unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
 
-unsigned int BaseA2CAgent::getNrInputValues() const {
-  return this->nr_input_values;
-}
-
 std::pair<torch::Tensor, torch::Tensor>
 BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
-  if (x.dim() == 3) {
-    // flatten [B, max_qubits, max_instructions] to [B,
-    // max_qubits*max_instructions]
-    x = x.flatten(1);
-  }
+  // Do NOT reshape/flatten here.
+  // Let the models handle shapes.
   return {this->critic->forward(x), this->actor->forward(x)};
 }
 

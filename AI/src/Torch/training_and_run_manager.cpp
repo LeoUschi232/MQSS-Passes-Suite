@@ -27,22 +27,15 @@ train(const std::string &agent_name, const std::string &dataset,
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case A2C: {
+      // TODO: Implement once ready
+      return {};
       std::unique_ptr<BaseA2CAgent> agent;
-      if (attributes.specifier == "ibfclsd") {
-        agent = std::make_unique<A2C_IBCONV2>(attributes.size_class, params);
-      } else if (attributes.specifier == "ibfclsm") {
-        agent = std::make_unique<A2C_IBCONV4>(attributes.size_class, params);
-      } else {
-        throw std::runtime_error("Unknown A2C specifier: " +
-                                 attributes.specifier);
-      }
       agent->load_model();
       training_results = train_a2c(*agent, dataset, params);
       break;
     }
     case A3C:
     case PPO:
-    case RNN:
     default:
       throw std::runtime_error("Unsupported agent_class in train()");
     }

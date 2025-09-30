@@ -42,7 +42,6 @@ constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
 constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
 class QuantumCircuitEnviorment {
-  int circuit_size_class;
   unsigned int max_qubits;
   fs::path circuit_path;
   ModuleOp circuit_module;
@@ -52,7 +51,7 @@ class QuantumCircuitEnviorment {
 
 public:
   /// Constructors
-  QuantumCircuitEnviorment(int circuit_size_class, unsigned int max_steps,
+  QuantumCircuitEnviorment(unsigned int max_qubits, unsigned int max_steps,
                            const fs::path &circuit_path = "");
 
   /// Destructor
@@ -107,8 +106,13 @@ public:
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
   /**
-   *
-   * @return
+   * B = Batch size / Nr of parallel environments
+   * N = Nr of instructions in the quantum circuit
+   * IRP = Instruction representation size
+   * The transformation from shape {N×IRP} to {B, N, IRP} will be done by the
+   * ParallelEnvironments object.
+   * @return Blob tensor of 1-axis shape {N×IRP} containing the observation of
+   * the current circuit.
    */
   InstructionsTensor<double> get_observation();
 

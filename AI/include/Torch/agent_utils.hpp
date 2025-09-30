@@ -25,8 +25,8 @@ constexpr int RNN = 4;
 const std::unordered_map<std::string, int> AGENT_NAME_TO_CLASS = {
     {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}, {"rnn", RNN}};
 
-const std::unordered_map<std::string, int> AGENT_CLASS_TO_NAME = {
-    {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}, {"rnn", RNN}};
+const std::unordered_map<int, std::string> AGENT_CLASS_TO_NAME = {
+    {A2C, "a2c"}, {A3C, "a3c"}, {PPO, "ppo"}, {RNN, "rnn"}};
 
 /// Optimizers
 constexpr int OPTIMIZER_ADAGRAD = 1;
@@ -48,8 +48,8 @@ const std::unordered_map<int, std::string> OPTIMIZER_TYPE_TO_NAME = {
 
 struct AgentAttributes {
   int agent_class;
-  int size_class;
-  std::string specifier;
+  unsigned int max_qubits;
+  std::string extras;
 };
 
 /// Devices

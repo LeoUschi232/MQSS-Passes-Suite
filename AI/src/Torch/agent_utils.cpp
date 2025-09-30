@@ -10,7 +10,6 @@
 #include "torch/torch.h"
 
 // Utils includes
-#include "Utils/circuit_utils.hpp"
 #include "Utils/info_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
@@ -31,12 +30,12 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
     throw std::runtime_error("Unsupported agent: " + agent_attributes[0]);
   }
   int agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
-  if (CIRCUIT_SIZE_NAME_TO_CLASS.find(agent_attributes[1]) ==
-      CIRCUIT_SIZE_NAME_TO_CLASS.end()) {
-    throw std::runtime_error("Unsupported size: " + agent_attributes[1]);
+  if (agent_attributes[1].rfind("mq", 0) != 0) {
+    throw std::invalid_argument("Missing 'mq' prefix");
   }
-  int circuit_class = CIRCUIT_SIZE_NAME_TO_CLASS.at(agent_attributes[1]);
-  return {agent_class, circuit_class, agent_attributes[2]};
+  unsigned int max_qubits =
+      static_cast<unsigned int>(std::stoul(agent_attributes[1].substr(2)));
+  return {agent_class, max_qubits, agent_attributes[2]};
 }
 
 std::unique_ptr<torch::optim::Optimizer>
@@ -85,19 +84,7 @@ std::string select_best_agent(const std::string &circuit) {
   }
 
   auto [module, context_ptr] = extractMLIRContext(quake_module_text);
-  switch (auto [nrQubits, nrGates, depth] =
-              getQubitsInstructionsDepth(FuncOp(module));
-          classify_circuit(nrQubits)) {
-  case SMALL:
-    return "a2c-small-ibconv2";
-  case MODERATE:
-    return "a2c-moderate-ibconv2";
-  case BIG:
-    return "a2c-big-ibconv2";
-  case HUGE:
-  default:
-    break;
-  }
+  // TODO: Do like check for agents
   throw std::runtime_error("No suitable agent found for circuit.");
 }
 
@@ -127,12 +114,11 @@ getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
     return {};
   }
   int agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
-  if (CIRCUIT_SIZE_NAME_TO_CLASS.find(agent_attributes[1]) ==
-      CIRCUIT_SIZE_NAME_TO_CLASS.end()) {
-    std::cerr << "Unsupported size: " << agent_attributes[1] << std::endl;
-    return {};
+  if (agent_attributes[1].rfind("mq", 0) != 0) {
+    throw std::invalid_argument("Missing 'mq' prefix");
   }
-  int circuit_class = CIRCUIT_SIZE_NAME_TO_CLASS.at(agent_attributes[1]);
+  unsigned int max_qubits =
+      static_cast<unsigned int>(std::stoul(agent_attributes[1].substr(2)));
   return {};
 }
 } // namespace ai_pass_selector

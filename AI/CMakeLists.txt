@@ -3,12 +3,10 @@ project(AIPassSelector LANGUAGES CXX)
 
 # Vendored SDK discovery roots
 list(APPEND CMAKE_PREFIX_PATH
-        "${CMAKE_CURRENT_SOURCE_DIR}/external/tensorflow"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/libtorch"
 )
 
 # Find each SDK, but we will not mix them in a single target
-find_package(TensorFlow CONFIG REQUIRED)
 find_package(Torch REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 
@@ -83,23 +81,6 @@ endif ()
 
 add_executable(ai_pass_selector_torch ai_pass_selector_torch.cpp)
 target_link_libraries(ai_pass_selector_torch PRIVATE ai_torch yaml-cpp)
-
-# ---------------- TensorFlow-only targets ----------------
-file(GLOB_RECURSE TENSORFLOW_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Tensorflow/*.hpp")
-file(GLOB_RECURSE TENSORFLOW_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Tensorflow/*.cpp")
-
-if (TENSORFLOW_SOURCES OR TENSORFLOW_HEADERS)
-    add_library(ai_tensorflow STATIC ${TENSORFLOW_SOURCES} ${TENSORFLOW_HEADERS})
-    target_link_libraries(ai_tensorflow PUBLIC ai_core)
-    # Link ONLY TensorFlow here
-    target_link_libraries(ai_tensorflow PUBLIC TensorFlow::TensorFlow)
-    target_include_directories(ai_tensorflow PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-    target_include_directories(ai_tensorflow PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-    set_property(TARGET ai_tensorflow PROPERTY CXX_STANDARD 17)
-endif ()
-
-add_executable(ai_pass_selector_tensorflow ai_pass_selector_tensorflow.cpp)
-target_link_libraries(ai_pass_selector_tensorflow PRIVATE ai_tensorflow)
 
 # ---------------- Neutral executables (no TF/Torch) ----------------
 add_executable(convert_qasm_dataset_to_quake convert_qasm_dataset_to_quake.cpp)

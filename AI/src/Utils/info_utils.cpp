@@ -1,9 +1,8 @@
 #include "Utils/info_utils.hpp"
 
-// Support includes
+// Utils includes
 #include "Support/mlir_utils.hpp"
-
-#include <Utils/progress_bar.hpp>
+#include "Utils/progress_bar.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// The usages of llvm functions must come before the QuakeOps header which

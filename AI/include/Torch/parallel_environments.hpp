@@ -1,7 +1,11 @@
 #ifndef PARALLEL_ENVIRONMENTS_HPP
 #define PARALLEL_ENVIRONMENTS_HPP
-#include <Environment/environment.hpp>
-#include <torch/torch.h>
+
+// Environment includes
+#include "Environment/environment.hpp"
+
+// Torch includes
+#include "torch/torch.h"
 
 namespace ai_pass_selector {
 class ParallelEnvironments {
@@ -31,7 +35,6 @@ public:
    * Registers a circuit in the environment identified by @p index.
    * The provided @p index must be smaller than size(); otherwise, a
    * std::out_of_range exception is thrown.
-   *
    * @param index        Environment slot that should own the circuit.
    * @param circuit_path Path to the circuit that should be registered.
    * @return True if the circuit could be registered successfully.
@@ -40,8 +43,11 @@ public:
                                 const fs::path &circuit_path);
 
   /**
-   *
-   * @return
+   * B = Batch size / Nr of parallel environments
+   * N = Nr of instructions in the quantum circuit
+   * IRP = Instruction representation size
+   * @return Torch tensor of shape {B, N, IRP} containing the batched
+   * observations of all environments.
    */
   torch::Tensor get_batched_observations() const;
 

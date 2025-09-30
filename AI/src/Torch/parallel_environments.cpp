@@ -63,9 +63,11 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
       auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
       auto obs = env.get_observation();
-      const int64_t D = obs.shape[0];
-      const int64_t W = obs.shape[1];
-      auto src = torch::from_blob(obs.raw(), {D, W}, torch::kFloat64);
+      // N = Nr of instructions in the quantum circuit
+      // IRP = Instruction representation size
+      const int64_t N = obs.shape[0];
+      const int64_t IRP = obs.shape[1];
+      auto src = torch::from_blob(obs.raw(), {N, IRP}, torch::kFloat64);
       return src.clone();
     }));
   }

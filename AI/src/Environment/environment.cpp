@@ -35,13 +35,11 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-QuantumCircuitEnviorment::QuantumCircuitEnviorment(int circuit_size_class,
+QuantumCircuitEnviorment::QuantumCircuitEnviorment(unsigned int max_qubits,
                                                    unsigned int max_steps,
                                                    const fs::path &circuit_path)
-    : circuit_size_class(circuit_size_class),
-      max_qubits(CIRCUIT_SIZE_CLASS_TO_MAX_QUBITS.at(circuit_size_class)),
-      circuit_path(circuit_path), context_ptr(nullptr), max_steps(max_steps),
-      current_step(0) {
+    : max_qubits(max_qubits), circuit_path(circuit_path), context_ptr(nullptr),
+      max_steps(max_steps), current_step(0) {
   if (!circuit_path.empty()) {
     this->register_quantum_circuit(circuit_path);
   }
@@ -202,7 +200,7 @@ std::tuple<double, bool> QuantumCircuitEnviorment::step(unsigned int action) {
 }
 
 InstructionsTensor<double> QuantumCircuitEnviorment::get_observation() {
-  InstructionsTensor<double> observation(this->circuit_size_class);
+  InstructionsTensor<double> observation(this->max_qubits);
   if (this->circuit_module == nullptr) {
     return observation;
   }

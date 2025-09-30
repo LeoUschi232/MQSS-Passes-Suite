@@ -7,26 +7,99 @@
 #include "Torch/parallel_environments.hpp"
 
 // Utils includes
-#include "Utils/circuit_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
 // Standard library includes
 #include <sstream>
 
 namespace ai_pass_selector {
-A2C_IBCONV2::A2C_IBCONV2(int circuit_size_class,
-                         std::unordered_map<std::string, std::string> params)
-    : BaseA2CAgent(circuit_size_class, std::move(params)) {
-  unsigned int main_instr_repr_size =
-      CIRCUIT_SIZE_CLASS_TO_MAIN_INSTR_REPR_SIZE.at(circuit_size_class);
-  unsigned int lowdim_instr_repr_size =
-      CIRCUIT_SIZE_CLASS_TO_LOWDIM_INSTR_REPR_SIZE.at(circuit_size_class);
+
+A2C_CONV2_NPI::A2C_CONV2_NPI(
+    unsigned int max_qubits,
+    std::unordered_map<std::string, std::string> params)
+    : BaseA2CAgent(max_qubits, std::move(params)) {
+  // Treat the nr of neurons for an instruction representation as the nr of
+  // input channels in a single unit of the chain.
+  unsigned int IRP = MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits);
+
+  // Make sure there are at least half the kernel size in padding on each size
+  // of the instruction chain so that even when there are 0 instructions, at
+  // least 1 kernel slide is possible.
+  unsigned int padding = (max_qubits + 1) / 2;
+  double prelu_init = 1.0;
+
+  // Input tensor shape is {B, N, IRP} but a convolutional layer expects the
+  // number of channels in each position before the nr of positions, so before
+  // passing the input tensor to the neural network, it must be transformed to
+  // shape {B, IRP, N}.
+  auto actor = torch::nn::Sequential(
+      // Input layer
+      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
+
+      // Inner layer nr 1
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // Shape {B, IRP, N}
+
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // Shape {B, IRP, N}
+
+      // Output layer
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, NR_PASSES, max_qubits)
+                            .padding(padding)), // Shape {B, NR_PASSES, N}
+      torch::nn::AdaptiveAvgPool1d(1),          // (B, NR_PASSES, 1)
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(1)), // (B, NR_PASSES)
+      torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/1)));
+  auto critic = torch::nn::Sequential(
+      // Input layer
+      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
+
+      // Inner layer nr 1
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // Shape {B, IRP, N}
+
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // Shape {B, IRP, N}
+
+      // Output layer
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, 1, max_qubits)
+                            .padding(padding)), // Shape {B, 1, N}
+      torch::nn::AdaptiveAvgPool1d(1),          // (B, 1, 1)
+      torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(1)), // (B, 1)
+      torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/1)));
+  this->initialize(actor, critic);
 }
 
-std::string A2C_IBCONV2::agentName() const {
-  std::string size_class_str = CIRCUIT_SIZE_CLASS_TO_NAME.at(this->size_class);
+std::string A2C_CONV2_NPI::agentName() const {
+  std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "a2c-" << size_class_str << "-ibconv2";
+  oss << "a2c-" << size_string << "-conv2npi";
   return oss.str();
 }
 } // namespace ai_pass_selector

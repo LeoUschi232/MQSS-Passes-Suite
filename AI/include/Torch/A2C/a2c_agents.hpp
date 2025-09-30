@@ -7,53 +7,36 @@
 // Torch includes
 #include "Torch/A2C/base_a2c_agent.hpp"
 
-// Utils includes
-#include "Utils/circuit_utils.hpp"
-
 #define DECLARE_A2C_AGENT(ClassName)                                           \
   class ClassName final : public ai_pass_selector::BaseA2CAgent {              \
   public:                                                                      \
-    ClassName(int circuit_size_class,                                          \
-              std::unordered_map<std::string, std::string> params);            \
-    ClassName(const std::string &circuit_size,                                 \
+    ClassName(unsigned int max_qubits,                                         \
               std::unordered_map<std::string, std::string> params);            \
     std::string agentName() const override;                                    \
   };
 
 namespace torch::nn {
-/// Custom torch LeakyReLU layer with learnable parameter for negative inputs.
-inline PReLU HalfScalingLayer(int num_parameters, double init = 1.0) {
-  return PReLU(PReLUOptions().num_parameters(num_parameters).init(init));
+/// Instruction tensor will have shape {B, N, IRP}
+/// B = Batch size / Nr of parallel environments
+/// N = Nr of instructions in the quantum circuit
+/// IRP = Instruction representation size
+inline Functional TransposeContiguous(int64_t dim0, int64_t dim1) {
+  return Functional([dim0, dim1](const Tensor &x) {
+    return x.transpose(dim0, dim1).contiguous();
+  });
 }
-/// Custom torch Conv1d layer with automatic output size calculation.
-inline Conv1d ConvolutionalLayer(unsigned int L_in, unsigned int L_out,
-                                 unsigned int kernel_size) {
-  // This layer assumes each instruction with its corresponding attributes:
-  // qubit triggers, gate triggers and params maps exclusively to its own L_out
-  // number of kernels.
-  return Conv1d(Conv1dOptions(L_in, L_out, kernel_size).stride(kernel_size));
+inline Functional Transpose(int64_t dim0, int64_t dim1) {
+  return Functional(
+      [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
 }
 } // namespace torch::nn
 
 namespace ai_pass_selector {
-// Low-dimensional instruction representation sizes are arbitrarily chosen.
-constexpr unsigned int SMALL_LOWDIM_INSTR_REPR_SIZE = 4;
-constexpr unsigned int MODERATE_LOWDIM_INSTR_REPR_SIZE = 8;
-constexpr unsigned int BIG_LOWDIM_INSTR_REPR_SIZE = 16;
-constexpr unsigned int HUGE_LOWDIM_INSTR_REPR_SIZE = 32;
-
-const std::unordered_map<int, unsigned int>
-    CIRCUIT_SIZE_CLASS_TO_LOWDIM_INSTR_REPR_SIZE = {
-        {SMALL, SMALL_LOWDIM_INSTR_REPR_SIZE},
-        {MODERATE, MODERATE_LOWDIM_INSTR_REPR_SIZE},
-        {BIG, BIG_LOWDIM_INSTR_REPR_SIZE},
-        {HUGE, HUGE_LOWDIM_INSTR_REPR_SIZE}};
-
 /// A2C = Advantage Actor-Critic
-/// IB = Instruction-Based
-/// DB = Depth-Based
-/// CONV{X} = Convolutional with kernel size X×Instruction-representation-size
-DECLARE_A2C_AGENT(A2C_IBCONV2)
-DECLARE_A2C_AGENT(A2C_IBCONV4)
+/// CONV{X} = Convolutional with depth X
+/// NPI = Normlize per instruction
+/// NFULL = Normlize the full chain of instructions
+DECLARE_A2C_AGENT(A2C_CONV2_NPI)
+DECLARE_A2C_AGENT(A2C_CONV2_NFULL)
 } // namespace ai_pass_selector
 #endif // A2C_TRAINER_HPP
