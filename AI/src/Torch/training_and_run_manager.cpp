@@ -27,9 +27,23 @@ train(const std::string &agent_name, const std::string &dataset,
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case A2C: {
-      // TODO: Implement once ready
-      return {};
       std::unique_ptr<BaseA2CAgent> agent;
+      if (attributes.extras == "conv2npi") {
+        agent = std::make_unique<A2C_CONV2NPI>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv3npi") {
+        agent = std::make_unique<A2C_CONV3NPI>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv4npi") {
+        agent = std::make_unique<A2C_CONV4NPI>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv2nfull") {
+        agent = std::make_unique<A2C_CONV2NFULL>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv3nfull") {
+        agent = std::make_unique<A2C_CONV3NFULL>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv4nfull") {
+        agent = std::make_unique<A2C_CONV4NFULL>(attributes.max_qubits, params);
+      } else {
+        std::cerr << "No such A2C agent yet: " << agent_name << std::endl;
+        return {};
+      }
       agent->load_model();
       training_results = train_a2c(*agent, dataset, params);
       break;
@@ -37,10 +51,11 @@ train(const std::string &agent_name, const std::string &dataset,
     case A3C:
     case PPO:
     default:
-      throw std::runtime_error("Unsupported agent_class in train()");
+      std::cerr << "No such A2C agent yet: " << agent_name << std::endl;
+      return {};
     }
   } catch (const std::runtime_error &e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "\n" << e.what() << std::endl;
     return {};
   }
   return training_results;

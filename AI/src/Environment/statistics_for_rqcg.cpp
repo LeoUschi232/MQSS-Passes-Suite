@@ -29,6 +29,7 @@ namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+
 std::optional<std::pair<std::tuple<double, double, double, double, double>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
 extract_dataset_statistics(const std::string &dataset_name) {
@@ -355,6 +356,23 @@ void print_dataset_statistics(const std::string &dataset_name) {
   std::cout << "  MX: " << gates_weights[MX_INDEX] << std::endl;
   std::cout << "  MY: " << gates_weights[MY_INDEX] << std::endl;
   std::cout << "  MZ: " << gates_weights[MZ_INDEX] << std::endl;
+}
+
+std::optional<std::pair<std::tuple<double, double, double, double, double>,
+                        std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
+get_embedded_dataset_statistics(const std::string &dataset_name) {
+  std::string dataset_name_lower = dataset_name;
+  std::transform(dataset_name_lower.begin(), dataset_name_lower.end(),
+                 dataset_name_lower.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  if (dataset_name_lower == "mqtbench" || dataset_name_lower == "mqt-bench" ||
+      dataset_name_lower == "mqt_bench") {
+    return std::make_pair(MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS,
+                          MQT_BENCH_GATES_WEIGHTS);
+  }
+  if (dataset_name_lower == "pyscf" || dataset_name_lower == "chemistry" ||
+      dataset_name_lower == "py-scf") {
+  }
 }
 
 } // namespace ai_pass_selector

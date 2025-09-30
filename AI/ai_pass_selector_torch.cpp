@@ -134,8 +134,8 @@ int main(int argc, char **argv) {
 }
 
 std::unordered_map<std::string, std::string> load_default_params() {
-  return {{"agent", "a2c-small-ibconv2"},
-          {"dataset", ""},
+  return {{"agent", "a2c-mq130-conv2npi"},
+          {"dataset", "mqtbench"},
           {"circuit", ""},
           {"output", ""},
           {"nr_parallel_environments", "16"},

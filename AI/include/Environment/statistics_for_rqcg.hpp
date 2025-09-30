@@ -68,6 +68,15 @@ extract_dataset_statistics(const std::string &dataset_name);
  */
 void print_dataset_statistics(const std::string &dataset_name);
 
+/**
+ *
+ * @param dataset_name
+ * @return
+ */
+std::optional<std::pair<std::tuple<double, double, double, double, double>,
+                        std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
+get_embedded_dataset_statistics(const std::string &dataset_name);
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Dataset statistics embedded as available C++ data.
 ///

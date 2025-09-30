@@ -17,6 +17,7 @@
 #include "Utils/passes_utils.hpp"
 
 // Standard library includes
+#include <Environment/random_quantum_circuit_generator.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -48,7 +49,38 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(unsigned int max_qubits,
 void QuantumCircuitEnviorment::clear_circuit() {
   this->circuit_path.clear();
   this->circuit_module = nullptr;
+  delete *this->context_ptr.get();
   this->context_ptr = nullptr;
+}
+
+void QuantumCircuitEnviorment::reset() {
+  if (!this->circuit_path.empty()) {
+    this->register_quantum_circuit(this->circuit_path);
+  } else if (qubits_and_gates_distribution_params.has_value() &&
+             gates_weights.has_value()) {
+    this->reset_random();
+  } else {
+    std::cerr << "No circuit or randomization parameters provided to reset."
+              << std::endl;
+  }
+}
+
+void QuantumCircuitEnviorment::reset_random() {
+  if (!qubits_and_gates_distribution_params.has_value() ||
+      !gates_weights.has_value()) {
+    std::cerr << "No randomization parameters provided to environment."
+              << std::endl;
+    return;
+  }
+  this->circuit_path.clear();
+  // Cap nr of qubits but don't cap instructions.
+  auto [module, context] = random_quantum_circuit_from_embedded_statistics(
+      qubits_and_gates_distribution_params.value(), gates_weights.value(),
+      {2, max_qubits});
+  this->circuit_module = module;
+  delete *this->context_ptr.get();
+  this->context_ptr =
+      std::make_unique<MLIRContext *>(std::move(context).release());
 }
 
 bool QuantumCircuitEnviorment::register_quantum_circuit(
@@ -66,6 +98,7 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
 
   auto [circuit, context] = extractModuleOpAndContextPointer(circuit_text);
   // Hold the context pointer so there is no segfault when accessing circuit.
+  delete *this->context_ptr.get();
   this->context_ptr = std::move(context);
 
   switch (circuit_invalid_type(FuncOp(circuit))) {
@@ -94,10 +127,6 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
   this->circuit_module = circuit;
   this->current_step = 0;
   return true;
-}
-
-void QuantumCircuitEnviorment::reset() {
-  this->register_quantum_circuit(this->circuit_path);
 }
 
 unsigned int

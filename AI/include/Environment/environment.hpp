@@ -6,6 +6,7 @@
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
 #include "Support/mlir_utils.hpp"
+#include "statistics_for_rqcg.hpp"
 
 #include "llvm/Support/Casting.h"
 using llvm::cast;
@@ -42,12 +43,20 @@ constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
 constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
 class QuantumCircuitEnviorment {
+  /// Attributes for circuit
   unsigned int max_qubits;
   fs::path circuit_path;
   ModuleOp circuit_module;
   std::unique_ptr<MLIRContext *> context_ptr;
+
+  /// Attributes for episode
   unsigned int max_steps;
   unsigned int current_step;
+
+  /// Attributes for randomizer
+  std::optional<std::tuple<double, double, double, double, double>>
+      qubits_and_gates_distribution_params;
+  std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
   /// Constructors
@@ -55,7 +64,11 @@ public:
                            const fs::path &circuit_path = "");
 
   /// Destructor
-  ~QuantumCircuitEnviorment() = default;
+  ~QuantumCircuitEnviorment() {
+    if (this->context_ptr) {
+      delete *this->context_ptr.get();
+    }
+  }
 
   /// Copy and move constructors and assignment operators
   QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
@@ -68,21 +81,16 @@ public:
   QuantumCircuitEnviorment &
   operator=(QuantumCircuitEnviorment &&) noexcept = default;
 
+  /// Clean and Reset
+  void clear_circuit();
+  void reset();
+  void reset_random();
+
   /**
    *
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
-
-  /**
-   *
-   */
-  void clear_circuit();
-
-  /**
-   *
-   */
-  void reset();
 
   /**
    *

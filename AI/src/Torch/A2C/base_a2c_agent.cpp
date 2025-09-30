@@ -50,7 +50,6 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
     this->actor_optimizer = makeOptimizer(actor_optimizer_type, this->actor,
                                           this->actor_learning_rate);
   } catch (const std::runtime_error &e) {
-    this->nr_input_values = 0;
     std::cerr << e.what() << std::endl;
     return false;
   }
@@ -152,10 +151,6 @@ void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
 
 void BaseA2CAgent::save_model() const {
   std::lock_guard lock(*model_mutex);
-  if (this->nr_input_values <= 0) {
-    std::cerr << "No agent to save." << std::endl;
-    return;
-  }
   std::string name = this->agentName();
   if (name.empty()) {
     std::cerr << "No agent to save." << std::endl;
@@ -168,10 +163,8 @@ void BaseA2CAgent::save_model() const {
 }
 
 void BaseA2CAgent::load_model() {
+  // Silently doesn't load if model doesn'T exist as intended.
   std::lock_guard lock(*model_mutex);
-  if (this->nr_input_values <= 0) {
-    return;
-  }
   std::string name = this->agentName();
   if (name.empty()) {
     return;

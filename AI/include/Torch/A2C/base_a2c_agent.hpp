@@ -2,7 +2,7 @@
 #define BASE_A2C_AGENT_HPP
 
 // Torch includes
-#include <torch/torch.h>
+#include "torch/torch.h"
 
 // Standard library includes
 #include <memory>
@@ -26,7 +26,6 @@ protected:
   torch::Device device = torch::kCPU;
 
   /// Attributes on initialization
-  unsigned int nr_input_values = 0;
   torch::nn::Sequential critic = nullptr;
   torch::nn::Sequential actor = nullptr;
   std::unique_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;

@@ -15,7 +15,6 @@ std::unordered_map<std::string, std::string>
 train_a2c(BaseA2CAgent &agent, const std::string &dataset,
           std::unordered_map<std::string, std::string> params) {
   unsigned int max_qubits = agent.getMaxQubits();
-
   if (params["print_param_info"] == "true") {
     std::cout << "Training A2C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
@@ -39,22 +38,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     std::cerr << "No agent to train." << std::endl;
     return {};
   }
-  std::vector<fs::path> all_dataset_files = get_dataset_files(dataset);
-  std::vector<std::string> filtered_dataset_files;
-  for (auto &file : all_dataset_files) {
-    std::string quake_module_text = readFileToString(file.string());
-    if (auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-        getNumberOfQubits(FuncOp(mlir_module)) > max_qubits) {
-      continue;
-    }
-    filtered_dataset_files.push_back(file.string());
-  }
-  unsigned int dataset_size = filtered_dataset_files.size();
-  if (dataset_size <= 0) {
-    std::cerr << "No dataset files found." << std::endl;
-    return {};
-  }
-  std::cout << "\nFiltered dataset size: " << dataset_size << std::endl;
+
   ParallelEnvironments environments(nr_parallel_environments, max_qubits,
                                     max_steps_per_episode);
 
