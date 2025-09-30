@@ -109,6 +109,9 @@ constexpr std::array<std::unique_ptr<mlir::Pass> (*)(), NR_PASSES>
         &createQuakeSimplify,                 // 78
 
         // Cudaq Decomposition patterns passes
+        [] -> {
+          return createDecompositionPass
+        }
 };
 
 /**

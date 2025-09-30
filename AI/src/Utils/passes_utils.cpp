@@ -10,8 +10,7 @@ namespace ai_pass_selector {
 
 std::pair<std::string, std::unique_ptr<mlir::Pass>>
 getPassNameAndPointer(unsigned int index) {
-  DecompositionPassOptions options;
-  options.enabledPatterns = {"CXToCZ"};
+  DecompositionPassOptions options = {{}, {"pattern3", "pattern4"}};
 
   if (index >= NR_PASSES) {
     std::cerr << "In getPassByIndex: " << index << std::endl;
