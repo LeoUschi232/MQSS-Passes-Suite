@@ -20,10 +20,8 @@ using namespace mqss::opt;
 using namespace cudaq::opt;
 
 namespace ai_pass_selector {
-constexpr unsigned int NR_PASSES = 103;
-
-const std::array<std::function<std::unique_ptr<mlir::Pass>()>, NR_PASSES>
-    PASS_FUNCTIONS = {
+const std::vector<std::function<std::unique_ptr<mlir::Pass>()>> PASS_FUNCTIONS =
+    {
         // MQSS Custom passes
         [] { return createZeroRxToIdPass(); },        // 1
         [] { return createZeroRyToIdPass(); },        // 2
@@ -187,6 +185,7 @@ const std::array<std::function<std::unique_ptr<mlir::Pass>()>, NR_PASSES>
           return createDecompositionPass({.enabledPatterns = {"ZToPhasedRx"}});
         } // 103
 };
+const unsigned int NR_PASSES = PASS_FUNCTIONS.size();
 
 /**
  *

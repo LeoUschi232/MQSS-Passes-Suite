@@ -3,21 +3,19 @@
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
 
-// Cudaq includes
-#include "cudaq/Optimizer/Transforms/Passes.h"
-
 namespace ai_pass_selector {
 
 std::pair<std::string, std::unique_ptr<mlir::Pass>>
 getPassNameAndPointer(unsigned int index) {
-  DecompositionPassOptions options = {{}, {"pattern3", "pattern4"}};
-
   if (index >= NR_PASSES) {
-    std::cerr << "In getPassByIndex: " << index << std::endl;
+    std::cerr << "In getPassByIndex: index " << index << ">=" << NR_PASSES
+              << " nr passes." << std::endl;
     return {"", nullptr};
   }
   std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[index]();
-  return {std::string(pass.get()->getArgument()), std::move(pass)};
+  // Just to be safe extract the name before moving the unique_ptr.
+  auto name = std::string(pass.get()->getArgument());
+  return {name, std::move(pass)};
 }
 
 } // namespace ai_pass_selector
