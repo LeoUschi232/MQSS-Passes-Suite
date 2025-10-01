@@ -3,10 +3,6 @@
 # Clear the terminal screen
 clear
 git config --global --add safe.directory '*'
-
-# Just in case it's forgotten to set variables correctly on the CUDA GPU
-source ~/.bashrc
-
 CURRENT_DIR=$(pwd)
 
 # Defaults
