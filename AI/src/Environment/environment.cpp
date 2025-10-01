@@ -6,7 +6,6 @@
 // MLIR includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Transforms/Passes.h"
 
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeInterfaces.h"
@@ -39,8 +38,9 @@ namespace ai_pass_selector {
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits, unsigned int max_steps,
     const fs::path &circuit_path)
-    : max_qubits(max_qubits), circuit_path(circuit_path), context_ptr(nullptr),
-      max_steps(max_steps), current_step(0) {
+    : max_qubits(std::max(2u, max_qubits)), circuit_path(circuit_path),
+      context_ptr(nullptr), max_steps(std::max(1u, max_steps)),
+      current_step(0u) {
   if (!circuit_path.empty()) {
     this->register_quantum_circuit(circuit_path);
   }
