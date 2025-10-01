@@ -33,7 +33,7 @@ using namespace mqss::support::quakeDialect;
 namespace ai_pass_selector {
 
 static GateSpec gateSpecFromIndex(unsigned int idx) {
-  if (idx >= OPERATIONS_SUBSET_SIZE) {
+  if (idx >= GATES_WEIGHTS_SIZE) {
     llvm::report_fatal_error("gateSpecFromIndex: out of range");
   }
   switch (idx) {
@@ -105,6 +105,12 @@ static GateSpec gateSpecFromIndex(unsigned int idx) {
     return {PHASED_RX, false, 0, 0, false, false};
   case controlled_PHASED_RX_INDEX:
     return {PHASED_RX, false, -1, 1, true, false};
+  case MX_INDEX:
+    return {MX, false, 0, 0, false, false};
+  case MY_INDEX:
+    return {MY, false, 0, 0, false, false};
+  case MZ_INDEX:
+    return {MZ, false, 0, 0, false, false};
   default:
     std::cerr << "gateSpecFromIndex: unknown index " << idx << std::endl;
   }
@@ -188,65 +194,97 @@ random_quantum_circuit_from_embedded_statistics(
         &qubits_and_gates_distribution_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options) {
+  if (randomizer_options.seed.has_value()) {
+    seed_qc_rng(randomizer_options.seed.value());
+  }
+
+  unsigned int subset_size = randomizer_options.allow_measurements_as_gates
+                                 ? GATES_WEIGHTS_SIZE
+                                 : OPERATIONS_SUBSET_SIZE;
   double multiplier =
       randomizer_options.weight_min_multiplier_for_unoccurring_gates;
   if (multiplier > 0.0) {
     unsigned int minimum_weight = std::numeric_limits<unsigned int>::max();
-    for (const auto &weight : gates_weights) {
-      if (weight > 0 && weight < minimum_weight) {
-        minimum_weight = weight;
+    for (unsigned int i = 0; i < subset_size; i++) {
+      if (gates_weights[i] > 0 && gates_weights[i] < minimum_weight) {
+        minimum_weight = gates_weights[i];
       }
     }
     minimum_weight = std::round(multiplier * minimum_weight);
     if (minimum_weight > 0u) {
-      for (unsigned int i = 0; i < gates_weights.size(); i++) {
+      for (unsigned int i = 0; i < subset_size; i++) {
         if (gates_weights[i] <= 0) {
           gates_weights[i] = minimum_weight;
         }
       }
     }
   }
-  auto [nr_qubits, nr_gates] = sample_nr_qubits_and_gates_from_cholesky(
-      qubits_and_gates_distribution_params);
-  // At least 2 qubits and more gates than qubits.
-  // DO NOT Compare unsigned int to int
-  if (randomizer_options.min_nr_qubits >= 2) {
-    nr_qubits = std::max(
-        static_cast<unsigned>(randomizer_options.min_nr_qubits), nr_qubits);
-  }
-  if (randomizer_options.max_nr_qubits >= 2) {
-    nr_qubits = std::min(
-        static_cast<unsigned>(randomizer_options.max_nr_qubits), nr_qubits);
-  }
-  if (randomizer_options.exact_nr_qubits >= 2) {
+
+  unsigned int nr_qubits = 0, nr_gates = 0;
+
+  if (randomizer_options.exact_nr_qubits >= 2 &&
+      randomizer_options.exact_nr_non_measurement_gates >= 2) {
     nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
+    nr_gates = static_cast<unsigned>(
+        randomizer_options.exact_nr_non_measurement_gates);
+  } else {
+    auto [sampled_nr_qubits, sampled_nr_gates] =
+        sample_nr_qubits_and_gates_from_cholesky(
+            qubits_and_gates_distribution_params);
+    if (randomizer_options.exact_nr_qubits >= 2) {
+      // Little edge-case fallback when one of 2 exact values is provided
+      // without the other.
+      // This shall attempt to try to maintain the statistics a little, albait
+      // not correctly.
+      // However, adding a perfect nr_qubits->nr_gates and nr_gates->nr_qubits
+      // function depending on the statistics would be too complex for this
+      // purpose.
+      nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
+      nr_gates = sampled_nr_qubits / nr_qubits * sampled_nr_gates;
+    } else if (randomizer_options.exact_nr_non_measurement_gates >= 2) {
+      nr_gates = static_cast<unsigned>(
+          randomizer_options.exact_nr_non_measurement_gates);
+      nr_qubits = sampled_nr_gates / nr_gates * sampled_nr_qubits;
+    } else {
+      nr_qubits = sampled_nr_qubits;
+      nr_gates = sampled_nr_gates;
+    }
+    // At least 2 qubits and more gates than qubits.
+    // DO NOT Compare unsigned int to int
+    if (randomizer_options.min_nr_qubits >= 2) {
+      nr_qubits = std::max(
+          static_cast<unsigned>(randomizer_options.min_nr_qubits), nr_qubits);
+    }
+    if (randomizer_options.max_nr_qubits >= 2) {
+      nr_qubits = std::min(
+          static_cast<unsigned>(randomizer_options.max_nr_qubits), nr_qubits);
+    }
+    // Whatever the randomizer options, the nr of qubits must be at least 2.
+    nr_qubits = std::max(nr_qubits, 2u);
+    if (randomizer_options.min_nr_non_measurement_gates >= 2) {
+      nr_gates = std::max(static_cast<unsigned>(
+                              randomizer_options.min_nr_non_measurement_gates),
+                          nr_gates);
+    }
+    if (randomizer_options.max_nr_non_measurement_gates >= 2) {
+      nr_gates = std::min(static_cast<unsigned>(
+                              randomizer_options.max_nr_non_measurement_gates),
+                          nr_gates);
+    }
+    // Whatever the randomizer options, the nr of gates must be at least 2
+    nr_gates = std::max(nr_gates, 2u);
   }
-  // Whatever the randomizer options, the nr of qubits must be at least 2.
-  nr_qubits = std::max(2u, nr_qubits);
-  if (randomizer_options.min_nr_gates >= 2) {
-    nr_gates = std::max(static_cast<unsigned>(randomizer_options.min_nr_gates),
-                        nr_gates);
-  }
-  if (randomizer_options.max_nr_gates >= 2) {
-    nr_gates = std::min(static_cast<unsigned>(randomizer_options.max_nr_gates),
-                        nr_gates);
-  }
-  if (randomizer_options.exact_nr_gates >= 2) {
-    nr_gates = static_cast<unsigned>(randomizer_options.exact_nr_gates);
-  }
-  // Whatever the randomizer options, the nr of gates must be at least 2
-  nr_gates = std::max(nr_gates, nr_qubits + 1);
 
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
 
   // Sample a gate according to operations-only subset of gates_weights and
   // later according to measurements-only subset of gates_weights.
   std::discrete_distribution<size_t> operations_distribution(
-      gates_weights.begin(), gates_weights.begin() + OPERATIONS_SUBSET_SIZE);
+      gates_weights.begin(), gates_weights.begin() + subset_size);
   std::discrete_distribution<size_t> measurements_distribution(
       gates_weights.begin() + OPERATIONS_SUBSET_SIZE, gates_weights.end());
 
-  for (unsigned int i = 0; i < nr_gates - nr_qubits; i++) {
+  for (unsigned int i = 0; i < nr_gates; i++) {
     const unsigned int idx = operations_distribution(qc_rng());
     const auto [baseGate, isAdj, exactControls, minControls, allowExtraControls,
                 isSwap] = gateSpecFromIndex(idx);
@@ -263,9 +301,9 @@ random_quantum_circuit_from_embedded_statistics(
           std::min(static_cast<unsigned>(minControls), nr_qubits - nr_targets);
     }
     if (exactControls < 0 && allowExtraControls &&
-        probability_additionals_controls > 0.0) {
-      while (nr_controls + nr_targets < nr_qubits &&
-             random01() < probability_additionals_controls) {
+        randomizer_options.probability_additionals_controls > 0.0) {
+      while (nr_controls + nr_targets <= nr_qubits &&
+             random01() < randomizer_options.probability_additionals_controls) {
         nr_controls++;
       }
     }
@@ -275,19 +313,21 @@ random_quantum_circuit_from_embedded_statistics(
     std::vector<double> angles = makeAngles(baseGate);
     insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
   }
-  for (unsigned int qubit = 0; qubit < nr_qubits; qubit++) {
-    std::vector targets{static_cast<int>(qubit)};
-    if (const unsigned int idx =
-            measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
-        idx == MX_INDEX) {
-      insertGate(buildSetup, MX, targets);
-    } else if (idx == MY_INDEX) {
-      insertGate(buildSetup, MY, targets);
-    } else if (idx == MZ_INDEX) {
-      insertGate(buildSetup, MZ, targets);
-    } else {
-      throw std::runtime_error("Unknown measurement index " +
-                               std::to_string(idx));
+  if (randomizer_options.measure_all_at_the_end) {
+    for (unsigned int qubit = 0; qubit < nr_qubits; qubit++) {
+      std::vector targets{static_cast<int>(qubit)};
+      if (const unsigned int idx =
+              measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
+          idx == MX_INDEX) {
+        insertGate(buildSetup, MX, targets);
+      } else if (idx == MY_INDEX) {
+        insertGate(buildSetup, MY, targets);
+      } else if (idx == MZ_INDEX) {
+        insertGate(buildSetup, MZ, targets);
+      } else {
+        throw std::runtime_error("Unknown measurement index " +
+                                 std::to_string(idx));
+      }
     }
   }
   return {buildSetup.module, std::move(buildSetup.ctxOwner)};
@@ -296,10 +336,7 @@ random_quantum_circuit_from_embedded_statistics(
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
-    const std::pair<int, int> &cap_nr_qubits,
-    const std::pair<int, int> &cap_nr_gates,
-    bool give_small_probability_to_unoccurring_gates,
-    double probability_additionals_qubits) {
+    const RandomizerOptions &randomizer_options) {
   if (!fs::exists(statistics_yaml_file_path) ||
       !fs::is_regular_file(statistics_yaml_file_path)) {
     std::cerr << "File: " << statistics_yaml_file_path
@@ -391,9 +428,7 @@ random_quantum_circuit_from_yaml_statistics(
   gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
 
   return random_quantum_circuit_from_embedded_statistics(
-      qubits_and_gates_distribution_params, gates_weights, cap_nr_qubits,
-      cap_nr_gates, give_small_probability_to_unoccurring_gates,
-      probability_additionals_qubits);
+      qubits_and_gates_distribution_params, gates_weights, randomizer_options);
 }
 
 } // namespace ai_pass_selector

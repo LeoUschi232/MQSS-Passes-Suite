@@ -46,16 +46,19 @@ struct RandomizerOptions {
   int max_nr_non_measurement_gates = -1;
   // If >=2, use this exact number of non-measurement gates
   // and ignore min_nr_gates and max_nr_gates
-  int exact_non_measurement_nr_gates = -1;
+  int exact_nr_non_measurement_gates = -1;
+  // Whether measurment gates can be sampled as regular gates
+  bool allow_measurements_as_gates = false;
   // If >0.0, gates with zero-weights (not occurring in the statistics) will get
   // this times minimum weight of non-zero-weight gates weight.
-  // Does not affect measurement gates.
+  // Affects measurement gates only if allow_measurements_as_gates=true
   double weight_min_multiplier_for_unoccurring_gates = 0.0;
   // If >0.0, when a gate allows additional controls, this is the probability
   // for adding each additional control.
   double probability_additionals_controls = 0.0;
-  //
-  bool
+  // Whether to measure all qubits at the end of the circuit
+  // WARNING: Increases nr of gates by nr of qubits
+  bool measure_all_at_the_end = false;
 };
 
 /**
@@ -105,24 +108,22 @@ random_quantum_circuit_from_embedded_statistics(
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-        .probability_additionals_controls = 0.01});
+        .probability_additionals_controls = 0.01,
+        .measure_all_at_the_end = true});
 
 /**
  *
  * @param statistics_yaml_file_path
- * @param cap_nr_qubits
- * @param cap_nr_gates
- * @param give_small_probability_to_unoccurring_gates
- * @param probability_additionals_qubits
+ * @param randomizer_options
  * @return
  */
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
-    const std::pair<int, int> &cap_nr_qubits = {-1, -1},
-    const std::pair<int, int> &cap_nr_gates = {-1, -1},
-    bool give_small_probability_to_unoccurring_gates = true,
-    double probability_additionals_qubits = 0.01);
+    const RandomizerOptions &randomizer_options = {
+        .weight_min_multiplier_for_unoccurring_gates = 0.1,
+        .probability_additionals_controls = 0.01,
+        .measure_all_at_the_end = true});
 } // namespace ai_pass_selector
 
 #endif // RANDOM_QUANTUM_CIRCUIT_GENERATOR_HPP
