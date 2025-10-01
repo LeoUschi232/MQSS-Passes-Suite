@@ -121,7 +121,9 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
   std::cout << "\nTraining finished." << std::endl;
 
   if (params["save_agent_at_end_of_training"] == "true") {
+    std::cout << "Saving: " << agent->agentName() << std::endl;
     agent->save_model();
+    std::cout << "Saved: " << agent->agentName() << std::endl;
   }
   return {{"max_reward", std::to_string(max_reward)},
           {"average_reward", std::to_string(summed_rewards / episodes)},

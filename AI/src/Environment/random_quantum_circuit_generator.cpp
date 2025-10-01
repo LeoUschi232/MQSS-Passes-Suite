@@ -122,8 +122,11 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
                                      unsigned int nr_controls,
                                      unsigned int nr_qubits) {
   if (nr_targets + nr_controls > nr_qubits) {
-    throw std::runtime_error(
-        "sampleDistinctTargetsAndControls: not enough qubits");
+    throw std::runtime_error("nr_targets = " + std::to_string(nr_targets) +
+                             "\nnr_controls = " + std::to_string(nr_controls) +
+                             "\nnr_targets+nr_controls = " +
+                             std::to_string(nr_targets + nr_controls) +
+                             "\nnr_qubits = " + std::to_string(nr_qubits));
   }
   std::vector<int> targets;
   targets.reserve(nr_targets);
@@ -150,8 +153,11 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
     controls.push_back(qubit);
   }
   if (targets.size() != nr_targets || controls.size() != nr_controls) {
-    throw std::runtime_error("sampleDistinctTargetsAndControls: targets or "
-                             "controls didn't aquire desired sizes.");
+    throw std::runtime_error(
+        "targets.size() = " + std::to_string(targets.size()) +
+        "\nnr_targets = " + std::to_string(nr_targets) +
+        "\ncontrols.size() = " + std::to_string(controls.size()) +
+        "\nnr_controls = " + std::to_string(nr_controls));
   }
   return {targets, controls};
 }
@@ -305,8 +311,8 @@ random_quantum_circuit_from_embedded_statistics(
     const auto [baseGate, isAdj, exactControls, minControls, allowExtraControls,
                 isSwap] = gateSpecFromIndex(idx);
 
-    unsigned int nr_targets = isSwap ? 2 : 1;
-    unsigned int nr_controls = 0;
+    unsigned int nr_targets = isSwap ? 2u : 1u;
+    unsigned int nr_controls = 0u;
     // Regardless of what exactControls and minControls are, we cannot be
     // using more qubits than are available for use.
     if (exactControls >= 0) {
@@ -323,10 +329,16 @@ random_quantum_circuit_from_embedded_statistics(
         nr_controls++;
       }
     }
-    auto [targets, controls] = sample_distinct_targets_and_controls(
-        nr_targets, nr_controls, nr_qubits);
-    std::vector<double> angles = makeAngles(baseGate);
-    insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
+    try {
+      auto [targets, controls] = sample_distinct_targets_and_controls(
+          nr_targets, nr_controls, nr_qubits);
+      std::vector<double> angles = makeAngles(baseGate);
+      insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
+    } catch (const std::runtime_error &e) {
+      std::cerr << "\n"
+                << e.what() << "\nGate: " << SUPPORTED_GATES[baseGate]
+                << std::endl;
+    }
   }
   for (unsigned int qubit = 0; qubit < nr_measurements; qubit++) {
     std::vector targets{static_cast<int>(qubit % nr_qubits)};
