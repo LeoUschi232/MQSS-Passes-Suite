@@ -89,19 +89,19 @@ const std::vector<std::function<std::unique_ptr<mlir::Pass>()>> PASS_FUNCTIONS =
         [] { return createSwapToLowerCxCxCxPass(); }, // 64
         [] { return createSwapToUpperCxCxCxPass(); }, // 65
 
-        // MLIR Passes under mlir/Transforms/Passes.h
-        [] { return mlir::createControlFlowSinkPass(); }, // 66
-        [] { return mlir::createInlinerPass(); },         // 67
-        [] { return mlir::createSCCPPass(); },            // 68
-
-        // Cudaq passes under include/cudaq/Optimizer/Transforms/Passes.td
-        [] { return createApplyControlNegations(); },         // 69
-        [] { return createClassicalOptimization(); },         // 70
-        [] { return createDelayMeasurementsPass(); },         // 71
-        [] { return createEraseNoise(); },                    // 72
-        [] { return createEraseNopCalls(); },                 // 73
-        [] { return createMultiControlDecompositionPass(); }, // 74
-        [] { return createQuakeSimplify(); },                 // 76
+        // // MLIR Passes under mlir/Transforms/Passes.h
+        // [] { return mlir::createControlFlowSinkPass(); }, // 66
+        // [] { return mlir::createInlinerPass(); },         // 67
+        // [] { return mlir::createSCCPPass(); },            // 68
+        //
+        // // Cudaq passes under include/cudaq/Optimizer/Transforms/Passes.td
+        // [] { return createApplyControlNegations(); },         // 69
+        // [] { return createClassicalOptimization(); },         // 70
+        // [] { return createDelayMeasurementsPass(); },         // 71
+        // [] { return createEraseNoise(); },                    // 72
+        // [] { return createEraseNopCalls(); },                 // 73
+        // [] { return createMultiControlDecompositionPass(); }, // 74
+        // [] { return createQuakeSimplify(); },                 // 76
 
         // Cudaq Decomposition patterns passes
         [] {
