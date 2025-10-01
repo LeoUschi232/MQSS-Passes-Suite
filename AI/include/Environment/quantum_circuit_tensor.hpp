@@ -103,6 +103,13 @@ template <class T> struct InstructionsTensor {
               quantum_circuit_data.begin() + i * shape[1]);
   }
 
+  void pad(unsigned int toNrInstructions, T value = T{}) {
+    this->quantum_circuit_data.insert(
+        this->quantum_circuit_data.end(),
+        (toNrInstructions - this->shape[0]) * this->shape[1], value);
+    this->shape[0] = toNrInstructions;
+  }
+
   T &operator()(unsigned int i, unsigned int j) {
     assert(i < shape[0] && j < shape[1]);
     return quantum_circuit_data[i * shape[1] + j];

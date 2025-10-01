@@ -97,21 +97,20 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
       throw std::runtime_error("Inconsistent Instruction Representation Size.");
     }
   }
-
-  std::vector<std::future<torch::Tensor>> tensor_futures;
-  tensor_futures.reserve(B);
-  for (int64_t i = 0; i < B; ++i) {
-    tensor_futures.emplace_back(std::async(std::launch::async, [&, i] {
-      auto observation = observations[i];
-      auto src =
-          torch::from_blob(observation.raw(), {maxN, IRP}, torch::kFloat64);
-      return src.clone();
-    }));
+  torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
+  if (maxN <= 0) {
+    return torch::zeros({B, 1, IRP}, options);
   }
+
   std::vector<torch::Tensor> torch_tensors;
   torch_tensors.reserve(B);
-  for (auto &tensor_future : tensor_futures) {
-    torch_tensors.emplace_back(tensor_future.get());
+  for (int64_t i = 0; i < B; ++i) {
+    InstructionsTensor<double> instruction_tensor = observations[i];
+    instruction_tensor.pad(maxN, 0.0);
+    torch::Tensor tensor =
+        torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
+            .clone();
+    torch_tensors.emplace_back(std::move(tensor));
   }
   return torch::stack(torch_tensors, 0);
 }
