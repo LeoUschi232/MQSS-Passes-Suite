@@ -59,8 +59,8 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
 QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
     QuantumCircuitEnvironment &&other) noexcept {
   if (this != &other) {
-    if (context_ptr) {
-      delete *context_ptr.get();
+    if (context_ptr && this->context_ptr.get() != nullptr) {
+      delete *this->context_ptr.get();
     }
     max_qubits = other.max_qubits;
     circuit_path = std::move(other.circuit_path);
@@ -78,7 +78,9 @@ QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
 void QuantumCircuitEnvironment::clear() {
   this->circuit_path.clear();
   this->circuit_module = nullptr;
-  delete *this->context_ptr.get();
+  if (context_ptr && this->context_ptr.get() != nullptr) {
+    delete *this->context_ptr.get();
+  }
   this->context_ptr = nullptr;
   this->qubits_and_gates_distribution_params = std::nullopt;
   this->gates_weights = std::nullopt;
