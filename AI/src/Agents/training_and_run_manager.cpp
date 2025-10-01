@@ -28,18 +28,12 @@ train(const std::string &agent_name, const std::string &dataset,
             attributes.agent_class) {
     case A2C: {
       std::unique_ptr<BaseA2CAgent> agent;
-      if (attributes.extras == "conv2npi") {
-        agent = std::make_unique<A2C_CONV2NPI>(attributes.max_qubits, params);
-      } else if (attributes.extras == "conv3npi") {
-        agent = std::make_unique<A2C_CONV3NPI>(attributes.max_qubits, params);
-      } else if (attributes.extras == "conv4npi") {
-        agent = std::make_unique<A2C_CONV4NPI>(attributes.max_qubits, params);
-      } else if (attributes.extras == "conv2nfull") {
-        agent = std::make_unique<A2C_CONV2NFULL>(attributes.max_qubits, params);
-      } else if (attributes.extras == "conv3nfull") {
-        agent = std::make_unique<A2C_CONV3NFULL>(attributes.max_qubits, params);
-      } else if (attributes.extras == "conv4nfull") {
-        agent = std::make_unique<A2C_CONV4NFULL>(attributes.max_qubits, params);
+      if (attributes.extras == "conv2") {
+        agent = std::make_unique<A2C_CONV2>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv3") {
+        agent = std::make_unique<A2C_CONV3>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv4") {
+        agent = std::make_unique<A2C_CONV4>(attributes.max_qubits, params);
       } else {
         std::cerr << "No such A2C agent yet: " << agent_name << std::endl;
         return {};

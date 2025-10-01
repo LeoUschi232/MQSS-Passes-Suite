@@ -14,7 +14,7 @@
 
 namespace ai_pass_selector {
 
-A2C_CONV2NPI::A2C_CONV2NPI(unsigned int max_qubits,
+A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
                            std::unordered_map<std::string, std::string> params)
     : BaseA2CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
@@ -100,10 +100,10 @@ A2C_CONV2NPI::A2C_CONV2NPI(unsigned int max_qubits,
   this->initialize(actor, critic);
 }
 
-std::string A2C_CONV2NPI::agentName() const {
+std::string A2C_CONV2::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "a2c-" << size_string << "-conv2npi";
+  oss << "a2c-" << size_string << "-conv2";
   return oss.str();
 }
 } // namespace ai_pass_selector

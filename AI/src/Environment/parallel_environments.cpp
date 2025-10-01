@@ -1,4 +1,4 @@
-#include "../../include/Environment/parallel_environments.hpp"
+#include "Environment/parallel_environments.hpp"
 
 #include <future>
 
@@ -75,26 +75,45 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
 torch::Tensor ParallelEnvironments::get_batched_observations() const {
   const int64_t B = nr_environments;
 
-  std::vector<std::future<torch::Tensor>> futures;
-  futures.reserve(B);
+  std::vector<std::future<InstructionsTensor<double>>> observation_futures;
+  observation_futures.reserve(B);
+  for (int64_t i = 0; i < B; i++) {
+    observation_futures.emplace_back(std::async(std::launch::async, [&, i] {
+      auto &environment =
+          const_cast<QuantumCircuitEnvironment &>(environments[i]);
+      return environment.get_observation();
+    }));
+  }
+  std::vector<InstructionsTensor<double>> observations;
+  observations.reserve(B);
+  int64_t maxN = 0u;
+  int64_t IRP = 0u;
+  for (auto &observation_future : observation_futures) {
+    observations.emplace_back(observation_future.get());
+    maxN = std::max(static_cast<unsigned>(maxN), observations.back().shape[0]);
+    if (IRP <= 0) {
+      IRP = observations.back().shape[1];
+    } else if (IRP != observations.back().shape[1]) {
+      throw std::runtime_error("Inconsistent Instruction Representation Size.");
+    }
+  }
+
+  std::vector<std::future<torch::Tensor>> tensor_futures;
+  tensor_futures.reserve(B);
   for (int64_t i = 0; i < B; ++i) {
-    futures.emplace_back(std::async(std::launch::async, [&, i] {
-      auto &env = const_cast<QuantumCircuitEnvironment &>(environments[i]);
-      auto obs = env.get_observation();
-      // N = Nr of instructions in the quantum circuit
-      // IRP = Instruction representation size
-      const int64_t N = obs.shape[0];
-      const int64_t IRP = obs.shape[1];
-      auto src = torch::from_blob(obs.raw(), {N, IRP}, torch::kFloat64);
+    tensor_futures.emplace_back(std::async(std::launch::async, [&, i] {
+      auto observation = observations[i];
+      auto src =
+          torch::from_blob(observation.raw(), {maxN, IRP}, torch::kFloat64);
       return src.clone();
     }));
   }
-  std::vector<torch::Tensor> slices;
-  slices.reserve(B);
-  for (auto &future : futures) {
-    slices.emplace_back(future.get());
+  std::vector<torch::Tensor> torch_tensors;
+  torch_tensors.reserve(B);
+  for (auto &tensor_future : tensor_futures) {
+    torch_tensors.emplace_back(tensor_future.get());
   }
-  return torch::stack(slices, 0);
+  return torch::stack(torch_tensors, 0);
 }
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }

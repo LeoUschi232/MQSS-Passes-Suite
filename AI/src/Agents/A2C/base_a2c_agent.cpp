@@ -59,9 +59,9 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
 unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA2CAgent::forward(const torch::Tensor &observation) {
+BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
   std::lock_guard lock(*this->model_mutex);
-  torch::Tensor x = observation.to(this->device).to(torch::kFloat);
+  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->critic->forward(x), this->actor->forward(x)};
@@ -69,8 +69,8 @@ BaseA2CAgent::forward(const torch::Tensor &observation) {
 
 std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
            torch::Tensor>
-BaseA2CAgent::select_action(const torch::Tensor &observation) {
-  auto [state_values, action_probs] = this->forward(observation);
+BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
+  auto [state_values, action_probs] = this->forward(batched_observations);
   // sample one action per row; result is [B,1] -> squeeze to [B]
   torch::Tensor actions_tensor = action_probs.multinomial(1).squeeze(-1);
   // CUDA tensors can’t be read directly)

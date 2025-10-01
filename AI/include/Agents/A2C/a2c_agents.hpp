@@ -38,13 +38,8 @@ inline Functional Transpose(int64_t dim0, int64_t dim1) {
 namespace ai_pass_selector {
 /// A2C = Advantage Actor-Critic
 /// CONV{X} = Convolutional with depth X
-/// NPI = Normlize per instruction
-/// NFULL = Normlize over full chain of instructions
-DECLARE_A2C_AGENT(A2C_CONV2NPI)
-DECLARE_A2C_AGENT(A2C_CONV2NFULL)
-DECLARE_A2C_AGENT(A2C_CONV3NPI)
-DECLARE_A2C_AGENT(A2C_CONV3NFULL)
-DECLARE_A2C_AGENT(A2C_CONV4NPI)
-DECLARE_A2C_AGENT(A2C_CONV4NFULL)
+DECLARE_A2C_AGENT(A2C_CONV2)
+DECLARE_A2C_AGENT(A2C_CONV3)
+DECLARE_A2C_AGENT(A2C_CONV4)
 } // namespace ai_pass_selector
 #endif // A2C_TRAINER_HPP
