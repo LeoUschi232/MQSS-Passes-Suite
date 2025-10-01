@@ -117,8 +117,10 @@ static GateSpec gateSpecFromIndex(unsigned int idx) {
   return {0, false, 0, 0, false, false};
 }
 
-std::pair<std::vector<int>, std::vector<int>> sampleDistinctTargetsAndControls(
-    unsigned int nr_targets, unsigned int nr_controls, unsigned int nr_qubits) {
+std::pair<std::vector<int>, std::vector<int>>
+sample_distinct_targets_and_controls(unsigned int nr_targets,
+                                     unsigned int nr_controls,
+                                     unsigned int nr_qubits) {
   if (nr_targets + nr_controls > nr_qubits) {
     throw std::runtime_error(
         "sampleDistinctTargetsAndControls: not enough qubits");
@@ -172,26 +174,44 @@ std::vector<double> makeAngles(int baseGate) {
   }
 }
 
-std::pair<unsigned int, unsigned int> sample_nr_qubits_and_gates_from_cholesky(
-    std::tuple<double, double, double, double, double>
-        qubits_and_gates_distribution_params) {
-  auto [mean_qubits, mean_gates, L11, L21, L22] =
-      qubits_and_gates_distribution_params;
-  double nr_qubits = 0.0;
-  double nr_gates = 0.0;
-  while (nr_qubits < 2.0 || nr_gates < 2.0) {
-    std::normal_distribution ndist(0.0, 1.0);
-    double z1 = ndist(qc_rng()), z2 = ndist(qc_rng());
-    nr_qubits = mean_qubits + L11 * z1;
-    nr_gates = mean_gates + L21 * z1 + L22 * z2;
+std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
+sample_nr_qubits_gates_operations_measurements(
+    const std::array<unsigned int, CHOLESKY_PARAMS_SIZE> &cholesky_params) {
+  auto [mean_qubits, mean_gates, qubits_L11, gates_L21, gates_L22,
+        operations_L21, operations_L22, measurements_L21, measurements_L22] =
+      cholesky_params;
+  double nr_qubits = -1.0;
+  double nr_gates = -1.0;
+  double nr_operations = -1.0;
+  double nr_measurements = -1.0;
+  std::normal_distribution normal_distribution(0.0, 1.0);
+  double z_qubits = 0.0;
+  while (nr_qubits < 2.0) {
+    z_qubits = normal_distribution(qc_rng());
+    nr_qubits = mean_qubits + qubits_L11 * z_qubits;
   }
-  return {std::round(nr_qubits), std::round(nr_gates)};
+  while (nr_gates < 2.0) {
+    double z_gates = normal_distribution(qc_rng());
+    nr_gates = mean_gates + gates_L21 * z_qubits + gates_L22 * z_gates;
+  }
+  while (nr_operations < 2.0) {
+    double z_operations = normal_distribution(qc_rng());
+    nr_operations = operations_L21 * z_qubits + operations_L22 * z_operations;
+  }
+  while (nr_measurements < 0.0) {
+    // Measurements might actually be zero, depending on circuit, but no
+    // negative values.
+    double z_measurements = normal_distribution(qc_rng());
+    nr_measurements =
+        measurements_L21 * z_qubits + measurements_L22 * z_measurements;
+  }
+  return {std::round(nr_qubits), std::round(nr_gates),
+          std::round(nr_operations), std::round(nr_measurements)};
 }
 
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_embedded_statistics(
-    const std::tuple<double, double, double, double, double>
-        &qubits_and_gates_distribution_params,
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options) {
   if (randomizer_options.seed.has_value()) {
@@ -228,7 +248,7 @@ random_quantum_circuit_from_embedded_statistics(
         randomizer_options.exact_nr_non_measurement_gates);
   } else {
     auto [sampled_nr_qubits, sampled_nr_gates] =
-        sample_nr_qubits_and_gates_from_cholesky(
+        sample_nr_qubits_gates_operations_measurements(
             qubits_and_gates_distribution_params);
     if (randomizer_options.exact_nr_qubits >= 2) {
       nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
@@ -299,8 +319,8 @@ random_quantum_circuit_from_embedded_statistics(
         nr_controls++;
       }
     }
-    auto [targets, controls] =
-        sampleDistinctTargetsAndControls(nr_targets, nr_controls, nr_qubits);
+    auto [targets, controls] = sample_distinct_targets_and_controls(
+        nr_targets, nr_controls, nr_qubits);
     // Angles if any and emit the operation.
     std::vector<double> angles = makeAngles(baseGate);
     insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);

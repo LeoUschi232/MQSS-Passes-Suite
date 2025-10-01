@@ -55,8 +55,7 @@ class QuantumCircuitEnvironment {
   unsigned int current_step;
 
   /// Attributes for randomizer
-  std::optional<std::tuple<double, double, double, double, double>>
-      qubits_and_gates_distribution_params;
+  std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
@@ -97,25 +96,23 @@ public:
 
   /**
    *
-   * @param qubits_and_gates_distribution_params
+   * @param cholesky_params
    * @param gates_weights
    * @param randomizer_options
    * @return
    */
   bool custom_randomize_circuit(
-      const std::tuple<double, double, double, double, double>
-          &qubits_and_gates_distribution_params,
+      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
       const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
       const RandomizerOptions &randomizer_options);
 
   /**
    *
-   * @param qubits_and_gates_distribution_params
+   * @param cholesky_params
    * @param gates_weights
    */
   void register_randomizer_params(
-      const std::tuple<double, double, double, double, double>
-          &qubits_and_gates_distribution_params,
+      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
       const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
   /**

@@ -16,8 +16,7 @@ class ParallelEnvironments {
   unsigned int max_steps;
 
   /// Attributes for randomizer
-  std::optional<std::tuple<double, double, double, double, double>>
-      qubits_and_gates_distribution_params;
+  std::array<double, CHOLESKY_PARAMS_SIZE> qubits_and_gates_distribution_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
@@ -52,7 +51,7 @@ public:
    * @param gates_weights
    */
   void register_randomizer_params(
-      const std::tuple<double, double, double, double, double>
+      const std::array<double, CHOLESKY_PARAMS_SIZE>
           &qubits_and_gates_distribution_params,
       const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
@@ -60,7 +59,7 @@ public:
    *
    * @return
    */
-  bool  randomize_all_circuits_with_equal_dimensions();
+  bool randomize_all_circuits_with_equal_dimensions();
 
   /**
    * B = Batch size / Nr of parallel environments

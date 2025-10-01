@@ -24,7 +24,7 @@ bool ParallelEnvironments::register_quantum_circuit(
 }
 
 void ParallelEnvironments::register_randomizer_params(
-    const std::tuple<double, double, double, double, double>
+    const std::array<unsigned int, CHOLESKY_PARAMS_SIZE>
         &qubits_and_gates_distribution_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   assert(environments.size() == nr_environments &&
@@ -44,9 +44,8 @@ bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
       !gates_weights.has_value()) {
     return false;
   }
-  auto [nr_qubits, nr_gates] =
-      sample_nr_qubits_and_gates_from_cholesky(
-          qubits_and_gates_distribution_params.value());
+  auto [nr_qubits, nr_gates] = sample_nr_qubits_and_gates_from_cholesky(
+      qubits_and_gates_distribution_params.value());
 }
 
 std::tuple<std::vector<double>, std::vector<bool>>

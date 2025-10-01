@@ -75,7 +75,7 @@ static GateSpec gateSpecFromIndex(unsigned int idx);
  * @param nr_qubits
  * @return
  */
-std::pair<std::vector<int>, std::vector<int>> sampleDistinctTargetsAndControls(
+std::pair<std::vector<int>, std::vector<int>> sample_distinct_targets_and_controls(
     unsigned int nr_targets, unsigned int nr_controls, unsigned int nr_qubits);
 
 /**
@@ -87,24 +87,23 @@ std::vector<double> makeAngles(int baseGate);
 
 /**
  *
- * @param qubits_and_gates_distribution_params
+ * @param cholesky_params
  * @return
  */
-std::pair<unsigned int, unsigned int> sample_nr_qubits_and_gates_from_cholesky(
-    std::tuple<double, double, double, double, double>
-        qubits_and_gates_distribution_params);
+std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
+sample_nr_qubits_gates_operations_measurements(
+    const std::array<unsigned int, CHOLESKY_PARAMS_SIZE> &cholesky_params);
 
 /**
  *
- * @param qubits_and_gates_distribution_params
+ * @param cholesky_params
  * @param gates_weights
  * @param randomizer_options
  * @return
  */
 std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_embedded_statistics(
-    const std::tuple<double, double, double, double, double>
-        &qubits_and_gates_distribution_params,
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
