@@ -59,8 +59,9 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
 unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
-  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+BaseA2CAgent::forward(const torch::Tensor &observation) {
+  std::lock_guard lock(*this->model_mutex);
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->critic->forward(x), this->actor->forward(x)};
@@ -68,8 +69,8 @@ BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
 
 std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
            torch::Tensor>
-BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
-  auto [state_values, action_probs] = this->forward(batched_observations);
+BaseA2CAgent::select_action(const torch::Tensor &observation) {
+  auto [state_values, action_probs] = this->forward(observation);
   // sample one action per row; result is [B,1] -> squeeze to [B]
   torch::Tensor actions_tensor = action_probs.multinomial(1).squeeze(-1);
   // CUDA tensors can’t be read directly)
@@ -140,7 +141,7 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
 
 void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
                                      const torch::Tensor &actor_loss) const {
-  std::lock_guard lock(*model_mutex);
+  std::lock_guard lock(*this->model_mutex);
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
@@ -150,7 +151,7 @@ void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,
 }
 
 void BaseA2CAgent::save_model() const {
-  std::lock_guard lock(*model_mutex);
+  std::lock_guard lock(*this->model_mutex);
   std::string name = this->agentName();
   if (name.empty()) {
     std::cerr << "No agent to save." << std::endl;
@@ -164,7 +165,7 @@ void BaseA2CAgent::save_model() const {
 
 void BaseA2CAgent::load_model() {
   // Silently doesn't load if model doesn'T exist as intended.
-  std::lock_guard lock(*model_mutex);
+  std::lock_guard lock(*this->model_mutex);
   std::string name = this->agentName();
   if (name.empty()) {
     return;

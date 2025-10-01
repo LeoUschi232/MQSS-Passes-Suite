@@ -73,20 +73,20 @@ public:
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
   std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &batched_observations);
+  forward(const torch::Tensor &observation);
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
   std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
              torch::Tensor>
-  select_action(const torch::Tensor &batched_observations);
+  select_action(const torch::Tensor &observation);
 
   /**
    *
@@ -115,20 +115,9 @@ public:
   void update_parameters(const torch::Tensor &critic_loss,
                          const torch::Tensor &actor_loss) const;
 
-  /**
-   *
-   */
+  /// Saving and Loading
   void save_model() const;
-
-  /**
-   *
-   */
   void load_model();
-
-  /**
-   *
-   * @return
-   */
   virtual std::string agentName() const = 0;
 };
 } // namespace ai_pass_selector

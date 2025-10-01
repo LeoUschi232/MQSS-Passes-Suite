@@ -22,6 +22,17 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
   // input channels in a single unit of the chain.
   unsigned int IRP = MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits);
 
+  // Reduce the dimensionality of the inner layers.
+  // Standard practice in convolutional networks.
+  // But keep the nr of channels always at least more than 1 and strictly
+  // decreasing.
+  unsigned int L2 = static_cast<unsigned>(3.0 / 4.0 * IRP);
+  L2 = std::max(4u, L2);
+  unsigned int L3 = static_cast<unsigned>(2.0 / 4.0 * IRP);
+  L3 = std::max(3u, L3);
+  unsigned int L4 = static_cast<unsigned>(1.0 / 4.0 * IRP);
+  L4 = std::max(2u, L4);
+
   // Make sure there are at least half the kernel size in padding on each size
   // of the instruction chain so that even when there are 0 instructions, at
   // least 1 kernel slide is possible.
@@ -36,28 +47,28 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
       torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
 
       // Inner layer nr 1
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, L2, max_qubits)
+                            .padding(padding)), // Shape {B, L2, N}
       torch::nn::GroupNorm(
-          torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+          torch::nn::GroupNormOptions(1, L2)), // Shape {B, L2, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L2, N}
 
-          // Inner layer nr 2
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-              torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L2, L3, max_qubits)
+                            .padding(padding)), // Shape {B, L3, N}
+      torch::nn::GroupNorm(
+          torch::nn::GroupNormOptions(1, L3)), // Shape {B, L3, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L3, N}
 
-          // Inner layer nr 3
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 3
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L3, L4, max_qubits)
+                            .padding(padding)), // Shape {B, L4, N}
+      torch::nn::GroupNorm(
+          torch::nn::GroupNormOptions(1, L4)), // Shape {B, L4, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L4, N}
 
       // Output layer
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, NR_PASSES, max_qubits)
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L4, NR_PASSES, max_qubits)
                             .padding(padding)), // Shape {B, NR_PASSES, N}
       torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, NR_PASSES, 1}
       torch::nn::Flatten(
@@ -68,28 +79,28 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
       torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
 
       // Inner layer nr 1
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, L2, max_qubits)
+                            .padding(padding)), // Shape {B, L2, N}
       torch::nn::GroupNorm(
-          torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+          torch::nn::GroupNormOptions(1, L2)), // Shape {B, L2, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L2, N}
 
-          // Inner layer nr 2
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-              torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L2, L3, max_qubits)
+                            .padding(padding)), // Shape {B, L3, N}
+      torch::nn::GroupNorm(
+          torch::nn::GroupNormOptions(1, L3)), // Shape {B, L3, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L3, N}
 
-          // Inner layer nr 3
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 3
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L3, L4, max_qubits)
+                            .padding(padding)), // Shape {B, L4, N}
+      torch::nn::GroupNorm(
+          torch::nn::GroupNormOptions(1, L4)), // Shape {B, L4, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, L4, N}
 
       // Output layer
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, 1, max_qubits)
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(L4, 1, max_qubits)
                             .padding(padding)), // Shape {B, 1, N}
       torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, 1, 1}
       torch::nn::Flatten(
