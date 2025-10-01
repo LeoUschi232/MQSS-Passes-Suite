@@ -15,6 +15,8 @@ using llvm::isa;
 
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
+#include "Environment/random_quantum_circuit_generator.hpp"
+#include "Environment/statistics_for_rqcg.hpp"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
@@ -41,33 +43,50 @@ constexpr unsigned int NO_QUBIT_ALLOCATIONS = 3;
 constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
 constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
-class QuantumCircuitEnviorment {
-  int circuit_size_class;
+class QuantumCircuitEnvironment {
+  /// Attributes for circuit
   unsigned int max_qubits;
   fs::path circuit_path;
   ModuleOp circuit_module;
   std::unique_ptr<MLIRContext *> context_ptr;
+
+  /// Attributes for episode
   unsigned int max_steps;
   unsigned int current_step;
 
+  /// Attributes for randomizer
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> qubits_cholesky_params;
+  std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
+
 public:
   /// Constructors
-  QuantumCircuitEnviorment(int circuit_size_class, unsigned int max_steps,
-                           const fs::path &circuit_path = "");
+  QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
+                            const fs::path &circuit_path = "");
 
   /// Destructor
-  ~QuantumCircuitEnviorment() = default;
+  ~QuantumCircuitEnvironment() {
+    if (this->context_ptr) {
+      delete *this->context_ptr.get();
+    }
+  }
 
   /// Copy and move constructors and assignment operators
-  QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
+  // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is
+  // tied exactly to the circuit module and it is ambiguous if you copy both of
+  // them if the copies are then untied from their originals but tied to each
+  // other.
+  QuantumCircuitEnvironment(const QuantumCircuitEnvironment &other) = delete;
 
-  QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept = default;
+  QuantumCircuitEnvironment &
+  operator=(const QuantumCircuitEnvironment &other) = delete;
 
-  QuantumCircuitEnviorment &
-  operator=(const QuantumCircuitEnviorment &other) = delete;
+  QuantumCircuitEnvironment(QuantumCircuitEnvironment &&other) noexcept;
 
-  QuantumCircuitEnviorment &
-  operator=(QuantumCircuitEnviorment &&) noexcept = default;
+  QuantumCircuitEnvironment &operator=(QuantumCircuitEnvironment &&) noexcept;
+
+  /// Clear and Reset
+  void clear();
+  void reset();
 
   /**
    *
@@ -77,13 +96,24 @@ public:
 
   /**
    *
+   * @param cholesky_params
+   * @param gates_weights
+   * @param randomizer_options
+   * @return
    */
-  void clear_circuit();
+  bool custom_randomize_circuit(
+      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
+      const RandomizerOptions &randomizer_options);
 
   /**
    *
+   * @param cholesky_params
+   * @param gates_weights
    */
-  void reset();
+  void register_randomizer_params(
+      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
   /**
    *
@@ -107,8 +137,13 @@ public:
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
   /**
-   *
-   * @return
+   * B = Batch size / Nr of parallel environments
+   * N = Nr of instructions in the quantum circuit
+   * IRP = Instruction representation size
+   * The transformation from shape {N×IRP} to {B, N, IRP} will be done by the
+   * ParallelEnvironments object.
+   * @return Blob tensor of 1-axis shape {N×IRP} containing the observation of
+   * the current circuit.
    */
   InstructionsTensor<double> get_observation();
 

@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --build-tests) BUILD_TESTS=ON; shift;;
     --build-ai) BUILD_AI=ON; shift;;
     *) echo "Unknown option: $1"; exit 1;;
-  endesac
+  esac
 done
 
 # --- detect CUDA via HPC-SDK module ---
@@ -85,7 +85,6 @@ fi
 AI_DIR=${CURRENT_DIR}"/AI"
 AI_EXTERNAL_DIR=${AI_DIR}"/external"
 LIBTORCH_DIR=${AI_EXTERNAL_DIR}"/libtorch"
-TENSORFLOW_DIR=${AI_EXTERNAL_DIR}"/tensorflow"
 mkdir -p "${AI_EXTERNAL_DIR}"
 if [[ ! -d "${LIBTORCH_DIR}" ]]; then
   pushd "${AI_EXTERNAL_DIR}" >/dev/null
@@ -98,20 +97,6 @@ if [[ ! -d "${LIBTORCH_DIR}" ]]; then
   popd >/dev/null
 else
   echo "[LibTorch] exists at ${LIBTORCH_DIR}"
-fi
-if [ ! -d "${TENSORFLOW_DIR}" ]; then
-  cd "${AI_EXTERNAL_DIR}"
-  git clone https://github.com/leggedrobotics/tensorflow-cpp.git
-  cd tensorflow-cpp/eigen
-  ./install.sh --run-cmake
-  cd ../tensorflow
-  mkdir build && cd build
-  cmake -DCMAKE_INSTALL_PREFIX="${TENSORFLOW_DIR}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib ..
-  make install -j
-  cd "${AI_EXTERNAL_DIR}"
-  rm -rf tensorflow-cpp
-else
-  echo "Tensorflow already exists at ${TENSORFLOW_DIR}."
 fi
 cd "${CURRENT_DIR}"
 ########################################################################################################################

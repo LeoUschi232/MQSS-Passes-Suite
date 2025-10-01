@@ -1,10 +1,16 @@
 dataset_name: "MQTBench"
-qubits_and_gates_distribution_params:
+qubits_cholesky_params:
   mean_qubits: 62.1292
   mean_gates: 5300.87
-  cholesky_L11: 38.598
-  cholesky_L21: 4260.97
-  cholesky_L22: 7922.95
+  mean_operations: 5238.94
+  mean_measurements: 61.93
+  qubits_L11: 38.598
+  gates_L21: 4260.97
+  gates_L22: 7922.95
+  operations_L21: 4222.39
+  operations_L22: 7922.86
+  measurements_L21: 38.578
+  measurements_L22: 0.398984
 gates_weights:
   X: 17022
   CX: 5623760

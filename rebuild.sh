@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # Clear console log
 set -euo pipefail
 clear

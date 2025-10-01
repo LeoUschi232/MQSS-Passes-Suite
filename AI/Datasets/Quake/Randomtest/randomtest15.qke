@@ -19,33 +19,32 @@ module {
     %cst_2 = arith.constant 0.2476977105542188 : f64
     quake.rx (%cst_2) %5 : (f64, !quake.ref) -> ()
     quake.h %2 : (!quake.ref) -> ()
-    %cst_3 = arith.constant 6.0507082750592547 : f64
-    quake.ry (%cst_3) [%5] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    %cst_3 = arith.constant 4.7784270017295976 : f64
+    quake.ry (%cst_3) %2 : (f64, !quake.ref) -> ()
+    quake.s<adj> %1 : (!quake.ref) -> ()
     quake.h %1 : (!quake.ref) -> ()
     quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
-    quake.x [%3, %4] %2 : (!quake.ref, !quake.ref, !quake.ref) -> ()
-    quake.s %3 : (!quake.ref) -> ()
-    %cst_4 = arith.constant 5.3860825935893546 : f64
-    quake.rx (%cst_4) %1 : (f64, !quake.ref) -> ()
+    quake.x [%3] %2 : (!quake.ref, !quake.ref) -> ()
+    quake.s %2 : (!quake.ref) -> ()
     quake.t<adj> %4 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    quake.t %4 : (!quake.ref) -> ()
     quake.s %4 : (!quake.ref) -> ()
     quake.s %2 : (!quake.ref) -> ()
     quake.s %1 : (!quake.ref) -> ()
-    %cst_5 = arith.constant 0.49216759065085525 : f64
+    %cst_4 = arith.constant 0.49216759065085525 : f64
+    quake.rx (%cst_4) %5 : (f64, !quake.ref) -> ()
+    %cst_5 = arith.constant 3.0381029979586081 : f64
     quake.rx (%cst_5) %5 : (f64, !quake.ref) -> ()
-    %cst_6 = arith.constant 3.0381029979586081 : f64
+    %cst_6 = arith.constant 0.19324337631267194 : f64
     quake.rx (%cst_6) %5 : (f64, !quake.ref) -> ()
-    %cst_7 = arith.constant 0.19324337631267194 : f64
+    %cst_7 = arith.constant 0.32855552274303046 : f64
     quake.rx (%cst_7) %5 : (f64, !quake.ref) -> ()
-    %cst_8 = arith.constant 0.32855552274303046 : f64
-    quake.rx (%cst_8) %5 : (f64, !quake.ref) -> ()
-    quake.s %2 : (!quake.ref) -> ()
-    quake.h %4 : (!quake.ref) -> ()
     %measOut = quake.mz %5 : (!quake.ref) -> !quake.measure
-    %measOut_9 = quake.mz %2 : (!quake.ref) -> !quake.measure
-    %measOut_10 = quake.mz %3 : (!quake.ref) -> !quake.measure
-    %measOut_11 = quake.my %4 : (!quake.ref) -> !quake.measure
-    %measOut_12 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_8 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_9 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_10 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_11 = quake.mz %1 : (!quake.ref) -> !quake.measure
     return
   }
 }

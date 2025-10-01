@@ -4,8 +4,8 @@
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Torch includes
-#include "Torch/agent_utils.hpp"
-#include "Torch/training_and_run_manager.hpp"
+#include "Agents/agent_utils.hpp"
+#include "Agents/training_and_run_manager.hpp"
 
 // Standard library includes
 #include <iostream>
@@ -41,10 +41,6 @@ void print_help() {
 }
 
 int main(int argc, char **argv) {
-  if (argc <= 1) {
-    print_help();
-    return 1;
-  }
   bool info = false;
   std::unordered_map<std::string, std::string> params = load_default_params();
   std::vector<std::string> args(argv + 1, argv + argc);
@@ -134,8 +130,8 @@ int main(int argc, char **argv) {
 }
 
 std::unordered_map<std::string, std::string> load_default_params() {
-  return {{"agent", "a2c-small-ibconv2"},
-          {"dataset", ""},
+  return {{"agent", "a2c-mq130-conv2"},
+          {"dataset", "mqtbench"},
           {"circuit", ""},
           {"output", ""},
           {"nr_parallel_environments", "16"},

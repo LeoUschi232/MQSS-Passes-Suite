@@ -1,10 +1,17 @@
 dataset_name: "Passtest"
-qubits_and_gates_distribution_params:
+qubits_cholesky_params:
   mean_qubits: 3
   mean_gates: 8.72308
-  cholesky_L11: 0
-  cholesky_L21: 0
-  cholesky_L22: 2.10288
+  mean_operations: 5.72308
+  mean_measurements: 3
+  qubits_L11: 0
+  gates_L21: 0
+  gates_L22: 2.10288
+  operations_L21: 0
+  operations_L22: 0
+  measurements_L21: 0
+  measurements_L22: 0
+
 gates_weights:
   X: 30
   CX: 45

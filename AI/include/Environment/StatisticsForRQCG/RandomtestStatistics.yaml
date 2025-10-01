@@ -1,45 +1,51 @@
 dataset_name: "Randomtest"
-qubits_and_gates_distribution_params:
-  mean_qubits: 4.95
-  mean_gates: 21.1
-  cholesky_L11: 0.825578
-  cholesky_L21: 0.898892
-  cholesky_L22: 6.66668
+cholesky_params:
+  mean_qubits: 5.05
+  mean_gates: 18.85
+  mean_operations: 13.85
+  mean_measurements: 5
+  qubits_L11: 0.510418
+  gates_L21: 3.52137
+  gates_L22: 5.94249
+  operations_L21: 3.10891
+  operations_L22: 5.92457
+  measurements_L21: 0.412459
+  measurements_L22: 0.201008
 gates_weights:
-  X: 4
-  CX: 42
-  CCX: 2
-  C3plus_X: 3
+  X: 5
+  CX: 39
+  CCX: 3
+  C3plus_X: 2
   Y: 1
-  controlled_Y: 7
+  controlled_Y: 5
   Z: 1
   controlled_Z: 3
-  H: 31
+  H: 28
   controlled_H: 0
-  S: 49
+  S: 51
   controlled_S: 1
-  SDG: 41
-  controlled_SDG: 5
+  SDG: 32
+  controlled_SDG: 0
   T: 1
   controlled_T: 0
-  TDG: 10
-  controlled_TDG: 1
-  RX: 36
-  controlled_RX: 4
-  RY: 25
-  controlled_RY: 10
-  RZ: 29
-  controlled_RZ: 3
-  SWAP: 3
-  controlled_SWAP: 2
-  R1: 2
+  TDG: 8
+  controlled_TDG: 2
+  RX: 31
+  controlled_RX: 1
+  RY: 19
+  controlled_RY: 8
+  RZ: 21
+  controlled_RZ: 5
+  SWAP: 1
+  controlled_SWAP: 1
+  R1: 3
   controlled_R1: 0
   U2: 0
   controlled_U2: 1
   U3: 0
   controlled_U3: 0
-  PHASED_RX: 5
-  controlled_PHASED_RX: 1
-  MX: 8
-  MY: 13
-  MZ: 78
+  PHASED_RX: 4
+  controlled_PHASED_RX: 0
+  MX: 6
+  MY: 7
+  MZ: 87

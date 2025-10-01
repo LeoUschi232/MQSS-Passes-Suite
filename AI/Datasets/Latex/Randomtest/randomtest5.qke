@@ -11,7 +11,7 @@ module {
     %5 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
     %cst = arith.constant 4.6397572053012146 : f64
     quake.ry (%cst) %5 : (f64, !quake.ref) -> ()
-    quake.s<adj> %1 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
     %cst_0 = arith.constant 1.7221360507498091 : f64
     quake.ry (%cst_0) %4 : (f64, !quake.ref) -> ()
     quake.s %5 : (!quake.ref) -> ()
@@ -19,9 +19,9 @@ module {
     quake.rz (%cst_1) %2 : (f64, !quake.ref) -> ()
     quake.t<adj> %2 : (!quake.ref) -> ()
     quake.x [%5] %1 : (!quake.ref, !quake.ref) -> ()
-    %cst_2 = arith.constant 6.0193763436796202 : f64
-    quake.ry (%cst_2) [%4] %5 : (f64, !quake.ref, !quake.ref) -> ()
-    quake.s<adj> %4 : (!quake.ref) -> ()
+    %cst_2 = arith.constant 0.90581098097962143 : f64
+    quake.ry (%cst_2) %1 : (f64, !quake.ref) -> ()
+    quake.y [%4] %3 : (!quake.ref, !quake.ref) -> ()
     quake.z [%1] %3 : (!quake.ref, !quake.ref) -> ()
     %cst_3 = arith.constant 3.8712264933996501 : f64
     quake.rx (%cst_3) %4 : (f64, !quake.ref) -> ()

@@ -1,13 +1,13 @@
-#include "Torch/training_and_run_manager.hpp"
+#include "Agents/training_and_run_manager.hpp"
 
 // Environment includes
 #include "Environment/environment.hpp"
 
 // Torch includes
-#include "Torch/A2C/a2c_agents.hpp"
-#include "Torch/A2C/a2c_trainer.hpp"
-#include "Torch/A2C/base_a2c_agent.hpp"
-#include "Torch/agent_utils.hpp"
+#include "Agents/A2C/a2c_agents.hpp"
+#include "Agents/A2C/a2c_trainer.hpp"
+#include "Agents/A2C/base_a2c_agent.hpp"
+#include "Agents/agent_utils.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -28,26 +28,28 @@ train(const std::string &agent_name, const std::string &dataset,
             attributes.agent_class) {
     case A2C: {
       std::unique_ptr<BaseA2CAgent> agent;
-      if (attributes.specifier == "ibfclsd") {
-        agent = std::make_unique<A2C_IBCONV2>(attributes.size_class, params);
-      } else if (attributes.specifier == "ibfclsm") {
-        agent = std::make_unique<A2C_IBCONV4>(attributes.size_class, params);
+      if (attributes.extras == "conv2") {
+        agent = std::make_unique<A2C_CONV2>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv3") {
+        agent = std::make_unique<A2C_CONV3>(attributes.max_qubits, params);
+      } else if (attributes.extras == "conv4") {
+        agent = std::make_unique<A2C_CONV4>(attributes.max_qubits, params);
       } else {
-        throw std::runtime_error("Unknown A2C specifier: " +
-                                 attributes.specifier);
+        std::cerr << "No such A2C agent yet: " << agent_name << std::endl;
+        return {};
       }
       agent->load_model();
-      training_results = train_a2c(*agent, dataset, params);
+      training_results = train_a2c(std::move(agent), dataset, params);
       break;
     }
     case A3C:
     case PPO:
-    case RNN:
     default:
-      throw std::runtime_error("Unsupported agent_class in train()");
+      std::cerr << "No such agent yet: " << agent_name << std::endl;
+      return {};
     }
   } catch (const std::runtime_error &e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "\n" << e.what() << std::endl;
     return {};
   }
   return training_results;

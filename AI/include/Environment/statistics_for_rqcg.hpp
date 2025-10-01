@@ -13,8 +13,8 @@ namespace ai_pass_selector {
 /// Sizes
 constexpr unsigned int GATES_WEIGHTS_SIZE = 37;
 constexpr unsigned int OPERATIONS_SUBSET_SIZE = 34;
-constexpr unsigned int MEASUREMENTS_SUBSET_SIZE = 3;
-/// Indexes
+constexpr unsigned int CHOLESKY_PARAMS_SIZE = 11;
+/// Gates Indexes
 constexpr unsigned int X_INDEX = 0;
 constexpr unsigned int CX_INDEX = 1;
 constexpr unsigned int CCX_INDEX = 2;
@@ -52,13 +52,25 @@ constexpr unsigned int controlled_PHASED_RX_INDEX = 33;
 constexpr unsigned int MX_INDEX = 34;
 constexpr unsigned int MY_INDEX = 35;
 constexpr unsigned int MZ_INDEX = 36;
+/// Cholseky Indexes
+constexpr unsigned int MEAN_QUBITS_INDEX = 0;
+constexpr unsigned int MEAN_GATES_INDEX = 1;
+constexpr unsigned int MEAN_OPERATIONS_INDEX = 2;
+constexpr unsigned int MEAN_MEASUREMENTS_INDEX = 3;
+constexpr unsigned int QUBITS_L11_INDEX = 4;
+constexpr unsigned int GATES_L21_INDEX = 5;
+constexpr unsigned int GATES_L22_INDEX = 6;
+constexpr unsigned int OPERATIONS_L21_INDEX = 7;
+constexpr unsigned int OPERATIONS_L22_INDEX = 8;
+constexpr unsigned int MEASUREMENTS_L21_INDEX = 9;
+constexpr unsigned int MEASUREMENTS_L22_INDEX = 10;
 
 /**
  *
  * @param dataset_name
  * @return
  */
-std::optional<std::pair<std::tuple<double, double, double, double, double>,
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
 extract_dataset_statistics(const std::string &dataset_name);
 
@@ -68,8 +80,31 @@ extract_dataset_statistics(const std::string &dataset_name);
  */
 void print_dataset_statistics(const std::string &dataset_name);
 
+/**
+ *
+ * @param dataset_name
+ * @return
+ */
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+                        std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
+get_precomputed_dataset_statistics(const std::string &dataset_name);
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Dataset statistics embedded as available C++ data.
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    MQT_BENCH_QUBITS_CHOLSEKY_PARAMS = {
+        /* mean_qubits */ 62.1292,
+        /* mean_gates */ 5300.87,
+        /* mean_operations */ 5238.94,
+        /* mean_measurements */ 61.93,
+        /* qubits_L11 */ 38.598,
+        /* gates_L21 */ 4260.97,
+        /* gates_L22 */ 7922.95,
+        /* operations_L21 */ 4222.39,
+        /* operations_L22 */ 7922.86,
+        /* measurements_L21 */ 38.578,
+        /* measurements_L22 */ 0.398984};
+
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
     {/* X */ 17022u,
      /* CX */ 5623760u,
@@ -108,12 +143,123 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
      /* MX */ 0u,
      /* MY */ 0u,
      /* MZ */ 120330u};
-constexpr std::tuple MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
-    /* mean_qubits */ 62.1292,
-    /* mean_gates */ 5300.87,
-    /* cholesky_L11 */ 38.598,
-    /* cholesky_L21 */ 4260.97,
-    /* cholesky_L22 */ 7922.95};
+
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    CHEMISTRY_QUBITS_CHOLSEKY_PARAMS = {
+        /* mean_qubits */ 2.0,
+        /* mean_gates */ 4.0,
+        /* mean_operations */ 2.0,
+        /* mean_measurements */ 2.0,
+        /* qubits_L11 */ 0.0,
+        /* gates_L21 */ 0.0,
+        /* gates_L22 */ 0.0,
+        /* operations_L21 */ 0.0,
+        /* operations_L22 */ 0.0,
+        /* measurements_L21 */ 0.0,
+        /* measurements_L22 */ 0.0};
+
+constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
+    {/* X */ 0u,
+     /* CX */ 0u,
+     /* CCX */ 0u,
+     /* C3plus_X */ 0u,
+     /* Y */ 0u,
+     /* controlled_Y */ 0u,
+     /* Z */ 0u,
+     /* controlled_Z */ 0u,
+     /* H */ 0u,
+     /* controlled_H */ 0u,
+     /* S */ 0u,
+     /* controlled_S */ 0u,
+     /* SDG */ 0u,
+     /* controlled_SDG */ 0u,
+     /* T */ 0u,
+     /* controlled_T */ 0u,
+     /* TDG */ 0u,
+     /* controlled_TDG */ 0u,
+     /* RX */ 0u,
+     /* controlled_RX */ 0u,
+     /* RY */ 0u,
+     /* controlled_RY */ 0u,
+     /* RZ */ 0u,
+     /* controlled_RZ */ 0u,
+     /* SWAP */ 0u,
+     /* controlled_SWAP */ 0u,
+     /* R1 */ 0u,
+     /* controlled_R1 */ 0u,
+     /* U2 */ 0u,
+     /* controlled_U2 */ 0u,
+     /* U3 */ 0u,
+     /* controlled_U3 */ 0u,
+     /* PHASED_RX */ 0u,
+     /* controlled_PHASED_RX */ 0u,
+     /* MX */ 0u,
+     /* MY */ 0u,
+     /* MZ */ 0u};
+
+// mean_qubits: 4.95
+// mean_gates: 21.1
+// mean_operations: 16.15
+// mean_measurements: 4.95
+// qubits_L11: 0.686333
+// gates_L21: 3.10575
+// gates_L22: 5.96363
+// operations_L21: 2.41942
+// operations_L22: 5.96363
+// measurements_L21: 0.686333
+// measurements_L22: 0.1
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS = {
+        /* mean_qubits */ 4.95,
+        /* mean_gates */ 21.1,
+        /* mean_operations */ 16.15,
+        /* mean_measurements */ 4.95,
+        /* qubits_L11 */ 0.686333,
+        /* gates_L21 */ 3.10575,
+        /* gates_L22 */ 5.96363,
+        /* operations_L21 */ 2.41942,
+        /* operations_L22 */ 5.96363,
+        /* measurements_L21 */ 0.686333,
+        /* measurements_L22 */ 0.1};
+
+constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE>
+    RANDOMTEST_PREEMPTIVE_GATES_WEIGHTS = {/* X */ 4u,
+                                           /* CX */ 42u,
+                                           /* CCX */ 2u,
+                                           /* C3plus_X */ 3u,
+                                           /* Y */ 1u,
+                                           /* controlled_Y */ 7u,
+                                           /* Z */ 1u,
+                                           /* controlled_Z */ 3u,
+                                           /* H */ 31u,
+                                           /* controlled_H */ 0u,
+                                           /* S */ 49u,
+                                           /* controlled_S */ 1u,
+                                           /* SDG */ 41u,
+                                           /* controlled_SDG */ 5u,
+                                           /* T */ 1u,
+                                           /* controlled_T */ 0u,
+                                           /* TDG */ 10u,
+                                           /* controlled_TDG */ 1u,
+                                           /* RX */ 36u,
+                                           /* controlled_RX */ 4u,
+                                           /* RY */ 25u,
+                                           /* controlled_RY */ 10u,
+                                           /* RZ */ 29u,
+                                           /* controlled_RZ */ 3u,
+                                           /* SWAP */ 3u,
+                                           /* controlled_SWAP */ 2u,
+                                           /* R1 */ 2u,
+                                           /* controlled_R1 */ 0u,
+                                           /* U2 */ 0u,
+                                           /* controlled_U2 */ 1u,
+                                           /* U3 */ 0u,
+                                           /* controlled_U3 */ 0u,
+                                           /* PHASED_RX */ 5u,
+                                           /* controlled_PHASED_RX */ 1u,
+                                           /* MX */ 8u,
+                                           /* MY */ 13u,
+                                           /* MZ */ 78u};
 } // namespace ai_pass_selector
 
 #endif // STATISTICS_FOR_RQCG_HPP

@@ -38,46 +38,50 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/Support/raw_ostream.h"
 
 #include <iomanip>
+#include <iostream>
 #include <regex>
 
 using namespace mlir;
 using namespace mqss::support::quakeDialect;
 
-void dumpQuakeOperationToTikz(
-    Operation *op, std::vector<std::vector<std::string> > &qubitLines) {
-  if (op->getDialect()->getNamespace() != "quake")
-    return; // do nothing if it is not a quake operation
-  if (isa<quake::AllocaOp>(op) || isa<quake::ExtractRefOp>(op))
-    return; // do nothing if the next operation is a qubit allocation
+void dumpQuakeOperationToTikz(Operation *op,
+                              std::vector<std::vector<std::string>> &qubitLines,
+                              std::vector<int> &depths) {
+  if (op->getDialect()->getNamespace() != "quake" || isa<quake::AllocaOp>(op) ||
+      isa<quake::ExtractRefOp>(op)) {
+    // Do nothing if it is not a quake operation.
+    // do nothing if the next operation is a qubit allocation.
+    return;
+  }
   auto gateName = std::string(op->getName().getStringRef());
   if (size_t pos = gateName.find("quake."); pos != std::string::npos) {
-    gateName.erase(pos, 6); // 6 is the length of "quake."
+    // 6 is the length of "quake"
+    gateName.erase(pos, 6);
   }
-#ifdef DEBUG
-  llvm::outs() << "Operation: " << gateName << "\n";
-#endif
+
+  auto padTo = [&](int qubit, int upto) {
+    while (static_cast<int>(qubitLines[qubit].size()) <= upto) {
+      qubitLines[qubit].push_back("\\qw");
+    }
+  };
+
   std::vector<double> parameters;
   std::vector<int> targets;
   std::vector<int> controls;
-  std::vector<int> measurements;
   bool isAdj = false;
   if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
     for (auto operand : op->getOperands()) {
       if (operand.getType().isa<quake::RefType>()) {
-        auto qubitIndexOpt
-            = extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+        auto qubitIndexOpt =
+            extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
         if (!qubitIndexOpt.has_value()) {
           continue;
         }
         int qubitIndex = qubitIndexOpt.value();
         assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
-        measurements.push_back(qubitIndex);
-        qubitLines[qubitIndex].push_back("\\meter{}");
-      } else if (operand.getType().isa<quake::VeqType>()) {
-        for (int i = 0; i < qubitLines.size(); i++) {
-          measurements.push_back(i);
-          qubitLines[i].push_back("\\meter{}");
-        }
+        targets.push_back(qubitIndex);
+      } else {
+        throw std::runtime_error("Vecotrized measurements not supported.");
       }
     }
   } else {
@@ -86,81 +90,99 @@ void dumpQuakeOperationToTikz(
     targets = getIndicesOfValueRange(gate.getTargets());
     controls = getIndicesOfValueRange(gate.getControls());
     isAdj = gate.isAdj();
-#ifdef DEBUG
-    llvm::outs() << "\tParameters: " << parameters.size()
-        << " Targets: " << targets.size()
-        << " Controls :" << controls.size() << "\n";
-#endif
   }
-  // empty fill those qubits that are not used by the current targets, controls
-  // and measurements
-  for (int i = 0; i < qubitLines.size(); i++) {
-    if (std::ranges::find(targets, i) == targets.end() &&
-        std::ranges::find(controls, i) == controls.end() &&
-        std::ranges::find(measurements, i) == measurements.end()) {
-      qubitLines[i].push_back("\\qw");
-    }
-  }
-  // exit after insert measurements
-  if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op))
-    return;
 
-  if (isa<quake::SwapOp>(op)) {
-    assert(targets.size() == 2 &&
-        "At the moment the SWAP only works on two targets...");
-    qubitLines[targets[0]].push_back(
-        "\\swap{" + std::to_string(targets[1] - targets[0]) + "}");
-    qubitLines[targets[1]].push_back("\\swap{}");
-    return; // special handle for swap because it has multiple targets
+  std::vector<int> qubits_in_use = targets;
+  qubits_in_use.insert(qubits_in_use.end(), controls.begin(), controls.end());
+  if (qubits_in_use.empty()) {
+    return;
   }
-  // iterate over all the targets and insert it
-  for (int target_qubit : targets) {
-    std::string labelGate = gateName;
-    // rename in case of rotations for sake of better readability
-    // phased_rx -> prx
-    labelGate = std::regex_replace(labelGate, std::regex("phased_"), "p");
-    // append dagger in case of adj
-    if (isAdj)
-      labelGate = labelGate + "\\textsuperscript{\\textdagger}";
-    // if the gate has parameters, annotate into the label
-    if (parameters.size() > 0)
-      labelGate += "(";
-    int countParam = 0;
-    for (double parameter : parameters) {
-      std::ostringstream tmpOss;
-      tmpOss << std::fixed << std::setprecision(2) << parameter;
-      labelGate += std::string(tmpOss.str());
-      if (countParam != parameters.size() - 1)
-        labelGate += " , ";
-      countParam++;
+
+  int min_qubit = *std::ranges::min_element(qubits_in_use);
+  int max_qubit = *std::ranges::max_element(qubits_in_use);
+  int op_depth = 0;
+  for (int qubit = min_qubit; qubit <= max_qubit; qubit++) {
+    op_depth = std::max(op_depth, depths[qubit]);
+  }
+  // Measurements
+  if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
+    for (int qubit : targets) {
+      padTo(qubit, op_depth);
+      qubitLines[qubit].push_back("\\meter{}");
+      depths[qubit] = op_depth + 1;
     }
-    if (parameters.size() > 0)
-      labelGate += ")";
-    // annotating the target qubit
-    qubitLines[target_qubit].push_back("\\gate{" + labelGate + "}");
+    return;
   }
-  // CHECK: I am assuming at the moment multiple controls and single targets
-  // the opposite case, single control and multiple target should not be a valid
-  // gate
-  int targetGate = targets[0];
-  for (int control_qubit : controls)
-    qubitLines[control_qubit].push_back(
-        "\\ctrl{" + std::to_string(targetGate - control_qubit) + "}");
+
+  // SWAP
+  if (isa<quake::SwapOp>(op)) {
+    if (targets.size() != 2) {
+      std::cerr << "Detected SWAP with not exactly two targets, dropping op."
+                << std::endl;
+      return;
+    }
+    int q0 = targets[0], q1 = targets[1];
+    padTo(q0, op_depth);
+    padTo(q1, op_depth);
+    qubitLines[q0].push_back("\\swap{" + std::to_string(q1 - q0) + "}");
+    qubitLines[q1].push_back("\\swap{}");
+  } else {
+    // Other gates
+    if (targets.size() != 1) {
+      std::cerr << "Detected gate with not exactly one target, dropping op."
+                << std::endl;
+      return;
+    }
+    for (int qubit : targets) {
+      std::string labelGate = gateName;
+      // Rename phased_rx -> r for readbility.
+      labelGate = std::regex_replace(labelGate, std::regex("phased_rx"), "r");
+      if (isAdj) {
+        labelGate = labelGate + "\\textsuperscript{\\textdagger}";
+      }
+      if (parameters.size() > 0) {
+        labelGate += "(";
+      }
+      int countParam = 0;
+      for (double parameter : parameters) {
+        std::ostringstream tmpOss;
+        tmpOss << std::fixed << std::setprecision(2) << parameter;
+        labelGate += std::string(tmpOss.str());
+        if (countParam != parameters.size() - 1) {
+          labelGate += ",";
+        }
+        countParam++;
+      }
+      if (parameters.size() > 0) {
+        labelGate += ")";
+      }
+      padTo(qubit, op_depth);
+      qubitLines[qubit].push_back("\\gate{" + labelGate + "}");
+    }
+  }
+
+  for (int qubit : controls) {
+    int target0 = targets[0] - qubit;
+    padTo(qubit, op_depth);
+    qubitLines[qubit].push_back("\\ctrl{" + std::to_string(target0) + "}");
+  }
+  for (int qubit = min_qubit; qubit <= max_qubit; qubit++) {
+    // Fill between qubits with wires.
+    depths[qubit] = op_depth + 1;
+  }
 }
 
 namespace {
 
 class QuakeToTikzPass final
-    : public PassWrapper<QuakeToTikzPass, OperationPass<FuncOp> > {
+    : public PassWrapper<QuakeToTikzPass, OperationPass<FuncOp>> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeToTikzPass)
 
-  QuakeToTikzPass(llvm::raw_string_ostream &ostream) : outputStream(ostream) {
-  }
+  explicit QuakeToTikzPass(llvm::raw_string_ostream &ostream)
+      : outputStream(ostream) {}
 
-  StringRef getArgument() const override {
-    return "convert-quake-to-tikz";
-  }
+  StringRef getArgument() const override { return "convert-quake-to-tikz"; }
 
   StringRef getDescription() const override {
     return "Lower Quake Operations to LaTeX TiKz";
@@ -170,39 +192,50 @@ public:
     auto circuit = getOperation();
     // Get the function name
     if (StringRef funcName = circuit.getName();
-      funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
-      return; // do nothing if the function is not cudaq kernel
+        funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) ==
+        std::string::npos) {
+      // Do nothing if the function is not cudaq kernel
+      return;
+    }
 
-    std::map<int, int> measurements; // key: qubit, value register index
+    std::map<int, int> measurements;
     int numQubits = getNumberOfQubits(circuit);
-    std::vector<std::vector<std::string> > qubitTikz(numQubits);
-    for (int i = 0; i < numQubits; i++)
+    std::vector<std::vector<std::string>> qubitTikz(numQubits);
+    for (int i = 0; i < numQubits; i++) {
       qubitTikz[i].push_back({"\\lstick{\\ket{0}}"});
-    circuit.walk(
-        [&](Operation *op) { dumpQuakeOperationToTikz(op, qubitTikz); });
-#ifdef DEBUG
-    llvm::outs() << "Num qubits " << numQubits << "\n";
-#endif
-    // dumping the lines into the ostream
+    }
+    std::vector depths(numQubits, 0);
+    circuit.walk([&](Operation *op) {
+      dumpQuakeOperationToTikz(op, qubitTikz, depths);
+    });
+    size_t width = 0;
+    for (auto &row : qubitTikz) {
+      width = std::max(width, row.size());
+    }
+    for (auto &row : qubitTikz) {
+      while (row.size() < width) {
+        row.push_back("\\qw");
+      }
+    }
+
     outputStream << "\\begin{quantikz}\n";
     int countQubit = 0;
     for (auto qubit : qubitTikz) {
       int size = qubit.size();
-#ifdef DEBUG
-      llvm::outs() << "Ops size " << size << "\n";
-#endif
       int countOps = 0;
       outputStream << "\t";
       for (auto op : qubit) {
         outputStream << op;
-        if (countOps != size - 1)
+        if (countOps != size - 1) {
           outputStream << "\t&\t";
+        }
         countOps++;
       }
-      if (countQubit != numQubits - 1)
+      if (countQubit != numQubits - 1) {
         outputStream << "\\\\\n";
-      else
+      } else {
         outputStream << "\n";
+      }
       countQubit++;
     }
     outputStream << "\\end{quantikz}";

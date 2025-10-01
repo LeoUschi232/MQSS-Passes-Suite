@@ -16,17 +16,22 @@ namespace fs = std::filesystem;
 using namespace mqss::opt;
 
 namespace ai_pass_selector {
+struct AgentAttributes {
+  int agent_class;
+  unsigned int max_qubits;
+  std::string extras;
+};
+
 /// Agent classes
 constexpr int A2C = 1;
 constexpr int A3C = 2;
 constexpr int PPO = 3;
-constexpr int RNN = 4;
 
 const std::unordered_map<std::string, int> AGENT_NAME_TO_CLASS = {
-    {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}, {"rnn", RNN}};
+    {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}};
 
-const std::unordered_map<std::string, int> AGENT_CLASS_TO_NAME = {
-    {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}, {"rnn", RNN}};
+const std::unordered_map<int, std::string> AGENT_CLASS_TO_NAME = {
+    {A2C, "a2c"}, {A3C, "a3c"}, {PPO, "ppo"}};
 
 /// Optimizers
 constexpr int OPTIMIZER_ADAGRAD = 1;
@@ -45,12 +50,6 @@ const std::unordered_map<int, std::string> OPTIMIZER_TYPE_TO_NAME = {
     {OPTIMIZER_ADAGRAD, "adagrad"}, {OPTIMIZER_ADAM, "adam"},
     {OPTIMIZER_ADAMW, "adamw"},     {OPTIMIZER_LBFGS, "lbfgs"},
     {OPTIMIZER_RMSPROP, "rmsprop"}, {OPTIMIZER_SGD, "sgd"}};
-
-struct AgentAttributes {
-  int agent_class;
-  int size_class;
-  std::string specifier;
-};
 
 /// Devices
 const std::unordered_map<std::string, torch::Device> DEVICE_NAME_TO_TORCH = {

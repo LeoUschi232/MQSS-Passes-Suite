@@ -45,7 +45,7 @@ std::string getOperationName(Operation *op) {
 }
 
 std::string getOnlyGateName(Operation *op) {
-  if (!isOperatingGate(op)) {
+  if (!isGate(op)) {
     return "";
   }
   auto [_, gateName] = op->getName().getStringRef().split('.');
@@ -93,7 +93,7 @@ std::string readFileToString(const std::string &filename) {
 }
 
 std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits) {
-  if (!isMeasurementGate(op)) {
+  if (!isMeasurement(op)) {
     return {};
   }
   std::vector<int> targets = {};
@@ -138,10 +138,10 @@ getQubitsInstructionsDepth(FuncOp circuit) {
       depths.resize(nrQubits, 0);
       return;
     }
-    if (!isOperatingGate(op)) {
+    if (!isGate(op)) {
       return;
     }
-    if (isMeasurementGate(op)) {
+    if (isMeasurement(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
           auto qubitIndexOpt =
@@ -233,7 +233,14 @@ std::string valueRangeToString(ValueRange range) {
   return rso.str();
 }
 
-bool isOperatingGate(Operation *op) {
+bool isMeasurement(Operation *op) {
+  if (op->getDialect()->getNamespace() != "quake") {
+    return false;
+  }
+  return isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op);
+}
+
+bool isOperation(Operation *op) {
   if (op->getDialect()->getNamespace() != "quake") {
     return false;
   }
@@ -242,15 +249,14 @@ bool isOperatingGate(Operation *op) {
          isa<quake::RxOp>(op) || isa<quake::RyOp>(op) || isa<quake::RzOp>(op) ||
          isa<quake::SwapOp>(op) || isa<quake::R1Op>(op) ||
          isa<quake::U2Op>(op) || isa<quake::U3Op>(op) ||
-         isa<quake::PhasedRxOp>(op) || isa<quake::MxOp>(op) ||
-         isa<quake::MyOp>(op) || isa<quake::MzOp>(op);
+         isa<quake::PhasedRxOp>(op);
 }
 
-bool isMeasurementGate(Operation *op) {
+bool isGate(Operation *op) {
   if (op->getDialect()->getNamespace() != "quake") {
     return false;
   }
-  return isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op);
+  return isMeasurement(op) || isOperation(op);
 }
 
 int getNumberOfAllocations(FuncOp circuit) {
@@ -267,7 +273,7 @@ int getNumberOfAllocations(FuncOp circuit) {
 }
 
 std::vector<double> getOperationParameters(Operation *op) {
-  if (!isOperatingGate(op)) {
+  if (!isGate(op)) {
     return {};
   }
   auto gate = dyn_cast<quake::OperatorInterface>(op);
@@ -332,10 +338,10 @@ int getNumberOfGates(FuncOp circuit) {
   }
   int nrGates = 0;
   circuit.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
+    if (!isGate(op)) {
       return;
     }
-    if (isMeasurementGate(op)) {
+    if (isMeasurement(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
           auto qubitIndexOpt =
@@ -372,10 +378,10 @@ int getCircuitDepth(FuncOp circuit) {
 
   std::vector depths(nrQubits, 0);
   circuit.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
+    if (!isGate(op)) {
       return;
     }
-    if (isMeasurementGate(op)) {
+    if (isMeasurement(op)) {
       for (auto operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
           auto qubitIndexOpt =
@@ -424,7 +430,7 @@ int getNumberOfClassicalBits(FuncOp circuit, std::map<int, int> &measurements) {
   }
   int numBits = 0;
   circuit.walk([&](Operation *op) {
-    if (isMeasurementGate(op)) {
+    if (isMeasurement(op)) {
       for (auto operand : op->getOperands()) {
         // Check if it's qubit reference
         if (operand.getType().isa<quake::RefType>()) {

@@ -104,12 +104,14 @@ int main(int argc, char *argv[]) {
           << " is not a valid supported file!" << std::endl;
       return 1;
     }
-    if (hasExtension(vm["input"].as<std::string>(), ".cpp"))
+    if (hasExtension(vm["input"].as<std::string>(), ".cpp")) {
       // lower the input c++ file to quake
       moduleQke = lowerCppToQuake(vm["input"].as<std::string>());
-    else
+    }
+    else {
       // read the input file and stored into moduleQke
       moduleQke = readFileToString(vm["input"].as<std::string>());
+    }
     std::cout << "Input file name " << vm["input"].as<std::string>()
         << std::endl;
   } else {
@@ -130,7 +132,7 @@ int main(int argc, char *argv[]) {
   setbuf(stdout, nullptr);
   // continue loading mlir module and context
   auto [mlirModule, contextPtr] = extractMLIRContext(moduleQke);
-  mlir::MLIRContext &context = *contextPtr;
+  MLIRContext &context = *contextPtr;
   // creating pass manager
   mlir::PassManager pm(&context);
   // Adding custom pass

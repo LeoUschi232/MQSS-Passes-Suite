@@ -1,10 +1,16 @@
 dataset_name: "Chemistry"
-qubits_and_gates_distribution_params:
+qubits_cholesky_params:
   mean_qubits: 2.0
   mean_gates: 4.0
-  cholesky_L11: 0.0
-  cholesky_L21: 0.0
-  cholesky_L22: 0.0
+  mean_operations: 2.0
+  mean_measurements: 2.0
+  qubits_L11: 0.0
+  gates_L21: 0.0
+  gates_L22: 0.0
+  operations_L21: 0.0
+  operations_L22: 0.0
+  measurements_L21: 0.0
+  measurements_L22: 0.0
 gates_weights:
   X: 0
   CX: 0

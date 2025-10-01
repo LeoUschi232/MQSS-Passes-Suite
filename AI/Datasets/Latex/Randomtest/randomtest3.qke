@@ -18,6 +18,7 @@ module {
     quake.s<adj> %2 : (!quake.ref) -> ()
     %cst_0 = arith.constant 1.7273739811384374 : f64
     quake.rx (%cst_0) %4 : (f64, !quake.ref) -> ()
+    quake.s<adj> %4 : (!quake.ref) -> ()
     %measOut = quake.mz %3 : (!quake.ref) -> !quake.measure
     %measOut_1 = quake.mz %2 : (!quake.ref) -> !quake.measure
     %measOut_2 = quake.mz %4 : (!quake.ref) -> !quake.measure

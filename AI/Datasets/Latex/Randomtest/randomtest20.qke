@@ -17,28 +17,25 @@ module {
     %5 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
     quake.h %5 : (!quake.ref) -> ()
     quake.h %4 : (!quake.ref) -> ()
-    quake.swap %4, %5 : (!quake.ref, !quake.ref) -> ()
-    quake.y [%1] %5 : (!quake.ref, !quake.ref) -> ()
-    %cst_2 = arith.constant 5.4927402136881645 : f64
-    quake.rx (%cst_2) %3 : (f64, !quake.ref) -> ()
-    quake.s %5 : (!quake.ref) -> ()
-    %cst_3 = arith.constant 5.077043003280437 : f64
-    quake.rx (%cst_3) %5 : (f64, !quake.ref) -> ()
-    quake.h %2 : (!quake.ref) -> ()
-    %cst_4 = arith.constant 2.7728318014437412 : f64
-    quake.ry (%cst_4) %1 : (f64, !quake.ref) -> ()
-    quake.x [%3] %5 : (!quake.ref, !quake.ref) -> ()
+    %cst_2 = arith.constant 4.839635622794332 : f64
+    quake.rz (%cst_2) [%2] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.s<adj> %5 : (!quake.ref) -> ()
+    quake.h %4 : (!quake.ref) -> ()
+    quake.s<adj> %3 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    %cst_3 = arith.constant 1.5172936138310702 : f64
+    quake.rx (%cst_3) %4 : (f64, !quake.ref) -> ()
+    %cst_4 = arith.constant 0.55952832011057996 : f64
+    quake.ry (%cst_4) [%1] %5 : (f64, !quake.ref, !quake.ref) -> ()
     quake.s %3 : (!quake.ref) -> ()
-    %cst_5 = arith.constant 0.30814090194945559 : f64
-    quake.rx (%cst_5) %2 : (f64, !quake.ref) -> ()
-    %cst_6 = arith.constant 1.6209021063650157 : f64
-    quake.rx (%cst_6) %3 : (f64, !quake.ref) -> ()
-    quake.t %1 : (!quake.ref) -> ()
-    %measOut = quake.mz %2 : (!quake.ref) -> !quake.measure
-    %measOut_7 = quake.mz %3 : (!quake.ref) -> !quake.measure
-    %measOut_8 = quake.mz %5 : (!quake.ref) -> !quake.measure
-    %measOut_9 = quake.my %1 : (!quake.ref) -> !quake.measure
-    %measOut_10 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    quake.s %1 : (!quake.ref) -> ()
+    quake.h %5 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    %measOut = quake.mx %2 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_8 = quake.mz %4 : (!quake.ref) -> !quake.measure
     return
   }
 }

@@ -18,20 +18,17 @@ module {
     quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
     quake.s %5 : (!quake.ref) -> ()
     quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
-    quake.s<adj> [%4] %1 : (!quake.ref, !quake.ref) -> ()
-    quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
-    quake.s<adj> %2 : (!quake.ref) -> ()
-    %cst_2 = arith.constant 0.45378032147743719 : f64
-    quake.rz (%cst_2) %2 : (f64, !quake.ref) -> ()
-    %cst_3 = arith.constant 0.60612716277009315 : f64
-    quake.rx (%cst_3) %5 : (f64, !quake.ref) -> ()
-    %cst_4 = arith.constant 2.9405065055901702 : f64
-    quake.rx (%cst_4) %5 : (f64, !quake.ref) -> ()
-    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
-    %measOut_5 = quake.mz %4 : (!quake.ref) -> !quake.measure
-    %measOut_6 = quake.mz %5 : (!quake.ref) -> !quake.measure
-    %measOut_7 = quake.mx %2 : (!quake.ref) -> !quake.measure
-    %measOut_8 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    quake.s<adj> %4 : (!quake.ref) -> ()
+    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst_2 = arith.constant 4.9665360693167333 : f64
+    quake.ry (%cst_2) %2 : (f64, !quake.ref) -> ()
+    quake.x [%2] %5 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mx %1 : (!quake.ref) -> !quake.measure
+    %measOut_3 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_4 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %3 : (!quake.ref) -> !quake.measure
     return
   }
 }

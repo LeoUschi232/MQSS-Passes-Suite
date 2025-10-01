@@ -1,18 +1,21 @@
-#include "Environment/quantum_circuit_tensor.hpp"
 #include "Utils/passes_utils.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_tensor.hpp"
 
 namespace ai_pass_selector {
 
-
-std::pair<std::string, std::unique_ptr<mlir::Pass> >
+std::pair<std::string, std::unique_ptr<mlir::Pass>>
 getPassNameAndPointer(unsigned int index) {
   if (index >= NR_PASSES) {
-    std::cerr << "In getPassByIndex: " << index << std::endl;
+    std::cerr << "In getPassByIndex: index " << index << ">=" << NR_PASSES
+              << " nr passes." << std::endl;
     return {"", nullptr};
   }
   std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[index]();
-  return {std::string(pass.get()->getArgument()), std::move(pass)};
+  // Just to be safe extract the name before moving the unique_ptr.
+  auto name = std::string(pass.get()->getArgument());
+  return {name, std::move(pass)};
 }
 
 } // namespace ai_pass_selector

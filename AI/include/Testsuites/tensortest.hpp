@@ -7,6 +7,8 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+constexpr unsigned int TENSORTEST_MAX_QUBITS = 5;
+
 /**
  * Convert all tensor test circuits in the AI/Dataset/Quake/Tensortest
  * directory to Tensors for AI input representation and then back again to check

@@ -114,14 +114,15 @@ int convertTensortestCircuitToTikz(int index) {
   }
 
   // Build instruction/depth observations and reconstruct two modules
-  QuantumCircuitEnviorment quantum_circuit_enviorment(SMALL, 0);
-  if (!quantum_circuit_enviorment.register_quantum_circuit(
+  QuantumCircuitEnvironment quantum_circuit_environment(TENSORTEST_MAX_QUBITS,
+                                                        0);
+  if (!quantum_circuit_environment.register_quantum_circuit(
           quake_source_input_file)) {
     return -1;
   }
 
   InstructionsTensor<double> observation =
-      quantum_circuit_enviorment.get_observation();
+      quantum_circuit_environment.get_observation();
 
   auto [reconstructed_from_tensor, ctx_instr] =
       recreateQuantumCircuitFromTensor(observation);
