@@ -101,7 +101,6 @@ const std::vector<std::function<std::unique_ptr<mlir::Pass>()>> PASS_FUNCTIONS =
         [] { return createEraseNoise(); },                    // 72
         [] { return createEraseNopCalls(); },                 // 73
         [] { return createMultiControlDecompositionPass(); }, // 74
-        [] { return createPruneCtrlRelations(); },            // 75
         [] { return createQuakeSimplify(); },                 // 76
 
         // Cudaq Decomposition patterns passes
