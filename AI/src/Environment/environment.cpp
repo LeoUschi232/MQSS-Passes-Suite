@@ -82,8 +82,6 @@ void QuantumCircuitEnvironment::clear() {
     delete *this->context_ptr.get();
   }
   this->context_ptr = nullptr;
-  this->qubits_and_gates_distribution_params = std::nullopt;
-  this->gates_weights = std::nullopt;
   this->current_step = 0;
 }
 
