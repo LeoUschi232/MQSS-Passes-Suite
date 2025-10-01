@@ -31,34 +31,30 @@ struct GateSpec {
 struct RandomizerOptions {
   // If exists, will seed the random generator using this seed
   std::optional<int> seed = std::nullopt;
-  // If >=2, will make the circuit have at least this many qubits
+  // IF >=2 the nr of this object will be at least this mean value
   mutable int min_nr_qubits = -1;
-  // If >=2, will make the circuit have at most this many qubits
-  // If max_nr_qubits < min_nr_qubits, max_nr_qubits overrides min_nr_qubits
+  mutable int min_nr_gates = -1;
+  mutable int min_nr_operations = -1;
+  // If >=2 the nr of this object will be at most this mean value
+  // max overrides min for all values
   mutable int max_nr_qubits = -1;
-  // If >=2, will make the circuit have at least this many non-measurement gates
-  mutable int min_nr_non_measurement_gates = -1;
-  // If >=2, will make the circuit have at most this many non-measurement gates
-  // If max_nr_gates < min_nr_gates, max_nr_gates overrides min_nr_gates
-  mutable int max_nr_non_measurement_gates = -1;
-  // If >=2, use this exact number of qubits and ignore min_nr_qubits and
-  // max_nr_qubits.
-  // If >=2, use this exact number of non-measurement gates
-  // and ignore min_nr_gates and max_nr_gates
-  mutable std::pair<int, int> exact_nr_qubits_and_non_measurement_gates = {-1,
-                                                                           -1};
-  // Whether measurment gates can be sampled as regular gates
+  mutable int max_nr_gates = -1;
+  mutable int max_nr_operations = -1;
+  // If >=2 the nr of this object will be exactly this value
+  // exact overrides min and max for all values
+  // All values must be >=2 and exact_nr_operations <= exact_nr_measurements
+  // for these values to take effect.
+  mutable int exact_nr_qubits = -1;
+  mutable int exact_nr_gates = -1;
+  mutable int exact_nr_operations = -1;
+  // Whether to sample measurement gates along with operation gates
   mutable bool allow_measurements_as_gates = false;
-  // If >0.0, gates with zero-weights (not occurring in the statistics) will get
-  // this times minimum weight of non-zero-weight gates weight.
-  // Affects measurement gates only if allow_measurements_as_gates=true
+  // If >0.0 for every gate with zero weight, its weight will be set to this
+  // multiplier times the smallest non-zero weight in the gates_weights array
   mutable double weight_min_multiplier_for_unoccurring_gates = 0.0;
-  // If >0.0, when a gate allows additional controls, this is the probability
-  // for adding each additional control.
+  // If >0.0 will add additional controls to a controlled gate with this
+  // probability
   mutable double probability_additionals_controls = 0.0;
-  // Whether to measure all qubits at the end of the circuit
-  // WARNING: Increases nr of gates by nr of qubits
-  mutable bool measure_all_at_the_end = false;
 };
 
 /**
@@ -75,8 +71,10 @@ static GateSpec gateSpecFromIndex(unsigned int idx);
  * @param nr_qubits
  * @return
  */
-std::pair<std::vector<int>, std::vector<int>> sample_distinct_targets_and_controls(
-    unsigned int nr_targets, unsigned int nr_controls, unsigned int nr_qubits);
+std::pair<std::vector<int>, std::vector<int>>
+sample_distinct_targets_and_controls(unsigned int nr_targets,
+                                     unsigned int nr_controls,
+                                     unsigned int nr_qubits);
 
 /**
  *
@@ -92,7 +90,7 @@ std::vector<double> makeAngles(int baseGate);
  */
 std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
 sample_nr_qubits_gates_operations_measurements(
-    const std::array<unsigned int, CHOLESKY_PARAMS_SIZE> &cholesky_params);
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params);
 
 /**
  *
@@ -107,8 +105,7 @@ random_quantum_circuit_from_embedded_statistics(
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-        .probability_additionals_controls = 0.01,
-        .measure_all_at_the_end = true});
+        .probability_additionals_controls = 0.01});
 
 /**
  *
@@ -121,8 +118,7 @@ random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-        .probability_additionals_controls = 0.01,
-        .measure_all_at_the_end = true});
+        .probability_additionals_controls = 0.01});
 } // namespace ai_pass_selector
 
 #endif // RANDOM_QUANTUM_CIRCUIT_GENERATOR_HPP

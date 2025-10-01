@@ -300,6 +300,8 @@ extract_dataset_statistics(const std::string &dataset_name) {
   std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params{};
   cholesky_params[MEAN_QUBITS_INDEX] = mean_qubits;
   cholesky_params[MEAN_GATES_INDEX] = mean_gates;
+  cholesky_params[MEAN_OPERATIONS_INDEX] = mean_operations;
+  cholesky_params[MEAN_MEASUREMENTS_INDEX] = mean_measurements;
   cholesky_params[QUBITS_L11_INDEX] = std::sqrt(variance_qubits);
 
   if (variance_qubits <= 0.0) {
@@ -371,6 +373,10 @@ void print_dataset_statistics(const std::string &dataset_name) {
             << std::endl;
   std::cout << "  mean_gates: " << cholesky_params[MEAN_GATES_INDEX]
             << std::endl;
+  std::cout << "  mean_operations: " << cholesky_params[MEAN_OPERATIONS_INDEX]
+            << std::endl;
+  std::cout << "  mean_measurements: "
+            << cholesky_params[MEAN_MEASUREMENTS_INDEX] << std::endl;
   std::cout << "  qubits_L11: " << cholesky_params[QUBITS_L11_INDEX]
             << std::endl;
   std::cout << "  gates_L21: " << cholesky_params[GATES_L21_INDEX] << std::endl;

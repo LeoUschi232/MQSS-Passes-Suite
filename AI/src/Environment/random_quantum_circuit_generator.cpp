@@ -176,34 +176,26 @@ std::vector<double> makeAngles(int baseGate) {
 
 std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
 sample_nr_qubits_gates_operations_measurements(
-    const std::array<unsigned int, CHOLESKY_PARAMS_SIZE> &cholesky_params) {
-  auto [mean_qubits, mean_gates, qubits_L11, gates_L21, gates_L22,
-        operations_L21, operations_L22, measurements_L21, measurements_L22] =
-      cholesky_params;
-  double nr_qubits = -1.0;
-  double nr_gates = -1.0;
-  double nr_operations = -1.0;
-  double nr_measurements = -1.0;
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params) {
+  auto [mean_qubits, mean_gates, mean_operations, mean_measurements, qubits_L11,
+        gates_L21, gates_L22, operations_L21, operations_L22, measurements_L21,
+        measurements_L22] = cholesky_params;
+  double nr_qubits = 0.0;
+  double nr_gates = 0.0;
+  double nr_operations = 0.0;
+  double nr_measurements = 0.0;
   std::normal_distribution normal_distribution(0.0, 1.0);
-  double z_qubits = 0.0;
+  double z1 = 0.0;
   while (nr_qubits < 2.0) {
-    z_qubits = normal_distribution(qc_rng());
-    nr_qubits = mean_qubits + qubits_L11 * z_qubits;
+    z1 = normal_distribution(qc_rng());
+    nr_qubits = mean_qubits + qubits_L11 * z1;
   }
-  while (nr_gates < 2.0) {
-    double z_gates = normal_distribution(qc_rng());
-    nr_gates = mean_gates + gates_L21 * z_qubits + gates_L22 * z_gates;
-  }
-  while (nr_operations < 2.0) {
-    double z_operations = normal_distribution(qc_rng());
-    nr_operations = operations_L21 * z_qubits + operations_L22 * z_operations;
-  }
-  while (nr_measurements < 0.0) {
-    // Measurements might actually be zero, depending on circuit, but no
-    // negative values.
-    double z_measurements = normal_distribution(qc_rng());
+  while (nr_gates < 2.0 || nr_operations < 2.0 || nr_measurements < 0.0) {
+    double z2 = normal_distribution(qc_rng());
+    nr_gates = mean_gates + gates_L21 * z1 + gates_L22 * z2;
+    nr_operations = mean_operations + operations_L21 * z1 + operations_L22 * z2;
     nr_measurements =
-        measurements_L21 * z_qubits + measurements_L22 * z_measurements;
+        mean_measurements + measurements_L21 * z1 + measurements_L22 * z2;
   }
   return {std::round(nr_qubits), std::round(nr_gates),
           std::round(nr_operations), std::round(nr_measurements)};
@@ -240,53 +232,65 @@ random_quantum_circuit_from_embedded_statistics(
     }
   }
 
-  unsigned int nr_qubits = 0, nr_gates = 0;
+  unsigned int nr_qubits = 0, nr_gates = 0, nr_operations = 0;
   if (randomizer_options.exact_nr_qubits >= 2 &&
-      randomizer_options.exact_nr_non_measurement_gates >= 2) {
+      randomizer_options.exact_nr_gates >= 2 &&
+      randomizer_options.exact_nr_operations >= 2 &&
+      randomizer_options.exact_nr_operations <=
+          randomizer_options.exact_nr_gates) {
     nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
-    nr_gates = static_cast<unsigned>(
-        randomizer_options.exact_nr_non_measurement_gates);
+    nr_gates = static_cast<unsigned>(randomizer_options.exact_nr_gates);
+    nr_operations =
+        static_cast<unsigned>(randomizer_options.exact_nr_operations);
   } else {
-    auto [sampled_nr_qubits, sampled_nr_gates] =
-        sample_nr_qubits_gates_operations_measurements(
-            qubits_and_gates_distribution_params);
-    if (randomizer_options.exact_nr_qubits >= 2) {
-      nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
-      nr_gates = sampled_nr_gates;
-    } else if (randomizer_options.exact_nr_non_measurement_gates >= 2) {
-      nr_gates = static_cast<unsigned>(
-          randomizer_options.exact_nr_non_measurement_gates);
-      nr_qubits = sampled_nr_qubits;
-    } else {
-      nr_qubits = sampled_nr_qubits;
-      nr_gates = sampled_nr_gates;
-    }
-    // At least 2 qubits and more gates than qubits.
+    // If not all exact parameters are set OR they are inconsistent, ignore them
+    // all completely.
+    // Number of measurements will be inferred from nr_gates and nr_operations.
+    unsigned int _;
+    std::tie(nr_qubits, nr_gates, nr_operations, _) =
+        sample_nr_qubits_gates_operations_measurements(cholesky_params);
+
     // DO NOT Compare unsigned int to int
-    if (randomizer_options.min_nr_qubits >= 2) {
-      nr_qubits = std::max(
-          static_cast<unsigned>(randomizer_options.min_nr_qubits), nr_qubits);
+    if (randomizer_options.min_nr_qubits >= 2 &&
+        randomizer_options.min_nr_qubits > static_cast<int>(nr_qubits)) {
+      nr_qubits = static_cast<unsigned>(randomizer_options.min_nr_qubits);
     }
-    if (randomizer_options.max_nr_qubits >= 2) {
-      nr_qubits = std::min(
-          static_cast<unsigned>(randomizer_options.max_nr_qubits), nr_qubits);
+    if (randomizer_options.max_nr_qubits >= 2 &&
+        randomizer_options.max_nr_qubits < static_cast<int>(nr_qubits)) {
+      nr_qubits = static_cast<unsigned>(randomizer_options.max_nr_qubits);
     }
     // Whatever the randomizer options, the nr of qubits must be at least 2.
-    nr_qubits = std::max(nr_qubits, 2u);
-    if (randomizer_options.min_nr_non_measurement_gates >= 2) {
-      nr_gates = std::max(static_cast<unsigned>(
-                              randomizer_options.min_nr_non_measurement_gates),
-                          nr_gates);
+    nr_qubits = std::max(2u, nr_qubits);
+    if (randomizer_options.min_nr_gates >= 2 &&
+        randomizer_options.min_nr_gates > static_cast<int>(nr_gates)) {
+      nr_gates = static_cast<unsigned>(randomizer_options.min_nr_gates);
     }
-    if (randomizer_options.max_nr_non_measurement_gates >= 2) {
-      nr_gates = std::min(static_cast<unsigned>(
-                              randomizer_options.max_nr_non_measurement_gates),
-                          nr_gates);
+    if (randomizer_options.max_nr_gates >= 2 &&
+        randomizer_options.max_nr_gates < static_cast<int>(nr_gates)) {
+      nr_gates = static_cast<unsigned>(randomizer_options.max_nr_gates);
     }
-    // Whatever the randomizer options, the nr of gates must be at least 2
-    nr_gates = std::max(nr_gates, 2u);
+    // Whatever the randomizer options, the nr_gates must be at least 2.
+    nr_gates = std::max(2u, nr_gates);
+    if (randomizer_options.min_nr_operations >= 2 &&
+        randomizer_options.min_nr_operations >
+            static_cast<int>(nr_operations)) {
+      nr_operations =
+          static_cast<unsigned>(randomizer_options.min_nr_operations);
+    }
+    if (randomizer_options.max_nr_operations >= 2 &&
+        randomizer_options.max_nr_operations <
+            static_cast<int>(nr_operations)) {
+      nr_operations =
+          static_cast<unsigned>(randomizer_options.max_nr_operations);
+    }
+    // Whatever the randomizer options, nr_operations must be at least 2.
+    nr_operations = std::max(2u, nr_operations);
   }
-
+  // Make nr_gates bind stronger than nr_operations.
+  if (nr_operations > nr_gates) {
+    nr_operations = nr_gates;
+  }
+  unsigned int nr_measurements = nr_gates - nr_operations;
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
 
   // Sample a gate according to operations-only subset of gates_weights and
@@ -296,15 +300,15 @@ random_quantum_circuit_from_embedded_statistics(
   std::discrete_distribution<size_t> measurements_distribution(
       gates_weights.begin() + OPERATIONS_SUBSET_SIZE, gates_weights.end());
 
-  for (unsigned int i = 0; i < nr_gates; i++) {
+  for (unsigned int i = 0; i < nr_operations; i++) {
     const unsigned int idx = operations_distribution(qc_rng());
     const auto [baseGate, isAdj, exactControls, minControls, allowExtraControls,
                 isSwap] = gateSpecFromIndex(idx);
 
     unsigned int nr_targets = isSwap ? 2 : 1;
     unsigned int nr_controls = 0;
-    // Regardless of what exactControls and minControls are, we cannot be using
-    // more qubits than are available for use.
+    // Regardless of what exactControls and minControls are, we cannot be
+    // using more qubits than are available for use.
     if (exactControls >= 0) {
       nr_controls = std::min(static_cast<unsigned>(exactControls),
                              nr_qubits - nr_targets);
@@ -321,25 +325,22 @@ random_quantum_circuit_from_embedded_statistics(
     }
     auto [targets, controls] = sample_distinct_targets_and_controls(
         nr_targets, nr_controls, nr_qubits);
-    // Angles if any and emit the operation.
     std::vector<double> angles = makeAngles(baseGate);
     insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
   }
-  if (randomizer_options.measure_all_at_the_end) {
-    for (unsigned int qubit = 0; qubit < nr_qubits; qubit++) {
-      std::vector targets{static_cast<int>(qubit)};
-      if (const unsigned int idx =
-              measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
-          idx == MX_INDEX) {
-        insertGate(buildSetup, MX, targets);
-      } else if (idx == MY_INDEX) {
-        insertGate(buildSetup, MY, targets);
-      } else if (idx == MZ_INDEX) {
-        insertGate(buildSetup, MZ, targets);
-      } else {
-        throw std::runtime_error("Unknown measurement index " +
-                                 std::to_string(idx));
-      }
+  for (unsigned int qubit = 0; qubit < nr_measurements; qubit++) {
+    std::vector targets{static_cast<int>(qubit % nr_qubits)};
+    if (const unsigned int idx =
+            measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
+        idx == MX_INDEX) {
+      insertGate(buildSetup, MX, targets);
+    } else if (idx == MY_INDEX) {
+      insertGate(buildSetup, MY, targets);
+    } else if (idx == MZ_INDEX) {
+      insertGate(buildSetup, MZ, targets);
+    } else {
+      throw std::runtime_error("Unknown measurement index " +
+                               std::to_string(idx));
     }
   }
   return {buildSetup.module, std::move(buildSetup.ctxOwner)};

@@ -13,8 +13,7 @@ namespace ai_pass_selector {
 /// Sizes
 constexpr unsigned int GATES_WEIGHTS_SIZE = 37;
 constexpr unsigned int OPERATIONS_SUBSET_SIZE = 34;
-constexpr unsigned int MEASUREMENTS_SUBSET_SIZE = 3;
-constexpr unsigned int CHOLESKY_PARAMS_SIZE = 9;
+constexpr unsigned int CHOLESKY_PARAMS_SIZE = 11;
 /// Gates Indexes
 constexpr unsigned int X_INDEX = 0;
 constexpr unsigned int CX_INDEX = 1;
@@ -56,13 +55,15 @@ constexpr unsigned int MZ_INDEX = 36;
 /// Cholseky Indexes
 constexpr unsigned int MEAN_QUBITS_INDEX = 0;
 constexpr unsigned int MEAN_GATES_INDEX = 1;
-constexpr unsigned int QUBITS_L11_INDEX = 2;
-constexpr unsigned int GATES_L21_INDEX = 3;
-constexpr unsigned int GATES_L22_INDEX = 4;
-constexpr unsigned int OPERATIONS_L21_INDEX = 5;
-constexpr unsigned int OPERATIONS_L22_INDEX = 6;
-constexpr unsigned int MEASUREMENTS_L21_INDEX = 7;
-constexpr unsigned int MEASUREMENTS_L22_INDEX = 8;
+constexpr unsigned int MEAN_OPERATIONS_INDEX = 2;
+constexpr unsigned int MEAN_MEASUREMENTS_INDEX = 3;
+constexpr unsigned int QUBITS_L11_INDEX = 4;
+constexpr unsigned int GATES_L21_INDEX = 5;
+constexpr unsigned int GATES_L22_INDEX = 6;
+constexpr unsigned int OPERATIONS_L21_INDEX = 7;
+constexpr unsigned int OPERATIONS_L22_INDEX = 8;
+constexpr unsigned int MEASUREMENTS_L21_INDEX = 9;
+constexpr unsigned int MEASUREMENTS_L22_INDEX = 10;
 
 /**
  *
