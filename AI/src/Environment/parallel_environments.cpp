@@ -42,7 +42,7 @@ void ParallelEnvironments::register_randomizer_params(
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   assert(environments.size() == nr_environments &&
          "environments.size() != nr_environments");
-  for (QuantumCircuitEnviorment &environment : environments) {
+  for (QuantumCircuitEnvironment &environment : environments) {
     environment.register_randomizer_params(qubits_and_gates_distribution_params,
                                            gates_weights);
   }
@@ -79,7 +79,7 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   futures.reserve(B);
   for (int64_t i = 0; i < B; ++i) {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
-      auto &env = const_cast<QuantumCircuitEnviorment &>(environments[i]);
+      auto &env = const_cast<QuantumCircuitEnvironment &>(environments[i]);
       auto obs = env.get_observation();
       // N = Nr of instructions in the quantum circuit
       // IRP = Instruction representation size
@@ -99,12 +99,12 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }
 void ParallelEnvironments::clear() {
-  for (QuantumCircuitEnviorment &environment : environments) {
+  for (QuantumCircuitEnvironment &environment : environments) {
     environment.clear();
   }
 }
 void ParallelEnvironments::reset() {
-  for (QuantumCircuitEnviorment &environment : environments) {
+  for (QuantumCircuitEnvironment &environment : environments) {
     environment.reset();
   }
 }

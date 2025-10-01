@@ -10,7 +10,7 @@
 namespace ai_pass_selector {
 class ParallelEnvironments {
   unsigned int nr_environments;
-  std::vector<QuantumCircuitEnviorment> environments;
+  std::vector<QuantumCircuitEnvironment> environments;
   unsigned int max_qubits;
   unsigned int max_steps;
 

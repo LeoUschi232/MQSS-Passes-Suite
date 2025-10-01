@@ -36,7 +36,7 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-QuantumCircuitEnviorment::QuantumCircuitEnviorment(unsigned int max_qubits,
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits,
                                                    unsigned int max_steps,
                                                    const fs::path &circuit_path)
     : max_qubits(max_qubits), circuit_path(circuit_path), context_ptr(nullptr),
@@ -46,8 +46,8 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(unsigned int max_qubits,
   }
 }
 
-QuantumCircuitEnviorment::QuantumCircuitEnviorment(
-    QuantumCircuitEnviorment &&other) noexcept
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(
+    QuantumCircuitEnvironment &&other) noexcept
     : max_qubits(other.max_qubits), circuit_path(std::move(other.circuit_path)),
       circuit_module(std::move(other.circuit_module)),
       context_ptr(std::move(other.context_ptr)), max_steps(other.max_steps),
@@ -56,8 +56,8 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(
           std::move(other.qubits_and_gates_distribution_params)),
       gates_weights(std::move(other.gates_weights)) {}
 
-QuantumCircuitEnviorment &
-QuantumCircuitEnviorment::operator=(QuantumCircuitEnviorment &&other) noexcept {
+QuantumCircuitEnvironment &
+QuantumCircuitEnvironment::operator=(QuantumCircuitEnvironment &&other) noexcept {
   if (this != &other) {
     if (context_ptr) {
       delete *context_ptr.get();
@@ -75,7 +75,7 @@ QuantumCircuitEnviorment::operator=(QuantumCircuitEnviorment &&other) noexcept {
   return *this;
 }
 
-void QuantumCircuitEnviorment::clear() {
+void QuantumCircuitEnvironment::clear() {
   this->circuit_path.clear();
   this->circuit_module = nullptr;
   delete *this->context_ptr.get();
@@ -85,7 +85,7 @@ void QuantumCircuitEnviorment::clear() {
   this->current_step = 0;
 }
 
-void QuantumCircuitEnviorment::reset() {
+void QuantumCircuitEnvironment::reset() {
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
     return;
@@ -106,7 +106,7 @@ void QuantumCircuitEnviorment::reset() {
             << std::endl;
 }
 
-bool QuantumCircuitEnviorment::register_quantum_circuit(
+bool QuantumCircuitEnvironment::register_quantum_circuit(
     const fs::path &circuit_path) {
   if (circuit_path.empty()) {
     // Assume construction of environment for later circuit registration.
@@ -156,7 +156,7 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
   return true;
 }
 
-void QuantumCircuitEnviorment::register_randomizer_params(
+void QuantumCircuitEnvironment::register_randomizer_params(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
@@ -167,7 +167,7 @@ void QuantumCircuitEnviorment::register_randomizer_params(
 }
 
 unsigned int
-QuantumCircuitEnviorment::circuit_invalid_type(FuncOp circuit) const {
+QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
   if (circuit == nullptr) {
     return NO_CIRCUIT;
   }
@@ -215,7 +215,7 @@ QuantumCircuitEnviorment::circuit_invalid_type(FuncOp circuit) const {
 }
 
 std::unordered_map<std::string, unsigned int>
-QuantumCircuitEnviorment::get_circuit_info(FuncOp circuit) {
+QuantumCircuitEnvironment::get_circuit_info(FuncOp circuit) {
   if (circuit == nullptr) {
     return {};
   }
@@ -224,7 +224,7 @@ QuantumCircuitEnviorment::get_circuit_info(FuncOp circuit) {
 }
 
 std::unordered_map<std::string, unsigned int>
-QuantumCircuitEnviorment::get_circuit_info() const {
+QuantumCircuitEnvironment::get_circuit_info() const {
   if (this->circuit_module == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
@@ -232,7 +232,7 @@ QuantumCircuitEnviorment::get_circuit_info() const {
   return get_circuit_info(FuncOp(this->circuit_module));
 }
 
-std::tuple<double, bool> QuantumCircuitEnviorment::step(unsigned int action) {
+std::tuple<double, bool> QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->circuit_module == nullptr) {
     throw std::runtime_error("No circuit registered in the environment.");
   }
@@ -265,7 +265,7 @@ std::tuple<double, bool> QuantumCircuitEnviorment::step(unsigned int action) {
           ++this->current_step >= this->max_steps};
 }
 
-InstructionsTensor<double> QuantumCircuitEnviorment::get_observation() {
+InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
   InstructionsTensor<double> observation(this->max_qubits);
   if (this->circuit_module == nullptr) {
     return observation;
@@ -343,7 +343,7 @@ InstructionsTensor<double> QuantumCircuitEnviorment::get_observation() {
 }
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
-QuantumCircuitEnviorment::getOperatingControlsTargetsParams(Operation *op) {
+QuantumCircuitEnvironment::getOperatingControlsTargetsParams(Operation *op) {
   if (isMeasurementGate(op) || !isOperatingGate(op)) {
     return {{}, {}, {}, false};
   }

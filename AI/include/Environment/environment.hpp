@@ -42,7 +42,7 @@ constexpr unsigned int NO_QUBIT_ALLOCATIONS = 3;
 constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
 constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
 
-class QuantumCircuitEnviorment {
+class QuantumCircuitEnvironment {
   /// Attributes for circuit
   unsigned int max_qubits;
   fs::path circuit_path;
@@ -60,11 +60,11 @@ class QuantumCircuitEnviorment {
 
 public:
   /// Constructors
-  QuantumCircuitEnviorment(unsigned int max_qubits, unsigned int max_steps,
+  QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
                            const fs::path &circuit_path = "");
 
   /// Destructor
-  ~QuantumCircuitEnviorment() {
+  ~QuantumCircuitEnvironment() {
     if (this->context_ptr) {
       delete *this->context_ptr.get();
     }
@@ -74,14 +74,14 @@ public:
   // Forbid copying the QuantumCircuitEnviorment because the MLIRContext is tied
   // exactly to the circuit module and it is ambiguous if you copy both of them
   // if the copies are then untied from their originals but tied to each other.
-  QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
+  QuantumCircuitEnvironment(const QuantumCircuitEnvironment &other) = delete;
 
-  QuantumCircuitEnviorment &
-  operator=(const QuantumCircuitEnviorment &other) = delete;
+  QuantumCircuitEnvironment &
+  operator=(const QuantumCircuitEnvironment &other) = delete;
 
-  QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept;
+  QuantumCircuitEnvironment(QuantumCircuitEnvironment &&other) noexcept;
 
-  QuantumCircuitEnviorment &operator=(QuantumCircuitEnviorment &&) noexcept;
+  QuantumCircuitEnvironment &operator=(QuantumCircuitEnvironment &&) noexcept;
 
   /// Clear and Reset
   void clear();
