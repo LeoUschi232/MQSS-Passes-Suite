@@ -157,7 +157,7 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
 }
 
 bool QuantumCircuitEnvironment::custom_randomize_circuit(
-      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
     const RandomizerOptions &randomizer_options) {
   try {
@@ -167,8 +167,7 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
 
     // Cap nr of qubits but don't cap instructions.
     auto [module, context] = random_quantum_circuit_from_embedded_statistics(
-        cholesky_params, gates_weights,
-        randomizer_options);
+        cholesky_params, gates_weights, randomizer_options);
     this->clear();
     this->circuit_module = module;
     this->context_ptr =

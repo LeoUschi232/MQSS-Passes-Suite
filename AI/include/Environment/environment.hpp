@@ -55,7 +55,7 @@ class QuantumCircuitEnvironment {
   unsigned int current_step;
 
   /// Attributes for randomizer
-  std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params;
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> cholesky_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
