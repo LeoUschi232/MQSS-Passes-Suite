@@ -141,10 +141,10 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   for (int64_t b = 0; b < B; b++) {
     InstructionsTensor<double> instruction_tensor = observations[b];
 
-    auto N = instruction_tensor.shape[0];
-    if (N != maxN) {
+    if (instruction_tensor.shape[0] != maxN) {
       std::cout << "\nPadding was necessary!!!" << std::endl;
     }
+
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
