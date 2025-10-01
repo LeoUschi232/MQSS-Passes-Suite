@@ -12,7 +12,7 @@ namespace ai_pass_selector {
  * @return
  */
 std::unordered_map<std::string, std::string>
-train_a2c(BaseA2CAgent &agent, const std::string &dataset,
+train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
           std::unordered_map<std::string, std::string> params);
 } // namespace ai_pass_selector
 

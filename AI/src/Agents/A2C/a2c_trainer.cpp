@@ -19,9 +19,9 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 std::unordered_map<std::string, std::string>
-train_a2c(BaseA2CAgent &agent, const std::string &dataset,
+train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
           std::unordered_map<std::string, std::string> params) {
-  unsigned int max_qubits = agent.getMaxQubits();
+  unsigned int max_qubits = agent->getMaxQubits();
   if (params["print_param_info"] == "true") {
     std::cout << "Training A2C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
@@ -83,7 +83,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     for (unsigned int update_step = 0; update_step < max_steps_per_episode;
          update_step++) {
       auto [actions, log_action_probs, state_values, step_entropy] =
-          agent.select_action(batched_observations);
+          agent->select_action(batched_observations);
       auto [rewards, terminates] = environments.step(actions);
       episode_log_probs[update_step] = log_action_probs;
       episode_values[update_step] = state_values;
@@ -96,9 +96,9 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     }
 
     auto [critic_loss, actor_loss] =
-        agent.get_losses(episode_rewards, episode_log_probs, episode_values,
-                         episode_entropies, termination_masks, discount_factor,
-                         gae_hyperparameter, entropy_coefficient);
+        agent->get_losses(episode_rewards, episode_log_probs, episode_values,
+                          episode_entropies, termination_masks, discount_factor,
+                          gae_hyperparameter, entropy_coefficient);
 
     auto episode_rewards_cpu = episode_rewards.to(torch::kCPU);
     auto total_rewards = episode_rewards_cpu.sum(/*axis=*/0);
@@ -109,9 +109,9 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     summed_rewards += current_reward;
     if (current_reward > max_reward) {
       max_reward = current_reward;
-      agent.save_model();
+      agent->save_model();
     }
-    agent.update_parameters(critic_loss, actor_loss);
+    agent->update_parameters(critic_loss, actor_loss);
     entropies.push_back(episode_entropies.mean().item<double>());
     critic_losses.push_back(critic_loss.item<double>());
     actor_losses.push_back(actor_loss.item<double>());

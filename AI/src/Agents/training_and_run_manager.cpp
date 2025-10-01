@@ -45,7 +45,7 @@ train(const std::string &agent_name, const std::string &dataset,
         return {};
       }
       agent->load_model();
-      training_results = train_a2c(*agent, dataset, params);
+      training_results = train_a2c(std::move(agent), dataset, params);
       break;
     }
     case A3C:

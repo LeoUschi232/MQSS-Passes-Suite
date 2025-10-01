@@ -36,9 +36,9 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits,
-                                                   unsigned int max_steps,
-                                                   const fs::path &circuit_path)
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(
+    unsigned int max_qubits, unsigned int max_steps,
+    const fs::path &circuit_path)
     : max_qubits(max_qubits), circuit_path(circuit_path), context_ptr(nullptr),
       max_steps(max_steps), current_step(0) {
   if (!circuit_path.empty()) {
@@ -56,8 +56,8 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
           std::move(other.qubits_and_gates_distribution_params)),
       gates_weights(std::move(other.gates_weights)) {}
 
-QuantumCircuitEnvironment &
-QuantumCircuitEnvironment::operator=(QuantumCircuitEnvironment &&other) noexcept {
+QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
+    QuantumCircuitEnvironment &&other) noexcept {
   if (this != &other) {
     if (context_ptr) {
       delete *context_ptr.get();
