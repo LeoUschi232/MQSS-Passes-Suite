@@ -1,5 +1,5 @@
 dataset_name: "Randomtest"
-cholesky_params:
+qubits_cholesky_params:
   mean_qubits: 4.95
   mean_gates: 18.5
   mean_operations: 13.55

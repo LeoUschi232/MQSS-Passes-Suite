@@ -1,5 +1,5 @@
 dataset_name: "Passtest"
-cholesky_params:
+qubits_cholesky_params:
   mean_qubits: 3
   mean_gates: 8.72308
   mean_operations: 5.72308
