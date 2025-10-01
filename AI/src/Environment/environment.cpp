@@ -94,8 +94,7 @@ void QuantumCircuitEnvironment::reset() {
         cholesky_params.value(), gates_weights.value(),
         {.max_nr_qubits = static_cast<int>(this->max_qubits),
          .weight_min_multiplier_for_unoccurring_gates = 0.1,
-         .probability_additionals_controls = 0.01,
-         .measure_all_at_the_end = true});
+         .probability_additionals_controls = 0.01});
     this->clear();
     this->circuit_module = module;
     this->context_ptr =

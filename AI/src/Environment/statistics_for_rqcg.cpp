@@ -368,7 +368,7 @@ void print_dataset_statistics(const std::string &dataset_name) {
   }
   auto [cholesky_params, gates_weights] = dataset_statistics.value();
   std::cout << "dataset_name: \"" << dataset_name << "\"" << std::endl;
-  std::cout << "qubits_and_gates_distribution_params: " << std::endl;
+  std::cout << "cholesky_params: " << std::endl;
   std::cout << "  mean_qubits: " << cholesky_params[MEAN_QUBITS_INDEX]
             << std::endl;
   std::cout << "  mean_gates: " << cholesky_params[MEAN_GATES_INDEX]

@@ -41,8 +41,14 @@ bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
       !this->gates_weights.has_value()) {
     return false;
   }
-  auto [nr_qubits, nr_gates, nr_operations, nr_measurements] =
+  auto [nr_qubits, nr_gates, nr_operations, _] =
       sample_nr_qubits_gates_operations_measurements(cholesky_params.value());
+  // Ignore nr_measurements because after if nr_oprations is set to
+  // nr_gates-nr_qubits, the random circuit generator will infer
+  // nr_measurements=nr_gates-nr_operations=nr_qubits.
+  // This will create a circuit that measures all qubits at the end.
+  nr_qubits = std::max(2u, std::min(nr_qubits, this->max_qubits));
+  nr_operations = nr_gates - nr_qubits;
 
   return true;
 }

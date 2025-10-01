@@ -377,6 +377,7 @@ random_quantum_circuit_from_yaml_statistics(
     }
     return node[key].as<unsigned int>();
   };
+  return {};
 
   std::tuple qubits_and_gates_distribution_params = {
       get_double(params, "mean_qubits"), get_double(params, "mean_gates"),
@@ -440,8 +441,8 @@ random_quantum_circuit_from_yaml_statistics(
   gates_weights[MY_INDEX] = get_unsigned(yaml_gates_weights, "MY");
   gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
 
-  return random_quantum_circuit_from_embedded_statistics(
-      qubits_and_gates_distribution_params, gates_weights, randomizer_options);
+  // return random_quantum_circuit_from_embedded_statistics(
+  //     cholesky_params, gates_weights, randomizer_options);
 }
 
 } // namespace ai_pass_selector
