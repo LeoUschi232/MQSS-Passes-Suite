@@ -63,13 +63,13 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
   std::vector<double> entropies;
   std::vector<double> critic_losses;
   std::vector<double> actor_losses;
+  int64_t T = max_steps_per_episode;
+  int64_t B = nr_parallel_environments;
 
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, episodes, "Beginning training");
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
     environments.reset();
-    int64_t T = max_steps_per_episode;
-    int64_t B = nr_parallel_environments;
     torch::TensorOptions options =
         torch::TensorOptions().device(device).dtype(torch::kFloat64);
     auto episode_log_probs = torch::zeros({T, B}, options);
@@ -92,7 +92,6 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
         episode_rewards[update_step][b] = rewards[b];
         termination_masks[update_step][b] = terminates[b] ? 0.0 : 1.0;
       }
-      batched_observations = environments.get_batched_observations();
     }
 
     auto [critic_loss, actor_loss] =
@@ -105,7 +104,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     if (total_rewards.size(/*dim=*/0) != nr_parallel_environments) {
       throw std::runtime_error("total_rewards.size=/=nr_parallel_environments");
     }
-    double current_reward = total_rewards.item<double>();
+    double current_reward = total_rewards.sum().item<double>();
     summed_rewards += current_reward;
     if (current_reward > max_reward) {
       max_reward = current_reward;
