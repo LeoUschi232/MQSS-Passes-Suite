@@ -45,7 +45,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     std::cerr << "No agent to train." << std::endl;
     return {};
   }
-  auto optional_statistics = get_embedded_dataset_statistics(dataset);
+  auto optional_statistics = get_precomputed_dataset_statistics(dataset);
   if (!optional_statistics.has_value()) {
     std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
               << std::endl;

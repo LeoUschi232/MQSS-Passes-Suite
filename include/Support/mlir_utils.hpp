@@ -54,14 +54,21 @@ std::string getOnlyGateName(Operation *op);
  * @param op
  * @return
  */
-bool isOperatingGate(Operation *op);
+bool isMeasurement(Operation *op);
 
 /**
  *
  * @param op
  * @return
  */
-bool isMeasurementGate(Operation *op);
+bool isOperation(Operation *op);
+
+/**
+ *
+ * @param op
+ * @return
+ */
+bool isGate(Operation *op);
 
 /**
  * Extracts a MLIR module operation and the MLIR context from the quake module

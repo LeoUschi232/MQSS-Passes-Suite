@@ -32,33 +32,33 @@ struct RandomizerOptions {
   // If exists, will seed the random generator using this seed
   std::optional<int> seed = std::nullopt;
   // If >=2, will make the circuit have at least this many qubits
-  int min_nr_qubits = -1;
+  mutable int min_nr_qubits = -1;
   // If >=2, will make the circuit have at most this many qubits
   // If max_nr_qubits < min_nr_qubits, max_nr_qubits overrides min_nr_qubits
-  int max_nr_qubits = -1;
-  // If >=2, use this exact number of qubits
-  // and ignore min_nr_qubits and max_nr_qubits
-  int exact_nr_qubits = -1;
+  mutable int max_nr_qubits = -1;
   // If >=2, will make the circuit have at least this many non-measurement gates
-  int min_nr_non_measurement_gates = -1;
+  mutable int min_nr_non_measurement_gates = -1;
   // If >=2, will make the circuit have at most this many non-measurement gates
   // If max_nr_gates < min_nr_gates, max_nr_gates overrides min_nr_gates
-  int max_nr_non_measurement_gates = -1;
+  mutable int max_nr_non_measurement_gates = -1;
+  // If >=2, use this exact number of qubits and ignore min_nr_qubits and
+  // max_nr_qubits.
   // If >=2, use this exact number of non-measurement gates
   // and ignore min_nr_gates and max_nr_gates
-  int exact_nr_non_measurement_gates = -1;
+  mutable std::pair<int, int> exact_nr_qubits_and_non_measurement_gates = {-1,
+                                                                           -1};
   // Whether measurment gates can be sampled as regular gates
-  bool allow_measurements_as_gates = false;
+  mutable bool allow_measurements_as_gates = false;
   // If >0.0, gates with zero-weights (not occurring in the statistics) will get
   // this times minimum weight of non-zero-weight gates weight.
   // Affects measurement gates only if allow_measurements_as_gates=true
-  double weight_min_multiplier_for_unoccurring_gates = 0.0;
+  mutable double weight_min_multiplier_for_unoccurring_gates = 0.0;
   // If >0.0, when a gate allows additional controls, this is the probability
   // for adding each additional control.
-  double probability_additionals_controls = 0.0;
+  mutable double probability_additionals_controls = 0.0;
   // Whether to measure all qubits at the end of the circuit
   // WARNING: Increases nr of gates by nr of qubits
-  bool measure_all_at_the_end = false;
+  mutable bool measure_all_at_the_end = false;
 };
 
 /**

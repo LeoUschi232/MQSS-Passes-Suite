@@ -95,7 +95,10 @@ void QuantumCircuitEnvironment::reset() {
     // Cap nr of qubits but don't cap instructions.
     auto [module, context] = random_quantum_circuit_from_embedded_statistics(
         qubits_and_gates_distribution_params.value(), gates_weights.value(),
-        {2, max_qubits});
+        {.max_nr_qubits = static_cast<int>(this->max_qubits),
+         .weight_min_multiplier_for_unoccurring_gates = 0.1,
+         .probability_additionals_controls = 0.01,
+         .measure_all_at_the_end = true});
     this->clear();
     this->circuit_module = module;
     this->context_ptr =
@@ -156,6 +159,32 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   return true;
 }
 
+bool QuantumCircuitEnvironment::custom_randomize_circuit(
+    const std::tuple<double, double, double, double, double>
+        &qubits_and_gates_distribution_params,
+    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
+    const RandomizerOptions &randomizer_options) {
+  try {
+    this->clear();
+    randomizer_options.max_nr_qubits = std::min(
+        randomizer_options.max_nr_qubits, static_cast<int>(this->max_qubits));
+
+    // Cap nr of qubits but don't cap instructions.
+    auto [module, context] = random_quantum_circuit_from_embedded_statistics(
+        qubits_and_gates_distribution_params, gates_weights,
+        randomizer_options);
+    this->clear();
+    this->circuit_module = module;
+    this->context_ptr =
+        std::make_unique<MLIRContext *>(std::move(context).release());
+  } catch (const std::runtime_error &e) {
+    std::cerr << "Random circuit generation failed with " << e.what()
+              << std::endl;
+    return false;
+  }
+  return true;
+}
+
 void QuantumCircuitEnvironment::register_randomizer_params(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
@@ -193,7 +222,7 @@ QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
       if (nr_qubits > max_qubits) {
         return mlir::WalkResult::interrupt();
       }
-    } else if (isMeasurementGate(op) && op->getOpOperands().size() != 1) {
+    } else if (isMeasurement(op) && op->getOpOperands().size() != 1) {
       ambiguous_measurement = true;
       return mlir::WalkResult::interrupt();
     }
@@ -299,7 +328,7 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
 
   int instruction_index = 0;
   this->circuit_module.walk([&](Operation *op) {
-    if (!isOperatingGate(op)) {
+    if (!isGate(op)) {
       return;
     }
 
@@ -314,7 +343,7 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
     std::vector params(MAX_GATE_PARAMS, 0.0);
     bool isAdj = false;
 
-    if (isMeasurementGate(op)) {
+    if (isMeasurement(op)) {
       targets = getMeasurementTargets(op, NR_QUBITS);
     } else {
       std::tie(controls, targets, params, isAdj) =
@@ -352,7 +381,7 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
 QuantumCircuitEnvironment::getOperatingControlsTargetsParams(Operation *op) {
-  if (isMeasurementGate(op) || !isOperatingGate(op)) {
+  if (isMeasurement(op) || !isGate(op)) {
     return {{}, {}, {}, false};
   }
   std::vector params(MAX_GATE_PARAMS, 0.0);

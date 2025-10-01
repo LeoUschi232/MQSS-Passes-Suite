@@ -24,28 +24,29 @@ bool ParallelEnvironments::register_quantum_circuit(
 }
 
 void ParallelEnvironments::register_randomizer_params(
-    unsigned int index,
-    const std::tuple<double, double, double, double, double>
-        &qubits_and_gates_distribution_params,
-    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
-  if (index >= nr_environments) {
-    throw std::out_of_range(
-        "register_randomizer_params index >= nr_environments");
-  }
-  environments[index].register_randomizer_params(
-      qubits_and_gates_distribution_params, gates_weights);
-}
-
-void ParallelEnvironments::register_randomizer_params(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   assert(environments.size() == nr_environments &&
          "environments.size() != nr_environments");
+  this->qubits_and_gates_distribution_params =
+      qubits_and_gates_distribution_params;
+  this->gates_weights = gates_weights;
   for (QuantumCircuitEnvironment &environment : environments) {
     environment.register_randomizer_params(qubits_and_gates_distribution_params,
                                            gates_weights);
   }
+}
+
+bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
+  if (environments.size() != nr_environments || nr_environments <= 0 ||
+      !qubits_and_gates_distribution_params.has_value() ||
+      !gates_weights.has_value()) {
+    return false;
+  }
+  auto [nr_qubits, nr_gates] =
+      sample_nr_qubits_and_gates_from_cholesky(
+          qubits_and_gates_distribution_params.value());
 }
 
 std::tuple<std::vector<double>, std::vector<bool>>
@@ -72,8 +73,7 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
   return {std::move(rewards), std::move(terminates)};
 }
 
-std::pair<torch::Tensor, torch::Tensor>
-ParallelEnvironments::get_batched_observations() const {
+torch::Tensor ParallelEnvironments::get_batched_observations() const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<InstructionsTensor<double>>> observation_futures;
@@ -100,25 +100,20 @@ ParallelEnvironments::get_batched_observations() const {
   }
   torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
   if (maxN <= 0) {
-    return {torch::zeros({B, 1, IRP}, options), torch::ones({B, 1}, options)};
+    return torch::zeros({B, 1, IRP}, options);
   }
 
-  torch::Tensor instructions_masks = torch::zeros({B, maxN}, options);
   std::vector<torch::Tensor> torch_tensors;
   torch_tensors.reserve(B);
-  for (int64_t b = 0; b < B; ++b) {
+  for (int64_t b = 0; b < B; b++) {
     InstructionsTensor<double> instruction_tensor = observations[b];
-    // N must be computed before padding.
-    int64_t N = instruction_tensor.shape[0];
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
-    instructions_masks[b] =
-        torch::cat({torch::ones(N, options), torch::zeros(maxN - N, options)});
   }
-  return {torch::stack(torch_tensors), instructions_masks};
+  return torch::stack(torch_tensors);
 }
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }

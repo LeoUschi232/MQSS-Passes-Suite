@@ -14,7 +14,8 @@ namespace ai_pass_selector {
 constexpr unsigned int GATES_WEIGHTS_SIZE = 37;
 constexpr unsigned int OPERATIONS_SUBSET_SIZE = 34;
 constexpr unsigned int MEASUREMENTS_SUBSET_SIZE = 3;
-/// Indexes
+constexpr unsigned int CHOLESKY_PARAMS_SIZE = 9;
+/// Gates Indexes
 constexpr unsigned int X_INDEX = 0;
 constexpr unsigned int CX_INDEX = 1;
 constexpr unsigned int CCX_INDEX = 2;
@@ -52,13 +53,23 @@ constexpr unsigned int controlled_PHASED_RX_INDEX = 33;
 constexpr unsigned int MX_INDEX = 34;
 constexpr unsigned int MY_INDEX = 35;
 constexpr unsigned int MZ_INDEX = 36;
+/// Cholseky Indexes
+constexpr unsigned int MEAN_QUBITS_INDEX = 0;
+constexpr unsigned int MEAN_GATES_INDEX = 1;
+constexpr unsigned int QUBITS_L11_INDEX = 2;
+constexpr unsigned int GATES_L21_INDEX = 3;
+constexpr unsigned int GATES_L22_INDEX = 4;
+constexpr unsigned int OPERATIONS_L21_INDEX = 5;
+constexpr unsigned int OPERATIONS_L22_INDEX = 6;
+constexpr unsigned int MEASUREMENTS_L21_INDEX = 7;
+constexpr unsigned int MEASUREMENTS_L22_INDEX = 8;
 
 /**
  *
  * @param dataset_name
  * @return
  */
-std::optional<std::pair<std::tuple<double, double, double, double, double>,
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
 extract_dataset_statistics(const std::string &dataset_name);
 
@@ -73,19 +84,19 @@ void print_dataset_statistics(const std::string &dataset_name);
  * @param dataset_name
  * @return
  */
-std::optional<std::pair<std::tuple<double, double, double, double, double>,
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
-get_embedded_dataset_statistics(const std::string &dataset_name);
+get_precomputed_dataset_statistics(const std::string &dataset_name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Dataset statistics embedded as available C++ data.
-///
-constexpr std::tuple MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
-    /* mean_qubits */ 62.1292,
-    /* mean_gates */ 5300.87,
-    /* cholesky_L11 */ 38.598,
-    /* cholesky_L21 */ 4260.97,
-    /* cholesky_L22 */ 7922.95};
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    MQT_BENCH_QUBITS_CHOLSEKY_PARAMS = {
+        /* mean_qubits */ 62.1292,
+        /* mean_gates */ 5300.87,
+        /* qubits_L11 */ 38.598,
+        /* gates_L21 */ 4260.97,
+        /* gates_L22 */ 7922.95};
 
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
     {/* X */ 17022u,
@@ -126,12 +137,13 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
      /* MY */ 0u,
      /* MZ */ 120330u};
 
-constexpr std::tuple CHEMISTRY_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
-    /* mean_qubits */ 0.0,
-    /* mean_gates */ 0.0,
-    /* cholesky_L11 */ 0.0,
-    /* cholesky_L21 */ 0.0,
-    /* cholesky_L22 */ 0.0};
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    CHEMISTRY_QUBITS_CHOLSEKY_PARAMS = {
+        /* mean_qubits */ 0.0,
+        /* mean_gates */ 0.0,
+        /* qubits_L11 */ 0.0,
+        /* cholesky_L21 */ 0.0,
+        /* cholesky_L22 */ 0.0};
 
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
     {/* X */ 0u,
@@ -172,11 +184,11 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
      /* MY */ 0u,
      /* MZ */ 0u};
 
-constexpr std::tuple
-    RANDOMTEST_PREEMPTIVE_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
+constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
+    RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS = {
         /* mean_qubits */ 4.95,
         /* mean_gates */ 21.1,
-        /* cholesky_L11 */ 0.825578,
+        /* qubits_L11 */ 0.825578,
         /* cholesky_L21 */ 0.898892,
         /* cholesky_L22 */ 6.66668};
 

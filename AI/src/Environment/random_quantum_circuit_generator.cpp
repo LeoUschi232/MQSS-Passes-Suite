@@ -221,7 +221,6 @@ random_quantum_circuit_from_embedded_statistics(
   }
 
   unsigned int nr_qubits = 0, nr_gates = 0;
-
   if (randomizer_options.exact_nr_qubits >= 2 &&
       randomizer_options.exact_nr_non_measurement_gates >= 2) {
     nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
@@ -232,19 +231,12 @@ random_quantum_circuit_from_embedded_statistics(
         sample_nr_qubits_and_gates_from_cholesky(
             qubits_and_gates_distribution_params);
     if (randomizer_options.exact_nr_qubits >= 2) {
-      // Little edge-case fallback when one of 2 exact values is provided
-      // without the other.
-      // This shall attempt to try to maintain the statistics a little, albait
-      // not correctly.
-      // However, adding a perfect nr_qubits->nr_gates and nr_gates->nr_qubits
-      // function depending on the statistics would be too complex for this
-      // purpose.
       nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
-      nr_gates = sampled_nr_qubits / nr_qubits * sampled_nr_gates;
+      nr_gates = sampled_nr_gates;
     } else if (randomizer_options.exact_nr_non_measurement_gates >= 2) {
       nr_gates = static_cast<unsigned>(
           randomizer_options.exact_nr_non_measurement_gates);
-      nr_qubits = sampled_nr_gates / nr_gates * sampled_nr_qubits;
+      nr_qubits = sampled_nr_qubits;
     } else {
       nr_qubits = sampled_nr_qubits;
       nr_gates = sampled_nr_gates;

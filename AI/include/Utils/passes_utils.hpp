@@ -14,7 +14,6 @@
 
 // Standard library includes
 #include <memory>
-#include <mlir/Transforms/Passes.h>
 
 using namespace mqss::opt;
 using namespace cudaq::opt;

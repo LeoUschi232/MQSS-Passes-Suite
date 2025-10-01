@@ -6,7 +6,6 @@
 /// QuakeOps otherwise the comipler will complain that these operations do not
 /// exist in the header file.
 #include "Support/mlir_utils.hpp"
-#include "statistics_for_rqcg.hpp"
 
 #include "llvm/Support/Casting.h"
 using llvm::cast;
@@ -16,6 +15,8 @@ using llvm::isa;
 
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
+#include "Environment/random_quantum_circuit_generator.hpp"
+#include "Environment/statistics_for_rqcg.hpp"
 
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
@@ -71,9 +72,10 @@ public:
   }
 
   /// Copy and move constructors and assignment operators
-  // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is tied
-  // exactly to the circuit module and it is ambiguous if you copy both of them
-  // if the copies are then untied from their originals but tied to each other.
+  // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is
+  // tied exactly to the circuit module and it is ambiguous if you copy both of
+  // them if the copies are then untied from their originals but tied to each
+  // other.
   QuantumCircuitEnvironment(const QuantumCircuitEnvironment &other) = delete;
 
   QuantumCircuitEnvironment &
@@ -92,6 +94,19 @@ public:
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
+
+  /**
+   *
+   * @param qubits_and_gates_distribution_params
+   * @param gates_weights
+   * @param randomizer_options
+   * @return
+   */
+  bool custom_randomize_circuit(
+      const std::tuple<double, double, double, double, double>
+          &qubits_and_gates_distribution_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
+      const RandomizerOptions &randomizer_options);
 
   /**
    *

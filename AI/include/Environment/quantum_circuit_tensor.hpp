@@ -104,6 +104,9 @@ template <class T> struct InstructionsTensor {
   }
 
   void pad(unsigned int toNrInstructions, T value = T{}) {
+    if (toNrInstructions <= shape[0]) {
+      return;
+    }
     this->quantum_circuit_data.insert(
         this->quantum_circuit_data.end(),
         (toNrInstructions - this->shape[0]) * this->shape[1], value);

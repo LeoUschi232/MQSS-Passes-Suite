@@ -9,10 +9,16 @@
 
 namespace ai_pass_selector {
 class ParallelEnvironments {
+  /// Attributes for environments
   unsigned int nr_environments;
   std::vector<QuantumCircuitEnvironment> environments;
   unsigned int max_qubits;
   unsigned int max_steps;
+
+  /// Attributes for randomizer
+  std::optional<std::tuple<double, double, double, double, double>>
+      qubits_and_gates_distribution_params;
+  std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
   /// Constructor
@@ -25,16 +31,14 @@ public:
   /// Copy and move constructors and assignment operators
   ParallelEnvironments(const ParallelEnvironments &other) = delete;
 
-  ParallelEnvironments(ParallelEnvironments &&other) noexcept = default;
-
   ParallelEnvironments &operator=(const ParallelEnvironments &other) = delete;
+
+  ParallelEnvironments(ParallelEnvironments &&other) noexcept = default;
 
   ParallelEnvironments &operator=(ParallelEnvironments &&) noexcept = default;
 
   /**
-   * Registers a circuit in the environment identified by @p index.
-   * The provided @p index must be smaller than size(); otherwise, a
-   * std::out_of_range exception is thrown.
+   *
    * @param index Environment slot that should own the circuit.
    * @param circuit_path Path to the circuit that should be registered.
    * @return True if the circuit could be registered successfully.
@@ -44,25 +48,19 @@ public:
 
   /**
    *
-   * @param index
    * @param qubits_and_gates_distribution_params
    * @param gates_weights
    */
   void register_randomizer_params(
-      unsigned int index,
       const std::tuple<double, double, double, double, double>
           &qubits_and_gates_distribution_params,
       const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
   /**
    *
-   * @param qubits_and_gates_distribution_params
-   * @param gates_weights
+   * @return
    */
-  void register_randomizer_params(
-      const std::tuple<double, double, double, double, double>
-          &qubits_and_gates_distribution_params,
-      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
+  bool  randomize_all_circuits_with_equal_dimensions();
 
   /**
    * B = Batch size / Nr of parallel environments
@@ -72,7 +70,7 @@ public:
    * observations of all environments and mask of shape {B, N} containing 1.0 if
    * legit instruction and 0.0 if padding.
    */
-  std::pair<torch::Tensor, torch::Tensor> get_batched_observations() const;
+  torch::Tensor get_batched_observations() const;
 
   /**
    *
