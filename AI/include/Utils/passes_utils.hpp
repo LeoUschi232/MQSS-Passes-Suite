@@ -97,9 +97,11 @@ const std::vector<std::function<std::unique_ptr<mlir::Pass>()>> PASS_FUNCTIONS =
         // Cudaq passes under include/cudaq/Optimizer/Transforms/Passes.td
         [] { return createApplyControlNegations(); },         // 69
         [] { return createClassicalOptimization(); },         // 70
+        [] { return createDelayMeasurementsPass(); },         // 71
         [] { return createEraseNoise(); },                    // 72
         [] { return createEraseNopCalls(); },                 // 73
         [] { return createMultiControlDecompositionPass(); }, // 74
+        [] { return createPruneCtrlRelations(); },            // 75
         [] { return createQuakeSimplify(); },                 // 76
 
         // Cudaq Decomposition patterns passes

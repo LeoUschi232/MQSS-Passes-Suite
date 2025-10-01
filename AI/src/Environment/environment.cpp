@@ -246,18 +246,29 @@ std::tuple<double, bool> QuantumCircuitEnvironment::step(unsigned int action) {
   double previous_depth = previous_circuit_info["depth"];
   double previous_gates = previous_circuit_info["gates"];
 
-  std::unique_ptr<mlir::Pass> pass = PASS_FUNCTIONS[action]();
+  auto [passname, passptr] = getPassNameAndPointer(action);
+  try {
+    // Variable context must be a MLIRContext&.
+    // The types are:
+    // context_ptr = unique_ptr<MLIRContext*>
+    // context_ptr.get() = MLIRContext**
+    // *context_ptr.get() = MLIRContext*
+    // **context_ptr.get() = MLIRContext
 
-  MLIRContext &context = **this->context_ptr.get();
-  mlir::PassManager pass_manager(&context);
-  pass_manager.addPass(std::move(pass));
-  pass_manager.addPass(mlir::createCanonicalizerPass());
-  pass_manager.addPass(mlir::createCSEPass());
+    MLIRContext &context = **this->context_ptr.get();
+    mlir::PassManager pass_manager(&context);
+    pass_manager.addPass(std::move(passptr));
+    // pass_manager.addPass(mlir::createCanonicalizerPass());
+    // pass_manager.addPass(mlir::createCSEPass());
 
-  if (mlir::failed(pass_manager.run(this->circuit_module))) {
-    throw std::runtime_error("Pass manager failed.");
+    if (mlir::failed(pass_manager.run(this->circuit_module))) {
+      throw std::runtime_error("Pass manager failed.");
+    }
+  } catch (const std::runtime_error &e) {
+    std::cerr << "\nPass " << passname << " failed with " << e.what()
+              << std::endl;
+    return {0.0, ++this->current_step >= this->max_steps};
   }
-
   std::unordered_map<std::string, unsigned int> current_circuit_info =
       this->get_circuit_info();
 
