@@ -41,10 +41,6 @@ void print_help() {
 }
 
 int main(int argc, char **argv) {
-  if (argc <= 1) {
-    print_help();
-    return 1;
-  }
   bool info = false;
   std::unordered_map<std::string, std::string> params = load_default_params();
   std::vector<std::string> args(argv + 1, argv + argc);
