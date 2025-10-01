@@ -146,11 +146,17 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
 
 constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
     CHEMISTRY_QUBITS_CHOLSEKY_PARAMS = {
-        /* mean_qubits */ 0.0,
-        /* mean_gates */ 0.0,
+        /* mean_qubits */ 2.0,
+        /* mean_gates */ 4.0,
+        /* mean_operations */ 2.0,
+        /* mean_measurements */ 2.0,
         /* qubits_L11 */ 0.0,
-        /* cholesky_L21 */ 0.0,
-        /* cholesky_L22 */ 0.0};
+        /* gates_L21 */ 0.0,
+        /* gates_L22 */ 0.0,
+        /* operations_L21 */ 0.0,
+        /* operations_L22 */ 0.0,
+        /* measurements_L21 */ 0.0,
+        /* measurements_L22 */ 0.0};
 
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
     {/* X */ 0u,
@@ -192,8 +198,8 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
      /* MZ */ 0u};
 
 // mean_qubits: 4.95
-// mean_gates: 18.5
-// mean_operations: 13.55
+// mean_gates: 21.1
+// mean_operations: 16.15
 // mean_measurements: 4.95
 // qubits_L11: 0.686333
 // gates_L21: 3.10575
@@ -206,9 +212,15 @@ constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
     RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS = {
         /* mean_qubits */ 4.95,
         /* mean_gates */ 21.1,
-        /* qubits_L11 */ 0.825578,
-        /* gates_L21 */ 0.898892,
-        /* cholesky_L22 */ 6.66668};
+        /* mean_operations */ 16.15,
+        /* mean_measurements */ 4.95,
+        /* qubits_L11 */ 0.686333,
+        /* gates_L21 */ 3.10575,
+        /* gates_L22 */ 5.96363,
+        /* operations_L21 */ 2.41942,
+        /* operations_L22 */ 5.96363,
+        /* measurements_L21 */ 0.686333,
+        /* measurements_L22 */ 0.1};
 
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE>
     RANDOMTEST_PREEMPTIVE_GATES_WEIGHTS = {/* X */ 4u,
