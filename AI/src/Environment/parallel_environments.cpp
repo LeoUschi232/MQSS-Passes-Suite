@@ -108,12 +108,13 @@ ParallelEnvironments::get_batched_observations() const {
   torch_tensors.reserve(B);
   for (int64_t b = 0; b < B; ++b) {
     InstructionsTensor<double> instruction_tensor = observations[b];
+    // N must be computed before padding.
+    int64_t N = instruction_tensor.shape[0];
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
-    int64_t N = instruction_tensor.shape[0];
     instructions_masks[b] =
         torch::cat({torch::ones(N, options), torch::zeros(maxN - N, options)});
   }

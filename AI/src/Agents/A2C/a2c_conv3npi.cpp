@@ -2,9 +2,7 @@
 
 // Environment includes
 #include "Environment/environment.hpp"
-
-// Torch includes
-#include "../../../include/Environment/parallel_environments.hpp"
+#include "Environment/parallel_environments.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
