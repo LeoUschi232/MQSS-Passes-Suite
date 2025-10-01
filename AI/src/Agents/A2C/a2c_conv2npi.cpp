@@ -1,10 +1,10 @@
-#include "Torch/A2C/a2c_agents.hpp"
+#include "Agents/A2C/a2c_agents.hpp"
 
 // Environment includes
 #include "Environment/environment.hpp"
 
 // Torch includes
-#include "Torch/parallel_environments.hpp"
+#include "../../../include/Environment/parallel_environments.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -14,9 +14,8 @@
 
 namespace ai_pass_selector {
 
-A2C_CONV3NFULL::A2C_CONV3NFULL(
-    unsigned int max_qubits,
-    std::unordered_map<std::string, std::string> params)
+A2C_CONV2NPI::A2C_CONV2NPI(unsigned int max_qubits,
+                           std::unordered_map<std::string, std::string> params)
     : BaseA2CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
@@ -38,23 +37,20 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
       // Inner layer nr 1
       torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
                             .padding(padding)), // Shape {B, IRP, N}
-      torch::nn::GroupNorm(
-          torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, IRP, N}
 
-          // Inner layer nr 2
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-              torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
-
-          // Inner layer nr 3
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, IRP, N}
 
       // Output layer
       torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, NR_PASSES, max_qubits)
@@ -70,23 +66,20 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
       // Inner layer nr 1
       torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
                             .padding(padding)), // Shape {B, IRP, N}
-      torch::nn::GroupNorm(
-          torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, IRP, N}
 
-          // Inner layer nr 2
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-              torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
-
-          // Inner layer nr 3
-          torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
-                                .padding(padding)), // Shape {B, IRP, N}
-          torch::nn::GroupNorm(
-              torch::nn::GroupNormOptions(1, IRP)), // Shape {B, IRP, N}
-          torch::nn::HalfScalingLayer(),            // Shape {B, IRP, N}
+      // Inner layer nr 2
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, IRP, max_qubits)
+                            .padding(padding)), // Shape {B, IRP, N}
+      torch::nn::Transpose(1, 2),               // Shape {B, N, IRP}
+      torch::nn::LayerNorm(
+          torch::nn::LayerNormOptions({IRP})), // Shape {B, N, IRP}
+      torch::nn::Transpose(1, 2),              // Shape {B, IRP, N}
+      torch::nn::HalfScalingLayer(),           // Shape {B, IRP, N}
 
       // Output layer
       torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, 1, max_qubits)
@@ -98,10 +91,10 @@ A2C_CONV3NFULL::A2C_CONV3NFULL(
   this->initialize(actor, critic);
 }
 
-std::string A2C_CONV3NFULL::agentName() const {
+std::string A2C_CONV2NPI::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "a2c-" << size_string << "-conv3nfull";
+  oss << "a2c-" << size_string << "-conv2npi";
   return oss.str();
 }
 } // namespace ai_pass_selector

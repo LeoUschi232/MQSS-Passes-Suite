@@ -1,4 +1,4 @@
-#include "Torch/parallel_environments.hpp"
+#include "../../include/Environment/parallel_environments.hpp"
 
 #include <future>
 
@@ -42,9 +42,9 @@ void ParallelEnvironments::register_randomizer_params(
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   assert(environments.size() == nr_environments &&
          "environments.size() != nr_environments");
-  for (unsigned int index = 0; index < nr_environments; index++) {
-    environments[index].register_randomizer_params(
-        qubits_and_gates_distribution_params, gates_weights);
+  for (QuantumCircuitEnviorment &environment : environments) {
+    environment.register_randomizer_params(qubits_and_gates_distribution_params,
+                                           gates_weights);
   }
 }
 
@@ -103,5 +103,9 @@ void ParallelEnvironments::clear() {
     environment.clear();
   }
 }
-
+void ParallelEnvironments::reset() {
+  for (QuantumCircuitEnviorment &environment : environments) {
+    environment.reset();
+  }
+}
 } // namespace ai_pass_selector

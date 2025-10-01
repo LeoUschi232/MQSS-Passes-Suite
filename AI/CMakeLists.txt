@@ -13,7 +13,7 @@ find_package(yaml-cpp CONFIG REQUIRED)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ---------------- Shared (SDK-agnostic!) ----------------
+# ---------------- Shared SDK-agnostic ----------------
 add_library(common_ai_props INTERFACE)
 target_include_directories(common_ai_props INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -42,47 +42,29 @@ if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Release")
     endif ()
 endif ()
 
-# Gather sources (no SDK headers/sources here)
-file(GLOB_RECURSE ENV_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Environment/*.hpp")
-file(GLOB_RECURSE ENV_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Environment/*.cpp")
-file(GLOB UTILS_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Utils/*.hpp")
-file(GLOB UTILS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/*.cpp")
-file(GLOB TESTSUITES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Testsuites/*.hpp")
-file(GLOB TESTSUITES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Testsuites/*.cpp")
+# Gather sources.
+# No SDK headers/sources here.
+file(GLOB_RECURSE ALL_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.hpp")
+file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/**/*.cpp")
 
-add_library(ai_core STATIC
-        ${UTILS_HEADERS} ${UTILS_SOURCES}
-        ${ENV_HEADERS} ${ENV_SOURCES}
-        ${TESTSUITES_HEADERS} ${TESTSUITES_SOURCES})
+add_library(ai_core STATIC ${ALL_HEADERS} ${ALL_SOURCES})
 target_link_libraries(ai_core PUBLIC common_ai_props)
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(ai_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-set_property(TARGET ai_core PROPERTY CXX_STANDARD 17)
 
-# ---------------- Torch-only targets ----------------
-file(GLOB_RECURSE TORCH_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/Torch/*.hpp")
-file(GLOB_RECURSE TORCH_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/Torch/*.cpp")
-
-if (TORCH_SOURCES OR TORCH_HEADERS)
-    add_library(ai_torch STATIC ${TORCH_SOURCES} ${TORCH_HEADERS})
-    target_link_libraries(ai_torch PUBLIC ai_core)
-    # Link ONLY Torch here
-    if (TARGET Torch::Torch)
-        target_link_libraries(ai_torch PUBLIC Torch::Torch)
-    else ()
-        target_link_libraries(ai_torch PUBLIC "${TORCH_LIBRARIES}")
-        target_include_directories(ai_torch PUBLIC "${TORCH_INCLUDE_DIRS}")
-    endif ()
-    target_compile_options(ai_torch PRIVATE ${TORCH_CXX_FLAGS})
-    target_include_directories(ai_torch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-    target_include_directories(ai_torch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-    set_property(TARGET ai_torch PROPERTY CXX_STANDARD 17)
+# ---------------- Torch targets ----------------
+if (TARGET Torch::Torch)
+    target_link_libraries(ai_core PUBLIC Torch::Torch)
+else ()
+    target_link_libraries(ai_core PUBLIC "${TORCH_LIBRARIES}")
+    target_include_directories(ai_core PUBLIC "${TORCH_INCLUDE_DIRS}")
 endif ()
+target_compile_options(ai_core PRIVATE ${TORCH_CXX_FLAGS})
 
-add_executable(ai_pass_selector_torch ai_pass_selector_torch.cpp)
-target_link_libraries(ai_pass_selector_torch PRIVATE ai_torch yaml-cpp)
+add_executable(ai_pass_selector ai_pass_selector.cpp)
+target_link_libraries(ai_pass_selector PRIVATE ai_core yaml-cpp)
 
-# ---------------- Neutral executables (no TF/Torch) ----------------
+# ---------------- Neutral executables ----------------
 add_executable(convert_qasm_dataset_to_quake convert_qasm_dataset_to_quake.cpp)
 target_link_libraries(convert_qasm_dataset_to_quake PRIVATE ai_core)
 

@@ -90,100 +90,98 @@ const std::vector<std::function<std::unique_ptr<mlir::Pass>()>> PASS_FUNCTIONS =
         [] { return createSwapToUpperCxCxCxPass(); }, // 65
 
         // MLIR Passes under mlir/Transforms/Passes.h
-        [] { return mlir::createCanonicalizerPass(); },   // 66
-        [] { return mlir::createControlFlowSinkPass(); }, // 67
-        [] { return mlir::createCSEPass(); },             // 68
-        [] { return mlir::createInlinerPass(); },         // 69
-        [] { return mlir::createSCCPPass(); },            // 70
+        [] { return mlir::createControlFlowSinkPass(); }, // 66
+        [] { return mlir::createInlinerPass(); },         // 67
+        [] { return mlir::createSCCPPass(); },            // 68
 
         // Cudaq passes under include/cudaq/Optimizer/Transforms/Passes.td
-        [] { return createApplyControlNegations(); },         // 71
-        [] { return createClassicalOptimization(); },         // 72
-        [] { return createDelayMeasurementsPass(); },         // 73
-        [] { return createEraseNoise(); },                    // 74
-        [] { return createEraseNopCalls(); },                 // 75
-        [] { return createMultiControlDecompositionPass(); }, // 76
-        [] { return createPruneCtrlRelations(); },            // 77
-        [] { return createQuakeSimplify(); },                 // 78
+        [] { return createApplyControlNegations(); },         // 69
+        [] { return createClassicalOptimization(); },         // 70
+        [] { return createDelayMeasurementsPass(); },         // 71
+        [] { return createEraseNoise(); },                    // 72
+        [] { return createEraseNopCalls(); },                 // 73
+        [] { return createMultiControlDecompositionPass(); }, // 74
+        [] { return createPruneCtrlRelations(); },            // 75
+        [] { return createQuakeSimplify(); },                 // 76
 
         // Cudaq Decomposition patterns passes
         [] {
           return createDecompositionPass({.enabledPatterns = {"CCXToCCZ"}});
-        }, // 79
+        }, // 77
         [] {
           return createDecompositionPass({.enabledPatterns = {"CCZToCX"}});
-        }, // 80
+        }, // 78
         [] {
           return createDecompositionPass({.enabledPatterns = {"CHToCX"}});
-        }, // 81
+        }, // 79
         [] {
           return createDecompositionPass({.enabledPatterns = {"CR1ToCX"}});
-        }, // 82
+        }, // 80
         [] {
           return createDecompositionPass({.enabledPatterns = {"CRxToCX"}});
-        }, // 83
+        }, // 81
         [] {
           return createDecompositionPass({.enabledPatterns = {"CRyToCX"}});
-        }, // 84
+        }, // 82
         [] {
           return createDecompositionPass({.enabledPatterns = {"CRzToCX"}});
-        }, // 85
+        }, // 83
         [] {
           return createDecompositionPass({.enabledPatterns = {"CXToCZ"}});
-        }, // 86
+        }, // 84
         [] {
           return createDecompositionPass({.enabledPatterns = {"CZToCX"}});
-        }, // 87
+        }, // 85
         [] {
           return createDecompositionPass(
               {.enabledPatterns = {"ExpPauliDecomposition"}});
-        }, // 88
+        }, // 86
         [] {
           return createDecompositionPass({.enabledPatterns = {"HToPhasedRx"}});
-        }, // 89
+        }, // 87
         [] {
           return createDecompositionPass({.enabledPatterns = {"R1ToPhasedRx"}});
-        }, // 90
+        }, // 88
         [] {
           return createDecompositionPass({.enabledPatterns = {"R1ToRz"}});
-        }, // 91
+        }, // 89
         [] {
           return createDecompositionPass({.enabledPatterns = {"RxToPhasedRx"}});
-        }, // 92
+        }, // 90
         [] {
           return createDecompositionPass({.enabledPatterns = {"RyToPhasedRx"}});
-        }, // 93
+        }, // 91
         [] {
           return createDecompositionPass({.enabledPatterns = {"RzToPhasedRx"}});
-        }, // 94
+        }, // 92
         [] {
           return createDecompositionPass({.enabledPatterns = {"SToPhasedRx"}});
-        }, // 95
+        }, // 93
         [] {
           return createDecompositionPass({.enabledPatterns = {"SToR1"}});
-        }, // 96
+        }, // 94
         [] {
           return createDecompositionPass({.enabledPatterns = {"SwapToCX"}});
-        }, // 97
+        }, // 95
         [] {
           return createDecompositionPass({.enabledPatterns = {"TToPhasedRx"}});
-        }, // 98
+        }, // 96
         [] {
           return createDecompositionPass({.enabledPatterns = {"TToR1"}});
-        }, // 99
+        }, // 97
         [] {
           return createDecompositionPass(
               {.enabledPatterns = {"U3ToRotations"}});
-        }, // 100
+        }, // 98
         [] {
           return createDecompositionPass({.enabledPatterns = {"XToPhasedRx"}});
-        }, // 101
+        }, // 99
         [] {
           return createDecompositionPass({.enabledPatterns = {"YToPhasedRx"}});
-        }, // 102
+        }, // 100
         [] {
           return createDecompositionPass({.enabledPatterns = {"ZToPhasedRx"}});
-        } // 103
+        } // 101
 };
 const unsigned int NR_PASSES = PASS_FUNCTIONS.size();
 

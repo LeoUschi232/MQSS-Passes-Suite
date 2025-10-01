@@ -1,4 +1,4 @@
-#include "Torch/agent_utils.hpp"
+#include "Agents/agent_utils.hpp"
 
 // Mlir includes
 #include "mlir_utils.hpp"
@@ -31,7 +31,7 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
   }
   int agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
   if (agent_attributes[1].rfind("mq", 0) != 0) {
-    throw std::invalid_argument("Missing 'mq' prefix");
+    throw std::invalid_argument("Missing <mq> prefix");
   }
   unsigned int max_qubits =
       static_cast<unsigned int>(std::stoul(agent_attributes[1].substr(2)));

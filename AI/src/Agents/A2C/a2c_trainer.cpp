@@ -1,11 +1,18 @@
-#include "Torch/A2C/a2c_trainer.hpp"
+#include "Agents/A2C/a2c_trainer.hpp"
 
-#include <Torch/agent_utils.hpp>
-#include <Torch/parallel_environments.hpp>
-#include <Utils/info_utils.hpp>
-#include <Utils/progress_bar.hpp>
+// Environment includes
+#include "Environment/parallel_environments.hpp"
+
+// Agents includes
+#include "Agents/agent_utils.hpp"
+
+// Utils includes
+#include "Support/mlir_utils.hpp"
+#include "Utils/info_utils.hpp"
+#include "Utils/progress_bar.hpp"
+
+// Standard library includes
 #include <filesystem>
-#include <mlir_utils.hpp>
 
 using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
@@ -48,6 +55,8 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
       optional_statistics.value();
   ParallelEnvironments environments(nr_parallel_environments, max_qubits,
                                     max_steps_per_episode);
+  environments.register_randomizer_params(qubits_and_gates_distribution_params,
+                                          gates_weights);
 
   double max_reward = -std::numeric_limits<double>::max();
   double summed_rewards = 0.0;
@@ -58,11 +67,7 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, episodes, "Beginning training");
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
-    for (unsigned int i = 0; i < nr_parallel_environments; i++) {
-      fs::path random_dataset_entry =
-          filtered_dataset_files[randomInt(0, dataset_size)];
-      environments.register_quantum_circuit(i, random_dataset_entry);
-    }
+    environments.reset();
     int64_t T = max_steps_per_episode;
     int64_t B = nr_parallel_environments;
     torch::TensorOptions options =

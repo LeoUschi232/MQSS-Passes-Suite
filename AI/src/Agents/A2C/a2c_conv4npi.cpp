@@ -1,10 +1,10 @@
-#include "Torch/A2C/a2c_agents.hpp"
+#include "Agents/A2C/a2c_agents.hpp"
 
 // Environment includes
 #include "Environment/environment.hpp"
 
 // Torch includes
-#include "Torch/parallel_environments.hpp"
+#include "../../../include/Environment/parallel_environments.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"

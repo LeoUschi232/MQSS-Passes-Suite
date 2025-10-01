@@ -5,7 +5,7 @@
 #include "Environment/quantum_circuit_tensor.hpp"
 
 // Torch includes
-#include "Torch/A2C/base_a2c_agent.hpp"
+#include "Agents/A2C/base_a2c_agent.hpp"
 
 #define DECLARE_A2C_AGENT(ClassName)                                           \
   class ClassName final : public ai_pass_selector::BaseA2CAgent {              \

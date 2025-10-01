@@ -80,6 +80,9 @@ void QuantumCircuitEnviorment::clear() {
   this->circuit_module = nullptr;
   delete *this->context_ptr.get();
   this->context_ptr = nullptr;
+  this->qubits_and_gates_distribution_params = std::nullopt;
+  this->gates_weights = std::nullopt;
+  this->current_step = 0;
 }
 
 void QuantumCircuitEnviorment::reset() {
@@ -89,13 +92,12 @@ void QuantumCircuitEnviorment::reset() {
   }
   if (qubits_and_gates_distribution_params.has_value() &&
       gates_weights.has_value()) {
-    this->circuit_path.clear();
     // Cap nr of qubits but don't cap instructions.
     auto [module, context] = random_quantum_circuit_from_embedded_statistics(
         qubits_and_gates_distribution_params.value(), gates_weights.value(),
         {2, max_qubits});
+    this->clear();
     this->circuit_module = module;
-    delete *this->context_ptr.get();
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
     return;
@@ -115,38 +117,42 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
     std::cerr << "Failed to read circuit file: " << circuit_path << std::endl;
     return false;
   }
-  this->circuit_path = circuit_path;
 
-  auto [circuit, context] = extractModuleOpAndContextPointer(circuit_text);
   // Hold the context pointer so there is no segfault when accessing circuit.
-  delete *this->context_ptr.get();
+  auto [circuit, context] = extractModuleOpAndContextPointer(circuit_text);
+  this->clear();
+  this->circuit_path = circuit_path;
   this->context_ptr = std::move(context);
 
   switch (circuit_invalid_type(FuncOp(circuit))) {
   case CIRCUIT_VALID:
     break;
   case NO_CIRCUIT:
+    this->clear();
     std::cerr << "No circuit provided to the environment." << std::endl;
     return false;
   case TOO_MANY_QUBITS:
+    this->clear();
     std::cerr << "Passed circuit has too many qubits." << std::endl;
     return false;
   case NO_QUBIT_ALLOCATIONS:
+    this->clear();
     std::cerr << "Passed circuit has no qubit allocations." << std::endl;
     return false;
   case MULTIPLE_QUBIT_ALLOCATIONS:
+    this->clear();
     std::cerr << "Passed circuit has multiple qubit allocations." << std::endl;
     return false;
   case AMBIGUOUS_MEASUREMENT:
+    this->clear();
     std::cerr << "Passed circuit has ambiguous measurements." << std::endl;
     return false;
   default:
+    this->clear();
     std::cerr << "Unkown circuit validation error." << std::endl;
     return false;
   }
-
   this->circuit_module = circuit;
-  this->current_step = 0;
   return true;
 }
 
@@ -154,6 +160,7 @@ void QuantumCircuitEnviorment::register_randomizer_params(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
+  this->clear();
   this->qubits_and_gates_distribution_params =
       qubits_and_gates_distribution_params;
   this->gates_weights = gates_weights;

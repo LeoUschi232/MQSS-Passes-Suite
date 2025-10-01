@@ -1,13 +1,13 @@
-#include "Torch/training_and_run_manager.hpp"
+#include "Agents/training_and_run_manager.hpp"
 
 // Environment includes
 #include "Environment/environment.hpp"
 
 // Torch includes
-#include "Torch/A2C/a2c_agents.hpp"
-#include "Torch/A2C/a2c_trainer.hpp"
-#include "Torch/A2C/base_a2c_agent.hpp"
-#include "Torch/agent_utils.hpp"
+#include "Agents/A2C/a2c_agents.hpp"
+#include "Agents/A2C/a2c_trainer.hpp"
+#include "Agents/A2C/base_a2c_agent.hpp"
+#include "Agents/agent_utils.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -51,7 +51,7 @@ train(const std::string &agent_name, const std::string &dataset,
     case A3C:
     case PPO:
     default:
-      std::cerr << "No such A2C agent yet: " << agent_name << std::endl;
+      std::cerr << "No such agent yet: " << agent_name << std::endl;
       return {};
     }
   } catch (const std::runtime_error &e) {

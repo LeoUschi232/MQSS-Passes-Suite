@@ -1,7 +1,7 @@
-#include "Torch/A2C/base_a2c_agent.hpp"
+#include "Agents/A2C/base_a2c_agent.hpp"
 
 // Torch includes
-#include "Torch/agent_utils.hpp"
+#include "Agents/agent_utils.hpp"
 #include "torch/torch.h"
 
 // Standard library includes
