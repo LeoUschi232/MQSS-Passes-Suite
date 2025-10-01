@@ -72,7 +72,8 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
   return {std::move(rewards), std::move(terminates)};
 }
 
-torch::Tensor ParallelEnvironments::get_batched_observations() const {
+std::pair<torch::Tensor, torch::Tensor>
+ParallelEnvironments::get_batched_observations() const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<InstructionsTensor<double>>> observation_futures;
@@ -99,20 +100,24 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   }
   torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
   if (maxN <= 0) {
-    return torch::zeros({B, 1, IRP}, options);
+    return {torch::zeros({B, 1, IRP}, options), torch::ones({B, 1}, options)};
   }
 
+  torch::Tensor instructions_masks = torch::zeros({B, maxN}, options);
   std::vector<torch::Tensor> torch_tensors;
   torch_tensors.reserve(B);
-  for (int64_t i = 0; i < B; ++i) {
-    InstructionsTensor<double> instruction_tensor = observations[i];
+  for (int64_t b = 0; b < B; ++b) {
+    InstructionsTensor<double> instruction_tensor = observations[b];
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
+    int64_t N = instruction_tensor.shape[0];
+    instructions_masks[b] =
+        torch::cat({torch::ones(N, options), torch::zeros(maxN - N, options)});
   }
-  return torch::stack(torch_tensors, 0);
+  return {torch::stack(torch_tensors), instructions_masks};
 }
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }

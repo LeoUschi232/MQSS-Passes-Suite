@@ -69,9 +69,10 @@ public:
    * N = Nr of instructions in the quantum circuit
    * IRP = Instruction representation size
    * @return Torch tensor of shape {B, N, IRP} containing the batched
-   * observations of all environments.
+   * observations of all environments and mask of shape {B, N} containing 1.0 if
+   * legit instruction and 0.0 if padding.
    */
-  torch::Tensor get_batched_observations() const;
+  std::pair<torch::Tensor, torch::Tensor> get_batched_observations() const;
 
   /**
    *

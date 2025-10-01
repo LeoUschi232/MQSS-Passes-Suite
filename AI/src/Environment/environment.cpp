@@ -252,12 +252,9 @@ std::tuple<double, bool> QuantumCircuitEnvironment::step(unsigned int action) {
     // context_ptr.get() = MLIRContext**
     // *context_ptr.get() = MLIRContext*
     // **context_ptr.get() = MLIRContext
-
     MLIRContext &context = **this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
-    // pass_manager.addPass(mlir::createCanonicalizerPass());
-    // pass_manager.addPass(mlir::createCSEPass());
 
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
       throw std::runtime_error("Pass manager failed.");
