@@ -1,10 +1,16 @@
 dataset_name: "Tensortest"
-qubits_and_gates_distribution_params:
+cholesky_params:
   mean_qubits: 5
   mean_gates: 21.3
-  cholesky_L11: 0
-  cholesky_L21: 0
-  cholesky_L22: 10.0005
+  mean_operations: 16.3
+  mean_measurements: 5
+  qubits_L11: 0
+  gates_L21: 0
+  gates_L22: 10.0005
+  operations_L21: 0
+  operations_L22: 0
+  measurements_L21: 0
+  measurements_L22: 0
 gates_weights:
   X: 9
   CX: 55
