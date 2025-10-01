@@ -135,7 +135,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"circuit", ""},
           {"output", ""},
           {"nr_parallel_environments", "16"},
-          {"episodes", "1000"},
+          {"episodes", "10"},
           {"max_steps_per_episode", "5"},
           {"discount_factor", "1.0"},
           {"gae_hyperparameter", "0.96"},
