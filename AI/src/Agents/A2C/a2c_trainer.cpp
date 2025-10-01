@@ -119,6 +119,10 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
                        std::to_string(summed_rewards / episode_nr));
   }
   std::cout << "\nTraining finished." << std::endl;
+
+  if (params["save_agent_at_end_of_training"] == "true") {
+    agent->save_model();
+  }
   return {{"max_reward", std::to_string(max_reward)},
           {"average_reward", std::to_string(summed_rewards / episodes)},
           {"final_entropy", std::to_string(entropies.back())},
