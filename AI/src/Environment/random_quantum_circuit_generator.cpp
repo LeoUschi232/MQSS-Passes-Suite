@@ -324,7 +324,7 @@ random_quantum_circuit_from_embedded_statistics(
     }
     if (exactControls < 0 && allowExtraControls &&
         randomizer_options.probability_additionals_controls > 0.0) {
-      while (nr_controls + nr_targets <= nr_qubits &&
+      while (nr_controls + nr_targets < nr_qubits &&
              random01() < randomizer_options.probability_additionals_controls) {
         nr_controls++;
       }
