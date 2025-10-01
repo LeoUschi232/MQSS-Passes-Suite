@@ -46,7 +46,36 @@ QuantumCircuitEnviorment::QuantumCircuitEnviorment(unsigned int max_qubits,
   }
 }
 
-void QuantumCircuitEnviorment::clear_circuit() {
+QuantumCircuitEnviorment::QuantumCircuitEnviorment(
+    QuantumCircuitEnviorment &&other) noexcept
+    : max_qubits(other.max_qubits), circuit_path(std::move(other.circuit_path)),
+      circuit_module(std::move(other.circuit_module)),
+      context_ptr(std::move(other.context_ptr)), max_steps(other.max_steps),
+      current_step(other.current_step),
+      qubits_and_gates_distribution_params(
+          std::move(other.qubits_and_gates_distribution_params)),
+      gates_weights(std::move(other.gates_weights)) {}
+
+QuantumCircuitEnviorment &
+QuantumCircuitEnviorment::operator=(QuantumCircuitEnviorment &&other) noexcept {
+  if (this != &other) {
+    if (context_ptr) {
+      delete *context_ptr.get();
+    }
+    max_qubits = other.max_qubits;
+    circuit_path = std::move(other.circuit_path);
+    circuit_module = std::move(other.circuit_module);
+    context_ptr = std::move(other.context_ptr);
+    max_steps = other.max_steps;
+    current_step = other.current_step;
+    qubits_and_gates_distribution_params =
+        std::move(other.qubits_and_gates_distribution_params);
+    gates_weights = std::move(other.gates_weights);
+  }
+  return *this;
+}
+
+void QuantumCircuitEnviorment::clear() {
   this->circuit_path.clear();
   this->circuit_module = nullptr;
   delete *this->context_ptr.get();
@@ -56,31 +85,23 @@ void QuantumCircuitEnviorment::clear_circuit() {
 void QuantumCircuitEnviorment::reset() {
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
-  } else if (qubits_and_gates_distribution_params.has_value() &&
-             gates_weights.has_value()) {
-    this->reset_random();
-  } else {
-    std::cerr << "No circuit or randomization parameters provided to reset."
-              << std::endl;
-  }
-}
-
-void QuantumCircuitEnviorment::reset_random() {
-  if (!qubits_and_gates_distribution_params.has_value() ||
-      !gates_weights.has_value()) {
-    std::cerr << "No randomization parameters provided to environment."
-              << std::endl;
     return;
   }
-  this->circuit_path.clear();
-  // Cap nr of qubits but don't cap instructions.
-  auto [module, context] = random_quantum_circuit_from_embedded_statistics(
-      qubits_and_gates_distribution_params.value(), gates_weights.value(),
-      {2, max_qubits});
-  this->circuit_module = module;
-  delete *this->context_ptr.get();
-  this->context_ptr =
-      std::make_unique<MLIRContext *>(std::move(context).release());
+  if (qubits_and_gates_distribution_params.has_value() &&
+      gates_weights.has_value()) {
+    this->circuit_path.clear();
+    // Cap nr of qubits but don't cap instructions.
+    auto [module, context] = random_quantum_circuit_from_embedded_statistics(
+        qubits_and_gates_distribution_params.value(), gates_weights.value(),
+        {2, max_qubits});
+    this->circuit_module = module;
+    delete *this->context_ptr.get();
+    this->context_ptr =
+        std::make_unique<MLIRContext *>(std::move(context).release());
+    return;
+  }
+  std::cerr << "No circuit or randomization parameters provided to reset."
+            << std::endl;
 }
 
 bool QuantumCircuitEnviorment::register_quantum_circuit(
@@ -127,6 +148,15 @@ bool QuantumCircuitEnviorment::register_quantum_circuit(
   this->circuit_module = circuit;
   this->current_step = 0;
   return true;
+}
+
+void QuantumCircuitEnviorment::register_randomizer_params(
+    const std::tuple<double, double, double, double, double>
+        &qubits_and_gates_distribution_params,
+    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
+  this->qubits_and_gates_distribution_params =
+      qubits_and_gates_distribution_params;
+  this->gates_weights = gates_weights;
 }
 
 unsigned int

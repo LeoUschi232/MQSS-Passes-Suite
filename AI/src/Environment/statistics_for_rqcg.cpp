@@ -370,9 +370,13 @@ get_embedded_dataset_statistics(const std::string &dataset_name) {
     return std::make_pair(MQT_BENCH_QUBITS_AND_GATES_DISTRIBUTION_PARAMS,
                           MQT_BENCH_GATES_WEIGHTS);
   }
-  if (dataset_name_lower == "pyscf" || dataset_name_lower == "chemistry" ||
-      dataset_name_lower == "py-scf") {
+  if (dataset_name_lower == "pyscf" || dataset_name_lower == "chemistry") {
+    return std::make_pair(CHEMISTRY_QUBITS_AND_GATES_DISTRIBUTION_PARAMS,
+                          CHEMISTRY_GATES_WEIGHTS);
   }
+  std::cerr << "No embedded dataset statistics for dataset: " << dataset_name
+            << std::endl;
+  return std::nullopt;
 }
 
 } // namespace ai_pass_selector

@@ -38,7 +38,14 @@ train_a2c(BaseA2CAgent &agent, const std::string &dataset,
     std::cerr << "No agent to train." << std::endl;
     return {};
   }
-
+  auto optional_statistics = get_embedded_dataset_statistics(dataset);
+  if (!optional_statistics.has_value()) {
+    std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
+              << std::endl;
+    return {};
+  }
+  auto [qubits_and_gates_distribution_params, gates_weights] =
+      optional_statistics.value();
   ParallelEnvironments environments(nr_parallel_environments, max_qubits,
                                     max_steps_per_episode);
 

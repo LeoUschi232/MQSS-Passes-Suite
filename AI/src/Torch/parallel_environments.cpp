@@ -17,18 +17,36 @@ ParallelEnvironments::ParallelEnvironments(unsigned int nr_environments,
 bool ParallelEnvironments::register_quantum_circuit(
     unsigned int index, const fs::path &circuit_path) {
   if (index >= nr_environments) {
-    throw std::out_of_range("index >= nr_environments");
+    throw std::out_of_range(
+        "register_quantum_circuit index >= nr_environments");
   }
   return environments[index].register_quantum_circuit(circuit_path);
 }
 
-void ParallelEnvironments::clear_circuits() {
-  for (QuantumCircuitEnviorment &environment : environments) {
-    environment.clear_circuit();
+void ParallelEnvironments::register_randomizer_params(
+    unsigned int index,
+    const std::tuple<double, double, double, double, double>
+        &qubits_and_gates_distribution_params,
+    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
+  if (index >= nr_environments) {
+    throw std::out_of_range(
+        "register_randomizer_params index >= nr_environments");
   }
+  environments[index].register_randomizer_params(
+      qubits_and_gates_distribution_params, gates_weights);
 }
 
-unsigned int ParallelEnvironments::size() const { return nr_environments; }
+void ParallelEnvironments::register_randomizer_params(
+    const std::tuple<double, double, double, double, double>
+        &qubits_and_gates_distribution_params,
+    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
+  assert(environments.size() == nr_environments &&
+         "environments.size() != nr_environments");
+  for (unsigned int index = 0; index < nr_environments; index++) {
+    environments[index].register_randomizer_params(
+        qubits_and_gates_distribution_params, gates_weights);
+  }
+}
 
 std::tuple<std::vector<double>, std::vector<bool>>
 ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
@@ -77,6 +95,13 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
     slices.emplace_back(future.get());
   }
   return torch::stack(slices, 0);
+}
+
+unsigned int ParallelEnvironments::size() const { return nr_environments; }
+void ParallelEnvironments::clear() {
+  for (QuantumCircuitEnviorment &environment : environments) {
+    environment.clear();
+  }
 }
 
 } // namespace ai_pass_selector

@@ -71,26 +71,37 @@ public:
   }
 
   /// Copy and move constructors and assignment operators
+  // Forbid copying the QuantumCircuitEnviorment because the MLIRContext is tied
+  // exactly to the circuit module and it is ambiguous if you copy both of them
+  // if the copies are then untied from their originals but tied to each other.
   QuantumCircuitEnviorment(const QuantumCircuitEnviorment &other) = delete;
-
-  QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept = default;
 
   QuantumCircuitEnviorment &
   operator=(const QuantumCircuitEnviorment &other) = delete;
 
-  QuantumCircuitEnviorment &
-  operator=(QuantumCircuitEnviorment &&) noexcept = default;
+  QuantumCircuitEnviorment(QuantumCircuitEnviorment &&other) noexcept;
 
-  /// Clean and Reset
-  void clear_circuit();
+  QuantumCircuitEnviorment &operator=(QuantumCircuitEnviorment &&) noexcept;
+
+  /// Clear and Reset
+  void clear();
   void reset();
-  void reset_random();
 
   /**
    *
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
+
+  /**
+   *
+   * @param qubits_and_gates_distribution_params
+   * @param gates_weights
+   */
+  void register_randomizer_params(
+      const std::tuple<double, double, double, double, double>
+          &qubits_and_gates_distribution_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
   /**
    *

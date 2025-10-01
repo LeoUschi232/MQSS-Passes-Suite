@@ -43,6 +43,28 @@ public:
                                 const fs::path &circuit_path);
 
   /**
+   *
+   * @param index
+   * @param qubits_and_gates_distribution_params
+   * @param gates_weights
+   */
+  void register_randomizer_params(
+      unsigned int index,
+      const std::tuple<double, double, double, double, double>
+          &qubits_and_gates_distribution_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
+
+  /**
+   *
+   * @param qubits_and_gates_distribution_params
+   * @param gates_weights
+   */
+  void register_randomizer_params(
+      const std::tuple<double, double, double, double, double>
+          &qubits_and_gates_distribution_params,
+      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
+
+  /**
    * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
    * IRP = Instruction representation size
@@ -53,22 +75,15 @@ public:
 
   /**
    *
-   * @return
-   */
-  unsigned int size() const;
-
-  /**
-   *
-   */
-  void clear_circuits();
-
-  /**
-   *
    * @param actions
    * @return
    */
   std::tuple<std::vector<double>, std::vector<bool>>
   step(const std::vector<unsigned int> &actions);
+
+  /// Small methods
+  unsigned int size() const;
+  void clear();
 };
 } // namespace ai_pass_selector
 

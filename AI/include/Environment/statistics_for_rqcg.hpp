@@ -126,6 +126,52 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
      /* MY */ 0u,
      /* MZ */ 120330u};
 
+constexpr std::tuple CHEMISTRY_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
+    /* mean_qubits */ 0.0,
+    /* mean_gates */ 0.0,
+    /* cholesky_L11 */ 0.0,
+    /* cholesky_L21 */ 0.0,
+    /* cholesky_L22 */ 0.0};
+
+constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
+    {/* X */ 0u,
+     /* CX */ 0u,
+     /* CCX */ 0u,
+     /* C3plus_X */ 0u,
+     /* Y */ 0u,
+     /* controlled_Y */ 0u,
+     /* Z */ 0u,
+     /* controlled_Z */ 0u,
+     /* H */ 0u,
+     /* controlled_H */ 0u,
+     /* S */ 0u,
+     /* controlled_S */ 0u,
+     /* SDG */ 0u,
+     /* controlled_SDG */ 0u,
+     /* T */ 0u,
+     /* controlled_T */ 0u,
+     /* TDG */ 0u,
+     /* controlled_TDG */ 0u,
+     /* RX */ 0u,
+     /* controlled_RX */ 0u,
+     /* RY */ 0u,
+     /* controlled_RY */ 0u,
+     /* RZ */ 0u,
+     /* controlled_RZ */ 0u,
+     /* SWAP */ 0u,
+     /* controlled_SWAP */ 0u,
+     /* R1 */ 0u,
+     /* controlled_R1 */ 0u,
+     /* U2 */ 0u,
+     /* controlled_U2 */ 0u,
+     /* U3 */ 0u,
+     /* controlled_U3 */ 0u,
+     /* PHASED_RX */ 0u,
+     /* controlled_PHASED_RX */ 0u,
+     /* MX */ 0u,
+     /* MY */ 0u,
+     /* MZ */ 0u};
+
 constexpr std::tuple
     RANDOMTEST_PREEMPTIVE_QUBITS_AND_GATES_DISTRIBUTION_PARAMS = {
         /* mean_qubits */ 4.95,
