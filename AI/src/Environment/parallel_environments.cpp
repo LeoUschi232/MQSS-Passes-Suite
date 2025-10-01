@@ -28,7 +28,7 @@ void ParallelEnvironments::register_randomizer_params(
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   assert(environments.size() == nr_environments &&
          "environments.size() != nr_environments");
-  this->cholesky_params = cholesky_params;
+  this->qubits_cholesky_params = cholesky_params;
   this->gates_weights = gates_weights;
   for (QuantumCircuitEnvironment &environment : environments) {
     environment.register_randomizer_params(cholesky_params, gates_weights);
@@ -37,25 +37,49 @@ void ParallelEnvironments::register_randomizer_params(
 
 bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
   if (this->environments.size() != this->nr_environments ||
-      this->nr_environments <= 0 || !this->cholesky_params.has_value() ||
+      this->nr_environments <= 0 || !this->qubits_cholesky_params.has_value() ||
       !this->gates_weights.has_value()) {
     return false;
   }
-  auto [nr_qubits, nr_gates, _1, _2] =
-      sample_nr_qubits_gates_operations_measurements(cholesky_params.value());
-  // Ignore nr_measurements because after if nr_oprations is set to
-  // nr_gates-nr_qubits, the random circuit generator will infer
-  // nr_measurements=nr_gates-nr_operations=nr_qubits.
-  // This will create a circuit that measures all qubits at the end.
-  nr_qubits = std::max(2u, std::min(nr_qubits, this->max_qubits));
-  nr_gates = std::max(nr_qubits + 2u, nr_gates);
-  unsigned int nr_operations = nr_gates - nr_qubits;
-  RandomizerOptions randomizer_options;
-  randomizer_options.exact_nr_qubits = static_cast<int>(nr_qubits);
-  randomizer_options.exact_nr_gates = static_cast<int>(nr_gates);
-  randomizer_options.exact_nr_operations = static_cast<int>(nr_operations);
+  bool success = true;
+  try {
+    auto [nr_qubits, nr_gates, _1, _2] =
+        sample_nr_qubits_gates_operations_measurements(
+            qubits_cholesky_params.value());
+    // Ignore nr_measurements because after if nr_oprations is set to
+    // nr_gates-nr_qubits, the random circuit generator will infer
+    // nr_measurements=nr_gates-nr_operations=nr_qubits.
+    // This will create a circuit that measures all qubits at the end.
+    nr_qubits = std::max(2u, std::min(nr_qubits, this->max_qubits));
+    nr_gates = std::max(nr_qubits + 2u, nr_gates);
+    RandomizerOptions randomizer_options;
+    randomizer_options.exact_nr_qubits = static_cast<int>(nr_qubits);
+    randomizer_options.exact_nr_gates = static_cast<int>(nr_gates);
+    randomizer_options.exact_nr_operations =
+        static_cast<int>(nr_gates - nr_qubits);
+    randomizer_options.weight_min_multiplier_for_unoccurring_gates = 0.1;
+    randomizer_options.probability_additionals_controls = 0.01;
+    // Technically allow_measurements_as_gates is false by default but I do not
+    // and may not ever trust the C++ compiler.
+    randomizer_options.allow_measurements_as_gates = false;
 
-  return true;
+    std::vector<std::future<bool>> environment_futures;
+    environment_futures.reserve(this->nr_environments);
+    for (unsigned int i = 0; i < this->nr_environments; i++) {
+      environment_futures.emplace_back(std::async(std::launch::async, [&, i] {
+        return environments[i].custom_randomize_circuit(
+            qubits_cholesky_params.value(), gates_weights.value(),
+            randomizer_options);
+      }));
+    }
+    for (auto &environment_future : environment_futures) {
+      success &= environment_future.get();
+    }
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
+  return success;
 }
 
 std::tuple<std::vector<double>, std::vector<bool>>
@@ -116,6 +140,11 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   torch_tensors.reserve(B);
   for (int64_t b = 0; b < B; b++) {
     InstructionsTensor<double> instruction_tensor = observations[b];
+
+    auto N = instruction_tensor.shape[0];
+    if (N != maxN) {
+      std::cout << "\nPadding was necessary!!!" << std::endl;
+    }
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)

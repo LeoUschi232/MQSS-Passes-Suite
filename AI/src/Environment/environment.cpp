@@ -52,7 +52,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
       circuit_module(std::move(other.circuit_module)),
       context_ptr(std::move(other.context_ptr)), max_steps(other.max_steps),
       current_step(other.current_step),
-      cholesky_params(std::move(other.cholesky_params)),
+      qubits_cholesky_params(std::move(other.qubits_cholesky_params)),
       gates_weights(std::move(other.gates_weights)) {}
 
 QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
@@ -67,7 +67,7 @@ QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
     context_ptr = std::move(other.context_ptr);
     max_steps = other.max_steps;
     current_step = other.current_step;
-    cholesky_params = std::move(other.cholesky_params);
+    qubits_cholesky_params = std::move(other.qubits_cholesky_params);
     gates_weights = std::move(other.gates_weights);
   }
   return *this;
@@ -88,10 +88,10 @@ void QuantumCircuitEnvironment::reset() {
     this->register_quantum_circuit(this->circuit_path);
     return;
   }
-  if (cholesky_params.has_value() && gates_weights.has_value()) {
+  if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     // Cap nr of qubits but don't cap instructions.
     auto [module, context] = random_quantum_circuit_from_embedded_statistics(
-        cholesky_params.value(), gates_weights.value(),
+        qubits_cholesky_params.value(), gates_weights.value(),
         {.max_nr_qubits = static_cast<int>(this->max_qubits),
          .weight_min_multiplier_for_unoccurring_gates = 0.1,
          .probability_additionals_controls = 0.01});
@@ -172,8 +172,7 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
   } catch (const std::runtime_error &e) {
-    std::cerr << "Random circuit generation failed with " << e.what()
-              << std::endl;
+    std::cerr << e.what() << std::endl;
     return false;
   }
   return true;
@@ -183,7 +182,7 @@ void QuantumCircuitEnvironment::register_randomizer_params(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   this->clear();
-  this->cholesky_params = cholesky_params;
+  this->qubits_cholesky_params = cholesky_params;
   this->gates_weights = gates_weights;
 }
 

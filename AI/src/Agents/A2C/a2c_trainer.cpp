@@ -118,6 +118,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
                    "Max: " + std::to_string(max_reward) + " | Avg: " +
                        std::to_string(summed_rewards / episode_nr));
   }
+  std::cout << "\nTraining finished." << std::endl;
   return {{"max_reward", std::to_string(max_reward)},
           {"average_reward", std::to_string(summed_rewards / episodes)},
           {"final_entropy", std::to_string(entropies.back())},
