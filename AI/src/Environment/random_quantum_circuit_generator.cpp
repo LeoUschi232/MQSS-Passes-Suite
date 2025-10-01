@@ -359,8 +359,10 @@ random_quantum_circuit_from_yaml_statistics(
   // Load from YAML
   YAML::Node statistics = YAML::LoadFile(statistics_yaml_file_path.string());
 
-  auto params = statistics["qubits_and_gates_distribution_params"];
-  if (!params || !statistics["gates_weights"]) {
+  const YAML::Node &yaml_qubits_cholesky_params =
+      statistics["qubits_cholesky_params"];
+  const YAML::Node &yaml_gates_weights = statistics["gates_weights"];
+  if (!yaml_qubits_cholesky_params || !yaml_gates_weights) {
     throw std::runtime_error("YAML missing required sections.");
   }
 
@@ -377,15 +379,32 @@ random_quantum_circuit_from_yaml_statistics(
     }
     return node[key].as<unsigned int>();
   };
-  return {};
 
-  std::tuple qubits_and_gates_distribution_params = {
-      get_double(params, "mean_qubits"), get_double(params, "mean_gates"),
-      get_double(params, "cholesky_L11"), get_double(params, "cholesky_L21"),
-      get_double(params, "cholesky_L22")};
+  std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params = {};
+  cholesky_params[MEAN_QUBITS_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "mean_qubits");
+  cholesky_params[MEAN_GATES_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "mean_gates");
+  cholesky_params[MEAN_OPERATIONS_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "mean_operations");
+  cholesky_params[MEAN_MEASUREMENTS_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "mean_measurements");
+  cholesky_params[QUBITS_L11_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "qubits_L11");
+  cholesky_params[GATES_L21_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "gates_L21");
+  cholesky_params[GATES_L22_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "gates_L22");
+  cholesky_params[OPERATIONS_L21_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "operations_L21");
+  cholesky_params[OPERATIONS_L22_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "operations_L22");
+  cholesky_params[MEASUREMENTS_L21_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "measurements_L21");
+  cholesky_params[MEASUREMENTS_L22_INDEX] =
+      get_double(yaml_qubits_cholesky_params, "measurements_L22");
 
   std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights{};
-  const YAML::Node &yaml_gates_weights = statistics["gates_weights"];
 
   gates_weights[X_INDEX] = get_unsigned(yaml_gates_weights, "X");
   gates_weights[CX_INDEX] = get_unsigned(yaml_gates_weights, "CX");
@@ -441,8 +460,8 @@ random_quantum_circuit_from_yaml_statistics(
   gates_weights[MY_INDEX] = get_unsigned(yaml_gates_weights, "MY");
   gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
 
-  // return random_quantum_circuit_from_embedded_statistics(
-  //     cholesky_params, gates_weights, randomizer_options);
+  return random_quantum_circuit_from_embedded_statistics(
+      cholesky_params, gates_weights, randomizer_options);
 }
 
 } // namespace ai_pass_selector
