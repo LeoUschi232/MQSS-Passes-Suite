@@ -187,22 +187,22 @@ random_quantum_circuit_from_embedded_statistics(
     const std::tuple<double, double, double, double, double>
         &qubits_and_gates_distribution_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
-    std::pair<int, int> cap_nr_qubits, std::pair<int, int> cap_nr_gates,
-    bool give_small_probability_to_unoccurring_gates,
-    double probability_additionals_controls) {
-  if (give_small_probability_to_unoccurring_gates) {
-    // If a specific type of gate doesn't occur in the statistics, give it 1/10
-    // of the weight of the least occurring gate but at least a weight of 1.
+    const RandomizerOptions &randomizer_options) {
+  double multiplier =
+      randomizer_options.weight_min_multiplier_for_unoccurring_gates;
+  if (multiplier > 0.0) {
     unsigned int minimum_weight = std::numeric_limits<unsigned int>::max();
     for (const auto &weight : gates_weights) {
       if (weight > 0 && weight < minimum_weight) {
         minimum_weight = weight;
       }
     }
-    minimum_weight = std::max(1u, minimum_weight / 10u);
-    for (unsigned int i = 0; i < gates_weights.size(); i++) {
-      if (gates_weights[i] <= 0) {
-        gates_weights[i] = minimum_weight;
+    minimum_weight = std::round(multiplier * minimum_weight);
+    if (minimum_weight > 0u) {
+      for (unsigned int i = 0; i < gates_weights.size(); i++) {
+        if (gates_weights[i] <= 0) {
+          gates_weights[i] = minimum_weight;
+        }
       }
     }
   }
@@ -210,25 +210,31 @@ random_quantum_circuit_from_embedded_statistics(
       qubits_and_gates_distribution_params);
   // At least 2 qubits and more gates than qubits.
   // DO NOT Compare unsigned int to int
-  auto [min_qubits, max_qubits] = cap_nr_qubits;
-  auto [min_gates, max_gates] = cap_nr_gates;
-  if (min_qubits > 2) {
-    nr_qubits = std::max(static_cast<unsigned>(min_qubits), nr_qubits);
+  if (randomizer_options.min_nr_qubits >= 2) {
+    nr_qubits = std::max(
+        static_cast<unsigned>(randomizer_options.min_nr_qubits), nr_qubits);
   }
-  if (max_qubits > 2) {
-    nr_qubits = std::min(static_cast<unsigned>(max_qubits), nr_qubits);
+  if (randomizer_options.max_nr_qubits >= 2) {
+    nr_qubits = std::min(
+        static_cast<unsigned>(randomizer_options.max_nr_qubits), nr_qubits);
   }
-  // Even if min_qubits and max_qubits are set, the number of qubits must be at
-  // least 2.
+  if (randomizer_options.exact_nr_qubits >= 2) {
+    nr_qubits = static_cast<unsigned>(randomizer_options.exact_nr_qubits);
+  }
+  // Whatever the randomizer options, the nr of qubits must be at least 2.
   nr_qubits = std::max(2u, nr_qubits);
-  if (min_gates > 2) {
-    nr_gates = std::max(static_cast<unsigned>(min_gates), nr_gates);
+  if (randomizer_options.min_nr_gates >= 2) {
+    nr_gates = std::max(static_cast<unsigned>(randomizer_options.min_nr_gates),
+                        nr_gates);
   }
-  if (max_gates > 2) {
-    nr_gates = std::min(static_cast<unsigned>(max_gates), nr_gates);
+  if (randomizer_options.max_nr_gates >= 2) {
+    nr_gates = std::min(static_cast<unsigned>(randomizer_options.max_nr_gates),
+                        nr_gates);
   }
-  // Even if min_gates and max_gates are set, the number of gates must be at
-  // least 1 plus all measurements at the end.
+  if (randomizer_options.exact_nr_gates >= 2) {
+    nr_gates = static_cast<unsigned>(randomizer_options.exact_nr_gates);
+  }
+  // Whatever the randomizer options, the nr of gates must be at least 2
   nr_gates = std::max(nr_gates, nr_qubits + 1);
 
   auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
