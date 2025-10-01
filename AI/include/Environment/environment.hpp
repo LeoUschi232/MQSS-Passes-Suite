@@ -61,7 +61,7 @@ class QuantumCircuitEnvironment {
 public:
   /// Constructors
   QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
-                           const fs::path &circuit_path = "");
+                            const fs::path &circuit_path = "");
 
   /// Destructor
   ~QuantumCircuitEnvironment() {
@@ -71,7 +71,7 @@ public:
   }
 
   /// Copy and move constructors and assignment operators
-  // Forbid copying the QuantumCircuitEnviorment because the MLIRContext is tied
+  // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is tied
   // exactly to the circuit module and it is ambiguous if you copy both of them
   // if the copies are then untied from their originals but tied to each other.
   QuantumCircuitEnvironment(const QuantumCircuitEnvironment &other) = delete;
