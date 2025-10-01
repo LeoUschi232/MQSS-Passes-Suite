@@ -41,6 +41,9 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
   try {
     this->actor = actor;
     this->critic = critic;
+    // Load the model before putting it to the device to avoid device
+    // scheduling issus.
+    this->load_model();
     register_module("critic", this->critic);
     register_module("actor", this->actor);
     this->critic->to(this->device);
@@ -175,8 +178,8 @@ void BaseA2CAgent::load_model() {
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
-  torch::load(this->critic, critic_path.string());
-  torch::load(this->actor, actor_path.string());
+  torch::load(this->critic, critic_path.string(), this->device);
+  torch::load(this->actor, actor_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
 }
 
