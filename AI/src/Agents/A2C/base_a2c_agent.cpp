@@ -164,6 +164,7 @@ void BaseA2CAgent::save_model() const {
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
   torch::save(this->critic, critic_path.string());
   torch::save(this->actor, actor_path.string());
+  std::cout << "Saved model: " << name << std::endl;
 }
 
 void BaseA2CAgent::load_model() {
