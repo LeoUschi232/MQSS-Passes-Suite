@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+
 # Clear console log
 set -euo pipefail
 clear
+
+# Just in case it's forgotten to set variables correctly on the CUDA GPU
+source ~/.bashrc
 
 # Rebuild MQSS only. Assumes: AI/external/libtorch + tensorflow + _deps/cuda-quantum built.
 CURRENT_DIR="$(pwd)"
