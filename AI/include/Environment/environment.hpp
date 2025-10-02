@@ -51,17 +51,29 @@ class QuantumCircuitEnvironment {
   std::unique_ptr<MLIRContext *> context_ptr;
 
   /// Attributes for episode
-  unsigned int max_steps;
-  unsigned int current_step;
+  unsigned int max_steps_per_episode;
+  unsigned int max_steps_no_improvement;
+  unsigned int max_steps_no_change;
+  unsigned int max_steps_same_action;
+  unsigned int step_per_episode = 0u;
+  unsigned int step_no_improvement = 0u;
+  unsigned int step_no_change = 0u;
+  unsigned int step_same_action = 0u;
+  int last_action = -1;
 
   /// Attributes for randomizer
-  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> qubits_cholesky_params;
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
+      qubits_cholesky_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
   /// Constructors
   QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
                             const fs::path &circuit_path = "");
+
+  QuantumCircuitEnvironment(
+      unsigned int max_qubits,
+      std::unordered_map<std::string, std::string> params);
 
   /// Destructor
   ~QuantumCircuitEnvironment() {
@@ -150,9 +162,9 @@ public:
   /**
    *
    * @param action
-   * @return
+   * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<double, bool> step(unsigned int action);
+  std::tuple<double, bool, bool> step(unsigned int action);
 
   /**
    *

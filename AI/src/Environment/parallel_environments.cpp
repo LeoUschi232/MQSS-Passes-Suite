@@ -84,15 +84,15 @@ ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
 }
 
 std::tuple<std::vector<double>, std::vector<bool>>
-ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
-  if (actions.size() != nr_environments) {
+ParallelEnvironments::step(const torch::Tensor &actions) {
+  if (actions.size(/*dim=*/0) != nr_environments) {
     throw std::runtime_error("actions.size() != nr_environments");
   }
   std::vector<std::future<std::tuple<double, bool>>> futures;
   futures.reserve(nr_environments);
   for (size_t i = 0; i < nr_environments; ++i) {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
-      return environments[i].step(actions[i]);
+      return environments[i].step(actions[i].item<unsigned int>());
     }));
   }
   std::vector<double> rewards;

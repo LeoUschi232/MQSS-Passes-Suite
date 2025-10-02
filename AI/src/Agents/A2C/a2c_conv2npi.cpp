@@ -70,7 +70,9 @@ A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
       torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, NR_PASSES, 1}
       torch::nn::Flatten(
           torch::nn::FlattenOptions().start_dim(1)), // Shape {B, NR_PASSES}
-      torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/1)));
+      torch::nn::Softmax(
+          torch::nn::SoftmaxOptions(/*dim=*/1)) // Shape {B, NR_PASSES}
+  );
   auto critic = torch::nn::Sequential(
       // Input layer
       torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
@@ -97,8 +99,7 @@ A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
       torch::nn::Conv1d(torch::nn::Conv1dOptions(L3, 1, max_qubits)
                             .padding(padding)), // Shape {B, 1, N}
       torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, 1, 1}
-      torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(1)) // Shape {B, 1}
+      torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)) // Shape {B}
   );
   this->initialize(actor, critic);
 }

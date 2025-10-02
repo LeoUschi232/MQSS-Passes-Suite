@@ -67,49 +67,83 @@ BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
-  return {this->critic->forward(x), this->actor->forward(x)};
+  return {this->actor->forward(x), this->critic->forward(x)};
 }
 
 torch::Tensor
 BaseA2CAgent::get_value(const torch::Tensor &batched_observations) {
   std::lock_guard lock(*this->model_mutex);
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
-  // Assuming critic is a member that takes batched obs and returns values.
-  return critic->forward(x).squeeze(-1);
+  return this->critic->forward(x);
 }
 
-std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
-           torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
-  auto [state_values, action_probs] = this->forward(batched_observations);
-  // sample one action per row; result is [B,1] -> squeeze to [B]
-  torch::Tensor actions_tensor = action_probs.multinomial(1).squeeze(-1);
-  // CUDA tensors can’t be read directly)
-  torch::Tensor actions_cpu = actions_tensor.to(torch::kCPU);
-  std::vector<unsigned int> actions;
-  actions.reserve(actions_cpu.size(0));
-  for (int64_t i = 0; i < actions_cpu.size(0); ++i) {
-    actions.push_back(
-        static_cast<unsigned int>(actions_cpu[i].item<int64_t>()));
+  auto [action_probs, state_values] = this->forward(batched_observations);
+
+  if (action_probs.lt(0).any().item<bool>()) {
+    std::cerr << "Error: action_probs contains negative values: "
+              << action_probs << std::endl;
+    throw std::runtime_error("Negative probabilities detected.");
+  }
+  if (action_probs.isnan().any().item<bool>()) {
+    std::cerr << "Error: action_probs contains NaN: " << action_probs
+              << std::endl;
+    throw std::runtime_error("NaN in probabilities.");
+  }
+  if (action_probs.isinf().any().item<bool>()) {
+    std::cerr << "Error: action_probs contains Inf: " << action_probs
+              << std::endl;
+    throw std::runtime_error("Inf in probabilities.");
   }
 
-  // log π(a|s) for the sampled actions: gather along the action dim
+  // Multinomial selects num_samples=1 indices per row for the given matrix,
+  // using the values in the row as weights.
+  // action_probs ~ [B, NR_PASSES]
+  // X.multinomial(num_samples=1) ~ [B, 1]
+  // X.squeeze(dim=-1) ~ [B]
+  const torch::Tensor action_indexes_unsqueezed =
+      action_probs.multinomial(/*num_samples=*/1);
+  const torch::Tensor action_indexes = action_indexes.squeeze(-1);
+
+  // For advantage compute log π(a_t|s_t) for the sampled actions.
+  // Gather extracts the values at specified indexes along the specified axis.
+  // Parameter indexes must have the same nr of axes as the input tensor, here
+  // each has 2 axes.
+  // log_action_probs ~ [B, NR_PASSES]
+  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [B, 1]
+  // X.squeeze(dim=-1) ~ [B]
   const torch::Tensor log_action_probs = action_probs.log();
-  // a_t, log π(a_t|s_t), V(s_t), entropy of π(a_t|s_t)
-  return {actions,
-          log_action_probs.gather(-1, actions_tensor.unsqueeze(-1)).squeeze(-1),
-          state_values.squeeze(-1), -(action_probs * log_action_probs).sum(-1)};
+  const torch::Tensor squeezed_log_action_probs =
+      log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_indexes_unsqueezed)
+          .squeeze(-1);
+
+  // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
+  // action_probs * log_action_probs ~ [B, NR_PASSES]
+  // -X.sum(dim=-1) ~ [B]
+  const torch::Tensor entropy =
+      -(action_probs * log_action_probs).sum(/*dim=*/-1);
+  return {
+      action_indexes,            // Shape [B]
+      squeezed_log_action_probs, // Shape [B]
+      state_values,              // Shape [B]
+      entropy                    // Shape [B]
+  };
 }
 
-std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
-    const torch::Tensor &rewards, const torch::Tensor &log_action_probs,
-    const torch::Tensor &state_values, const torch::Tensor &entropy,
-    const torch::Tensor &termination_masks, const double discount_factor,
-    const double gae_hyperparameter, const double entropy_coefficient) {
+std::pair<torch::Tensor, torch::Tensor>
+BaseA2CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T, B]
+                         const torch::Tensor &log_action_probs, // Shape [T, B]
+                         const torch::Tensor &state_values, // Shape [T+1, B]
+                         const torch::Tensor &entropy,      // Shape [T, B]
+                         const torch::Tensor &termination_masks, // Shape [T, B]
+                         const double discount_factor,
+                         const double gae_hyperparameter,
+                         const double entropy_coefficient) {
 
   // Let T = final timestep of an episode.
   // An episode generates T+1 states from S_0 to S_T.
-  // An episode generates T actions from A_0 to A_{T-1}.
+  // An episode generates T actions from A_1 to A_T.
   // An episode generates T rewards from R_1 to R_T.
   int T = rewards.size(0);
   int B = rewards.size(1);
@@ -122,10 +156,11 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   // reward obtained from a current state and the estimated value of the next
   // state.
   torch::Tensor A_gae = torch::zeros({B}, options);
-  for (int t = T - 2; t >= 0; t--) {
+  for (int t = T - 1; t >= 0; t--) {
 
-    // In Barto & Sutton the temporal difference residual of V with discount
-    // gamma is: delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
+    // Temporal Difference Error of V(s) with discount gamma is:
+    // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
+    // Barto & Sutton Reinforcement Learning page 121, equation (6.5)
     torch::Tensor delta_t =
         rewards[t] - state_values[t] +
         discount_factor * state_values[t + 1] * termination_masks[t];
@@ -147,7 +182,7 @@ std::pair<torch::Tensor, torch::Tensor> BaseA2CAgent::get_losses(
   // J(θ) = (1/N) * sum_{t=0}^{N-1} (ln π_θ(a_t|s_t) * A(s_t, a_t))
   auto actor_loss = -(log_action_probs * advantages.detach()).mean() -
                     entropy_coefficient * entropy.mean();
-  return {critic_loss, actor_loss};
+  return {actor_loss, critic_loss};
 }
 
 void BaseA2CAgent::update_parameters(const torch::Tensor &critic_loss,

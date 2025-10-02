@@ -86,7 +86,7 @@ public:
    * @return
    */
   std::tuple<std::vector<double>, std::vector<bool>>
-  step(const std::vector<unsigned int> &actions);
+  ParallelEnvironments::step(const torch::Tensor &actions);
 
   /// Small methods
   unsigned int size() const;

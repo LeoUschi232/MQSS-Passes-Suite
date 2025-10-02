@@ -39,10 +39,47 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits, unsigned int max_steps,
     const fs::path &circuit_path)
     : max_qubits(std::max(2u, max_qubits)), circuit_path(circuit_path),
-      context_ptr(nullptr), max_steps(std::max(1u, max_steps)),
-      current_step(0u) {
+      context_ptr(nullptr), max_steps_per_episode(std::max(1u, max_steps)),
+      max_steps_no_improvement(max_steps_per_episode),
+      max_steps_no_change(max_steps_per_episode),
+      max_steps_same_action(max_steps_per_episode) {
   if (!circuit_path.empty()) {
     this->register_quantum_circuit(circuit_path);
+  }
+}
+
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(
+    unsigned int max_qubits,
+    std::unordered_map<std::string, std::string> params)
+    : max_qubits(std::max(2u, max_qubits)), circuit_path(""),
+      max_steps_per_episode(1u), max_steps_no_improvement(1u),
+      max_steps_no_change(1u), max_steps_same_action(1u) {
+  if (params.find("max_steps_relative_to_qubits") != params.end() &&
+      params["max_steps_relative_to_qubits"] == "true") {
+    this->max_steps_per_episode = std::max(
+        1u, static_cast<unsigned>(max_qubits *
+                                  std::stod(params["max_steps_per_episode"])));
+    this->max_steps_no_improvement = std::max(
+        1u, static_cast<unsigned>(
+                max_qubits * std::stod(params["max_steps_no_improvement"])));
+    this->max_steps_no_change = std::max(
+        1u, static_cast<unsigned>(max_qubits *
+                                  std::stod(params["max_steps_no_change"])));
+    this->max_steps_same_action = std::max(
+        1u, static_cast<unsigned>(max_qubits *
+                                  std::stod(params["max_steps_same_action"])));
+  } else {
+    this->max_steps_per_episode =
+        std::max(1ul, std::stoul(params["max_steps_per_episode"]));
+    this->max_steps_no_improvement =
+        std::max(1ul, std::stoul(params["max_steps_no_improvement"]));
+    this->max_steps_no_change =
+        std::max(1ul, std::stoul(params["max_steps_no_change"]));
+    this->max_steps_same_action =
+        std::max(1ul, std::stoul(params["max_steps_same_action"]));
+  }
+  if (params.find("circuit") != params.end() && !params["circuit"].empty()) {
+    this->register_quantum_circuit(params["circuit"]);
   }
 }
 
@@ -50,8 +87,15 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     QuantumCircuitEnvironment &&other) noexcept
     : max_qubits(other.max_qubits), circuit_path(std::move(other.circuit_path)),
       circuit_module(std::move(other.circuit_module)),
-      context_ptr(std::move(other.context_ptr)), max_steps(other.max_steps),
-      current_step(other.current_step),
+      context_ptr(std::move(other.context_ptr)),
+      max_steps_per_episode(other.max_steps_per_episode),
+      max_steps_no_improvement(other.max_steps_no_improvement),
+      max_steps_no_change(other.max_steps_no_change),
+      max_steps_same_action(other.max_steps_same_action),
+      step_per_episode(other.step_per_episode),
+      step_no_improvement(other.step_no_improvement),
+      step_no_change(other.step_no_change),
+      step_same_action(other.step_same_action),
       qubits_cholesky_params(std::move(other.qubits_cholesky_params)),
       gates_weights(std::move(other.gates_weights)) {}
 
@@ -65,8 +109,14 @@ QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
     circuit_path = std::move(other.circuit_path);
     circuit_module = std::move(other.circuit_module);
     context_ptr = std::move(other.context_ptr);
-    max_steps = other.max_steps;
-    current_step = other.current_step;
+    max_steps_per_episode = other.max_steps_per_episode;
+    max_steps_no_improvement = other.max_steps_no_improvement;
+    max_steps_no_change = other.max_steps_no_change;
+    max_steps_same_action = other.max_steps_same_action;
+    step_per_episode = other.step_per_episode;
+    step_no_improvement = other.step_no_improvement;
+    step_no_change = other.step_no_change;
+    step_same_action = other.step_same_action;
     qubits_cholesky_params = std::move(other.qubits_cholesky_params);
     gates_weights = std::move(other.gates_weights);
   }
@@ -80,10 +130,17 @@ void QuantumCircuitEnvironment::clear() {
     delete *this->context_ptr.get();
   }
   this->context_ptr = nullptr;
-  this->current_step = 0;
+  this->step_per_episode = 0;
+  this->step_no_improvement = 0;
+  this->step_no_change = 0;
+  this->step_same_action = 0;
 }
 
 void QuantumCircuitEnvironment::reset() {
+  this->step_per_episode = 0;
+  this->step_no_improvement = 0;
+  this->step_no_change = 0;
+  this->step_same_action = 0;
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
     return;
@@ -252,7 +309,12 @@ QuantumCircuitEnvironment::get_circuit_info() const {
   return get_circuit_info(FuncOp(this->circuit_module));
 }
 
-std::tuple<double, bool> QuantumCircuitEnvironment::step(unsigned int action) {
+/// [Reward, Terminated, Truncated]
+std::tuple<double, bool, bool>
+QuantumCircuitEnvironment::step(unsigned int action) {
+  if (++this->step_per_episode > this->max_steps_per_episode) {
+    return {0.0, /*Terminated=*/false, /*Truncated=*/true};
+  }
   if (this->circuit_module == nullptr) {
     throw std::runtime_error("No circuit registered in the environment.");
   }
@@ -282,15 +344,36 @@ std::tuple<double, bool> QuantumCircuitEnvironment::step(unsigned int action) {
   } catch (const std::runtime_error &e) {
     std::cerr << "\nPass " << passname << " failed with " << e.what()
               << std::endl;
-    return {0.0, ++this->current_step >= this->max_steps};
+    return {0.0, /*Terminated=*/false, /*Truncated=*/true};
   }
   std::unordered_map<std::string, unsigned int> current_circuit_info =
       this->get_circuit_info();
 
   double current_depth = current_circuit_info["depth"];
   double current_gates = current_circuit_info["gates"];
-  return {previous_depth - current_depth + previous_gates - current_gates,
-          ++this->current_step >= this->max_steps};
+  double reward =
+      previous_depth - current_depth + previous_gates - current_gates;
+
+  if (reward > 0.0) {
+    this->step_no_improvement = 0;
+  } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
+    return {reward, /*Terminated=*/true, /*Truncated=*/false};
+  }
+  if (previous_circuit_info["depth"] != current_circuit_info["depth"] ||
+      previous_circuit_info["gates"] != current_circuit_info["gates"]) {
+    // Executing the same action many times in a row is only a valid termination
+    // criterion IFF that action does not change the circuit.
+    this->step_no_change = 0;
+    this->step_same_action = 0;
+  } else if (++this->step_no_change > this->max_steps_no_change) {
+    return {reward, /*Terminated=*/true, /*Truncated=*/false};
+  } else if (static_cast<int>(action) != this->last_action) {
+    this->step_same_action = 0;
+  } else if (++this->step_same_action > this->max_steps_same_action) {
+    return {reward, /*Terminated=*/true, /*Truncated=*/false};
+  }
+  this->last_action = static_cast<int>(action);
+  return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
 InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
