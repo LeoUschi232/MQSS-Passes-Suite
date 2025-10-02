@@ -134,7 +134,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"dataset", "mqtbench"},
           {"circuit", ""},
           {"output", ""},
-          {"nr_parallel_environments", "1"},
+          {"nr_parallel_environments", "4"},
           {"episodes", "100"},
           {"max_steps_per_episode", "20"},
           {"discount_factor", "1.0"},
