@@ -94,15 +94,6 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
 
       auto [batched_observations, padding_on_observations] =
           environments.get_batched_observations_with_padding();
-      if (interrupted) {
-        std::cout << "\nCaught Ctrl+C, saving model and exiting..."
-                  << std::endl;
-        agent->save_model();
-        std::cout << "Model saved: " << agent->agentName() << std::endl;
-        return {
-            {"max_reward", std::to_string(max_reward)},
-            {"average_reward", std::to_string(summed_rewards / episode_nr)}};
-      }
 
       auto [actions, log_action_probs, state_values, step_entropy] =
           agent->select_action(batched_observations);
