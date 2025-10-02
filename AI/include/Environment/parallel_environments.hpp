@@ -86,7 +86,7 @@ public:
    * @return Vector of [Reward, Terminated, Truncated]
    */
   std::vector<std::tuple<double, bool, bool>>
-  ParallelEnvironments::step(const torch::Tensor &actions);
+  step(const torch::Tensor &actions);
 
   /// Small methods
   unsigned int size() const;
