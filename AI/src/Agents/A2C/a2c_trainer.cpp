@@ -12,10 +12,19 @@
 #include "Utils/progress_bar.hpp"
 
 // Standard library includes
+#include <csignal>
 #include <filesystem>
 
 using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
+
+// Global flag for SIGINT Ctrl+C interruptions.
+volatile sig_atomic_t interrupted = 0;
+void signal_handler(int signal) {
+  if (signal == SIGINT) {
+    interrupted = 1;
+  }
+}
 
 namespace ai_pass_selector {
 std::unordered_map<std::string, std::string>
@@ -65,6 +74,11 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, episodes, "Beginning training");
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
+    if (interrupted) {
+      std::cout << "\nCaught Ctrl+C Interruption in A2c training." << std::endl;
+      break;
+    }
+
     auto [success, nr_qubits, nr_gates] =
         environments.randomize_all_circuits_with_equal_dimensions();
     torch::TensorOptions options =
@@ -75,14 +89,19 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     torch::Tensor episode_entropies = torch::zeros({T, B}, options);
     torch::Tensor termination_masks = torch::zeros({T, B}, options);
 
-    unsigned int padding_on_initial_observations = 0u;
     for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
          update_step++) {
 
       auto [batched_observations, padding_on_observations] =
           environments.get_batched_observations_with_padding();
-      if (update_step == 0u) {
-        padding_on_initial_observations = padding_on_observations;
+      if (interrupted) {
+        std::cout << "\nCaught Ctrl+C, saving model and exiting..."
+                  << std::endl;
+        agent->save_model();
+        std::cout << "Model saved: " << agent->agentName() << std::endl;
+        return {
+            {"max_reward", std::to_string(max_reward)},
+            {"average_reward", std::to_string(summed_rewards / episode_nr)}};
       }
 
       auto [actions, log_action_probs, state_values, step_entropy] =
@@ -114,22 +133,17 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       agent->save_model();
     }
     agent->update_parameters(critic_loss, actor_loss);
-    // Padding on initial observations is an interesting matric to monitor for
-    // diagnostics of the randomize_all_circuits_with_equal_dimensions
-    // function.
-    // If randomize_all_circuits_with_equal_dimensions works as intended, that
-    // padding should always be zero.
-    updateProgress(
-        episode_nr, episodes,
-        "Max: " + std::to_string(max_reward) +
-            " | Avg: " + std::to_string(summed_rewards / episode_nr) +
-            " | Nr qubits: " + std::to_string(nr_qubits) +
-            " | Nr gates: " + std::to_string(nr_gates) +
-            " | POIO: " + std::to_string(padding_on_initial_observations)
+    updateProgress(episode_nr, episodes,
+                   "Max: " + std::to_string(max_reward) + " | Avg: " +
+                       std::to_string(summed_rewards / episode_nr) +
+                       " | Nr qubits: " + std::to_string(nr_qubits) +
+                       " | Nr gates: " + std::to_string(nr_gates)
 
     );
   }
-  std::cout << "\nTraining finished." << std::endl;
+  if (!interrupted) {
+    std::cout << "\nTraining finished." << std::endl;
+  }
 
   if (params["save_agent_at_end_of_training"] == "true") {
     std::cout << "Saving: " << agent->agentName() << std::endl;
