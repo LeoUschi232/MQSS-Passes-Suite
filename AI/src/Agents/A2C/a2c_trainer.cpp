@@ -77,7 +77,6 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       std::cout << "\nCaught Ctrl+C Interruption in A2c training." << std::endl;
       break;
     }
-    double local_max_reward = -std::numeric_limits<double>::max();
     try {
       auto [success, nr_qubits, nr_gates] =
           environments.randomize_all_circuits_with_equal_dimensions();
@@ -103,10 +102,10 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
         episode_log_probs[update_step] = log_action_probs;
         episode_values[update_step] = state_values;
         episode_entropies[update_step] = step_entropy;
-        for (unsigned int b = 0; b < B; b++) {
-          auto [reward, terminated, truncated] = step_returns[b];
-          episode_rewards[update_step][b] = reward;
-          termination_masks[update_step][b] =
+        for (unsigned int batch = 0; batch < B; batch++) {
+          auto [reward, terminated, truncated] = step_returns[batch];
+          episode_rewards[update_step][batch] = reward;
+          termination_masks[update_step][batch] =
               terminated || truncated ? 0.0 : 1.0;
         }
       }
@@ -119,24 +118,31 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
           termination_masks, discount_factor, gae_hyperparameter,
           entropy_coefficient);
 
-      auto episode_rewards_cpu = episode_rewards.to(torch::kCPU);
-      auto total_rewards = episode_rewards_cpu.sum(/*axis=*/0);
-      if (total_rewards.size(/*dim=*/0) != nr_parallel_environments) {
-        throw std::runtime_error(
-            "total_rewards.size=/=nr_parallel_environments");
+      auto total_rewards = episode_rewards.sum(/*axis=*/0);
+      assert(total_rewards.size(/*dim=*/0) == nr_parallel_environments);
+      double episode_max_reward = -std::numeric_limits<double>::max();
+      double episode_avg_reward = 0.0;
+      bool save_model = false;
+      for (unsigned int batch = 0; batch < B; batch++) {
+        double total_reward = total_rewards[batch].item<double>();
+        if (total_reward >= global_max_reward) {
+          global_max_reward = total_reward;
+          save_model = true;
+        }
+        episode_max_reward = std::max(episode_max_reward, total_reward);
+        episode_avg_reward += total_reward;
       }
-      double current_reward = total_rewards.sum().item<double>();
-      summed_rewards += current_reward;
-      if (current_reward > max_reward) {
-        max_reward = current_reward;
+      episode_avg_reward /= nr_parallel_environments;
+      if (save_model) {
         agent->save_model();
       }
+
       agent->update_parameters(critic_loss, actor_loss);
       updateProgress(
           episode_nr, episodes,
-          "Global Max: " + std::to_string(max_reward) +
-              " | Local Max: " + std::to_string(summed_rewards / episode_nr) +
-              " | Avg: " + std::to_string(summed_rewards / episode_nr) +
+          "Global Max: " + std::to_string(global_max_reward) +
+              " | Episode Max: " + std::to_string(episode_max_reward) +
+              " | Episode Avg: " + std::to_string(episode_avg_reward) +
               " | Nr qubits: " + std::to_string(nr_qubits) +
               " | Nr gates: " + std::to_string(nr_gates)
 
@@ -157,7 +163,6 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }
-  return {{"max_reward", std::to_string(max_reward)},
-          {"average_reward", std::to_string(summed_rewards / episodes)}};
+  return {{"global_max_reward", std::to_string(global_max_reward)}};
 }
 } // namespace ai_pass_selector

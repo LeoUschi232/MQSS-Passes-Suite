@@ -388,13 +388,14 @@ QuantumCircuitEnvironment::step(unsigned int action) {
 InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
   InstructionsTensor<double> observation(this->max_qubits);
   observation.reserve(/*nr_instructions=*/2u);
-
   if (this->circuit_module == nullptr || this->terminated || this->truncated) {
     observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }
-  const unsigned int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit_module));
-  if (NR_QUBITS < 1u) {
+  const unsigned int nr_qubits =
+      getNumberOfQubits(FuncOp(this->circuit_module));
+  if (nr_qubits < 2u) {
+    // Any valid normal circuit should have at least 2 qubits.
     observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }
@@ -429,7 +430,7 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
     bool isAdj = false;
 
     if (isMeasurement(op)) {
-      targets = getMeasurementTargets(op, NR_QUBITS);
+      targets = getMeasurementTargets(op, nr_qubits);
     } else {
       std::tie(controls, targets, params, isAdj) =
           getOperatingControlsTargetsParams(op);
