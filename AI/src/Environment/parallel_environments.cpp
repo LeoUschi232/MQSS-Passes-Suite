@@ -83,28 +83,24 @@ ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
   return {false, 0u, 0u};
 }
 
-std::tuple<std::vector<double>, std::vector<bool>>
+std::vector<std::tuple<double, bool, bool>>
 ParallelEnvironments::step(const torch::Tensor &actions) {
   if (actions.size(/*dim=*/0) != nr_environments) {
     throw std::runtime_error("actions.size() != nr_environments");
   }
-  std::vector<std::future<std::tuple<double, bool>>> futures;
+  std::vector<std::future<std::tuple<double, bool, bool>>> futures;
   futures.reserve(nr_environments);
   for (size_t i = 0; i < nr_environments; ++i) {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
-      return environments[i].step(actions[i].item<unsigned int>());
+      return environments[i].step(actions[i].item<unsigned>());
     }));
   }
-  std::vector<double> rewards;
-  std::vector<bool> terminates;
-  rewards.reserve(nr_environments);
-  terminates.reserve(nr_environments);
+  std::vector<std::tuple<double, bool, bool>> step_returns;
+  step_returns.reserve(nr_environments);
   for (auto &future : futures) {
-    auto [reward, terminate] = future.get();
-    rewards.push_back(reward);
-    terminates.push_back(terminate);
+    step_returns.push_back(future.get());
   }
-  return {std::move(rewards), std::move(terminates)};
+  return step_returns;
 }
 
 torch::Tensor ParallelEnvironments::get_batched_observations() const {

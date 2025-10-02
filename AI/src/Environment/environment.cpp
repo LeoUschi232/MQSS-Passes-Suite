@@ -123,8 +123,10 @@ QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
   return *this;
 }
 
-void QuantumCircuitEnvironment::clear() {
-  this->circuit_path.clear();
+void QuantumCircuitEnvironment::clear(bool hard) {
+  if (hard) {
+    this->circuit_path.clear();
+  }
   this->circuit_module = nullptr;
   if (context_ptr && this->context_ptr.get() != nullptr) {
     delete *this->context_ptr.get();
@@ -134,13 +136,13 @@ void QuantumCircuitEnvironment::clear() {
   this->step_no_improvement = 0;
   this->step_no_change = 0;
   this->step_same_action = 0;
+  this->last_action = -1;
+  this->terminated = false;
+  this->truncated = false;
 }
 
 void QuantumCircuitEnvironment::reset() {
-  this->step_per_episode = 0;
-  this->step_no_improvement = 0;
-  this->step_no_change = 0;
-  this->step_same_action = 0;
+  this->clear(/*hard=*/false);
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
     return;
@@ -152,7 +154,6 @@ void QuantumCircuitEnvironment::reset() {
         {.max_nr_qubits = static_cast<int>(this->max_qubits),
          .weight_min_multiplier_for_unoccurring_gates = 0.1,
          .probability_additionals_controls = 0.01});
-    this->clear();
     this->circuit_module = module;
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
@@ -312,7 +313,11 @@ QuantumCircuitEnvironment::get_circuit_info() const {
 /// [Reward, Terminated, Truncated]
 std::tuple<double, bool, bool>
 QuantumCircuitEnvironment::step(unsigned int action) {
+  if (this->terminated || this->truncated) {
+    return {0.0, this->terminated, this->truncated};
+  }
   if (++this->step_per_episode > this->max_steps_per_episode) {
+    this->truncated = true;
     return {0.0, /*Terminated=*/false, /*Truncated=*/true};
   }
   if (this->circuit_module == nullptr) {
@@ -344,6 +349,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   } catch (const std::runtime_error &e) {
     std::cerr << "\nPass " << passname << " failed with " << e.what()
               << std::endl;
+    this->truncated = true;
     return {0.0, /*Terminated=*/false, /*Truncated=*/true};
   }
   std::unordered_map<std::string, unsigned int> current_circuit_info =
@@ -366,32 +372,37 @@ QuantumCircuitEnvironment::step(unsigned int action) {
     this->step_no_change = 0;
     this->step_same_action = 0;
   } else if (++this->step_no_change > this->max_steps_no_change) {
+    this->terminated = true;
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   } else if (static_cast<int>(action) != this->last_action) {
     this->step_same_action = 0;
   } else if (++this->step_same_action > this->max_steps_same_action) {
+    this->terminated = true;
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
   this->last_action = static_cast<int>(action);
+  assert(!this->terminated || !this->truncated);
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
 InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
   InstructionsTensor<double> observation(this->max_qubits);
-  if (this->circuit_module == nullptr) {
+  observation.reserve(/*nr_instructions=*/2u);
+
+  if (this->circuit_module == nullptr || this->terminated || this->truncated) {
+    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }
-  const int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit_module));
-  if (NR_QUBITS == 0) {
+  const unsigned int NR_QUBITS = getNumberOfQubits(FuncOp(this->circuit_module));
+  if (NR_QUBITS < 1u) {
+    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }
   const unsigned int nr_instructions =
       getNumberOfGates(FuncOp(this->circuit_module));
-  if (nr_instructions <= 0) {
-    // Make N=1 dummy row to allow agent to eat this observation with smaller
-    // padding.
-    observation.reserve(1);
-    observation.append(std::vector(observation.shape[1], 0.0));
+  if (nr_instructions < 2u) {
+    // Any valid normal circuit should have at least 2 instructions.
+    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }
   observation.reserve(nr_instructions);

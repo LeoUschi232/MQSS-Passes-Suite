@@ -60,6 +60,8 @@ class QuantumCircuitEnvironment {
   unsigned int step_no_change = 0u;
   unsigned int step_same_action = 0u;
   int last_action = -1;
+  bool terminated = false;
+  bool truncated = false;
 
   /// Attributes for randomizer
   std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
@@ -97,7 +99,7 @@ public:
   QuantumCircuitEnvironment &operator=(QuantumCircuitEnvironment &&) noexcept;
 
   /// Clear and Reset
-  void clear();
+  void clear(bool hard = true);
   void reset();
 
   /**

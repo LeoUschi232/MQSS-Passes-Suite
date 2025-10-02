@@ -83,9 +83,9 @@ public:
   /**
    *
    * @param actions
-   * @return
+   * @return Vector of [Reward, Terminated, Truncated]
    */
-  std::tuple<std::vector<double>, std::vector<bool>>
+  std::vector<std::tuple<double, bool, bool>>
   ParallelEnvironments::step(const torch::Tensor &actions);
 
   /// Small methods

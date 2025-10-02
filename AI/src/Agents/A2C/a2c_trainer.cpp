@@ -97,13 +97,17 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
 
         auto [actions, log_action_probs, state_values, step_entropy] =
             agent->select_action(batched_observations);
-        auto [rewards, terminates] = environments.step(actions);
+        std::vector<std::tuple<double, bool, bool>> step_returns =
+            environments.step(actions);
+
         episode_log_probs[update_step] = log_action_probs;
         episode_values[update_step] = state_values;
         episode_entropies[update_step] = step_entropy;
         for (unsigned int b = 0; b < B; b++) {
-          episode_rewards[update_step][b] = rewards[b];
-          termination_masks[update_step][b] = terminates[b] ? 0.0 : 1.0;
+          auto [reward, terminated, truncated] = step_returns[b];
+          episode_rewards[update_step][b] = reward;
+          termination_masks[update_step][b] =
+              terminated || truncated ? 0.0 : 1.0;
         }
       }
       // Bootstrap value

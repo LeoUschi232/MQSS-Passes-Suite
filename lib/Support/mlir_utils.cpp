@@ -319,8 +319,8 @@ std::optional<int64_t> extractIndexFromQuakeExtractRefOp(Operation *op) {
 }
 
 // function to get the number of qubits in a given quantum kernel
-int getNumberOfQubits(FuncOp circuit) {
-  int numQubits = 0;
+unsigned int getNumberOfQubits(FuncOp circuit) {
+  unsigned int numQubits = 0;
   circuit.walk([&](quake::AllocaOp allocOp) {
     if (allocOp.getType().dyn_cast<quake::RefType>()) {
       numQubits += 1;
@@ -331,8 +331,8 @@ int getNumberOfQubits(FuncOp circuit) {
   return numQubits;
 }
 
-int getNumberOfGates(FuncOp circuit) {
-  int nrQubits = getNumberOfQubits(circuit);
+unsigned int getNumberOfGates(FuncOp circuit) {
+  unsigned int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
     return 0;
   }
@@ -364,8 +364,8 @@ int getNumberOfGates(FuncOp circuit) {
   return nrGates;
 }
 
-int getCircuitDepth(FuncOp circuit) {
-  int nrQubits = getNumberOfQubits(circuit);
+unsigned int getCircuitDepth(FuncOp circuit) {
+  unsigned int nrQubits = getNumberOfQubits(circuit);
   if (nrQubits == 0) {
     return 0;
   }
@@ -376,7 +376,7 @@ int getCircuitDepth(FuncOp circuit) {
     return -1;
   }
 
-  std::vector depths(nrQubits, 0);
+  std::vector depths(nrQubits, 0u);
   circuit.walk([&](Operation *op) {
     if (!isGate(op)) {
       return;
@@ -407,7 +407,7 @@ int getCircuitDepth(FuncOp circuit) {
       std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
       std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
       targets.insert(targets.end(), controls.begin(), controls.end());
-      int max_depth = 0;
+      unsigned int max_depth = 0;
       for (int qubit : targets) {
         max_depth = std::max(max_depth, depths[qubit]);
       }
