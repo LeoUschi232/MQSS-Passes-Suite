@@ -75,13 +75,15 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     torch::Tensor episode_entropies = torch::zeros({T, B}, options);
     torch::Tensor termination_masks = torch::zeros({T, B}, options);
 
-    unsigned int total_padding_on_observations = 0u;
-    for (unsigned int update_step = 0; update_step < max_steps_per_episode;
+    unsigned int padding_on_initial_observations = 0u;
+    for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
          update_step++) {
 
       auto [batched_observations, padding_on_observations] =
           environments.get_batched_observations_with_padding();
-      total_padding_on_observations += padding_on_observations;
+      if (update_step == 0u) {
+        padding_on_initial_observations = padding_on_observations;
+      }
 
       auto [actions, log_action_probs, state_values, step_entropy] =
           agent->select_action(batched_observations);
@@ -123,7 +125,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
             " | Avg: " + std::to_string(summed_rewards / episode_nr) +
             " | Nr qubits: " + std::to_string(nr_qubits) +
             " | Nr gates: " + std::to_string(nr_gates) +
-            " | Obs-Pad: " + std::to_string(total_padding_on_observations)
+            " | POIO: " + std::to_string(padding_on_initial_observations)
 
     );
   }
