@@ -35,15 +35,15 @@ void ParallelEnvironments::register_randomizer_params(
   }
 }
 
-bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
+std::tuple<bool, unsigned int, unsigned int>
+ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
   if (this->environments.size() != this->nr_environments ||
       this->nr_environments <= 0 || !this->qubits_cholesky_params.has_value() ||
       !this->gates_weights.has_value()) {
-    return false;
+    return {false, 0u, 0u};
   }
-  bool success = true;
   try {
-    auto [nr_qubits, nr_gates, _1, _2] =
+    auto [nr_qubits, nr_gates, _, __] =
         sample_nr_qubits_gates_operations_measurements(
             qubits_cholesky_params.value());
     // Ignore nr_measurements because after if nr_oprations is set to
@@ -72,14 +72,15 @@ bool ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
             randomizer_options);
       }));
     }
+    bool success = true;
     for (auto &environment_future : environment_futures) {
       success &= environment_future.get();
     }
+    return {success, nr_qubits, nr_gates};
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
-    return false;
   }
-  return success;
+  return {false, 0u, 0u};
 }
 
 std::tuple<std::vector<double>, std::vector<bool>>

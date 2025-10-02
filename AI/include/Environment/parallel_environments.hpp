@@ -58,7 +58,8 @@ public:
    *
    * @return
    */
-  bool randomize_all_circuits_with_equal_dimensions();
+  std::tuple<bool, unsigned int, unsigned int>
+  randomize_all_circuits_with_equal_dimensions();
 
   /**
    * B = Batch size / Nr of parallel environments

@@ -59,23 +59,21 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
 
   double max_reward = -std::numeric_limits<double>::max();
   double summed_rewards = 0.0;
-  std::vector<double> entropies;
-  std::vector<double> critic_losses;
-  std::vector<double> actor_losses;
   int64_t T = max_steps_per_episode;
   int64_t B = nr_parallel_environments;
 
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, episodes, "Beginning training");
   for (unsigned int episode_nr = 1; episode_nr <= episodes; episode_nr++) {
-    environments.reset();
+    auto [success, nr_qubits, nr_gates] =
+        environments.randomize_all_circuits_with_equal_dimensions();
     torch::TensorOptions options =
         torch::TensorOptions().device(device).dtype(torch::kFloat64);
-    auto episode_log_probs = torch::zeros({T, B}, options);
-    auto episode_values = torch::zeros({T, B}, options);
-    auto episode_rewards = torch::zeros({T, B}, options);
-    auto episode_entropies = torch::zeros({T, B}, options);
-    auto termination_masks = torch::zeros({T, B}, options);
+    torch::Tensor episode_log_probs = torch::zeros({T, B}, options);
+    torch::Tensor episode_values = torch::zeros({T, B}, options);
+    torch::Tensor episode_rewards = torch::zeros({T, B}, options);
+    torch::Tensor episode_entropies = torch::zeros({T, B}, options);
+    torch::Tensor termination_masks = torch::zeros({T, B}, options);
 
     for (unsigned int update_step = 0; update_step < max_steps_per_episode;
          update_step++) {
@@ -108,12 +106,11 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       agent->save_model();
     }
     agent->update_parameters(critic_loss, actor_loss);
-    entropies.push_back(episode_entropies.mean().item<double>());
-    critic_losses.push_back(critic_loss.item<double>());
-    actor_losses.push_back(actor_loss.item<double>());
     updateProgress(episode_nr, episodes,
                    "Max: " + std::to_string(max_reward) + " | Avg: " +
-                       std::to_string(summed_rewards / episode_nr));
+                       std::to_string(summed_rewards / episode_nr) +
+                       " | Nr qubits: " + std::to_string(nr_qubits) +
+                       " | Nr gates: " + std::to_string(nr_gates));
   }
   std::cout << "\nTraining finished." << std::endl;
 
@@ -123,9 +120,6 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }
   return {{"max_reward", std::to_string(max_reward)},
-          {"average_reward", std::to_string(summed_rewards / episodes)},
-          {"final_entropy", std::to_string(entropies.back())},
-          {"final_critic_loss", std::to_string(critic_losses.back())},
-          {"final_actor_loss", std::to_string(actor_losses.back())}};
+          {"average_reward", std::to_string(summed_rewards / episodes)}};
 }
 } // namespace ai_pass_selector

@@ -70,6 +70,14 @@ BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
   return {this->critic->forward(x), this->actor->forward(x)};
 }
 
+torch::Tensor
+BaseA2CAgent::get_value(const torch::Tensor &batched_observations) {
+  std::lock_guard lock(*this->model_mutex);
+  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+  // Assuming critic is a member that takes batched obs and returns values.
+  return critic->forward(x).squeeze(-1);
+}
+
 std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
            torch::Tensor>
 BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
