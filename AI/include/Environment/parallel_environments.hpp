@@ -16,7 +16,8 @@ class ParallelEnvironments {
   unsigned int max_steps;
 
   /// Attributes for randomizer
-  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> qubits_cholesky_params;
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
+      qubits_cholesky_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
@@ -70,6 +71,14 @@ public:
    * legit instruction and 0.0 if padding.
    */
   torch::Tensor get_batched_observations() const;
+
+  /**
+   *
+   * @param compute_padding
+   * @return
+   */
+  std::pair<torch::Tensor, unsigned int>
+  get_batched_observations_with_padding(bool compute_padding = true) const;
 
   /**
    *

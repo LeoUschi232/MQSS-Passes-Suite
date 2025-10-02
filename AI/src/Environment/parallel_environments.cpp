@@ -108,6 +108,13 @@ ParallelEnvironments::step(const std::vector<unsigned int> &actions) {
 }
 
 torch::Tensor ParallelEnvironments::get_batched_observations() const {
+  auto [batched_observations, _] = get_batched_observations_with_padding(false);
+  return batched_observations;
+}
+
+std::pair<torch::Tensor, unsigned int>
+ParallelEnvironments::get_batched_observations_with_padding(
+    bool compute_padding) const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<InstructionsTensor<double>>> observation_futures;
@@ -121,11 +128,11 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   }
   std::vector<InstructionsTensor<double>> observations;
   observations.reserve(B);
-  int64_t maxN = 0u;
+  unsigned int maxN = 0u;
   int64_t IRP = 0u;
   for (auto &observation_future : observation_futures) {
     observations.emplace_back(observation_future.get());
-    maxN = std::max(static_cast<unsigned>(maxN), observations.back().shape[0]);
+    maxN = std::max(maxN, observations.back().shape[0]);
     if (IRP <= 0) {
       IRP = observations.back().shape[1];
     } else if (IRP != observations.back().shape[1]) {
@@ -134,20 +141,24 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   }
   torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
   if (maxN <= 0) {
-    return torch::zeros({B, 1, IRP}, options);
+    return {torch::zeros({B, 1, IRP}, options), 0u};
   }
 
   std::vector<torch::Tensor> torch_tensors;
   torch_tensors.reserve(B);
+  unsigned int total_padding = 0u;
   for (int64_t b = 0; b < B; b++) {
     InstructionsTensor<double> instruction_tensor = observations[b];
+    if (compute_padding) {
+      total_padding += maxN - instruction_tensor.shape[0];
+    }
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
   }
-  return torch::stack(torch_tensors);
+  return {torch::stack(torch_tensors), total_padding};
 }
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }

@@ -75,10 +75,16 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     torch::Tensor episode_entropies = torch::zeros({T, B}, options);
     torch::Tensor termination_masks = torch::zeros({T, B}, options);
 
+    unsigned int total_padding_on_observations = 0u;
     for (unsigned int update_step = 0; update_step < max_steps_per_episode;
          update_step++) {
+
+      auto [batched_observations, padding_on_observations] =
+          environments.get_batched_observations_with_padding();
+      total_padding_on_observations += padding_on_observations;
+
       auto [actions, log_action_probs, state_values, step_entropy] =
-          agent->select_action(environments.get_batched_observations());
+          agent->select_action(batched_observations);
       auto [rewards, terminates] = environments.step(actions);
       episode_log_probs[update_step] = log_action_probs;
       episode_values[update_step] = state_values;
@@ -106,11 +112,20 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       agent->save_model();
     }
     agent->update_parameters(critic_loss, actor_loss);
-    updateProgress(episode_nr, episodes,
-                   "Max: " + std::to_string(max_reward) + " | Avg: " +
-                       std::to_string(summed_rewards / episode_nr) +
-                       " | Nr qubits: " + std::to_string(nr_qubits) +
-                       " | Nr gates: " + std::to_string(nr_gates));
+    // Total padding on observations is an interesting matric to monitor for
+    // diagnostics of the randomize_all_circuits_with_equal_dimensions
+    // function.
+    // If randomize_all_circuits_with_equal_dimensions works as intended, that
+    // padding should always be zero.
+    updateProgress(
+        episode_nr, episodes,
+        "Max: " + std::to_string(max_reward) +
+            " | Avg: " + std::to_string(summed_rewards / episode_nr) +
+            " | Nr qubits: " + std::to_string(nr_qubits) +
+            " | Nr gates: " + std::to_string(nr_gates) +
+            " | Obs-Pad: " + std::to_string(total_padding_on_observations)
+
+    );
   }
   std::cout << "\nTraining finished." << std::endl;
 
