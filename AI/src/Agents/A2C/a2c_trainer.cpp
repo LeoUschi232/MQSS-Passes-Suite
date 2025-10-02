@@ -114,7 +114,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       agent->save_model();
     }
     agent->update_parameters(critic_loss, actor_loss);
-    // Total padding on observations is an interesting matric to monitor for
+    // Padding on initial observations is an interesting matric to monitor for
     // diagnostics of the randomize_all_circuits_with_equal_dimensions
     // function.
     // If randomize_all_circuits_with_equal_dimensions works as intended, that
