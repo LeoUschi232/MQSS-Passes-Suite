@@ -105,8 +105,9 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
         for (unsigned int batch = 0; batch < B; batch++) {
           auto [reward, terminated, truncated] = step_returns[batch];
           episode_rewards[update_step][batch] = reward;
-          termination_masks[update_step][batch] =
-              terminated || truncated ? 0.0 : 1.0;
+          // Only check terminated so that bootstrapping is applied for
+          // truncated but not for terminated environments.
+          termination_masks[update_step][batch] = terminated ? 0.0 : 1.0;
         }
       }
       // Bootstrap value

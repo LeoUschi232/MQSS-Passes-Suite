@@ -349,8 +349,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   } catch (const std::runtime_error &e) {
     std::cerr << "\nPass " << passname << " failed with " << e.what()
               << std::endl;
-    this->truncated = true;
-    return {0.0, /*Terminated=*/false, /*Truncated=*/true};
+    return {0.0, /*Terminated=*/false, /*Truncated=*/false};
   }
   std::unordered_map<std::string, unsigned int> current_circuit_info =
       this->get_circuit_info();
@@ -388,7 +387,9 @@ QuantumCircuitEnvironment::step(unsigned int action) {
 InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
   InstructionsTensor<double> observation(this->max_qubits);
   observation.reserve(/*nr_instructions=*/2u);
-  if (this->circuit_module == nullptr || this->terminated || this->truncated) {
+  if (this->circuit_module == nullptr || this->truncated) {
+    // Changed to exclude this->truncated so that for truncated episodes, we
+    // return the actual observation for bootstrapping.
     observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
     return observation;
   }

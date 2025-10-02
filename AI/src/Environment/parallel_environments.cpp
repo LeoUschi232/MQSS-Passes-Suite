@@ -92,7 +92,7 @@ ParallelEnvironments::step(const torch::Tensor &actions) {
   futures.reserve(nr_environments);
   for (size_t i = 0; i < nr_environments; ++i) {
     futures.emplace_back(std::async(std::launch::async, [&, i] {
-      return environments[i].step(actions[i].item<unsigned>());
+      return environments[i].step(actions[i].item<int>());
     }));
   }
   std::vector<std::tuple<double, bool, bool>> step_returns;
