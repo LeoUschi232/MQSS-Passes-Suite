@@ -51,11 +51,10 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
               << std::endl;
     return {};
   }
-  auto [qubits_and_gates_distribution_params, gates_weights] =
-      optional_statistics.value();
+  auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   ParallelEnvironments environments(nr_parallel_environments, max_qubits,
                                     max_steps_per_episode);
-  environments.register_randomizer_params(qubits_and_gates_distribution_params,
+  environments.register_randomizer_params(qubits_cholesky_params,
                                           gates_weights);
 
   double max_reward = -std::numeric_limits<double>::max();
@@ -78,12 +77,10 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
     auto episode_entropies = torch::zeros({T, B}, options);
     auto termination_masks = torch::zeros({T, B}, options);
 
-    torch::Tensor batched_observations =
-        environments.get_batched_observations();
     for (unsigned int update_step = 0; update_step < max_steps_per_episode;
          update_step++) {
       auto [actions, log_action_probs, state_values, step_entropy] =
-          agent->select_action(batched_observations);
+          agent->select_action(environments.get_batched_observations());
       auto [rewards, terminates] = environments.step(actions);
       episode_log_probs[update_step] = log_action_probs;
       episode_values[update_step] = state_values;
