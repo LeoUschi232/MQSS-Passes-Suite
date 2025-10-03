@@ -174,12 +174,11 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
         randomizer_options.max_nr_qubits, static_cast<int>(this->max_qubits));
     this->circuit = random_quantum_circuit_from_embedded_statistics(
         cholesky_params, gates_weights, randomizer_options);
-    this->validate();
   } catch (const std::runtime_error &error) {
     std::cerr << error.what() << std::endl;
     return false;
   }
-  return true;
+  return this->validate();
 }
 
 void QuantumCircuitEnvironment::register_randomizer_params(
