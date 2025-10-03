@@ -81,7 +81,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       auto [success, nr_qubits, nr_gates] =
           environments.randomize_all_circuits_with_equal_dimensions();
       torch::TensorOptions options =
-          torch::TensorOptions().device(device).dtype(torch::kFloat64);
+          torch::TensorOptions().device(device).dtype(torch::kFloat32);
       torch::Tensor episode_log_probs = torch::zeros({T, B}, options);
       torch::Tensor episode_values = torch::zeros({T + 1, B}, options);
       torch::Tensor episode_rewards = torch::zeros({T, B}, options);
@@ -91,11 +91,11 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
 
-        auto [batched_observations, padding_on_observations] =
+        auto [batched_observations, instructions_mask] =
             environments.get_batched_observations_with_padding();
 
         auto [actions, log_action_probs, state_values, step_entropy] =
-            agent->select_action(batched_observations);
+            agent->select_action(batched_observations, instructions_mask);
         std::vector<std::tuple<double, bool, bool>> step_returns =
             environments.step(actions);
 
