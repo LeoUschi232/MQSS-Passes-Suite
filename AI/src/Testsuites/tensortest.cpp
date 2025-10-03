@@ -126,7 +126,7 @@ int convertTensortestCircuitToTikz(int index) {
   if (int rc = write_to_file(&circuit, latex_quake_output_file); rc != 0) {
     return -1;
   }
-  // Reconstructed quake → tikz (two variants)
+  // Reconstructed quake → tikz
   if (int rc = convert_quake_to_tikz(
           quake_to_tikz_tool_path, latex_quake_output_file,
           latex_tikz_output_file, "./logs/tensortest_to_tikz_after.log");
