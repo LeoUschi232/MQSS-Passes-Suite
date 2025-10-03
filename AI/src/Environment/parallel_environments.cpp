@@ -65,9 +65,9 @@ ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
         .exact_nr_qubits = static_cast<int>(nr_qubits),
         .exact_nr_gates = static_cast<int>(nr_gates),
         .exact_nr_operations = static_cast<int>(nr_gates - nr_qubits),
+        .allow_measurements_as_gates = false,
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-        .probability_additionals_controls = 0.01,
-        .allow_measurements_as_gates = false};
+        .probability_additionals_controls = 0.01};
 
     std::vector<std::future<bool>> environment_futures;
     environment_futures.reserve(this->nr_environments);
