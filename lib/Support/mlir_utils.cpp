@@ -123,26 +123,26 @@ std::vector<int> getMeasurementTargets(Operation *op, int nr_qubits) {
 
 std::tuple<unsigned int, unsigned int, unsigned int>
 getQubitsInstructionsDepth(FuncOp circuit) {
-  unsigned int nrQubits = 0;
-  unsigned int nrGates = 0;
+  unsigned int nr_qubits = 0;
+  unsigned int nr_gates = 0;
   std::vector<unsigned int> depths;
 
   circuit.walk([&](Operation *op) {
     if (isa<quake::AllocaOp>(op)) {
       if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
           allocOp.getType().dyn_cast<quake::RefType>()) {
-        nrQubits += 1;
+        nr_qubits += 1;
       } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
-        nrQubits += qvecType.getSize();
+        nr_qubits += qvecType.getSize();
       }
-      depths.resize(nrQubits, 0);
+      depths.resize(nr_qubits, 0);
       return;
     }
     if (!isGate(op)) {
       return;
     }
     if (isMeasurement(op)) {
-      for (auto operand : op->getOperands()) {
+      for (Value operand : op->getOperands()) {
         if (operand.getType().isa<quake::RefType>()) {
           auto qubitIndexOpt =
               extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
@@ -150,36 +150,36 @@ getQubitsInstructionsDepth(FuncOp circuit) {
             continue;
           }
           if (int qubitIndex = qubitIndexOpt.value();
-              0 <= qubitIndex && qubitIndex < nrQubits) {
-            nrGates++;
+              0 <= qubitIndex && qubitIndex < nr_qubits) {
+            nr_gates++;
             depths[qubitIndex]++;
           }
         } else if (operand.getType().isa<quake::VeqType>()) {
           // Because this function only works for a single allocation, the
           // reference to a Veq will reference all allocated qubits in the
           // range [0, nrQubits-1].
-          for (int qubitIndex = 0; qubitIndex < nrQubits; qubitIndex++) {
+          for (int qubitIndex = 0; qubitIndex < nr_qubits; qubitIndex++) {
             depths[qubitIndex]++;
           }
-          nrGates += operand.getType().dyn_cast<quake::VeqType>().getSize();
+          nr_gates += operand.getType().dyn_cast<quake::VeqType>().getSize();
         }
       }
-    } else {
-      nrGates++;
-      auto gate = dyn_cast<quake::OperatorInterface>(op);
-      std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
-      std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
-      targets.insert(targets.end(), controls.begin(), controls.end());
-      unsigned int max_depth = 0;
-      for (int qubit : targets) {
-        max_depth = std::max(max_depth, depths[qubit]);
-      }
-      for (int qubit : targets) {
-        depths[qubit] = max_depth + 1;
-      }
+      return;
+    }
+    nr_gates++;
+    auto gate = dyn_cast<quake::OperatorInterface>(op);
+    std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+    std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+    targets.insert(targets.end(), controls.begin(), controls.end());
+    unsigned int max_depth = 0;
+    for (int qubit : targets) {
+      max_depth = std::max(max_depth, depths[qubit]);
+    }
+    for (int qubit : targets) {
+      depths[qubit] = max_depth + 1;
     }
   });
-  return {nrQubits, nrGates, *std::ranges::max_element(depths)};
+  return {nr_qubits, nr_gates, *std::ranges::max_element(depths)};
 }
 
 std::string vectorToString(const std::vector<int> &vec) {

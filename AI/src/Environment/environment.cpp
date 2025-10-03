@@ -84,9 +84,10 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     QuantumCircuitEnvironment &&other) noexcept
-    : max_qubits(other.max_qubits), circuit_path(std::move(other.circuit_path)),
+    : max_qubits(other.max_qubits),
       circuit_module(std::move(other.circuit_module)),
       context_ptr(std::move(other.context_ptr)),
+      circuit_path(std::move(other.circuit_path)),
       max_steps_per_episode(other.max_steps_per_episode),
       max_steps_no_improvement(other.max_steps_no_improvement),
       max_steps_no_change(other.max_steps_no_change),
@@ -158,15 +159,13 @@ void QuantumCircuitEnvironment::reset() {
             {.max_nr_qubits = static_cast<int>(this->max_qubits),
              .weight_min_multiplier_for_unoccurring_gates = 0.1,
              .probability_additionals_controls = 0.01});
-    if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_gates < GLOBAL_MIN_NR_GATES ||
-        nr_qubits > this->max_qubits || module == nullptr ||
-        context == nullptr) {
-      std::cerr << "Failed to randomize a new circuit on reset." << std::endl;
-      return;
-    }
     this->nr_qubits = nr_qubits;
     this->nr_gates = nr_gates;
     this->depth = depth;
+    if (this->check() || module == nullptr || context == nullptr) {
+      std::cerr << "Failed to randomize a new circuit on reset." << std::endl;
+      return;
+    }
     this->circuit_module = module;
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
@@ -193,31 +192,34 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   this->clear(/*hard=*/false);
   this->context_ptr = std::move(context);
 
-  switch (circuit_invalid_type(FuncOp(circuit))) {
+  int circuit_validity = validate();
+  switch (circuit_validity) {
   case CIRCUIT_VALID:
     break;
   case NO_CIRCUIT:
-    this->clear();
     std::cerr << "No circuit provided to the environment." << std::endl;
-    return false;
+    break;
   case INVALID_NR_QUBITS:
-    this->clear();
-    std::cerr << "Passed circuit has too many qubits." << std::endl;
-    return false;
+    std::cerr << "Passed circuit has invalid nr qubits." << std::endl;
+    break;
+  case INVALID_NR_GATES:
+    std::cerr << "Passed circuit has invalid nr gates." << std::endl;
+    break;
   case INVALID_NR_ALLOCATIONS:
-    this->clear();
     std::cerr << "Passed circuit has invalid allocations." << std::endl;
-    return false;
+    break;
   case AMBIGUOUS_MEASUREMENT:
-    this->clear();
     std::cerr << "Passed circuit has ambiguous measurements." << std::endl;
-    return false;
-  default:
-    this->clear();
-    std::cerr << "Unkown circuit validation error." << std::endl;
+    break;
+  default:;
+  }
+  if (circuit_validity != CIRCUIT_VALID) {
+    this->clear(/*hard=*/false);
     return false;
   }
-  // Tegister the circuit path and module only if the circuit is valid.
+  // Register the circuit path and module only if the circuit is valid.
+  // Function validate_circuit should already correctly assign nr_qubits,
+  // nr_gates and depth.
   this->circuit_path = circuit_path;
   this->circuit_module = circuit;
   return true;
@@ -238,9 +240,10 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
     auto [nr_qubits, nr_gates, depth, module, context] =
         random_quantum_circuit_from_embedded_statistics(
             cholesky_params, gates_weights, randomizer_options);
-    if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_gates < GLOBAL_MIN_NR_GATES ||
-        nr_qubits > this->max_qubits || module == nullptr ||
-        context == nullptr) {
+    this->nr_qubits = nr_qubits;
+    this->nr_gates = nr_gates;
+    this->depth = depth;
+    if (this->check() || module == nullptr || context == nullptr) {
       std::cerr << "Failed to randomize a custom circuit." << std::endl;
       return false;
     }
@@ -262,16 +265,21 @@ void QuantumCircuitEnvironment::register_randomizer_params(
   this->gates_weights = gates_weights;
 }
 
-unsigned int
-QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
+int QuantumCircuitEnvironment::validate() {
+  auto circuit = FuncOp(this->circuit_module);
+  this->nr_qubits = 0u;
+  this->nr_gates = 0u;
+  this->depth = 0u;
   if (circuit == nullptr) {
     return NO_CIRCUIT;
   }
-  unsigned int nr_qubits = 0;
-  unsigned int nr_allocations = 0;
+  unsigned int nr_qubits = 0u;
+  unsigned int nr_gates = 0u;
+  std::vector<unsigned int> depths;
+  unsigned int nr_allocations = 0u;
   bool ambiguous_measurement = false;
   circuit.walk([&](Operation *op) -> mlir::WalkResult {
-    if (nr_allocations >= 2 || ambiguous_measurement ||
+    if (nr_allocations >= 2u || ambiguous_measurement ||
         nr_qubits > max_qubits) {
       return mlir::WalkResult::interrupt();
     }
@@ -289,14 +297,66 @@ QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
       if (nr_qubits > max_qubits) {
         return mlir::WalkResult::interrupt();
       }
-    } else if (isMeasurement(op) && op->getOpOperands().size() != 1) {
+      depths.resize(nr_qubits, 0);
+      return mlir::WalkResult::advance();
+    }
+    if (!isGate(op)) {
+      return mlir::WalkResult::advance();
+    }
+    if (isMeasurement(op)) {
+      mlir::OperandRange operands = op->getOperands();
+      if (operands.size() != 1) {
+        ambiguous_measurement = true;
+        return mlir::WalkResult::interrupt();
+      }
+      Value operand = operands.front();
+      if (operand.getType().isa<quake::RefType>()) {
+        auto qubitIndexOpt =
+            extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+        if (!qubitIndexOpt.has_value()) {
+          // If the measurement doesn't have a valid qubit indexes, it's
+          // ambiguous what the measurement is.
+          ambiguous_measurement = true;
+          return mlir::WalkResult::interrupt();
+        }
+        if (int qubitIndex = qubitIndexOpt.value();
+            0 <= qubitIndex && qubitIndex < nr_qubits) {
+          nr_gates++;
+          depths[qubitIndex]++;
+        }
+        return mlir::WalkResult::advance();
+      }
+      if (operand.getType().isa<quake::VeqType>()) {
+        for (int qubitIndex = 0; qubitIndex < nr_qubits; qubitIndex++) {
+          depths[qubitIndex]++;
+        }
+        nr_gates += operand.getType().dyn_cast<quake::VeqType>().getSize();
+        return mlir::WalkResult::advance();
+      }
+      // If the measurement is neither a RefType nor a VeqType, it's ambiguous
+      // what the measurement is.
       ambiguous_measurement = true;
       return mlir::WalkResult::interrupt();
+    }
+    nr_gates++;
+    auto gate = dyn_cast<quake::OperatorInterface>(op);
+    std::vector<int> targets = getIndicesOfValueRange(gate.getTargets());
+    std::vector<int> controls = getIndicesOfValueRange(gate.getControls());
+    targets.insert(targets.end(), controls.begin(), controls.end());
+    unsigned int max_depth = 0;
+    for (int qubit : targets) {
+      max_depth = std::max(max_depth, depths[qubit]);
+    }
+    for (int qubit : targets) {
+      depths[qubit] = max_depth + 1;
     }
     return mlir::WalkResult::advance();
   });
   if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_qubits > max_qubits) {
     return INVALID_NR_QUBITS;
+  }
+  if (nr_gates < GLOBAL_MIN_NR_GATES) {
+    return INVALID_NR_GATES;
   }
   if (nr_allocations != 1) {
     return INVALID_NR_ALLOCATIONS;
@@ -304,25 +364,60 @@ QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
   if (ambiguous_measurement) {
     return AMBIGUOUS_MEASUREMENT;
   }
+  this->nr_qubits = nr_qubits;
+  this->nr_gates = nr_gates;
+  this->depth =
+      depths.empty() ? 0u : *std::max_element(depths.begin(), depths.end());
   return CIRCUIT_VALID;
 }
 
 std::unordered_map<std::string, unsigned int>
-QuantumCircuitEnvironment::get_circuit_info(FuncOp circuit) {
-  if (circuit == nullptr) {
-    return {};
-  }
-  auto [nrQubits, nrGates, depth] = getQubitsInstructionsDepth(circuit);
-  return {{"qubits", nrQubits}, {"gates", nrGates}, {"depth", depth}};
-}
-
-std::unordered_map<std::string, unsigned int>
-QuantumCircuitEnvironment::get_circuit_info() const {
+QuantumCircuitEnvironment::get_circuit_info() {
   if (this->circuit_module == nullptr) {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  return get_circuit_info(FuncOp(this->circuit_module));
+  if (!this->check()) {
+    auto [nr_qubits, nr_gates, depth] =
+        getQubitsInstructionsDepth(FuncOp(this->circuit_module));
+    this->assign(nr_qubits, nr_gates, depth);
+  }
+  return {{"qubits", this->nr_qubits},
+          {"gates", this->nr_gates},
+          {"depth", this->depth}};
+}
+
+bool QuantumCircuitEnvironment::run_pass(unsigned int pass_index) {
+  if (pass_index >= NR_PASSES) {
+    return false;
+  }
+  auto [passname, passptr] = getPassNameAndPointer(pass_index);
+  try {
+    // Variable context must be a MLIRContext&.
+    // Types are:
+    // context_ptr = unique_ptr<MLIRContext*>
+    // context_ptr.get() = MLIRContext**
+    // *context_ptr.get() = MLIRContext*
+    // **context_ptr.get() = MLIRContext
+    MLIRContext &context = **this->context_ptr.get();
+    mlir::PassManager pass_manager(&context);
+    pass_manager.addPass(std::move(passptr));
+
+    // If something above throws an exception do not invalidate the circuit but
+    // if the pass is going to be attempted, regardless of outcome, invalidate
+    // the circuit.
+    this->nr_qubits = 0u;
+    this->nr_gates = 0u;
+    this->depth = 0u;
+    if (mlir::failed(pass_manager.run(this->circuit_module))) {
+      return false;
+    }
+  } catch (const std::runtime_error &error) {
+    std::cerr << "\nPass " << passname << " failed with " << error.what()
+              << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /// [Reward, Terminated, Truncated]
@@ -341,10 +436,15 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   if (action >= NR_PASSES) {
     throw std::runtime_error("Invalid action: " + std::to_string(action));
   }
-  std::unordered_map<std::string, unsigned int> previous_circuit_info =
-      this->get_circuit_info();
-  double previous_depth = previous_circuit_info["depth"];
-  double previous_gates = previous_circuit_info["gates"];
+  double previous_gates;
+  double previous_depth;
+  if (this->check()) {
+    // Assume that if those values are set, they are correct.
+    previous_gates = this->nr_gates;
+    previous_depth = this->depth;
+  } else {
+    throw std::runtime_error("QuantumCircuitEnvironment check failed in step.");
+  }
 
   auto [passname, passptr] = getPassNameAndPointer(action);
   try {
@@ -472,6 +572,24 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
     instruction_index++;
   });
   return observation;
+}
+
+void QuantumCircuitEnvironment::assign(unsigned int nr_qubits,
+                                       unsigned int nr_gates,
+                                       unsigned int depth) {
+  this->nr_qubits = nr_qubits;
+  this->nr_gates = nr_gates;
+  this->depth = depth;
+  if (!this->check()) {
+    this->nr_qubits = 0u;
+    this->nr_gates = 0u;
+    this->depth = 0u;
+  }
+}
+bool QuantumCircuitEnvironment::check() const {
+  return this->nr_qubits >= GLOBAL_MIN_NR_QUBITS &&
+         this->nr_qubits <= this->max_qubits &&
+         this->nr_gates >= GLOBAL_MIN_NR_GATES && this->depth > 0u;
 }
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<double>, bool>
