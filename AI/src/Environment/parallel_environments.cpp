@@ -114,7 +114,7 @@ torch::Tensor ParallelEnvironments::get_batched_observations() const {
   return batched_observations;
 }
 
-std::pair<torch::Tensor, unsigned int>
+std::pair<torch::Tensor, torch::Tensor>
 ParallelEnvironments::get_batched_observations_with_padding(
     bool compute_padding) const {
   const int64_t B = nr_environments;
@@ -130,6 +130,7 @@ ParallelEnvironments::get_batched_observations_with_padding(
   }
   std::vector<InstructionsTensor<double>> observations;
   observations.reserve(B);
+
   unsigned int maxN = 0u;
   int64_t IRP = 0u;
   for (auto &observation_future : observation_futures) {
@@ -143,24 +144,26 @@ ParallelEnvironments::get_batched_observations_with_padding(
   }
   torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
   if (maxN <= 0) {
-    return {torch::zeros({B, 1, IRP}, options), 0u};
+    return {torch::zeros({B, 1, IRP}, options), torch::ones({B, 1}, options)};
   }
 
   std::vector<torch::Tensor> torch_tensors;
   torch_tensors.reserve(B);
-  unsigned int total_padding = 0u;
-  for (int64_t b = 0; b < B; b++) {
-    InstructionsTensor<double> instruction_tensor = observations[b];
-    if (compute_padding) {
-      total_padding += maxN - instruction_tensor.shape[0];
-    }
+  torch::Tensor instruction_mask = torch::ones({B, maxN}, options);
+  for (int64_t batch = 0; batch < B; batch++) {
+    InstructionsTensor<double> instruction_tensor = observations[batch];
+    unsigned int N = instruction_tensor.shape[0];
     instruction_tensor.pad(maxN, 0.0);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
+    if (compute_padding && N < maxN) {
+      instruction_mask[batch].slice(/*dim=*/0, /*start=*/N, /*end=*/maxN) =
+          torch::zeros({static_cast<int64_t>(maxN - N)}, options);
+    }
   }
-  return {torch::stack(torch_tensors), total_padding};
+  return {torch::stack(torch_tensors), instruction_mask};
 }
 
 unsigned int ParallelEnvironments::size() const { return nr_environments; }

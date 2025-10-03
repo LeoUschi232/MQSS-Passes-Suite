@@ -62,24 +62,28 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
 unsigned int BaseA2CAgent::getMaxQubits() const { return this->max_qubits; }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA2CAgent::forward(const torch::Tensor &batched_observations) {
+BaseA2CAgent::forward(const torch::Tensor &batched_observations,
+                      const torch::Tensor &mask) {
   std::lock_guard lock(*this->model_mutex);
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+  torch::Tensor m = mask.to(this->device).to(torch::kBool);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
-  return {this->actor->forward(x), this->critic->forward(x)};
+  return {this->actor->forward(x, m), this->critic->forward(x, m)};
 }
 
-torch::Tensor
-BaseA2CAgent::get_value(const torch::Tensor &batched_observations) {
+torch::Tensor BaseA2CAgent::get_value(const torch::Tensor &batched_observations,
+                                      const torch::Tensor &mask) {
   std::lock_guard lock(*this->model_mutex);
-  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
-  return this->critic->forward(x);
+  return this->critic->forward(
+      batched_observations.to(this->device).to(torch::kFloat),
+      mask.to(this->device).to(torch::kBool));
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-BaseA2CAgent::select_action(const torch::Tensor &batched_observations) {
-  auto [action_probs, state_values] = this->forward(batched_observations);
+BaseA2CAgent::select_action(const torch::Tensor &batched_observations,
+                            const torch::Tensor &mask) {
+  auto [action_probs, state_values] = this->forward(batched_observations, mask);
 
   if (action_probs.lt(0).any().item<bool>()) {
     std::cerr << "Error: action_probs contains negative values: "
@@ -210,7 +214,7 @@ void BaseA2CAgent::save_model() const {
 }
 
 void BaseA2CAgent::load_model() {
-  // Silently doesn't load if model doesn'T exist as intended.
+  // Silently don't load if model doesn't exist.
   std::lock_guard lock(*this->model_mutex);
   std::string name = this->agentName();
   if (name.empty()) {

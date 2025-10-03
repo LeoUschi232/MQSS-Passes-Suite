@@ -74,25 +74,30 @@ public:
   /**
    *
    * @param batched_observations
+   * @param mask
    * @return
    */
   std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &batched_observations);
+  forward(const torch::Tensor &batched_observations, const torch::Tensor &mask);
 
   /**
    *
    * @param batched_observations
+   * @param mask
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &batched_observations);
+  torch::Tensor get_value(const torch::Tensor &batched_observations,
+                          const torch::Tensor &mask);
 
   /**
    *
    * @param batched_observations
+   * @param mask
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &batched_observations);
+  select_action(const torch::Tensor &batched_observations,
+                const torch::Tensor &mask);
 
   /**
    *
