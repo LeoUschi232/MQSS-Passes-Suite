@@ -1,0 +1,34 @@
+module {
+  func.func @__nvqpp__mlirgen__Random() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+    quake.s %1 : (!quake.ref) -> ()
+    %2 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    quake.s %2 : (!quake.ref) -> ()
+    %3 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %4 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    %5 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%3, %4, %5] %1 : (!quake.ref, !quake.ref, !quake.ref, !quake.ref) -> ()
+    %cst = arith.constant 0.49004030798455589 : f64
+    quake.rx (%cst) %5 : (f64, !quake.ref) -> ()
+    %cst_0 = arith.constant 4.5675059935213902 : f64
+    quake.rx (%cst_0) %5 : (f64, !quake.ref) -> ()
+    quake.s %4 : (!quake.ref) -> ()
+    %cst_1 = arith.constant 0.55757709334029448 : f64
+    quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
+    quake.s %5 : (!quake.ref) -> ()
+    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
+    quake.s<adj> %4 : (!quake.ref) -> ()
+    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %cst_2 = arith.constant 4.9665360693167333 : f64
+    quake.ry (%cst_2) %2 : (f64, !quake.ref) -> ()
+    quake.x [%2] %5 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mx %1 : (!quake.ref) -> !quake.measure
+    %measOut_3 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_4 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    return
+  }
+}

@@ -1,0 +1,95 @@
+module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__aeindepqiskit7 = "_function"}} {
+  func.func @__nvqpp__mlirgen__aeindepqiskit7() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant 29.67344697605159 : f64
+    %cst_0 = arith.constant -0.098174770424681035 : f64
+    %cst_1 = arith.constant -0.19634954084936207 : f64
+    %cst_2 = arith.constant -0.39269908169872414 : f64
+    %cst_3 = arith.constant -0.78539816339744828 : f64
+    %cst_4 = arith.constant -29.67344697605159 : f64
+    %cst_5 = arith.constant 2.2703528736666221 : f64
+    %cst_6 = arith.constant -14.836723488025795 : f64
+    %cst_7 = arith.constant 1.135176436833311 : f64
+    %cst_8 = arith.constant -7.4183617440128975 : f64
+    %cst_9 = arith.constant 2.5740044351731379 : f64
+    %cst_10 = arith.constant -3.7091808720064487 : f64
+    %cst_11 = arith.constant 1.8545904360032244 : f64
+    %cst_12 = arith.constant -1.8545904360032244 : f64
+    %cst_13 = arith.constant -0.92729521800161219 : f64
+    %cst_14 = arith.constant 0.92729521800161219 : f64
+    %cst_15 = arith.constant -1.5707963267948966 : f64
+    %cst_16 = arith.constant -3.1415926535897931 : f64
+    %cst_17 = arith.constant 0.000000e+00 : f64
+    %0 = quake.alloca !quake.veq<6>
+    %1 = quake.alloca !quake.veq<1>
+    %2 = quake.extract_ref %0[0] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %2 : (f64, f64, !quake.ref) -> ()
+    %3 = quake.extract_ref %0[1] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %3 : (f64, f64, !quake.ref) -> ()
+    %4 = quake.extract_ref %0[2] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %4 : (f64, f64, !quake.ref) -> ()
+    %5 = quake.extract_ref %0[3] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %5 : (f64, f64, !quake.ref) -> ()
+    %6 = quake.extract_ref %0[4] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %6 : (f64, f64, !quake.ref) -> ()
+    %7 = quake.extract_ref %0[5] : (!quake.veq<6>) -> !quake.ref
+    quake.u2 (%cst_17, %cst_16) %7 : (f64, f64, !quake.ref) -> ()
+    %8 = quake.extract_ref %1[0] : (!quake.veq<1>) -> !quake.ref
+    quake.u3 (%cst_14, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%2] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_13, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%2] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_14, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%3] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_12, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%3] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_11, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%4] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_10, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%4] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_9, %cst_16, %cst_16) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%5] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_8, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%5] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_7, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%6] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_6, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%6] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_5, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%7] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.u3 (%cst_4, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    quake.x [%7] %8 : (!quake.ref, !quake.ref) -> ()
+    quake.h %7 : (!quake.ref) -> ()
+    quake.r1 (%cst_15) [%6] %7 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_3) [%5] %7 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_2) [%4] %7 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_1) [%3] %7 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_0) [%2] %7 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.h %6 : (!quake.ref) -> ()
+    quake.r1 (%cst_15) [%5] %6 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_3) [%4] %6 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_2) [%3] %6 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_1) [%2] %6 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.h %5 : (!quake.ref) -> ()
+    quake.r1 (%cst_15) [%4] %5 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_3) [%3] %5 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_2) [%2] %5 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.h %4 : (!quake.ref) -> ()
+    quake.r1 (%cst_15) [%3] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.r1 (%cst_3) [%2] %4 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.h %3 : (!quake.ref) -> ()
+    quake.r1 (%cst_15) [%2] %3 : (f64, !quake.ref, !quake.ref) -> ()
+    quake.h %2 : (!quake.ref) -> ()
+    quake.u3 (%cst, %cst_17, %cst_17) %8 : (f64, f64, f64, !quake.ref) -> ()
+    %measOut = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_18 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_19 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_20 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_21 = quake.mz %6 : (!quake.ref) -> !quake.measure
+    %measOut_22 = quake.mz %7 : (!quake.ref) -> !quake.measure
+    %measOut_23 = quake.mz %8 : (!quake.ref) -> !quake.measure
+    return
+  }
+  func.func @_function(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
