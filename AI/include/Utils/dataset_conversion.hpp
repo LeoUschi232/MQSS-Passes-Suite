@@ -4,8 +4,13 @@
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 
+// Environment includes
+#include "Environment/quantum_circuit.hpp"
+
 // Stdandard library includes
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -42,12 +47,25 @@ int convert_quake_to_tikz(const fs::path &quake_to_tikz_tool_path,
 
 /**
  *
- * @param module
+ * @tparam T
+ * @param object
  * @param destination_file_path
  * @return
  */
-int write_module_to_file(mlir::ModuleOp module,
-                         const fs::path &destination_file_path);
+template <typename T>
+int write_to_file(const T &object, const fs::path &destination_file_path) {
+  std::string serialized_text;
+  llvm::raw_string_ostream string_stream(serialized_text);
+  object->print(string_stream);
+  std::ofstream output_file(destination_file_path.string());
+  if (!output_file) {
+    std::cerr << "\nFailed to open " << destination_file_path.string()
+              << std::endl;
+    return -1;
+  }
+  output_file << serialized_text;
+  return 0;
+}
 
 /**
  *

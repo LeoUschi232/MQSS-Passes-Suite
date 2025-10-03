@@ -21,6 +21,9 @@ using llvm::isa;
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 
+// Utils includes
+#include "Utils/info_utils.hpp"
+
 // Standard library includes
 #include <filesystem>
 #include <string>
@@ -36,41 +39,52 @@ using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-constexpr unsigned int CIRCUIT_VALID = 0;
-constexpr unsigned int NO_CIRCUIT = 1;
-constexpr unsigned int TOO_MANY_QUBITS = 2;
-constexpr unsigned int NO_QUBIT_ALLOCATIONS = 3;
-constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
-constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
+constexpr unsigned int MIN_NR_STEPS = 1u;
+constexpr int CIRCUIT_VALID = 0;
+constexpr int NO_CIRCUIT = 1;
+constexpr int INVALID_NR_QUBITS = 2;
+constexpr int INVALID_NR_GATES = 3;
+constexpr int INVALID_NR_ALLOCATIONS = 4;
+constexpr int AMBIGUOUS_MEASUREMENT = 5;
 
 class QuantumCircuitEnvironment {
   /// Attributes for circuit
-  unsigned int max_qubits;
-  fs::path circuit_path;
-  ModuleOp circuit_module;
-  std::unique_ptr<MLIRContext *> context_ptr;
+  unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
+  fs::path circuit_path = "";
+  QuantumCircuit circuit{};
 
   /// Attributes for episode
-  unsigned int max_steps;
-  unsigned int current_step;
+  unsigned int max_steps_per_episode = MIN_NR_STEPS;
+  unsigned int max_steps_no_improvement = MIN_NR_STEPS;
+  unsigned int max_steps_no_change = MIN_NR_STEPS;
+  unsigned int max_steps_same_action = MIN_NR_STEPS;
+  unsigned int step_per_episode = 0u;
+  unsigned int step_no_improvement = 0u;
+  unsigned int step_no_change = 0u;
+  unsigned int step_same_action = 0u;
+  int last_action = -1;
+  bool terminated = false;
+  bool truncated = false;
 
   /// Attributes for randomizer
-  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> qubits_cholesky_params;
-  std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
+      qubits_cholesky_params = std::nullopt;
+  std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights =
+      std::nullopt;
 
 public:
   /// Constructors
   QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
                             const fs::path &circuit_path = "");
 
-  /// Destructor
-  ~QuantumCircuitEnvironment() {
-    if (this->context_ptr) {
-      delete *this->context_ptr.get();
-    }
-  }
+  QuantumCircuitEnvironment(
+      unsigned int max_qubits,
+      std::unordered_map<std::string, std::string> params);
 
-  /// Copy and move constructors and assignment operators
+  /// Destructor
+  ~QuantumCircuitEnvironment() = default;
+
+  /// Copy constructors
   // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is
   // tied exactly to the circuit module and it is ambiguous if you copy both of
   // them if the copies are then untied from their originals but tied to each
@@ -80,13 +94,23 @@ public:
   QuantumCircuitEnvironment &
   operator=(const QuantumCircuitEnvironment &other) = delete;
 
-  QuantumCircuitEnvironment(QuantumCircuitEnvironment &&other) noexcept;
+  /// Move Constructors
+  QuantumCircuitEnvironment(QuantumCircuitEnvironment &&other) noexcept =
+      default;
 
-  QuantumCircuitEnvironment &operator=(QuantumCircuitEnvironment &&) noexcept;
+  QuantumCircuitEnvironment &
+  operator=(QuantumCircuitEnvironment &&) noexcept = default;
 
-  /// Clear and Reset
-  void clear();
+  /// Short functions
+  void clear(bool hard = true);
+  bool validate();
   void reset();
+
+  /**
+   *
+   * @return
+   */
+  int get_advanced_circuit_validity();
 
   /**
    *
@@ -117,21 +141,6 @@ public:
 
   /**
    *
-   * @param circuit
-   * @return
-   */
-  static std::unordered_map<std::string, unsigned int>
-  get_circuit_info(FuncOp circuit);
-
-  /**
-   *
-   * @param circuit
-   * @return
-   */
-  unsigned int circuit_invalid_type(FuncOp circuit) const;
-
-  /**
-   *
    * @return
    */
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
@@ -145,14 +154,15 @@ public:
    * @return Blob tensor of 1-axis shape {N×IRP} containing the observation of
    * the current circuit.
    */
-  InstructionsTensor<double> get_observation();
+  InstructionsTensor<double> get_observation() const;
 
   /**
    *
    * @param action
-   * @return
+   * @param atol
+   * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<double, bool> step(unsigned int action);
+  std::tuple<double, bool, bool> step(unsigned int action, double atol = 1e-12);
 
   /**
    *

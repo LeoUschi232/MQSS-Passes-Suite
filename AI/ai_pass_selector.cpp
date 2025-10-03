@@ -135,8 +135,12 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"circuit", ""},
           {"output", ""},
           {"nr_parallel_environments", "16"},
-          {"episodes", "1000"},
-          {"max_steps_per_episode", "5"},
+          {"episodes", "100"} ,
+          {"max_steps_relative_to_qubits", "true"},
+          {"max_steps_per_episode", "10"},
+          {"max_steps_no_improvement", "1"},
+          {"max_steps_no_change", "0.2"},
+          {"max_steps_same_action", "0.05"},
           {"discount_factor", "1.0"},
           {"gae_hyperparameter", "0.96"},
           {"entropy_coefficient", "0.01"},
@@ -145,5 +149,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"actor_optimizer", "adam"},
           {"critic_learning_rate", "0.005"},
           {"actor_learning_rate", "0.001"},
-          {"print_param_info", "true"}};
+          {"print_param_info", "true"},
+          {"save_agent_at_end_of_training", "true"},
+          {"stop_training_on_error", "false"}};
 }

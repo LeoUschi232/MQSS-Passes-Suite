@@ -1,8 +1,8 @@
 #include "Agents/A2C/a2c_agents.hpp"
 
 // Environment includes
-#include "Environment/environment.hpp"
 #include "Environment/parallel_environments.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -17,7 +17,7 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
     : BaseA2CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
-  unsigned int IRP = MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits);
+  unsigned int IRP = MAX_QUBITS_TO_IRP(max_qubits);
 
   // Reduce the dimensionality of the inner layers.
   // Standard practice in convolutional networks.
@@ -30,10 +30,15 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
   unsigned int L4 = static_cast<unsigned>(1.0 / 4.0 * IRP);
   L4 = std::max(2u, L4);
 
-  // Make sure there are at least half the kernel size in padding on each size
-  // of the instruction chain so that even when there are 0 instructions, at
-  // least 1 kernel slide is possible.
-  unsigned int padding = max_qubits / 2;
+  // The minimum nr of instructions is 2.
+  // Given the minimum nr of instructions, the nr of instruction representations
+  // for the kernel to slide over will be:
+  // nr_IR = 2 + 2 * padding = 2 + 2 * ((max_qubits - 1) // 2)
+  // max_qubits odd => nr_IR = 2 + max_qubits - 1 = max_qubits + 1
+  // => kernel will slide over 2 windows of size max_qubits
+  // max_qubits even => nr_IR = 2 + max_qubits - 2 = max_qubits
+  // => kernel will slide over 1 window of size max_qubits
+  unsigned int padding = (max_qubits - 1) / 2;
 
   // Input tensor shape is {B, N, IRP} but a convolutional layer expects the
   // number of channels in each position before the nr of positions, so before

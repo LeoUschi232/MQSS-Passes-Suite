@@ -1,7 +1,7 @@
 #include "Agents/training_and_run_manager.hpp"
 
 // Environment includes
-#include "Environment/environment.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
 #include "Agents/A2C/a2c_agents.hpp"

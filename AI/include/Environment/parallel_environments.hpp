@@ -2,7 +2,7 @@
 #define PARALLEL_ENVIRONMENTS_HPP
 
 // Environment includes
-#include "Environment/environment.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
 #include "torch/torch.h"
@@ -16,7 +16,8 @@ class ParallelEnvironments {
   unsigned int max_steps;
 
   /// Attributes for randomizer
-  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>> qubits_cholesky_params;
+  std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
+      qubits_cholesky_params;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights;
 
 public:
@@ -58,7 +59,8 @@ public:
    *
    * @return
    */
-  bool randomize_all_circuits_with_equal_dimensions();
+  std::tuple<bool, unsigned int, unsigned int>
+  randomize_all_circuits_with_equal_dimensions();
 
   /**
    * B = Batch size / Nr of parallel environments
@@ -72,11 +74,19 @@ public:
 
   /**
    *
-   * @param actions
+   * @param compute_padding
    * @return
    */
-  std::tuple<std::vector<double>, std::vector<bool>>
-  step(const std::vector<unsigned int> &actions);
+  std::pair<torch::Tensor, unsigned int>
+  get_batched_observations_with_padding(bool compute_padding = true) const;
+
+  /**
+   *
+   * @param actions
+   * @return Vector of [Reward, Terminated, Truncated]
+   */
+  std::vector<std::tuple<double, bool, bool>>
+  step(const torch::Tensor &actions);
 
   /// Small methods
   unsigned int size() const;

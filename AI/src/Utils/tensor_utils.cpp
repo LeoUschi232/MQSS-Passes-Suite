@@ -36,6 +36,9 @@ using mlir::func::ReturnOp;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+unsigned int get_max_depth(std::vector<unsigned int> depths) {
+  return depths.empty() ? 0 : *std::max_element(depths.begin(), depths.end());
+}
 
 // ----------------- tiny internal helpers -----------------
 static FuncOp makeEmptyKernel(OpBuilder &b, ModuleOp m,
@@ -71,7 +74,8 @@ std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
 }
 
 // ----------------- RebuildSetup API -----------------
-RebuildSetup beginReconstruction(const std::string &kernelName, int maxQubits) {
+RebuildSetup beginQuantumCircuitConstruction(const std::string &kernelName,
+                                             int maxQubits) {
   RebuildSetup setup(cudaq::initializeMLIR());
   auto *ctx = setup.ctxOwner.get();
   OpBuilder &builder = setup.builder;
@@ -277,19 +281,26 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
   return max_used_qubit_index + 1;
 }
 
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+QuantumCircuit
 recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
-  const int nr_instructions = tensor.shape[0];
-  const int instruction_features = tensor.shape[1];
-  const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
-  const int nr_qubits = nrUsedQubitsInTensor(tensor);
+  const unsigned int IRP = tensor.shape[1];
+  if (IRP < MIN_IRP) {
+    std::cerr << "Warning: tensor has IRP smaller than minimum IRP."
+              << std::endl;
+    return QuantumCircuit();
+  }
+  const unsigned int max_qubits = IRP - NR_GATES - MAX_GATE_PARAMS;
+  const unsigned int nr_qubits = nrUsedQubitsInTensor(tensor);
+  const unsigned int nr_instructions = tensor.shape[0];
+  unsigned int nr_gates = nr_instructions;
 
-  auto rebuildSetup =
-      beginReconstruction("__nvqpp__mlirgen__FromTensor", nr_qubits);
+  auto rebuildSetup = beginQuantumCircuitConstruction(
+      /*kernel_name=*/"__nvqpp__mlirgen__FromTensor", nr_qubits);
+  std::vector<unsigned int> depths(nr_qubits, 0);
 
-  for (int instr = 0; instr < nr_instructions; instr++) {
+  for (unsigned int instr = 0u; instr < nr_instructions; instr++) {
     std::vector<int> controlIndexes, targetIndexes;
-    int j = 0;
+    unsigned int j = 0u;
     for (; j < nr_qubits; j++) {
       if (double value = tensor(instr, j); value == -1.0) {
         controlIndexes.push_back(j);
@@ -307,6 +318,9 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
                 << std::endl;
       // Empty targets means the circuit reached its end.
       // All further rows MUST be empty too.
+      // Actual nr of gates might be smaller than the believed nr of
+      // instructions extracted from the length of the tensor.
+      nr_gates = instr;
       break;
     }
 
@@ -331,11 +345,12 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
                 << std::endl;
       // Empty instruction means the circuit reached its end.
       // All further rows MUST be empty too.
+      nr_gates = instr;
       break;
     }
 
     std::vector<double> angles;
-    for (; j < instruction_features; j++) {
+    for (; j < IRP; j++) {
       angles.push_back(tensor(instr, j));
     }
     if (angles.size() != MAX_GATE_PARAMS) {
@@ -344,8 +359,21 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
     }
     insertGate(rebuildSetup, gateIndex, targetIndexes, controlIndexes, angles,
                isAdj);
+
+    // Adjust the depths only if everything ran smoothly.
+    std::vector<int> involvedQubits = targetIndexes;
+    involvedQubits.insert(involvedQubits.end(), controlIndexes.begin(),
+                          controlIndexes.end());
+    unsigned int max_depth = 0;
+    for (int qubit : involvedQubits) {
+      max_depth = std::max(max_depth, depths[qubit]);
+    }
+    for (int qubit : involvedQubits) {
+      depths[qubit] = max_depth + 1;
+    }
   }
-  return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner)};
+  return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner), nr_qubits,
+          nr_gates, get_max_depth(depths)};
 }
 
 } // namespace ai_pass_selector

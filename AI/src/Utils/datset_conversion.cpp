@@ -67,23 +67,6 @@ int convert_quake_to_tikz(const fs::path &quake_to_tikz_tool_path,
                                              quake_input_path.string());
 }
 
-int write_module_to_file(ModuleOp module,
-                         const fs::path &destination_file_path) {
-  std::string module_serialized_text;
-  llvm::raw_string_ostream string_stream(module_serialized_text);
-  module->print(string_stream);
-
-  std::ofstream output_file(destination_file_path.string());
-  if (!output_file) {
-    std::cerr << "\nFailed to open " << destination_file_path.string()
-              << std::endl;
-    return -1;
-  }
-  output_file << module_serialized_text;
-  output_file.close();
-  return 0;
-}
-
 int build_png_from_tikz_file(const fs::path &tikz_file_path) {
   // Minimal wrapper document (standalone) that \input{sometikz.tikz}
   // Write temp.tex next to CWD (consistent with existing workflow).

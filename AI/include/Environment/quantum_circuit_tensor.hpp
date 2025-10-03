@@ -1,6 +1,9 @@
 #ifndef QUANTUM_CIRCUIT_TENSOR_HPP
 #define QUANTUM_CIRCUIT_TENSOR_HPP
 
+// Utils includes
+#include "Utils/info_utils.hpp"
+
 // Standard library includes
 #include <array>
 #include <cassert>
@@ -63,9 +66,10 @@ index_to_one_hot(unsigned int size, const std::vector<unsigned int> &indexes) {
   return multi_hot;
 }
 
-constexpr unsigned int
-MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(unsigned int max_qubits) {
-  return NR_GATES + MAX_GATE_PARAMS + max_qubits;
+constexpr unsigned int MIN_IRP =
+    NR_GATES + MAX_GATE_PARAMS + GLOBAL_MIN_NR_QUBITS;
+constexpr unsigned int MAX_QUBITS_TO_IRP(unsigned int max_qubits) {
+  return std::max(MIN_IRP, NR_GATES + MAX_GATE_PARAMS + max_qubits);
 }
 
 template <class T> struct InstructionsTensor {
@@ -75,7 +79,7 @@ template <class T> struct InstructionsTensor {
   // Controls qubits triggered negative.
   // Target qubits triggered positive.
   explicit InstructionsTensor(unsigned int max_qubits)
-      : shape{0, MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits)} {}
+      : shape{0, MAX_QUBITS_TO_IRP(max_qubits)} {}
 
   void reserve(unsigned int nr_instructions) {
     quantum_circuit_data.reserve(nr_instructions * shape[1]);

@@ -34,6 +34,9 @@ inline int randomInt(int start, int end) {
   return distInt(qc_rng());
 }
 ////////////////////////////////////////////////////////////////////////////////
+/// All no-nonsense quantum circuit should have at least 2 qubits and 2 gates.
+constexpr unsigned int GLOBAL_MIN_NR_QUBITS = 2u;
+constexpr unsigned int GLOBAL_MIN_NR_GATES = 2u;
 
 /**
  *

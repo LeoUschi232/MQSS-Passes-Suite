@@ -192,7 +192,7 @@ std::optional<int64_t> extractIndexFromQuakeExtractRefOp(Operation *op);
   @param[in] circuit is the input quantum kernel
   @return a `int` with the number of declared qubits.
 */
-int getNumberOfQubits(FuncOp circuit);
+unsigned int getNumberOfQubits(FuncOp circuit);
 
 /**
  *
@@ -206,14 +206,14 @@ int getNumberOfAllocations(FuncOp circuit);
  * @param circuit The quantum circuit to return the depth of.
  * @return The depth of the quantum circuit passed as argument.
  */
-int getCircuitDepth(FuncOp circuit);
+unsigned int getCircuitDepth(FuncOp circuit);
 
 /**
  * Returns the number of gates/instructions of a quantum circuit.
  * @param circuit The quantum circuit to return the number of instructions of.
  * @return The number of instructions of the quantum circuit passed as argument.
  */
-int getNumberOfGates(FuncOp circuit);
+unsigned int getNumberOfGates(FuncOp circuit);
 
 /**
   @brief Function that get the number of classical bits used by a given quantum

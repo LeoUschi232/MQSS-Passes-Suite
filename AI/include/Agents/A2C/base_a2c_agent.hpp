@@ -84,8 +84,14 @@ public:
    * @param batched_observations
    * @return
    */
-  std::tuple<std::vector<unsigned int>, torch::Tensor, torch::Tensor,
-             torch::Tensor>
+  torch::Tensor get_value(const torch::Tensor &batched_observations);
+
+  /**
+   *
+   * @param batched_observations
+   * @return
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   select_action(const torch::Tensor &batched_observations);
 
   /**
