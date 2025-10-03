@@ -110,13 +110,12 @@ ParallelEnvironments::step(const torch::Tensor &actions) {
 }
 
 torch::Tensor ParallelEnvironments::get_batched_observations() const {
-  auto [batched_observations, _] = get_batched_observations_with_padding(false);
+  auto [batched_observations, _] = get_batched_observations_with_padding();
   return batched_observations;
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-ParallelEnvironments::get_batched_observations_with_padding(
-    bool compute_padding) const {
+ParallelEnvironments::get_batched_observations_with_padding() const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<InstructionsTensor<double>>> observation_futures;
@@ -142,7 +141,7 @@ ParallelEnvironments::get_batched_observations_with_padding(
       throw std::runtime_error("Inconsistent Instruction Representation Size.");
     }
   }
-  torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat64);
+  torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat32);
   if (maxN <= 0) {
     return {torch::zeros({B, 1, IRP}, options), torch::ones({B, 1}, options)};
   }
@@ -158,7 +157,7 @@ ParallelEnvironments::get_batched_observations_with_padding(
         torch::from_blob(instruction_tensor.raw(), {maxN, IRP}, options)
             .clone();
     torch_tensors.emplace_back(std::move(tensor));
-    if (compute_padding && N < maxN) {
+    if (N < maxN) {
       instruction_mask[batch].slice(/*dim=*/0, /*start=*/N, /*end=*/maxN) =
           torch::zeros({static_cast<int64_t>(maxN - N)}, options);
     }

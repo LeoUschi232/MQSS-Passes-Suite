@@ -74,11 +74,10 @@ public:
 
   /**
    *
-   * @param compute_padding
    * @return [batched_observations, mask(instr=1.0|padding=0.0)]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_batched_observations_with_padding(bool compute_padding = true) const;
+  get_batched_observations_with_padding() const;
 
   /**
    *
