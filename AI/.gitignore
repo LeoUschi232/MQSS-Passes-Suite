@@ -1,0 +1,53 @@
+# Starting from the AI directory, files and folders to ignore.
+# IDE files
+cmake-build-mqss-dev
+cmake-build-debug
+
+# Local training and data files.
+#Datasets/*
+#Agents/*
+#Circuits/*
+
+# Test pdf compilation files.
+*.log
+*.aux
+*.tikz
+*.png
+
+# Garbage suggested by Github Copilot.
+*.bbl
+*.blg
+*.dvi
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.ps
+*.eps
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.tif
+*.tiff
+*.webp
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.bak
+*.swp
+*.tmp
+*.DS_Store
+
+# Large files and large external dependencies
+external/*
+ResearchPapers/*

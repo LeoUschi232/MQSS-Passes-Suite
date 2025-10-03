@@ -1,0 +1,53 @@
+\documentclass{article}
+
+% Basic packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[
+    paperwidth=216mm,
+    paperheight=303mm,
+    margin=5mm
+]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{adjustbox}
+\usepackage{pgffor}
+
+\title{Tensortest Quantum Circuits}
+\date{}
+\author{}
+
+\newcommand{\tensortestfigheight}{40mm}
+
+\newcommand{\includetensortestfigure}[1]{%
+    \begin{figure}[htbp]
+    \centering
+    \adjustbox{max height=\tensortestfigheight, max width=\linewidth}{%
+        \includegraphics{Tensortest/tensortest#1_input.png}%
+    }%
+    \caption{Tensortest#1 input}
+    \end{figure}
+    \vspace*{5mm}
+    \begin{figure}[htbp]
+    \centering
+    \adjustbox{max height=\tensortestfigheight, max width=\linewidth}{%
+        \includegraphics{Tensortest/tensortest#1_output.png}%
+    }%
+    \caption{Tensortest#1 output}
+    \end{figure}
+    \vspace*{5mm}
+}
+
+\begin{document}
+    \maketitle
+
+    \foreach \i in {1,...,20} {
+        \includetensortestfigure{\i}
+    }
+
+\end{document}
