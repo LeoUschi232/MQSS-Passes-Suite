@@ -204,8 +204,7 @@ int convertPasstestCircuitToTikz(std::string passname,
               << std::endl;
     return -1;
   }
-  if (int rc = write_module_to_file(mlir_module, latex_quake_output_file);
-      rc != 0) {
+  if (int rc = write_to_file(mlir_module, latex_quake_output_file); rc != 0) {
     return -1;
   }
 

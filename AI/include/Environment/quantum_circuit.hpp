@@ -75,6 +75,12 @@ public:
    * @return
    */
   bool run_pass(unsigned int pass_index);
+
+  /**
+   *
+   * @param string_stream
+   */
+  void print(llvm::raw_string_ostream &string_stream) const;
 };
 } // namespace ai_pass_selector
 

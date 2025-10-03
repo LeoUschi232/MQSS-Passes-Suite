@@ -145,6 +145,10 @@ QuantumCircuit::operator mlir::func::FuncOp() const {
   return FuncOp(this->circuit_module);
 }
 
+void QuantumCircuit::print(llvm::raw_string_ostream &string_stream) const {
+  this->circuit_module->print(string_stream);
+}
+
 unsigned int QuantumCircuit::get_nr_qubits() const { return this->nr_qubits; }
 unsigned int QuantumCircuit::get_nr_gates() const { return this->nr_gates; }
 unsigned int QuantumCircuit::get_depth() const { return this->depth; }

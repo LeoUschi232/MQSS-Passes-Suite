@@ -120,19 +120,12 @@ int convertTensortestCircuitToTikz(int index) {
           quake_source_input_file)) {
     return -1;
   }
-
   InstructionsTensor<double> observation =
       quantum_circuit_environment.get_observation();
-
-  auto [reconstructed_from_tensor, ctx_instr] =
-      recreateQuantumCircuitFromTensor(observation);
-
-  if (int rc = write_module_to_file(reconstructed_from_tensor,
-                                    latex_quake_output_file);
-      rc != 0) {
+  QuantumCircuit circuit = recreateQuantumCircuitFromTensor(observation);
+  if (int rc = write_to_file(&circuit, latex_quake_output_file); rc != 0) {
     return -1;
   }
-
   // Reconstructed quake → tikz (two variants)
   if (int rc = convert_quake_to_tikz(
           quake_to_tikz_tool_path, latex_quake_output_file,
