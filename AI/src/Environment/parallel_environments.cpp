@@ -1,5 +1,9 @@
 #include "Environment/parallel_environments.hpp"
 
+// Utils includes
+#include "Utils/info_utils.hpp"
+
+// Standard library includes
 #include <future>
 
 namespace ai_pass_selector {
@@ -7,7 +11,8 @@ ParallelEnvironments::ParallelEnvironments(unsigned int nr_environments,
                                            unsigned int max_qubits,
                                            unsigned int max_steps)
     : nr_environments(std::max(1u, nr_environments)),
-      max_qubits(std::max(2u, max_qubits)), max_steps(std::max(1u, max_steps)) {
+      max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)),
+      max_steps(std::max(1u, max_steps)) {
   environments.reserve(nr_environments);
   for (unsigned int i = 0; i < nr_environments; i++) {
     environments.emplace_back(max_qubits, max_steps);
@@ -50,18 +55,19 @@ ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
     // nr_gates-nr_qubits, the random circuit generator will infer
     // nr_measurements=nr_gates-nr_operations=nr_qubits.
     // This will create a circuit that measures all qubits at the end.
-    nr_qubits = std::max(2u, std::min(nr_qubits, this->max_qubits));
-    nr_gates = std::max(nr_qubits + 2u, nr_gates);
-    RandomizerOptions randomizer_options;
-    randomizer_options.exact_nr_qubits = static_cast<int>(nr_qubits);
-    randomizer_options.exact_nr_gates = static_cast<int>(nr_gates);
-    randomizer_options.exact_nr_operations =
-        static_cast<int>(nr_gates - nr_qubits);
-    randomizer_options.weight_min_multiplier_for_unoccurring_gates = 0.1;
-    randomizer_options.probability_additionals_controls = 0.01;
+    nr_qubits =
+        std::max(GLOBAL_MIN_NR_QUBITS, std::min(nr_qubits, this->max_qubits));
+    nr_gates = std::max(nr_qubits + GLOBAL_MIN_NR_GATES, nr_gates);
+
     // Technically allow_measurements_as_gates is false by default but I do not
     // and may not ever trust the C++ compiler.
-    randomizer_options.allow_measurements_as_gates = false;
+    RandomizerOptions randomizer_options = {
+        .exact_nr_qubits = static_cast<int>(nr_qubits),
+        .exact_nr_gates = static_cast<int>(nr_gates),
+        .exact_nr_operations = static_cast<int>(nr_gates - nr_qubits),
+        .weight_min_multiplier_for_unoccurring_gates = 0.1,
+        .probability_additionals_controls = 0.01,
+        .allow_measurements_as_gates = false};
 
     std::vector<std::future<bool>> environment_futures;
     environment_futures.reserve(this->nr_environments);
@@ -77,8 +83,8 @@ ParallelEnvironments::randomize_all_circuits_with_equal_dimensions() {
       success &= environment_future.get();
     }
     return {success, nr_qubits, nr_gates};
-  } catch (const std::runtime_error &e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
   }
   return {false, 0u, 0u};
 }

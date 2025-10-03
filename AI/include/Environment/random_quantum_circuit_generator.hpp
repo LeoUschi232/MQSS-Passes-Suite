@@ -86,7 +86,7 @@ std::vector<double> makeAngles(int baseGate);
 /**
  *
  * @param cholesky_params
- * @return
+ * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
  */
 std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
 sample_nr_qubits_gates_operations_measurements(
@@ -95,11 +95,33 @@ sample_nr_qubits_gates_operations_measurements(
 /**
  *
  * @param cholesky_params
+ * @param randomizer_options
+ * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
+ */
+std::tuple<unsigned int, unsigned int, unsigned int, unsigned int>
+get_nr_qubits_gates_operations_measurements(
+    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
+    const RandomizerOptions &randomizer_options);
+
+/**
+ *
+ * @param multiplier
+ * @param subset_size
+ * @param gates_weights
+ */
+void addjust_gates_weights(
+    double multiplier, unsigned int subset_size,
+    std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights);
+
+/**
+ *
+ * @param cholesky_params
  * @param gates_weights
  * @param randomizer_options
- * @return
+ * @return [nr_qubits, nr_gates, depth, circuit, context_ptr]
  */
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
+           std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_embedded_statistics(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
@@ -111,9 +133,10 @@ random_quantum_circuit_from_embedded_statistics(
  *
  * @param statistics_yaml_file_path
  * @param randomizer_options
- * @return
+ * @return [nr_qubits, nr_gates, depth, circuit, context_ptr]
  */
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
+           std::unique_ptr<MLIRContext>>
 random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
     const RandomizerOptions &randomizer_options = {

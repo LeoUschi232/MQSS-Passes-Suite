@@ -38,23 +38,25 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
 constexpr unsigned int CIRCUIT_VALID = 0;
 constexpr unsigned int NO_CIRCUIT = 1;
-constexpr unsigned int TOO_MANY_QUBITS = 2;
-constexpr unsigned int NO_QUBIT_ALLOCATIONS = 3;
-constexpr unsigned int MULTIPLE_QUBIT_ALLOCATIONS = 4;
-constexpr unsigned int AMBIGUOUS_MEASUREMENT = 5;
+constexpr unsigned int INVALID_NR_QUBITS = 2;
+constexpr unsigned int INVALID_NR_ALLOCATIONS = 3;
+constexpr unsigned int AMBIGUOUS_MEASUREMENT = 4;
 
 class QuantumCircuitEnvironment {
   /// Attributes for circuit
   unsigned int max_qubits;
-  fs::path circuit_path;
   ModuleOp circuit_module;
   std::unique_ptr<MLIRContext *> context_ptr;
+  fs::path circuit_path = "";
+  unsigned int nr_qubits = 0u;
+  unsigned int nr_gates = 0u;
+  unsigned int depth = 0u;
 
   /// Attributes for episode
-  unsigned int max_steps_per_episode;
-  unsigned int max_steps_no_improvement;
-  unsigned int max_steps_no_change;
-  unsigned int max_steps_same_action;
+  unsigned int max_steps_per_episode = 1u;
+  unsigned int max_steps_no_improvement = 1u;
+  unsigned int max_steps_no_change = 1u;
+  unsigned int max_steps_same_action = 1u;
   unsigned int step_per_episode = 0u;
   unsigned int step_no_improvement = 0u;
   unsigned int step_no_change = 0u;

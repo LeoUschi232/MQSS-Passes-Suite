@@ -2,6 +2,7 @@
 
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
+#include "Environment/random_quantum_circuit_generator.hpp"
 
 // MLIR includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -13,10 +14,10 @@
 
 // Utils includes
 #include "Support/mlir_utils.hpp"
+#include "Utils/info_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
 // Standard library includes
-#include <Environment/random_quantum_circuit_generator.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -38,7 +39,7 @@ namespace ai_pass_selector {
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits, unsigned int max_steps,
     const fs::path &circuit_path)
-    : max_qubits(std::max(2u, max_qubits)), circuit_path(circuit_path),
+    : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)),
       context_ptr(nullptr), max_steps_per_episode(std::max(1u, max_steps)),
       max_steps_no_improvement(max_steps_per_episode),
       max_steps_no_change(max_steps_per_episode),
@@ -51,9 +52,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params)
-    : max_qubits(std::max(2u, max_qubits)), circuit_path(""),
-      max_steps_per_episode(1u), max_steps_no_improvement(1u),
-      max_steps_no_change(1u), max_steps_same_action(1u) {
+    : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
   if (params.find("max_steps_relative_to_qubits") != params.end() &&
       params["max_steps_relative_to_qubits"] == "true") {
     this->max_steps_per_episode = std::max(
@@ -125,17 +124,22 @@ QuantumCircuitEnvironment &QuantumCircuitEnvironment::operator=(
 
 void QuantumCircuitEnvironment::clear(bool hard) {
   if (hard) {
-    this->circuit_path.clear();
+    this->circuit_path = "";
+    this->qubits_cholesky_params = std::nullopt;
+    this->gates_weights = std::nullopt;
   }
   this->circuit_module = nullptr;
   if (context_ptr && this->context_ptr.get() != nullptr) {
     delete *this->context_ptr.get();
   }
   this->context_ptr = nullptr;
-  this->step_per_episode = 0;
-  this->step_no_improvement = 0;
-  this->step_no_change = 0;
-  this->step_same_action = 0;
+  this->nr_qubits = 0u;
+  this->nr_gates = 0u;
+  this->depth = 0u;
+  this->step_per_episode = 0u;
+  this->step_no_improvement = 0u;
+  this->step_no_change = 0u;
+  this->step_same_action = 0u;
   this->last_action = -1;
   this->terminated = false;
   this->truncated = false;
@@ -148,12 +152,21 @@ void QuantumCircuitEnvironment::reset() {
     return;
   }
   if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
-    // Cap nr of qubits but don't cap instructions.
-    auto [module, context] = random_quantum_circuit_from_embedded_statistics(
-        qubits_cholesky_params.value(), gates_weights.value(),
-        {.max_nr_qubits = static_cast<int>(this->max_qubits),
-         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-         .probability_additionals_controls = 0.01});
+    auto [nr_qubits, nr_gates, depth, module, context] =
+        random_quantum_circuit_from_embedded_statistics(
+            qubits_cholesky_params.value(), gates_weights.value(),
+            {.max_nr_qubits = static_cast<int>(this->max_qubits),
+             .weight_min_multiplier_for_unoccurring_gates = 0.1,
+             .probability_additionals_controls = 0.01});
+    if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_gates < GLOBAL_MIN_NR_GATES ||
+        nr_qubits > this->max_qubits || module == nullptr ||
+        context == nullptr) {
+      std::cerr << "Failed to randomize a new circuit on reset." << std::endl;
+      return;
+    }
+    this->nr_qubits = nr_qubits;
+    this->nr_gates = nr_gates;
+    this->depth = depth;
     this->circuit_module = module;
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
@@ -177,8 +190,7 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
 
   // Hold the context pointer so there is no segfault when accessing circuit.
   auto [circuit, context] = extractModuleOpAndContextPointer(circuit_text);
-  this->clear();
-  this->circuit_path = circuit_path;
+  this->clear(/*hard=*/false);
   this->context_ptr = std::move(context);
 
   switch (circuit_invalid_type(FuncOp(circuit))) {
@@ -188,17 +200,13 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
     this->clear();
     std::cerr << "No circuit provided to the environment." << std::endl;
     return false;
-  case TOO_MANY_QUBITS:
+  case INVALID_NR_QUBITS:
     this->clear();
     std::cerr << "Passed circuit has too many qubits." << std::endl;
     return false;
-  case NO_QUBIT_ALLOCATIONS:
+  case INVALID_NR_ALLOCATIONS:
     this->clear();
-    std::cerr << "Passed circuit has no qubit allocations." << std::endl;
-    return false;
-  case MULTIPLE_QUBIT_ALLOCATIONS:
-    this->clear();
-    std::cerr << "Passed circuit has multiple qubit allocations." << std::endl;
+    std::cerr << "Passed circuit has invalid allocations." << std::endl;
     return false;
   case AMBIGUOUS_MEASUREMENT:
     this->clear();
@@ -209,6 +217,8 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
     std::cerr << "Unkown circuit validation error." << std::endl;
     return false;
   }
+  // Tegister the circuit path and module only if the circuit is valid.
+  this->circuit_path = circuit_path;
   this->circuit_module = circuit;
   return true;
 }
@@ -218,19 +228,28 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
     const RandomizerOptions &randomizer_options) {
   try {
-    this->clear();
+    randomizer_options.min_nr_qubits =
+        std::max(static_cast<int>(GLOBAL_MIN_NR_QUBITS),
+                 randomizer_options.min_nr_qubits);
     randomizer_options.max_nr_qubits = std::min(
         randomizer_options.max_nr_qubits, static_cast<int>(this->max_qubits));
 
     // Cap nr of qubits but don't cap instructions.
-    auto [module, context] = random_quantum_circuit_from_embedded_statistics(
-        cholesky_params, gates_weights, randomizer_options);
-    this->clear();
+    auto [nr_qubits, nr_gates, depth, module, context] =
+        random_quantum_circuit_from_embedded_statistics(
+            cholesky_params, gates_weights, randomizer_options);
+    if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_gates < GLOBAL_MIN_NR_GATES ||
+        nr_qubits > this->max_qubits || module == nullptr ||
+        context == nullptr) {
+      std::cerr << "Failed to randomize a custom circuit." << std::endl;
+      return false;
+    }
+    this->clear(/*hard=*/false);
     this->circuit_module = module;
     this->context_ptr =
         std::make_unique<MLIRContext *>(std::move(context).release());
-  } catch (const std::runtime_error &e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
     return false;
   }
   return true;
@@ -239,7 +258,6 @@ bool QuantumCircuitEnvironment::custom_randomize_circuit(
 void QuantumCircuitEnvironment::register_randomizer_params(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
-  this->clear();
   this->qubits_cholesky_params = cholesky_params;
   this->gates_weights = gates_weights;
 }
@@ -277,14 +295,11 @@ QuantumCircuitEnvironment::circuit_invalid_type(FuncOp circuit) const {
     }
     return mlir::WalkResult::advance();
   });
-  if (nr_qubits > max_qubits) {
-    return TOO_MANY_QUBITS;
+  if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_qubits > max_qubits) {
+    return INVALID_NR_QUBITS;
   }
-  if (nr_allocations <= 0) {
-    return NO_QUBIT_ALLOCATIONS;
-  }
-  if (nr_allocations >= 2) {
-    return MULTIPLE_QUBIT_ALLOCATIONS;
+  if (nr_allocations != 1) {
+    return INVALID_NR_ALLOCATIONS;
   }
   if (ambiguous_measurement) {
     return AMBIGUOUS_MEASUREMENT;
@@ -334,7 +349,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   auto [passname, passptr] = getPassNameAndPointer(action);
   try {
     // Variable context must be a MLIRContext&.
-    // The types are:
+    // Types are:
     // context_ptr = unique_ptr<MLIRContext*>
     // context_ptr.get() = MLIRContext**
     // *context_ptr.get() = MLIRContext*
@@ -344,10 +359,10 @@ QuantumCircuitEnvironment::step(unsigned int action) {
     pass_manager.addPass(std::move(passptr));
 
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
-      throw std::runtime_error("Pass manager failed.");
+      throw std::runtime_error("Standard failure.");
     }
-  } catch (const std::runtime_error &e) {
-    std::cerr << "\nPass " << passname << " failed with " << e.what()
+  } catch (const std::runtime_error &error) {
+    std::cerr << "\nPass " << passname << " failed with " << error.what()
               << std::endl;
     return {0.0, /*Terminated=*/false, /*Truncated=*/false};
   }
@@ -386,25 +401,18 @@ QuantumCircuitEnvironment::step(unsigned int action) {
 
 InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() {
   InstructionsTensor<double> observation(this->max_qubits);
-  observation.reserve(/*nr_instructions=*/2u);
+  observation.reserve(/*nr_instructions=*/GLOBAL_MIN_NR_GATES);
   if (this->circuit_module == nullptr || this->truncated) {
     // Changed to exclude this->truncated so that for truncated episodes, we
     // return the actual observation for bootstrapping.
-    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
-    return observation;
-  }
-  const unsigned int nr_qubits =
-      getNumberOfQubits(FuncOp(this->circuit_module));
-  if (nr_qubits < 2u) {
-    // Any valid normal circuit should have at least 2 qubits.
-    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
+    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0);
     return observation;
   }
   const unsigned int nr_instructions =
       getNumberOfGates(FuncOp(this->circuit_module));
-  if (nr_instructions < 2u) {
+  if (nr_instructions < GLOBAL_MIN_NR_GATES) {
     // Any valid normal circuit should have at least 2 instructions.
-    observation.pad(/*toNrInstructions=*/2u, /*value=*/0.0);
+    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0);
     return observation;
   }
   observation.reserve(nr_instructions);
