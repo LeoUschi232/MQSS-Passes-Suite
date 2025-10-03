@@ -12,13 +12,11 @@ using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
 void QuantumCircuit::clear() {
-  if (context_ptr && this->context_ptr.get() != nullptr) {
-    delete *this->context_ptr.get();
-  }
+  this->context_ptr.reset();
   this->context_ptr = nullptr;
-  nr_qubits = 0u;
-  nr_gates = 0u;
-  depth = 0u;
+  this->nr_qubits = 0u;
+  this->nr_gates = 0u;
+  this->depth = 0u;
 }
 
 bool QuantumCircuit::set(const fs::path &circuit_path) {
@@ -33,17 +31,24 @@ bool QuantumCircuit::set(const fs::path &circuit_path) {
     return false;
   }
   auto [circuit, context] = extractModuleOpAndContextPointer(circuit_text);
-  return this->set(circuit, std::move(context));
+  if (!context || !*context) {
+    return false;
+  }
+  MLIRContext *raw_context = *std::move(context);
+  context.reset();
+  context_ptr.reset(raw_context);
+  circuit_module = circuit;
+  return recompute();
 }
 bool QuantumCircuit::set(ModuleOp circuit_module,
-                         std::unique_ptr<MLIRContext *> context_ptr) {
+                         std::unique_ptr<MLIRContext> context_ptr) {
   this->context_ptr = std::move(context_ptr);
   this->circuit_module = circuit_module;
   return this->recompute();
 }
 
 bool QuantumCircuit::set(ModuleOp circuit_module,
-                         std::unique_ptr<MLIRContext *> context_ptr,
+                         std::unique_ptr<MLIRContext> context_ptr,
                          unsigned int nr_qubits, unsigned int nr_gates,
                          unsigned int depth) {
   // Assume that if the values are provided they are correct against the
@@ -87,18 +92,11 @@ bool QuantumCircuit::run_pass(unsigned int pass_index) {
   }
   auto [passname, passptr] = getPassNameAndPointer(pass_index);
   try {
-    // Variable context must be a MLIRContext&.
-    // Types are:
-    // context_ptr = unique_ptr<MLIRContext*>
-    // context_ptr.get() = MLIRContext**
-    // *context_ptr.get() = MLIRContext*
-    // **context_ptr.get() = MLIRContext
-    MLIRContext &context = **this->context_ptr.get();
+    MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
-      this->recompute();
-      return false;
+      throw std::runtime_error("Standard failure.");
     }
   } catch (const std::runtime_error &error) {
     std::cerr << "Pass " << passname << " failed with " << error.what()

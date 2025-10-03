@@ -14,7 +14,7 @@ using mlir::ModuleOp;
 namespace ai_pass_selector {
 class QuantumCircuit {
   ModuleOp circuit_module = nullptr;
-  std::unique_ptr<MLIRContext *> context_ptr = nullptr;
+  std::unique_ptr<MLIRContext> context_ptr = nullptr;
   unsigned int nr_qubits = 0u;
   unsigned int nr_gates = 0u;
   unsigned int depth = 0u;
@@ -25,11 +25,11 @@ public:
     this->set(circuit_path);
   }
   QuantumCircuit(ModuleOp circuit_module,
-                 std::unique_ptr<MLIRContext *> context_ptr) {
+                 std::unique_ptr<MLIRContext> context_ptr) {
     this->set(circuit_module, std::move(context_ptr));
   }
   QuantumCircuit(ModuleOp circuit_module,
-                 std::unique_ptr<MLIRContext *> context_ptr,
+                 std::unique_ptr<MLIRContext> context_ptr,
                  unsigned int nr_qubits, unsigned int nr_gates,
                  unsigned int depth) {
     this->set(circuit_module, std::move(context_ptr), nr_qubits, nr_gates,
@@ -37,16 +37,12 @@ public:
   }
 
   /// Destructor
-  ~QuantumCircuit() {
-    if (context_ptr && this->context_ptr.get() != nullptr) {
-      delete *this->context_ptr.get();
-    }
-  }
+  ~QuantumCircuit() = default;
 
   /// Setters
   bool set(const fs::path &circuit_path = "");
-  bool set(ModuleOp circuit_module, std::unique_ptr<MLIRContext *> context_ptr);
-  bool set(ModuleOp circuit_module, std::unique_ptr<MLIRContext *> context_ptr,
+  bool set(ModuleOp circuit_module, std::unique_ptr<MLIRContext> context_ptr);
+  bool set(ModuleOp circuit_module, std::unique_ptr<MLIRContext> context_ptr,
            unsigned int nr_qubits, unsigned int nr_gates, unsigned int depth);
 
   /// Clear nad validate
