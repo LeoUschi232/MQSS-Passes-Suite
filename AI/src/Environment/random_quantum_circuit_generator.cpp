@@ -297,9 +297,7 @@ void adjust_gates_weights(
   }
 }
 
-std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
-           std::unique_ptr<MLIRContext>>
-random_quantum_circuit_from_embedded_statistics(
+QuantumCircuit random_quantum_circuit_from_embedded_statistics(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options) {
@@ -315,7 +313,8 @@ random_quantum_circuit_from_embedded_statistics(
   auto [nr_qubits, nr_gates, nr_operations, nr_measurements] =
       get_nr_qubits_gates_operations_measurements(cholesky_params,
                                                   randomizer_options);
-  auto buildSetup = beginReconstruction("__nvqpp__mlirgen__Random", nr_qubits);
+  auto buildSetup = beginQuantumCircuitConstruction(
+      /*kernel_name=*/"__nvqpp__mlirgen__Random", nr_qubits);
   std::vector<unsigned int> depths(nr_qubits, 0);
 
   // Sample a gate according to operations-only subset of gates_weights and
@@ -362,13 +361,14 @@ random_quantum_circuit_from_embedded_statistics(
         }
         continue;
       }
-      std::vector<int> involved = targets;
-      involved.insert(involved.end(), controls.begin(), controls.end());
+      std::vector<int> involvedQubits = targets;
+      involvedQubits.insert(involvedQubits.end(), controls.begin(),
+                            controls.end());
       unsigned int max_depth = 0;
-      for (int qubit : involved) {
+      for (int qubit : involvedQubits) {
         max_depth = std::max(max_depth, depths[qubit]);
       }
-      for (int qubit : involved) {
+      for (int qubit : involvedQubits) {
         depths[qubit] = max_depth + 1;
       }
 
@@ -395,14 +395,11 @@ random_quantum_circuit_from_embedded_statistics(
     }
     depths[qubit_idx]++;
   }
-  return {nr_qubits, nr_gates,
-          /*depth=*/*std::max_element(depths.begin(), depths.end()),
-          buildSetup.module, std::move(buildSetup.ctxOwner)};
+  return {buildSetup.module, std::move(buildSetup.ctxOwner), nr_qubits,
+          nr_gates, get_max_depth(depths)};
 }
 
-std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
-           std::unique_ptr<MLIRContext>>
-random_quantum_circuit_from_yaml_statistics(
+QuantumCircuit random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
     const RandomizerOptions &randomizer_options) {
   if (!fs::exists(statistics_yaml_file_path) ||

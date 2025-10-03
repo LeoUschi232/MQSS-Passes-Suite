@@ -1,7 +1,7 @@
 #include "Testsuites/tensortest.hpp"
 
 // Environment includes
-#include "Environment/environment.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Passes includes
 #include "Passes/Transforms.hpp"

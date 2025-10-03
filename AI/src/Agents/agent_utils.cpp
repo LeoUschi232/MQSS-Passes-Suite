@@ -4,7 +4,7 @@
 #include "mlir_utils.hpp"
 
 // Environment includes
-#include "Environment/environment.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
 #include "torch/torch.h"

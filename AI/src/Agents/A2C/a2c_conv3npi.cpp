@@ -1,8 +1,8 @@
 #include "Agents/A2C/a2c_agents.hpp"
 
 // Environment includes
-#include "Environment/environment.hpp"
 #include "Environment/parallel_environments.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -17,7 +17,7 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
     : BaseA2CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
-  unsigned int IRP = MAX_QUBITS_TO_INSTRUCTION_REPRESENTATION_SIZE(max_qubits);
+  unsigned int IRP = MAX_QUBITS_TO_IRP(max_qubits);
 
   // Reduce the dimensionality of the inner layers.
   // Standard practice in convolutional networks.

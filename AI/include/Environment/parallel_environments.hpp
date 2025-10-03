@@ -2,7 +2,7 @@
 #define PARALLEL_ENVIRONMENTS_HPP
 
 // Environment includes
-#include "Environment/environment.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
 #include "torch/torch.h"

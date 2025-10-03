@@ -11,9 +11,39 @@
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+QuantumCircuit::QuantumCircuit(const fs::path &circuit_path) {
+  this->set(circuit_path);
+}
+QuantumCircuit::QuantumCircuit(ModuleOp circuit_module,
+                               std::unique_ptr<MLIRContext> context_ptr) {
+  this->set(circuit_module, std::move(context_ptr));
+}
+QuantumCircuit::QuantumCircuit(ModuleOp circuit_module,
+                               std::unique_ptr<MLIRContext> context_ptr,
+                               unsigned int nr_qubits, unsigned int nr_gates,
+                               unsigned int depth) {
+  this->set(circuit_module, std::move(context_ptr), nr_qubits, nr_gates, depth);
+}
+
+QuantumCircuit::QuantumCircuit(QuantumCircuit &&other) noexcept
+    : circuit_module(std::move(other.circuit_module)),
+      context_ptr(std::move(other.context_ptr)), nr_qubits(other.nr_qubits),
+      nr_gates(other.nr_gates), depth(other.depth) {}
+
+QuantumCircuit &QuantumCircuit::operator=(QuantumCircuit &&other) noexcept {
+  if (this != &other) {
+    circuit_module = std::move(other.circuit_module);
+    context_ptr = std::move(other.context_ptr);
+    nr_qubits = other.nr_qubits;
+    nr_gates = other.nr_gates;
+    depth = other.depth;
+  }
+  return *this;
+}
+
 void QuantumCircuit::clear() {
   this->context_ptr.reset();
-  this->context_ptr = nullptr;
+  this->circuit_module = nullptr;
   this->nr_qubits = 0u;
   this->nr_gates = 0u;
   this->depth = 0u;
@@ -22,7 +52,7 @@ void QuantumCircuit::clear() {
 bool QuantumCircuit::set(const fs::path &circuit_path) {
   this->clear();
   if (circuit_path.empty()) {
-    // Assume construction of environment for later circuit registration.
+    // Assume empty construction for later assignment.
     return false;
   }
   const std::string circuit_text = readFileToString(circuit_path.string());
@@ -66,10 +96,14 @@ bool QuantumCircuit::set(ModuleOp circuit_module,
   return this->validate();
 }
 
+bool QuantumCircuit::exists() const {
+  return this->circuit_module != nullptr && this->context_ptr != nullptr &&
+         this->nr_qubits >= GLOBAL_MIN_NR_QUBITS &&
+         this->nr_gates >= GLOBAL_MIN_NR_GATES && this->depth > 0u;
+}
 bool QuantumCircuit::validate() {
-  if (this->nr_qubits < GLOBAL_MIN_NR_QUBITS ||
-      this->nr_gates < GLOBAL_MIN_NR_GATES || this->depth <= 0u ||
-      this->circuit_module == nullptr || this->context_ptr == nullptr) {
+  // Validate is sort-of like exists but clears if invalid.
+  if (!this->exists()) {
     this->clear();
     return false;
   }
@@ -96,7 +130,8 @@ bool QuantumCircuit::run_pass(unsigned int pass_index) {
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
-      throw std::runtime_error("Standard failure.");
+      this->recompute();
+      return false;
     }
   } catch (const std::runtime_error &error) {
     std::cerr << "Pass " << passname << " failed with " << error.what()
@@ -105,6 +140,17 @@ bool QuantumCircuit::run_pass(unsigned int pass_index) {
     return false;
   }
   return this->recompute();
+}
+QuantumCircuit::operator mlir::func::FuncOp() const {
+  return FuncOp(this->circuit_module);
+}
+
+unsigned int QuantumCircuit::get_nr_qubits() const { return this->nr_qubits; }
+unsigned int QuantumCircuit::get_nr_gates() const { return this->nr_gates; }
+unsigned int QuantumCircuit::get_depth() const { return this->depth; }
+std::tuple<unsigned int, unsigned int, unsigned int>
+QuantumCircuit::get_attributes() const {
+  return {this->nr_qubits, this->nr_gates, this->depth};
 }
 
 } // namespace ai_pass_selector

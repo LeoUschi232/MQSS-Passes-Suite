@@ -2,6 +2,7 @@
 #define RANDOM_QUANTUM_CIRCUIT_GENERATOR_HPP
 
 // Environment includes
+#include "Environment/quantum_circuit.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Support includes
@@ -118,11 +119,9 @@ void addjust_gates_weights(
  * @param cholesky_params
  * @param gates_weights
  * @param randomizer_options
- * @return [nr_qubits, nr_gates, depth, circuit, context_ptr]
+ * @return
  */
-std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
-           std::unique_ptr<MLIRContext>>
-random_quantum_circuit_from_embedded_statistics(
+QuantumCircuit random_quantum_circuit_from_embedded_statistics(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
@@ -133,11 +132,9 @@ random_quantum_circuit_from_embedded_statistics(
  *
  * @param statistics_yaml_file_path
  * @param randomizer_options
- * @return [nr_qubits, nr_gates, depth, circuit, context_ptr]
+ * @return
  */
-std::tuple<unsigned int, unsigned int, unsigned int, ModuleOp,
-           std::unique_ptr<MLIRContext>>
-random_quantum_circuit_from_yaml_statistics(
+QuantumCircuit random_quantum_circuit_from_yaml_statistics(
     const fs::path &statistics_yaml_file_path,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,

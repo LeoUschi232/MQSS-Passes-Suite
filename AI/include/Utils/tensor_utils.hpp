@@ -2,6 +2,7 @@
 #define TENSOR_UTILS_HPP
 
 // Environment includes
+#include "Environment/quantum_circuit.hpp"
 #include "Environment/quantum_circuit_tensor.hpp"
 
 // MLIR includes
@@ -64,13 +65,21 @@ struct RebuildSetup {
 };
 
 /**
+ *
+ * @param depths
+ * @return
+ */
+unsigned int get_max_depth(std::vector<unsigned int> depths);
+
+/**
  * Create fresh context + empty module + @kernel + alloca veq.
  * Insertion point is set *before* return so you can emit ops.
  * @param kernelName
  * @param maxQubits
  * @return
  */
-RebuildSetup beginReconstruction(const std::string &kernelName, int maxQubits);
+RebuildSetup beginQuantumCircuitConstruction(const std::string &kernelName,
+                                             int maxQubits);
 
 /**
  * Utility: find the func.return inside a module (in case you need it)
@@ -124,7 +133,7 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
  * @param tensor
  * @return
  */
-std::pair<ModuleOp, std::unique_ptr<MLIRContext>>
+QuantumCircuit
 recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor);
 
 } // namespace ai_pass_selector
