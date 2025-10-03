@@ -44,19 +44,22 @@ using namespace mlir;
 
 namespace {
 
-class PrintQuakeGates
-    : public PassWrapper<PrintQuakeGates, OperationPass<mlir::ModuleOp>> {
+class PrintQuakeGates final
+    : public PassWrapper<PrintQuakeGates, OperationPass<ModuleOp> > {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(PrintQuakeGates)
 
-  PrintQuakeGates(llvm::raw_string_ostream &ostream) : outputStream(ostream) {}
+  explicit PrintQuakeGates(llvm::raw_string_ostream &ostream)
+    : outputStream(ostream) {
+  }
 
-  llvm::StringRef getArgument() const override {
+  StringRef getArgument() const override {
     return "print-quake-gates-pass";
   }
-  llvm::StringRef getDescription() const override {
+
+  StringRef getDescription() const override {
     return "Example pass that traverses a given mlir module, print its gates "
-           "and a description of the operands of each gate";
+        "and a description of the operands of each gate";
   }
 
   void runOnOperation() override {
@@ -64,12 +67,13 @@ public:
     circuit.walk([&](Operation *op) {
       if (op->getDialect()->getNamespace() == "quake") {
         outputStream << "Quantum Operation: " << op->getName().getStringRef()
-                     << "\n";
+            << "\n";
 
         // Iterate over the operands (qubits) the operation acts on
         for (Value operand : op->getOperands()) {
           if (operand.getType()
-                  .isa<quake::RefType>()) { // Check if it's a qubit reference
+            .isa<quake::RefType>()) {
+            // Check if it's a qubit reference
             outputStream << "  Acts on qubit: " << operand << "\n";
           }
         }
@@ -83,7 +87,7 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass>
+std::unique_ptr<Pass>
 mqss::opt::createPrintQuakeGatesPass(llvm::raw_string_ostream &ostream) {
   return std::make_unique<PrintQuakeGates>(ostream);
 }

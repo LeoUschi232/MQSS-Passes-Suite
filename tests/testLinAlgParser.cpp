@@ -44,10 +44,7 @@ matches.
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
@@ -55,58 +52,31 @@ matches.
 #include "mlir/Target/LLVMIR/Import.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
-// cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // includes mqss passes
 #include "Passes/CodeGen.hpp"
-#include "Passes/Decompositions.hpp"
-#include "Passes/Examples.hpp"
 #include "Passes/Transforms.hpp"
 // test includes
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir_utils.hpp>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
+using namespace mqss::support::quakeDialect;
+
+std::tuple<ModuleOp, MLIRContext *> createEmptyMLIRModule() {
   auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
+  MLIRContext &context = *contextPtr.get();
   // Create an empty MLIR module
-  mlir::OwningOpRef<mlir::ModuleOp> m_module =
-      mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
+  mlir::OwningOpRef m_module =
+      ModuleOp::create(mlir::UnknownLoc::get(&context));
   return std::make_tuple(m_module.release(), contextPtr.release());
 }
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::tuple<std::string, std::string> getQuakeAndGolden(std::string inputFile,
-                                                       std::string goldenFile) {
+std::tuple<std::string, std::string>
+getQuakeAndGolden(const std::string &inputFile, const std::string &goldenFile) {
   std::string quakeModule = readFileToString(inputFile);
   std::string goldenOutput = readFileToString(goldenFile);
   return std::make_tuple(quakeModule, goldenOutput);
@@ -143,8 +113,9 @@ TEST(TestLinAlgPass, TestQuakeToLinAlg) {
   pm.addPass(mlir::createCSEPass());
   pm.addPass(mqss::opt::createQuakeToLinAlgPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Captured output from Pass:\n" << std::endl;
   mlirModule->dump();
@@ -153,6 +124,6 @@ TEST(TestLinAlgPass, TestQuakeToLinAlg) {
 }
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

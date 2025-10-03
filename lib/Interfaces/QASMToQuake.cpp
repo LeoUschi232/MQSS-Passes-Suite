@@ -29,52 +29,59 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Interfaces/QASMToQuake.hpp"
 
-#include "Support/CodeGen/Quake.hpp"
+#include "Interfaces/Constants.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/CC/CCOps.h"
-#include "cudaq/Optimizer/Dialect/CC/CCTypes.h"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Transforms/DialectConversion.h"
 
 #include <iomanip>
+#include <ranges>
 #include <regex>
 #include <unordered_map>
+
+////////////////////////////////////////////////////////////////////////////////
+/// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
+/// namespace, so every mlir type has to be included seperately.
+using mlir::Location;
+using mlir::ModuleOp;
+using mlir::OpBuilder;
+using mlir::Operation;
+using mlir::SmallVector;
+using mlir::Type;
+using mlir::Value;
+////////////////////////////////////////////////////////////////////////////////
 
 using namespace mqss::support::quakeDialect;
 
 // Function to determine if a gate is a multi-qubit gate with implicit controls
-bool mqss::interfaces::isMultiQubitGate(const std::string &gateType) {
-  return gateType == "cx" || gateType == "cy" || gateType == "cz" ||
-         gateType == "ch" || gateType == "ccx" || gateType == "cswap" ||
-         gateType == "crx" || gateType == "cry" || gateType == "cp" ||
-         gateType == "cphase" || gateType == "CX" || gateType == "cu1" ||
-         gateType == "cu3";
+bool mqss::interfaces::isMultiQubitGate(const std::string &gate) {
+  std::string gatename = gate;
+  std::ranges::transform(gatename, gatename.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+  unsigned int i = 0;
+  while (i < gatename.size() && gatename[i] == 'r') {
+    i++;
+  }
+  return i < gatename.size() && gatename[i] == 'c';
 }
 
 // Function to get the number of controls for a gate
-size_t mqss::interfaces::getNumControls(const std::string &gateType) {
-  if (gateType == "cx" || gateType == "CX")
-    return 1; // CNOT gate has 1 control
-  if (gateType == "cy")
-    return 1; // Cy gate has 1 control
-  if (gateType == "crx" || gateType == "cry")
-    return 1; // controlled rotations have 1 control
-  if (gateType == "cp" || gateType == "cphase")
-    return 1; // controlled phase have 1 control
-  if (gateType == "cz")
-    return 1; // Cz gate has 1 control
-  if (gateType == "cu1" || gateType == "cu3")
-    return 1; // Cu1 gate has 1 control
-  if (gateType == "ch")
-    return 1; // Ch gate has 1 control
-  if (gateType == "ccx")
-    return 2; // Toffoli gate has 2 controls
-  if (gateType == "cswap")
-    return 1; // CSWAP gate has 1 control
-  return 0;   // Single-qubit gates have no controls
+size_t mqss::interfaces::getNumControls(const std::string &gate) {
+  std::string gatename = gate;
+  std::ranges::transform(gatename, gatename.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+  unsigned int i = 0;
+  unsigned int n = 0;
+  while (i < gatename.size() && gatename[i] == 'r') {
+    i++;
+  }
+  while (i < gatename.size() && gatename[i] == 'c') {
+    i++;
+    n++;
+  }
+  return n;
 }
 
 // This function returns the set of quantum registers declared in a given QASM
@@ -82,7 +89,7 @@ size_t mqss::interfaces::getNumControls(const std::string &gateType) {
 std::tuple<QASMVectorToQuakeVector, std::vector<std::pair<std::string, int>>>
 mqss::interfaces::insertAllocatedQubits(
     const std::vector<std::shared_ptr<qasm3::Statement>> &program,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp) {
+    OpBuilder &builder, Location loc, Operation *inOp) {
   // I have to do it like this to preserve the order they are declared
   std::vector<std::pair<std::string, int>> orderVectors = {};
   int totalQubits = 0;
@@ -108,9 +115,10 @@ mqss::interfaces::insertAllocatedQubits(
         // std::cout << "Type expression to string " << typeExpr->toString() <<
         // "\n"; std::cout << "Successfully cast to
         // Type<std::shared_ptr<Expression>>!" << std::endl;
-        std::regex pattern("qubit"); // Case-sensitive regex
-        if (!std::regex_search(typeExpr->toString(), pattern))
+        if (std::regex pattern("qubit");
+            !std::regex_search(typeExpr->toString(), pattern)) {
           continue; // error code
+        }
         if (auto designator = typeExpr->getDesignator()) {
           if (auto constant =
                   std::dynamic_pointer_cast<qasm3::Constant>(designator)) {
@@ -133,14 +141,14 @@ mqss::interfaces::insertAllocatedQubits(
   // return totalQubits;
   builder.setInsertionPoint(inOp); // Set insertion before return
   // create the different mlir vectors in the QASM program
-  for (const auto &pair : orderVectors) {
+  for (const auto &[order, totalQubits] : orderVectors) {
 #ifdef DEBUG
-    std::cout << "order " << pair.first << "\n";
+    std::cout << "order " << order << "\n";
 #endif
     // Define the type for a vector of totalQubits qubits
-    auto qubitVecType = quake::VeqType::get(builder.getContext(), pair.second);
+    auto qubitVecType = quake::VeqType::get(builder.getContext(), totalQubits);
     auto qubitReg = builder.create<quake::AllocaOp>(loc, qubitVecType);
-    mlirQubitVectors.emplace(pair.first, qubitReg);
+    mlirQubitVectors.emplace(order, qubitReg);
   }
   return std::make_tuple(mlirQubitVectors, orderVectors);
 }
@@ -155,8 +163,9 @@ double mqss::interfaces::evaluateExpression(
     else
       val = constantExpr->getFP();
     return val;
-  } else if (auto unaryExpr =
-                 std::dynamic_pointer_cast<qasm3::UnaryExpression>(expr)) {
+  }
+  if (auto unaryExpr =
+          std::dynamic_pointer_cast<qasm3::UnaryExpression>(expr)) {
     // Handle unary expressions like -pi
     double operandValue = evaluateExpression(unaryExpr->operand);
     switch (unaryExpr->op) {
@@ -166,8 +175,9 @@ double mqss::interfaces::evaluateExpression(
     default:
       assert(false && "Unsupported unary operation");
     }
-  } else if (auto binaryExpr =
-                 std::dynamic_pointer_cast<qasm3::BinaryExpression>(expr)) {
+  }
+  if (auto binaryExpr =
+          std::dynamic_pointer_cast<qasm3::BinaryExpression>(expr)) {
     // Handle binary expressions like pi/2
     double lhsValue = evaluateExpression(binaryExpr->lhs);
     double rhsValue = evaluateExpression(binaryExpr->rhs);
@@ -184,29 +194,29 @@ double mqss::interfaces::evaluateExpression(
     default:
       assert(false && "Unsupported binary operation");
     }
-  } else if (auto identifierExpr =
-                 std::dynamic_pointer_cast<qasm3::IdentifierExpression>(expr)) {
+  }
+  if (auto identifierExpr =
+          std::dynamic_pointer_cast<qasm3::IdentifierExpression>(expr)) {
     // Handle identifiers like pi
     if (identifierExpr->identifier == "pi") {
       return PI; // Use the value of pi from <cmath>
     }
     assert(false &&
            ("Unsupported identifier: " + identifierExpr->identifier).c_str());
-  } else {
-    assert(false && "Unsupported expression type");
   }
+  assert(false && "Unsupported expression type");
 }
 
 // Function that inserts a QASM gate into a MLIR/Quake module
 void mqss::interfaces::insertGate(
     const std::shared_ptr<qasm3::GateCallStatement> &gateCall,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp,
-    QASMVectorToQuakeVector QASMToVectors) {
-  // mlir::Value qubits, IDQASMMLIR mlirQubits) {
+    OpBuilder &builder, Location loc, Operation *inOp,
+    const QASMVectorToQuakeVector &QASMToVectors) {
+  // Value qubits, IDQASMMLIR mlirQubits) {
   bool isAdj = false;
-  std::vector<mlir::Value> parameters = {};
-  std::vector<mlir::Value> controls = {};
-  std::vector<mlir::Value> targets = {};
+  std::vector<Value> parameters = {};
+  std::vector<Value> controls = {};
+  std::vector<Value> targets = {};
   // Defining the builder
   builder.setInsertionPoint(inOp); // Set insertion before return
   // Print the gate type (identifier)
@@ -221,7 +231,7 @@ void mqss::interfaces::insertGate(
 #endif
     for (const auto &arg : gateCall->arguments) {
       double argVal = evaluateExpression(arg);
-      mlir::Value argMlirVal = createFloatValue(builder, loc, argVal);
+      Value argMlirVal = createFloatValue(builder, loc, argVal);
       parameters.push_back(argMlirVal);
 #ifdef DEBUG
       std::cout << argVal << " ";
@@ -244,7 +254,7 @@ void mqss::interfaces::insertGate(
         if (ctrlMod->expression) {
           if (auto constantExpr = std::dynamic_pointer_cast<qasm3::Constant>(
                   ctrlMod->expression)) {
-            int numControls = constantExpr->getSInt();
+            numControls = constantExpr->getSInt();
 #ifdef DEBUG
             std::cout << "numControls " << numControls << "\n";
 #endif
@@ -270,8 +280,7 @@ void mqss::interfaces::insertGate(
               std::dynamic_pointer_cast<qasm3::Constant>(operand->expression))
         qubitOp = constantExprOp->getSInt();
       assert(qubitOp != -1 && "Fatal error, this must not happen!");
-      mlir::Value selectedVector =
-          QASMToVectors.at(std::string(operand->identifier));
+      Value selectedVector = QASMToVectors.at(std::string(operand->identifier));
       int selectedQubit = qubitOp;
 #ifdef DEBUG
       if (operand->expression) {
@@ -298,11 +307,15 @@ void mqss::interfaces::insertGate(
 #endif
     }
   }
-  std::regex pattern("dg"); // Case-sensitive regex
-  if (std::regex_search(std::string(gateCall->identifier), pattern))
+  if (std::regex pattern("dg");
+      std::regex_search(std::string(gateCall->identifier), pattern)) {
     isAdj = true;
-  insertQASMGateIntoQuakeModule(std::string(gateCall->identifier), builder, loc,
-                                parameters, controls, targets, isAdj);
+  }
+  std::string gateId = gateCall->identifier;
+  std::ranges::transform(gateId, gateId.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+  insertQASMGateIntoQuakeModule(gateId, builder, loc, parameters, controls,
+                                targets, isAdj);
 #ifdef DEBUG
   std::cout << "-------------------------" << std::endl;
 #endif
@@ -312,10 +325,10 @@ void mqss::interfaces::insertGate(
 // MLIR/Quake
 void mqss::interfaces::parseAndInsertMeasurements(
     const std::vector<std::shared_ptr<qasm3::Statement>> &statements,
-    OpBuilder &builder, Location loc, mlir::Operation *inOp,
-    QASMVectorToQuakeVector QASMToVectors) {
+    OpBuilder &builder, Location loc, Operation *inOp,
+    const QASMVectorToQuakeVector &QASMToVectors) {
   std::map<int, std::pair<std::string, int>> ClassicalRegToQVector = {};
-  // mlir::Value allocatedQubits, IDQASMMLIR mlirQubits) {
+  // Value allocatedQubits, IDQASMMLIR mlirQubits) {
   // Defining the builder
   builder.setInsertionPoint(inOp); // Set insertion before return
   // llvm::outs() << "Printing measurements!\n";
@@ -373,12 +386,10 @@ void mqss::interfaces::parseAndInsertMeasurements(
       }
     }
   }
-  for (const auto &pair : ClassicalRegToQVector) {
-    int classicalIndex = pair.first;
-    auto innerPair = pair.second;
-    std::string qVector = innerPair.first;
-    int qubit = innerPair.second;
-    mlir::Value selectedQuakeVector = QASMToVectors.at(qVector);
+  for (const auto &qVectorPair : ClassicalRegToQVector | std::views::values) {
+    auto [qVector, qubit] = qVectorPair;
+    // using QASMVectorToQuakeVector = std::unordered_map<std::string, Value>;
+    Value selectedQuakeVector = QASMToVectors.at(qVector);
 
     // insert measurement
     auto measRef =

@@ -26,29 +26,19 @@ input circuit
 ******************************************************************************/
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR/Import.h"
-#include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "Passes/CodeGen.hpp"
-#include "common/RuntimeMLIR.h"
+#include "mlir_utils.hpp"
 
 #include <boost/program_options.hpp>
-#include <chrono>
 #include <cstdlib>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -57,12 +47,13 @@ input circuit
 #include <stdio.h>
 #include <string>
 #include <thread>
-#include <vector>
 
 namespace po = boost::program_options;
+using namespace mqss::opt;
+using namespace mqss::support::quakeDialect;
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
-                                std::string functionName) {
+std::string getEmptyQuakeKernel(const std::string &kernelName,
+                                const std::string &functionName) {
   std::string templateEmptyQuake =
       "module attributes {"
       "  llvm.data_layout = "
@@ -92,32 +83,7 @@ std::string getEmptyQuakeKernel(const std::string kernelName,
   return templateEmptyQuake;
 }
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
-
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::string lowerCppToQuake(std::string cppFile) {
+std::string lowerCppToQuake(const std::string &cppFile) {
   int retCode = std::system(("cudaq-quake " + cppFile + " -o ./o.qke").c_str());
   if (retCode)
     throw std::runtime_error("Quake transformation failed!!!");
@@ -156,13 +122,13 @@ int main(int argc, char *argv[]) {
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
 
-  if (vm.count("help")) {
+  if (vm.contains("help")) {
     std::cout << desc << std::endl;
     return 1;
   }
 
   std::stringstream buffer;
-  if (vm.count("input")) {
+  if (vm.contains("input")) {
     if (!hasExtension(vm["input"].as<std::string>(), ".qasm")) {
       std::cout << "File " << vm["input"].as<std::string>()
                 << " is not a valid supported file!" << std::endl;
@@ -177,7 +143,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Input file name was not set." << std::endl;
     return 1;
   }
-  if (vm.count("output")) {
+  if (vm.contains("output")) {
     if (!hasExtension(vm["output"].as<std::string>(), ".qke")) {
       std::cout << "Output file has not a correct qke extension!" << std::endl;
       return 1;
@@ -188,7 +154,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Output file name was not set." << std::endl;
     return 1;
   }
-  setbuf(stdout, NULL);
+  setbuf(stdout, nullptr);
   // loading qasm
   // Convert to istringstream
   std::istringstream qasmStream(buffer.str());
@@ -196,8 +162,9 @@ int main(int argc, char *argv[]) {
   std::string inputFileName = pathObj.filename().string();
   std::regex pattern(R"(^(.*?)[-_]*\.qasm$)");
   std::smatch match;
-  if (!std::regex_match(inputFileName, match, pattern))
+  if (!std::regex_match(inputFileName, match, pattern)) {
     throw std::runtime_error("Fatal error!");
+  }
   std::string kernelName = match[1];
   std::regex pattern2(R"([-_])");
   // Replace all occurrences of "-" and "_"
@@ -211,20 +178,27 @@ int main(int argc, char *argv[]) {
   // creating pass manager
   mlir::PassManager pm(&context);
   // Adding custom pass
-  pm.nest<mlir::func::FuncOp>().addPass(
-      mqss::opt::createQASM3ToQuakePass(qasmStream));
+  pm.nest<FuncOp>().addPass(createQASM3ToQuakePass(qasmStream));
+
+  // 2) Clean up
+  pm.addPass(mlir::createSCCPPass());          // fold constants & mark dead
+  pm.addPass(mlir::createSymbolDCEPass());     // drop dead symbols/globals
+  pm.addPass(mlir::createCSEPass());           // merge duplicate constants etc.
+  pm.addPass(mlir::createCanonicalizerPass()); // general canonicalization
+
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed.");
+  }
   // Convert the module to a string
   std::string moduleOutput;
   llvm::raw_string_ostream stringStream(moduleOutput);
   mlirModule->print(stringStream);
 
   // Open the file in output mode (create or overwrite)
-  std::ofstream outFile(vm["output"].as<std::string>());
   // Check if the file was opened successfully
-  if (outFile.is_open()) {
+  if (std::ofstream outFile(vm["output"].as<std::string>());
+      outFile.is_open()) {
     // Write the content to the file
     outFile << moduleOutput;
     // Close the file

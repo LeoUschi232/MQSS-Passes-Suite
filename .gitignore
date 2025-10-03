@@ -1,3 +1,9 @@
+# IDE settings
+cmake-build-mqss-dev
+.idea
+.venv
+
+# Rest of the garbage
 *.swp
 *.swo
 *.swn
@@ -16,7 +22,6 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
-build
 
 # Compiled Object files
 *.slo

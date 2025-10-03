@@ -35,10 +35,6 @@ matches.
 
 // QCEC checker headers
 #include "EquivalenceCheckingManager.hpp"
-#include "EquivalenceCriterion.hpp"
-#include "checker/dd/applicationscheme/ApplicationScheme.hpp"
-#include "dd/DDDefinitions.hpp"
-#include "ir/operations/Control.hpp"
 
 #include <iostream>
 #include <string>
@@ -47,20 +43,12 @@ matches.
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Import.h"
-#include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
 #include "mlir/Transforms/Passes.h"
-// cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
-#include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // includes mqss passes
@@ -68,13 +56,16 @@ matches.
 // test includes
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir_utils.hpp>
 #include <regex>
 #include <zip.h>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::string getEmptyQuakeKernel(const std::string kernelName,
-                                std::string functionName) {
+using namespace mqss::support::quakeDialect;
+
+std::string getEmptyQuakeKernel(const std::string &kernelName,
+                                const std::string &functionName) {
   std::string templateEmptyQuake =
       "module {"
       "  func.func @__nvqpp__mlirgen__KERNELNAME() attributes "
@@ -93,54 +84,21 @@ std::string getEmptyQuakeKernel(const std::string kernelName,
   return templateEmptyQuake;
 }
 
-std::tuple<std::unique_ptr<mlir::MLIRContext>,
-           mlir::OwningOpRef<mlir::ModuleOp>>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
+std::string lowerQuakeCodeToOpenQASM(const std::string &quantumTask) {
+  auto [m_module, contextPtr] = extractMLIRContext(quantumTask);
 
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(std::move(contextPtr), std::move(m_module));
-  //  return std::make_tuple(std::move(m_module), std::move(contextPtr));
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::string lowerQuakeCodeToOpenQASM(std::string quantumTask) {
-  // auto [m_module, contextPtr] =
-  //     extractMLIRContext(quantumTask);
-  mlir::OwningOpRef<mlir::ModuleOp> m_module;
-  std::unique_ptr<mlir::MLIRContext> contextPtr;
-  std::tie(contextPtr, m_module) = extractMLIRContext(quantumTask);
-
-  mlir::MLIRContext &context = *contextPtr;
   std::string postCodeGenPasses = "";
-  bool printIR = false;
-  bool enablePassStatistics = false;
-  bool enablePrintMLIREachPass = false;
 
   auto translation = cudaq::getTranslation("qasm2");
   std::string codeStr;
   {
+    bool enablePrintMLIREachPass = false;
+    bool enablePassStatistics = false;
     llvm::raw_string_ostream outStr(codeStr);
     m_module->getContext()->disableMultithreading();
-    if (mlir::failed(translation(m_module.get(), outStr, postCodeGenPasses,
-                                 printIR, enablePrintMLIREachPass,
-                                 enablePassStatistics)))
+    if (bool printIR = false; mlir::failed(
+            translation(m_module, outStr, postCodeGenPasses, printIR,
+                        enablePrintMLIREachPass, enablePassStatistics)))
       throw std::runtime_error("Could not successfully translate to OpenQASM2");
   }
   // Regular expression to match the gate definition
@@ -220,22 +178,21 @@ TEST(TestMQSSPasses, TestQASMToQuake) {
   // Convert to istringstream
   std::istringstream qasmStream(buffer.str());
   // creating empty mlir module
-  mlir::OwningOpRef<mlir::ModuleOp> mlirModule;
-  std::unique_ptr<mlir::MLIRContext> contextPtr;
-  std::tie(contextPtr, mlirModule) = extractMLIRContext(templateEmptyQuake);
+  auto [mlirModule, contextPtr] = extractMLIRContext(templateEmptyQuake);
   mlirModule->getContext()->disableMultithreading();
-  mlir::MLIRContext &context = *contextPtr;
+  MLIRContext &context = *contextPtr;
 #ifdef DEBUG
   std::cout << "Empty mlir module:\n";
   mlirModule->dump();
 #endif
   // creating pass manager
   mlir::PassManager pm(&context);
-  pm.nest<mlir::func::FuncOp>().addPass(
+  pm.nest<FuncOp>().addPass(
       mqss::opt::createQASM3ToQuakePass(qasmStream, false));
   // running the pass
-  if (mlir::failed(pm.run(mlirModule.get())))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Parsed Circuit from QASM:\n";
   mlirModule->dump();

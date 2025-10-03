@@ -1,9 +1,9 @@
 # Project name and language specification
 cmake_minimum_required(VERSION 3.19...3.30)
 project(
-  MLIRPasses
-  VERSION 1.0
-  LANGUAGES C CXX)
+        MLIRPasses
+        VERSION 1.0
+        LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
@@ -13,21 +13,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 
 # Set default build type to Debug if none is specified
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE
-      Debug
-      CACHE STRING "Build type (Debug, Release)" FORCE)
-endif()
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+            Debug
+            CACHE STRING "Build type (Debug, Release)" FORCE)
+endif ()
 
 # Define macros for Debug builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message("Configuring for Debug mode")
-  add_compile_definitions(DEBUG)
-endif()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("Configuring for Debug mode")
+    add_compile_definitions(DEBUG)
+endif ()
 
-include(cmake/ExternalDependencies.cmake) # doxygen dependencies
+# doxygen dependencies
+include(cmake/ExternalDependencies.cmake)
 # ################ MLIR Settings ###########################################
-# Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
+# Find MLIR. MLIR is usually installed as part of an LLVM distribution.
 find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 
@@ -69,15 +70,17 @@ set(CUDAQ_TOOLS_DIR "${CUDAQ_SOURCE_DIR}/build/bin")
 set(CUDAQ_MLIR_RUNTIME_PATH "${CUDAQ_SOURCE_DIR}/build/lib")
 
 include_directories(BEFORE ${CUDAQ_MAIN_INCLUDE_DIR}
-                    ${CUDAQ_BINARY_DIR}/include ${CUDAQ_SOURCE_DIR}/runtime)
+        ${CUDAQ_BINARY_DIR}/include ${CUDAQ_SOURCE_DIR}/runtime)
 
 # Validate CUDAQ dependencies
-if(NOT EXISTS ${CUDAQ_BINARY_DIR}/lib/libcudaq-mlir-runtime.so)
-  message(
-    FATAL_ERROR
-      "Invalid CUDAQ dir: ${CUDAQ_SOURCE_DIR}. Cannot find libcudaq.so in build directory."
-  )
-endif()
+if (NOT EXISTS ${CUDAQ_BINARY_DIR}/lib/libcudaq-mlir-runtime.so)
+    message(
+            FATAL_ERROR
+            "Invalid CUDAQ dir: ${CUDAQ_SOURCE_DIR}. Cannot find libcudaq.so in build directory."
+    )
+endif ()
+
+link_directories(${CUDAQ_LIBRARY_DIR})
 # ##############################################################################
 
 set(MQT_QMAP_INCLUDE_DIR "${mqt-qmap_SOURCE_DIR}/include/")
@@ -89,107 +92,120 @@ message(STATUS "mqt include dir: ${MQT_QMAP_INCLUDE_DIR}")
 message(STATUS "QINFO INCLUDE DIRS ${qinfo_INCLUDE_DIRS}")
 
 include_directories(
-  BEFORE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/CodeGen/
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/DAG/
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Optimizer/
-  ${MQT_QMAP_INCLUDE_DIR}
-  ${MQT_CORE_INCLUDE_DIR}
-  ${qdmi_INCLUDE_DIRS}
-  ${qinfo_INCLUDE_DIRS})
+        BEFORE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/CodeGen/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Support/DAG/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Optimizer/
+        ${MQT_QMAP_INCLUDE_DIR}
+        ${MQT_CORE_INCLUDE_DIR}
+        ${qdmi_INCLUDE_DIRS}
+        ${qinfo_INCLUDE_DIRS})
 
 # Set explicit paths
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/Passes)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/Optimizer)
+
+# Generate .inc files from TableGen for Transforms.
 set(LLVM_TARGET_DEFINITIONS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Transforms.td)
-# Generate .inc files from TableGen
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Transforms.td)
 mlir_tablegen(include/Passes/Transforms.h.inc -gen-pass-decls -name
-              MQSSOptTransforms)
+        MQSSOptTransforms)
 add_public_tablegen_target(MQSSTransformsPassIncGen)
 
+# Generate .inc files from  for Decompositions.
 set(LLVM_TARGET_DEFINITIONS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Decompositions.td)
-# Generate .inc files from TableGen
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Decompositions.td)
 mlir_tablegen(include/Passes/Decompositions.h.inc -gen-pass-decls -name
-              MQSSOptDecompositions)
+        MQSSOptDecompositions)
 add_public_tablegen_target(MQSSDecompositionsPassIncGen)
+
+# Generate .inc files from TableGen for Cancellations.
+set(LLVM_TARGET_DEFINITIONS
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Cancellations.td)
+mlir_tablegen(include/Passes/Cancellations.h.inc -gen-pass-decls -name
+        MQSSOptCancellations)
+add_public_tablegen_target(MQSSCancellationsPassIncGen)
 
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # Collect all .cpp files in the src directory
-file(GLOB SRC_CODEGEN "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/CodeGen/*.cpp")
-file(GLOB SRC_DECOMPOSITIONS
-     "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Decompositions/*.cpp")
-file(GLOB SRC_EXAMPLES "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Examples/*.cpp")
+# First transforms, decompositions and cancellations.
 file(GLOB SRC_TRANSFORMS
-     "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Transforms/*.cpp")
-file(GLOB SRC_SUPPORT_QUAKE
-     "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/CodeGen/Quake/*.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/DAG/*.cpp")
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Transforms/*.cpp")
+file(GLOB SRC_DECOMPOSITIONS
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Decompositions/*.cpp")
+file(GLOB SRC_CANCELLATIONS
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Cancellations/*.cpp")
+
+# Then the other stuff.
+file(GLOB SRC_CODEGEN "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/CodeGen/*.cpp")
+file(GLOB SRC_EXAMPLES "${CMAKE_CURRENT_SOURCE_DIR}/lib/Passes/Examples/*.cpp")
 file(GLOB SRC_OPTIMIZER "${CMAKE_CURRENT_SOURCE_DIR}/lib/Optimizer/*.cpp")
 file(GLOB SRC_INTERFACES "${CMAKE_CURRENT_SOURCE_DIR}/lib/Interfaces/*.cpp")
+file(GLOB_RECURSE SRC_SUPPORT_QUAKE "${CMAKE_CURRENT_SOURCE_DIR}/lib/Support/*.cpp")
 
 add_mlir_library(
-  SupportQuake
-  SHARED
-  ${SRC_SUPPORT_QUAKE}
-  LINK_LIBS
-  PUBLIC
-  MLIRIR
-  MLIRPass
-  MLIRTransforms)
+        SupportQuake
+        SHARED
+        ${SRC_SUPPORT_QUAKE}
+        LINK_LIBS
+        PUBLIC
+        MLIRIR
+        MLIRPass
+        MLIRTransforms)
 
 add_mlir_library(
-  Interfaces
-  SHARED
-  ${SRC_INTERFACES}
-  LINK_LIBS
-  PUBLIC
-  SupportQuake
-  MQT::CoreIR
-  MQT::CoreNA
-  MQT::QMapSC
-  MLIRIR
-  MLIRLinalgDialect
-  MLIRLinalgUtils
-  MLIRPass
-  MLIRTransforms)
+        Interfaces
+        SHARED
+        ${SRC_INTERFACES}
+        LINK_LIBS
+        PUBLIC
+        SupportQuake
+        MQT::CoreIR
+        MQT::CoreNA
+        MQT::QMapSC
+        MLIRIR
+        MLIRLinalgDialect
+        MLIRLinalgUtils
+        MLIRPass
+        MLIRTransforms)
 
 add_mlir_library(
-  MLIRPasses
-  SHARED
-  ${SRC_CODEGEN}
-  ${SRC_DECOMPOSITIONS}
-  ${SRC_EXAMPLES}
-  ${SRC_TRANSFORMS}
-  DEPENDS
-  MQSSTransformsPassIncGen
-  MQSSDecompositionsPassIncGen
-  LINK_LIBS
-  PUBLIC
-  SupportQuake
-  Interfaces
-  MQT::CoreIR
-  MQT::CoreNA
-  MQT::QMapSC
-  MQT::QMapSCHeuristic
-  MLIRTensorDialect
-  MLIRIR
-  MLIRPass
-  MLIRTransforms)
+        MLIRPasses
+        SHARED
+        ${SRC_TRANSFORMS}
+        ${SRC_DECOMPOSITIONS}
+        ${SRC_CANCELLATIONS}
+        ${SRC_CODEGEN}
+        ${SRC_EXAMPLES}
+        DEPENDS
+        MQSSTransformsPassIncGen
+        MQSSDecompositionsPassIncGen
+        MQSSCancellationsPassIncGen
+        LINK_LIBS
+        PUBLIC
+        SupportQuake
+        Interfaces
+        MQT::CoreIR
+        MQT::CoreNA
+        MQT::QMapSC
+        MQT::QMapSCHeuristic
+        MLIRTensorDialect
+        MLIRIR
+        MLIRPass
+        MLIRTransforms)
 
 add_mlir_library(
-  Optimizer
-  SHARED
-  ${SRC_OPTIMIZER}
-  LINK_LIBS
-  PUBLIC
-  MLIRIR
-  MLIRPasses)
+        Optimizer
+        SHARED
+        ${SRC_OPTIMIZER}
+        LINK_LIBS
+        PUBLIC
+        MLIRIR
+        MLIRPasses)
 
 target_compile_options(Interfaces PRIVATE -fexceptions -frtti)
 target_compile_options(SupportQuake PRIVATE -fexceptions -frtti)
@@ -201,21 +217,27 @@ add_library(MQSS::SupportQuake ALIAS SupportQuake)
 add_library(MQSS::Optimizer ALIAS Optimizer)
 add_library(MQSS::Interfaces ALIAS Interfaces)
 
+# add pass selector ai
+if (BUILD_MLIR_PASSES_AI)
+    add_subdirectory(AI)
+endif ()
+
 # add tests
-if(BUILD_MLIR_PASSES_TESTS)
-  enable_testing()
-  include(GoogleTest)
-  add_subdirectory(tests)
-endif()
+if (BUILD_MLIR_PASSES_TESTS)
+    enable_testing()
+    include(GoogleTest)
+    add_subdirectory(tests)
+endif ()
 
 # add documentation
-if(BUILD_MLIR_PASSES_DOCS)
-  add_subdirectory(docs)
-endif()
+if (BUILD_MLIR_PASSES_DOCS)
+    add_subdirectory(docs)
+endif ()
 
-if(BUILD_MLIR_PASSES_TOOLS)
-  add_subdirectory(tools)
-endif()
+if (BUILD_MLIR_PASSES_TOOLS)
+    add_subdirectory(tools)
+endif ()
+
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
 

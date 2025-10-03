@@ -191,3 +191,25 @@ https://github.com/Munich-Quantum-Software-Stack/passes.
 This collection of MLIR passes is released under the Apache License v2.0 with LLVM Exceptions. See
 [LICENSE](https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE) for more
 information. Any contribution to the project is assumed to be under the same license.
+
+### What message should I expect when only a QASM dataset exists?
+
+The AI tooling prints a guidance message encouraging the conversion of QASM datasets whenever the
+matching Quake dataset is missing. You can verify this manually with the following steps:
+
+1. Pick a dataset name that has QASM circuits, e.g., `Passtest`, and ensure the corresponding Quake
+   directory is absent by temporarily renaming
+   `AI/Dataset/Quake/Passtest` to `AI/Dataset/Quake/Passtest.bak`.
+2. Make sure the QASM circuits remain available at `AI/Dataset/Qasm/Passtest`.
+3. From the build directory, run the info command
+   `./AI/ai_pass_selector_torch --info --dataset Passtest`.
+
+Because only the QASM dataset exists, the command prints the following lines before returning:
+
+```
+Dataset Qasm/Passtest found with <number> circuits.
+Run "./convert_qasm_dataset_to_quake Passtest" to convert this dataset to Quake.
+```
+
+After the check, restore the original Quake dataset location. This confirms that the fallback
+message is displayed as soon as only the QASM dataset is present.

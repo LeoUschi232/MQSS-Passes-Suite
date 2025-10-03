@@ -40,55 +40,27 @@ matches.
 // mlir includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Import.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h" // For translateModuleToLLVMIR
 #include "mlir/Transforms/Passes.h"
 // cudaq includes
-#include "cudaq/Frontend/nvqpp/AttributeNames.h"
 #include "cudaq/Optimizer/Transforms/Passes.h"
 // includes in runtime
 #include "common/RuntimeMLIR.h"
 // test includes
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir_utils.hpp>
 
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
-std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
-extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
-  mlir::MLIRContext &context = *contextPtr.get();
+using namespace mqss::support::quakeDialect;
 
-  // Get the quake representation of the kernel
-  auto quakeCode = quakeModule;
-  auto m_module = mlir::parseSourceString<mlir::ModuleOp>(quakeCode, &context);
-  if (!m_module)
-    throw std::runtime_error("Module cannot be parsed");
-
-  return std::make_tuple(m_module.release(), contextPtr.release());
-}
-
-std::string readFileToString(const std::string &filename) {
-  std::ifstream file(filename); // Open the file
-  if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return "";
-  }
-  std::ostringstream fileContents;
-  fileContents << file.rdbuf(); // Read the whole file into the string stream
-  return fileContents.str();    // Convert the string stream to a string
-}
-
-std::tuple<std::string, std::string> getQuakeAndGolden(std::string inputFile,
-                                                       std::string goldenFile) {
+std::tuple<std::string, std::string>
+getQuakeAndGolden(const std::string &inputFile, const std::string &goldenFile) {
 
   std::string quakeModule = readFileToString(inputFile);
   std::string goldenOutput = readFileToString(goldenFile);
@@ -118,7 +90,7 @@ std::tuple<std::string, std::string> behaviouralTest(
   std::cout << "Input Quake Module " << std::endl << quakeModule << std::endl;
 #endif
   auto [mlirModule, contextPtr] = extractMLIRContext(quakeModule);
-  mlir::MLIRContext &context = *contextPtr;
+  MLIRContext &context = *contextPtr;
   // creating pass manager
   mlir::PassManager pm(&context);
   // pm.addPass(cudaq::opt::createBasisConversionPass());
@@ -130,8 +102,9 @@ std::tuple<std::string, std::string> behaviouralTest(
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(mlir::createCSEPass());
   // running the pass
-  if (mlir::failed(pm.run(mlirModule)))
-    std::runtime_error("The pass failed...");
+  if (mlir::failed(pm.run(mlirModule))) {
+    throw std::runtime_error("The pass failed...");
+  }
 #ifdef DEBUG
   std::cout << "Circuit after pass:\n";
   mlirModule->dump();
@@ -144,7 +117,7 @@ std::tuple<std::string, std::string> behaviouralTest(
 }
 
 class BehaviouralCudaqDecompositionPasses
-    : public ::testing::TestWithParam<std::tuple<
+    : public testing::TestWithParam<std::tuple<
           std::string,             // name test
           std::string,             // input of the test
           std::string,             // expected output
@@ -442,6 +415,6 @@ INSTANTIATE_TEST_SUITE_P(
     });
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

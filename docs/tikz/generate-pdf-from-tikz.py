@@ -25,7 +25,7 @@ def compile_latex_to_pdf(tex_file, output_dir):
         print(f"Unexpected error: {e}")
 
 def process_folder(input_dir, output_dir):
-    """Processes all .tex files in a folder and generates PDFs."""
+    """Processes all .tikz files in a folder and generates PDFs."""
     if not os.path.isdir(input_dir):
         print(f"Error: {input_dir} is not a valid directory.")
         sys.exit(1)
@@ -33,7 +33,7 @@ def process_folder(input_dir, output_dir):
     tex_files = [f for f in os.listdir(input_dir) if f.endswith(".tikz")]
 
     if not tex_files:
-        print("No .tex files found in the specified directory.")
+        print("No .tikz files found in the specified directory.")
         return
 
     for tex_file in tex_files:

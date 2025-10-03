@@ -2,9 +2,9 @@
 
 Copyright 2024 Munich Quantum Software Stack Project
 
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+                                     "License"); you may not use this file
+except in compliance with the License. You may obtain a copy of the License at
 
 https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
 
@@ -22,22 +22,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 /** @file
  * @brief
- * @details Header file that defines the signature for each MLIR/Quake defined
- * into the Munich Quantum Software Stack (MQSS).
+ * @details Header file that defines the signature for each MLIR/Quake pass
+ * defined in the Munich Quantum Software Stack (MQSS).
  *
  * @par
  * This header must be included to use the collection of decomposition passes
  * that are part of the MQSS.
  */
+
 #pragma once
 
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-
-#include "llvm/Support/raw_ostream.h"
-
-#include <stdexcept>
 
 /**
  * @def CUDAQ_PREFIX_FUNCTION
@@ -48,89 +43,66 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 namespace mqss::opt {
 
-/**
- * @brief MLIR/Quake pass that decomposes two qubits CNot (XOp).
-   @details This method constructs an `mlir::Pass` of the type
- CxToHCzHDecompositionPass. This decomposition pass operates on any two qubits
- XOp operation in a given MLIR/Quake module and performs its replacement by a
- pattern composed of a Hadamard, Z and Hadamard operations, as follows.
-
-  \image html docs/_static/mqss-passes/CxToHCzHDecompositionPass.png width=70%
-
- @return An `mlir::Pass` object containing the definition of the
- CxToHCzHDecompositionPass. This `mlir::Pass` object has to be passed to an
- `mlir::PassManager` to take effect on any given MLIR module.
- */
-std::unique_ptr<mlir::Pass> createCxToHCzHDecompositionPass();
-
-/**
- * @brief MLIR/Quake pass that decomposes two qubits ZOp.
-   @details This method constructs an `mlir::Pass` of the type
- CzToHCxHDecompositionPass. This decomposition pass operates on any two qubits
- ZOp operation in a given MLIR/Quake module and performs its replacement by a
- pattern composed of a Hadamard, X and Hadamard operations, as follows.
-
-  \image html docs/_static/mqss-passes/CzToHCxHDecompositionPass.png width=60%
-
- @return An `mlir::Pass` object containing the definition of the
- CzToHCxHDecompositionPass. This `mlir::Pass` object has to be passed to an
- `mlir::PassManager` to take effect on any given MLIR module.
- */
-std::unique_ptr<mlir::Pass> createCzToHCxHDecompositionPass();
-
-/**
- * @brief MLIR/Quake pass that operates on each CNot gate in a given quantum
- circuit.
-   @details This method constructs an `mlir::Pass` of the type ReverseCNotPass.
- This pass operates on all two-qubit CNot gates and reverses the target and
- controls by introducing additional Hadamard gates, in a given MLIR/Quake
- module, as follows.
-
-  \image html docs/_static/mqss-passes/ReverseCNotPass.png width=100%
-
- @return An `mlir::Pass` object containing the definition of the
- ReverseCNotPass. This `mlir::Pass` object has to be passed to an
- `mlir::PassManager` to take effect on any given MLIR module.
- */
+/// 1
 std::unique_ptr<mlir::Pass> createReverseCxPass();
 
-/**
- * @brief MLIR/Quake pass that operates on the pattern composed of S adjoint and
- single-qubit gate Z a replaces by a S gate.
-   @details This method constructs an `mlir::Pass` of the type SAdjToSPass. This
- pass operates on the pattern S adjoint and Z, as follows.
+/// 2
+std::unique_ptr<mlir::Pass> createCxToLowerHCzHPass();
 
-  \image html docs/_static/mqss-passes/SAdjToSPass.png width=60%
+/// 3
+std::unique_ptr<mlir::Pass> createCxToUpperHCzHPass();
 
- @return An `mlir::Pass` object containing the definition of the SAdjToSPass.
- This `mlir::Pass` object has to be passed to an `mlir::PassManager` to take
- effect on any given MLIR module.
- */
-std::unique_ptr<mlir::Pass> createSAdjZToSPass();
+/// 4
+std::unique_ptr<mlir::Pass> createCzToLowerHCxHPass();
 
-/**
- * @brief MLIR/Quake pass that operates on the pattern composed of S and
- single-qubit gate Z a replaces by a S adjoint gate.
-   @details This method constructs an `mlir::Pass` of the type SAdjToSPass. This
- pass operates on the pattern S and Z, as follows.
+/// 5
+std::unique_ptr<mlir::Pass> createCzToUpperHCxHPass();
 
-  \image html docs/_static/mqss-passes/SToSAdjPass.png width=60%
+/// 6
+std::unique_ptr<mlir::Pass> createRxToHRzHPass();
 
- @return An `mlir::Pass` object containing the definition of the SToSAdjPass.
- This `mlir::Pass` object has to be passed to an `mlir::PassManager` to take
- effect on any given MLIR module.
- */
-std::unique_ptr<mlir::Pass> createSZToSAdjPass();
+/// 7
+std::unique_ptr<mlir::Pass> createRzToHRxHPass();
+
+/// 8
+std::unique_ptr<mlir::Pass> createCrxToHCrzHPass();
+
+/// 9
+std::unique_ptr<mlir::Pass> createCrzToHCrxHPass();
+
+/// 10
+std::unique_ptr<mlir::Pass> createSdgToSSSPass();
+
+/// 11
+std::unique_ptr<mlir::Pass> createSToSdgSdgSdgPass();
+
+/// 12
+std::unique_ptr<mlir::Pass> createSToTTPass();
+
+/// 13
+std::unique_ptr<mlir::Pass> createXToHZHPass();
+
+/// 14
+std::unique_ptr<mlir::Pass> createZToHXHPass();
+
+/// 15
+std::unique_ptr<mlir::Pass> createSwapToLowerCxCxCxPass();
+
+/// 16
+std::unique_ptr<mlir::Pass> createSwapToUpperCxCxCxPass();
+
 } // namespace mqss::opt
+
+// Declarative passes
 /**
  * @def GEN_PASS_DECL
- * @brief Macro for declaring passes for registration
+ * @brief Macro for declaring passes for registration.
  */
-// declarative passes
 #define GEN_PASS_DECL
 /**
  * @def GEN_PASS_REGISTRATION
- * @brief Macro for pass registration
+ * @brief Macro for pass registration.
  */
 #define GEN_PASS_REGISTRATION
+// NOLINTNEXTLINE
 #include "Passes/Decompositions.h.inc"

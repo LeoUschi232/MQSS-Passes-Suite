@@ -29,16 +29,19 @@ representation.
 ******************************************************************************/
 
 #include "Support/DAG/Quake-DAG.hpp"
+#include "Support/mlir_utils.hpp"
+
+#include <ranges>
 
 using namespace mqss::support::quakeDialect;
 
-void QuakeDAG::parse_mlir(func::FuncOp kernel) {
-  int numQubits = getNumberOfQubits(kernel);
-  std::map<size_t, QuakeDAG::Vertex>
+void QuakeDAG::parse_mlir(FuncOp kernel) {
+  const int numQubits = getNumberOfQubits(kernel);
+  std::map<size_t, Vertex>
       qubitsHistory; // this map stores the last inserted vertex in the graph on
-                     // each qubit, the key is the index of the qubit
+  // each qubit, the key is the index of the qubit
   for (int i = 0; i < numQubits; i++) {
-    Vertex qubit = get_or_add_node("q_" + std::to_string(i));
+    const Vertex qubit = get_or_add_node("q_" + std::to_string(i));
     dag[qubit].isQubit = true;
     qubitsHistory[i] = qubit;
   }
@@ -48,7 +51,7 @@ void QuakeDAG::parse_mlir(func::FuncOp kernel) {
     if (!gate)
       return;
     // then, the operation is a quake gate
-    llvm::StringRef opName = op->getName().getStringRef();
+    StringRef opName = op->getName().getStringRef();
     std::regex pattern("^quake\\.");
     std::string result = std::regex_replace(opName.str(), pattern, "");
     Vertex operation = get_or_add_node(result + "_" + std::to_string(idx++));
@@ -63,14 +66,14 @@ void QuakeDAG::parse_mlir(func::FuncOp kernel) {
     dag[operation].isAdj = gate.isAdj();
     // insert the edges
     for (int i = 0; i < targets.size(); i++) {
-      if (qubitsHistory.find(targets[i]) != qubitsHistory.end()) {
+      if (qubitsHistory.contains(targets[i])) {
         add_edge(qubitsHistory[targets[i]], operation, dag);
         qubitsHistory[targets[i]] = operation;
       } else
         assert("This should not happen!");
     }
     for (int i = 0; i < controls.size(); i++) {
-      if (qubitsHistory.find(controls[i]) != qubitsHistory.end()) {
+      if (qubitsHistory.contains(controls[i])) {
         add_edge(qubitsHistory[controls[i]], operation, dag);
         qubitsHistory[controls[i]] = operation;
       } else
@@ -81,7 +84,7 @@ void QuakeDAG::parse_mlir(func::FuncOp kernel) {
   // insert measurements to al qubits at the end
   Vertex mes = get_or_add_node("measurement");
   dag[mes].isMeasurement = true;
-  for (const auto &[key, value] : qubitsHistory) {
+  for (const auto &value : qubitsHistory | std::views::values) {
     add_edge(value, mes, dag);
   }
 }
@@ -108,7 +111,7 @@ void QuakeDAG::dump_dot(const std::string &filename) const {
 
 // Helper to add a node if not already present
 QuakeDAG::Vertex QuakeDAG::get_or_add_node(const std::string &name) {
-  if (node_map.find(name) == node_map.end()) {
+  if (!node_map.contains(name)) {
     Vertex v = add_vertex(dag);
     dag[v].name = name;
     node_map[name] = v;
