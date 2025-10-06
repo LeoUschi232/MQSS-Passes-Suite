@@ -29,7 +29,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
 
 /**
  * @def CUDAQ_PREFIX_FUNCTION
