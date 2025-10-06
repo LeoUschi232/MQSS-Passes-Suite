@@ -17,17 +17,17 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
     : BaseA2CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
-  unsigned int IRP = MAX_QUBITS_TO_IRP(max_qubits);
+  unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
 
   // Reduce the dimensionality of the inner layers.
   // Standard practice in convolutional networks.
   // But keep the nr of channels always at least more than 1 and strictly
   // decreasing.
-  unsigned int L2 = static_cast<unsigned>(3.0 / 4.0 * IRP);
+  unsigned int L2 = static_cast<unsigned>(3.0 / 4.0 * IRS);
   L2 = std::max(4u, L2);
-  unsigned int L3 = static_cast<unsigned>(2.0 / 4.0 * IRP);
+  unsigned int L3 = static_cast<unsigned>(2.0 / 4.0 * IRS);
   L3 = std::max(3u, L3);
-  unsigned int L4 = static_cast<unsigned>(1.0 / 4.0 * IRP);
+  unsigned int L4 = static_cast<unsigned>(1.0 / 4.0 * IRS);
   L4 = std::max(2u, L4);
 
   // The minimum nr of instructions is 2.
@@ -40,16 +40,16 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
   // => kernel will slide over 1 window of size max_qubits
   unsigned int padding = (max_qubits - 1) / 2;
 
-  // Input tensor shape is {B, N, IRP} but a convolutional layer expects the
+  // Input tensor shape is {B, N, IRS} but a convolutional layer expects the
   // number of channels in each position before the nr of positions, so before
   // passing the input tensor to the neural network, it must be transformed to
-  // shape {B, IRP, N}.
+  // shape {B, IRS, N}.
   auto actor = torch::nn::Sequential(
       // Input layer
-      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
+      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRS, N}
 
       // Inner layer nr 1
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, L2, max_qubits)
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRS, L2, max_qubits)
                             .padding(padding)), // Shape {B, L2, N}
       torch::nn::Transpose(1, 2),               // Shape {B, N, L2}
       torch::nn::LayerNorm(
@@ -84,10 +84,10 @@ A2C_CONV3::A2C_CONV3(unsigned int max_qubits,
       torch::nn::Softmax(torch::nn::SoftmaxOptions(/*dim=*/1)));
   auto critic = torch::nn::Sequential(
       // Input layer
-      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRP, N}
+      torch::nn::TransposeContiguous(1, 2), // Shape {B, IRS, N}
 
       // Inner layer nr 1
-      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRP, L2, max_qubits)
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(IRS, L2, max_qubits)
                             .padding(padding)), // Shape {B, L2, N}
       torch::nn::Transpose(1, 2),               // Shape {B, N, L2}
       torch::nn::LayerNorm(

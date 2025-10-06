@@ -12,4 +12,19 @@
   Supports layers such as `mlpack::ann::Linear`, `mlpack::ann::ReLU`, `mlpack::ann::LeakyReLU`,
   `mlpack::ann::Convolution`, and more. Great for implementing NN-based RL policies without heavy dependencies.
 
+## Research Paper Notes
+
+### 1. [Optimizing Classical Compiler Passes](ResearchPapers/01_OptimizingClassicalCompilerPasses.pdf)
+
+- Machine learning scales to large corpora of training examples, which we expect to increase the likelihood of obtaining
+  policies that generalize well. This is important because, we do not want to retrain policies too frequently. It is an
+  adoption blocker. __[Page 8]__
+- Near optimal pass sequence can be directly predicted with high accuracy via Graph Edge Attention Network (GEAN), a
+  graph neural network (GNN) architecture. RL-based approaches like PPO operating on the original compiler pass space
+  often suffer from unstable training due to inaccurate value estimation and sparse reward space and fail to generalize
+  to unseen programs at inference. As a contender to GNN, use transformers to process graphs. If we effectively encode
+  positional and local sub-structures of graphs and feed them to the transformer, then the transformer can outperform
+  the classical GNN models.  __[Page 30]__
+- 
+
 

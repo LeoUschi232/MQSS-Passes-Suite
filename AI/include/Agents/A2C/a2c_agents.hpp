@@ -20,10 +20,10 @@ namespace torch::nn {
 inline PReLU HalfScalingLayer(double prelu_init = 1.0) {
   return PReLU(PReLUOptions().init(prelu_init));
 }
-/// Instruction tensor will have shape {B, N, IRP}
+/// Instruction tensor will have shape {B, N, IRS}
 /// B = Batch size / Nr of parallel environments
 /// N = Nr of instructions in the quantum circuit
-/// IRP = Instruction representation size
+/// IRS = Instruction Representation Size
 inline Functional TransposeContiguous(int64_t dim0, int64_t dim1) {
   return Functional([dim0, dim1](const Tensor &x) {
     return x.transpose(dim0, dim1).contiguous();

@@ -148,10 +148,10 @@ public:
   /**
    * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
-   * IRP = Instruction representation size
-   * The transformation from shape {N×IRP} to {B, N, IRP} will be done by the
+   * IRS = Instruction Representation Size
+   * The transformation from shape {N×IRS} to {B, N, IRS} will be done by the
    * ParallelEnvironments object.
-   * @return Blob tensor of 1-axis shape {N×IRP} containing the observation of
+   * @return Blob tensor of 1-axis shape {N×IRS} containing the observation of
    * the current circuit.
    */
   InstructionsTensor<double> get_observation() const;
