@@ -25,6 +25,9 @@
   to unseen programs at inference. As a contender to GNN, use transformers to process graphs. If we effectively encode
   positional and local sub-structures of graphs and feed them to the transformer, then the transformer can outperform
   the classical GNN models.  __[Page 30]__
+- Markov chain oracle outperforms the Independent Identically Distributed probability distribution oracle, followed by
+  the RIC methodology using a uniform probability distribution. __[Page 120]__
+- 
 
 ## Grok Prompts
 
