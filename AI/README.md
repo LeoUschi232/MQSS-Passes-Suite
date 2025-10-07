@@ -70,7 +70,8 @@ This list is unordered regarding priority.
 - Architecture of a deep convolutional network. This instance was designed to recognize hand-written characters. It
   consists of alternating convolutional and subsampling layers, followed by several fully connected final layers. Each
   convolutional layer produces a number of feature maps- __[Page 229]__
-- The TD($\lambda$) algorithm can be understood as one particular way of averaging   $n$-step updates. This average
+- The $\mathrm{TD}(\lambda)$ algorithm can be understood as one particular way of averaging   $n$-step updates. This
+  average
   contains all the $n$-step updates, each weighted proportionally to $\lambda^{n-1}$, where $\lambda\in[0,1]$, and is
   normalized by a factor of $\lambda-1$ to ensure that the weights sum to $1$. The resulting update is toward a return,
   called the $\lambda$-return. __[Page 290]__
@@ -86,10 +87,21 @@ This list is unordered regarding priority.
 - The objective function for the Actor-Critic algorithm is a combination of the policy gradient for the actor and the
   value function for the critic. $A(s,a)$ is the advantage function representing the advantage of taking the action $a$
   in state $s$. __[Page 6]__
-- The Generalized Advantage Estimator $\text{GAE}(\gamma,\lambda)$ is defined as the exponentially-weighted average
+- The Generalized Advantage Estimator $\mathrm{GAE}(\gamma,\lambda)$ is defined as the exponentially-weighted average
   of $k$-step estimators. The advantage estimator has a remarkably simple formula involving a discounted sum of Bellman
   residual terms. There are two notable special cases of this formula, obtained by setting $\lambda=0$
   and $\lambda=1$. __[Page 16]__
+- Each policy$\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
+  action $\pi(a|s,g)$. Our policies are trained with PPO using the clipped surrogate objective. We maintain two
+  networks, one for the policy $\pi_\theta(a|s,g)$ and another for the value function $V_\psi(s,g)$ with
+  parameters $\theta$ and $\psi$ respectively. __[Page 28]__
+- Algorithm 1: Proximal Policy Optimization summarizes the common learning procedure used to train all policies. Policy
+  updates are performed after a batch of $m=4096$ samples has been collected. Minibatches of size $n=256$ are then
+  sampled from the data for each gradient step. A discount factor $\gamma=0.95$ is used for all motions. $\lambda=0.95$
+  is used for both $\mathrm{TD}(\lambda)$ and $\mathrm{GAE}(\gamma,\lambda)$. __[Page 39]__
+- Asynchronous Advantage Actor-Critic is a classic policy gradient method with the special focus on parallel training.
+  In $\mathrm{A3C}$, the critics learn the state-value function $V_w(s)$, while multiple actors are trained in parallel
+  and get synced with global parameters from time to time. __[Page 57]__
 - 
 
 ## ML/RL Frameworks
