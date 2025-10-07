@@ -86,6 +86,10 @@ This list is unordered regarding priority.
 - The objective function for the Actor-Critic algorithm is a combination of the policy gradient for the actor and the
   value function for the critic. $A(s,a)$ is the advantage function representing the advantage of taking the action $a$
   in state $s$. __[Page 6]__
+- The Generalized Advantage Estimator $\text{GAE}(\gamma,\lambda)$ is defined as the exponentially-weighted average
+  of $k$-step estimators. The advantage estimator has a remarkably simple formula involving a discounted sum of Bellman
+  residual terms. There are two notable special cases of this formula, obtained by setting $\lambda=0$
+  and $\lambda=1$. __[Page 16]__
 - 
 
 ## ML/RL Frameworks

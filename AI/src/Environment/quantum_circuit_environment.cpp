@@ -53,25 +53,25 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     std::unordered_map<std::string, std::string> params)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
   try {
-    if (params.find("max_steps_relative_to_qubits") != params.end() &&
-        params["max_steps_relative_to_qubits"] == "true") {
-      this->max_steps_per_episode =
-          std::round(max_qubits * std::stod(params["max_steps_per_episode"]));
-      this->max_steps_no_improvement = std::round(
-          max_qubits * std::stod(params["max_steps_no_improvement"]));
-      this->max_steps_no_change =
-          std::round(max_qubits * std::stod(params["max_steps_no_change"]));
-      this->max_steps_same_action =
-          std::round(max_qubits * std::stod(params["max_steps_same_action"]));
-    } else {
-      this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
-      this->max_steps_no_improvement =
-          std::stoul(params["max_steps_no_improvement"]);
-      this->max_steps_no_change = std::stoul(params["max_steps_no_change"]);
-      this->max_steps_same_action = std::stoul(params["max_steps_same_action"]);
-    }
-  } catch (const std::exception &_) {
-    // Ignore conversion errors and use defaults.
+    this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_per_episode: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_no_improvement =
+        std::stoul(params["max_steps_no_improvement"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_no_improvement: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_no_change = std::stoul(params["max_steps_no_change"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_no_change: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_same_action = std::stoul(params["max_steps_same_action"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_same_action: " << error.what() << std::endl;
   }
   this->max_steps_per_episode =
       std::max(this->max_steps_per_episode, MIN_NR_STEPS);

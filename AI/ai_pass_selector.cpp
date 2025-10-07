@@ -136,7 +136,6 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"output", ""},
           {"nr_parallel_environments", "16"},
           {"episodes", "100"} ,
-          {"max_steps_relative_to_qubits", "true"},
           {"max_steps_per_episode", "10"},
           {"max_steps_no_improvement", "1"},
           {"max_steps_no_change", "0.2"},
