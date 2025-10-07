@@ -148,6 +148,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"actor_optimizer", "adam"},
           {"critic_learning_rate", "0.05"},
           {"actor_learning_rate", "0.01"},
+          {"ppo_epsilon", "0.2"},
           {"print_param_info", "true"},
           {"save_agent_at_end_of_training", "true"},
           {"stop_training_on_error", "false"}};

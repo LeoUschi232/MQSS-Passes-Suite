@@ -111,6 +111,21 @@ This list is unordered regarding priority.
 - <span style="font-variant: small-caps; font-size:15px;">Stable-Baselines3</span> contains the following
   state-of-the-art on-policy and off-policy algorithms, commonly used as experimental baselines: A2C, PPO, DDPG, SAC,
   TD3, HER, and DQN. __[Page 111]__
+- Compare PPO to several previous algorithms. On continuous control tasks, it performs better than the algorithms we
+  compare against. On Atari, it performs significantly better in terms of sample complexity than A2C and similarly to
+  ACER. __[Page 113]__
+
+### 6. [Datsets and Benchmarking in Quantum Computing](ResearchPapers/06_DatasetsAndBenchmarkingInQuantumComputing.pdf)
+
+- Propose the MQT Bench benchmark suite as part of the Munich Quantum Toolkit MQT. MQT Bench presents a first step
+  towards benchmarking different abstraction levels with a single benchmark suite to increase comparability,
+  reproducibility, and transparency. __[Page 22]__
+- Several approaches to provide benchmark suites for some of the levels within the quantum circuit compilation flow have
+  already been proposed and a non-exhaustive overview is given in: pplication-Oriented Performance Benchmarks for
+  Quantum Computing, SupermarQ, QASMbench and RevLib. __[Page 26]__
+
+### 7. [More Stuff about Quantum Circuit Passes and Optimization](ResearchPapers/07_MoreStuffAboutQuantumCircuitPassesAndOptimization.pdf)
+
 -
 
 ## ML/RL Frameworks
