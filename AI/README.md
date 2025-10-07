@@ -83,7 +83,10 @@ This list is unordered regarding priority.
 
 ### 5. [Actor-Critic Reinforcement Learning Frameworks](ResearchPapers/05_ActorCriticReinforcementLearningFrameworks.pdf)
 
--
+- The objective function for the Actor-Critic algorithm is a combination of the policy gradient for the actor and the
+  value function for the critic. $A(s,a)$ is the advantage function representing the advantage of taking the action $a$
+  in state $s$. __[Page 6]__
+- 
 
 ## ML/RL Frameworks
 
