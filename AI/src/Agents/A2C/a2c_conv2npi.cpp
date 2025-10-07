@@ -67,9 +67,9 @@ A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
       // Output layer
       torch::nn::Conv1d(torch::nn::Conv1dOptions(L3, NR_PASSES, max_qubits)
                             .padding(padding)), // Shape {B, NR_PASSES, N}
-      torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, NR_PASSES, 1}
-      torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(1)), // Shape {B, NR_PASSES}
+      torch::nn::AdaptiveAvgPool1d(/*output_size=*/1),  // Shape {B, NR_PASSES, 1}
+      torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(
+          /*dim=*/1)), // Shape {B, NR_PASSES}
       torch::nn::Softmax(
           torch::nn::SoftmaxOptions(/*dim=*/1)) // Shape {B, NR_PASSES}
   );
@@ -98,8 +98,9 @@ A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
       // Output layer
       torch::nn::Conv1d(torch::nn::Conv1dOptions(L3, 1, max_qubits)
                             .padding(padding)), // Shape {B, 1, N}
-      torch::nn::AdaptiveAvgPool1d(1),          // Shape {B, 1, 1}
-      torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)) // Shape {B}
+      torch::nn::AdaptiveAvgPool1d(/*output_size=*/1),  // Shape {B, 1, 1}
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)) // Shape {B}
   );
   this->initialize(actor, critic);
 }

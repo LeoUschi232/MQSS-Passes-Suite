@@ -159,10 +159,9 @@ public:
   /**
    *
    * @param action
-   * @param atol
    * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<double, bool, bool> step(unsigned int action, double atol = 1e-12);
+  std::tuple<double, bool, bool> step(unsigned int action);
 
   /**
    *

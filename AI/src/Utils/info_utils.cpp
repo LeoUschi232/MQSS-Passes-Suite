@@ -28,6 +28,10 @@ namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
+bool isclose(double a, double b, double atol) {
+  return std::abs(a - b) < atol;
+}
+
 std::vector<std::string> split_string(const std::string &str, char delimiter) {
   std::vector<std::string> parts;
   std::stringstream ss(str);

@@ -309,7 +309,7 @@ QuantumCircuitEnvironment::get_circuit_info() const {
 
 /// [Reward, Terminated, Truncated]
 std::tuple<double, bool, bool>
-QuantumCircuitEnvironment::step(unsigned int action, double atol) {
+QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->terminated || this->truncated) {
     return {0.0, this->terminated, this->truncated};
   }
@@ -338,8 +338,7 @@ QuantumCircuitEnvironment::step(unsigned int action, double atol) {
   } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
-  if (std::abs(nr_gates_reduction) < atol &&
-      std::abs(nr_gates_reduction) < atol) {
+  if (!isclose(nr_gates_reduction, 0.0) && !isclose(depth_reduction, 0.0)) {
     // Executing the same action many times in a row is only a valid termination
     // criterion IFF that action does not change the circuit.
     this->step_no_change = 0;
@@ -353,6 +352,7 @@ QuantumCircuitEnvironment::step(unsigned int action, double atol) {
     this->terminated = true;
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
+
   this->last_action = static_cast<int>(action);
   assert(!this->terminated || !this->truncated);
   return {reward, /*Terminated=*/false, /*Truncated=*/false};

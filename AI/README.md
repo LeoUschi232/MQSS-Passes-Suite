@@ -1,16 +1,20 @@
 # AI Pass Selector
 
-## ML/RL Frameworks
+## TODO List
 
-- **LibTorch (PyTorch C++ API)**: Provides a high-level interface similar to PyTorch's Python API, allowing you to build
-  models with `torch::nn::Sequential`, `torch::nn::ReLU`, `torch::nn::LeakyReLU`, `torch::nn::Linear`,
-  `torch::nn::Conv2d`, etc. It's flexible for custom RL agents via neural nets and supports GPU acceleration.
+This list is unordered regarding priority.
 
-- **mlpack**: Mature C++ ML toolkit (Armadillo backend) with ANN modules and **built-in RL algorithms** (DQN, Double
-  DQN, DDPG, PPO, etc.). Handy if you want both the nets and ready RL baselines in pure C++. Alsoast, scalable C++ ML
-  library with an ANN module for feedforward networks (FFN acts like Sequential).
-  Supports layers such as `mlpack::ann::Linear`, `mlpack::ann::ReLU`, `mlpack::ann::LeakyReLU`,
-  `mlpack::ann::Convolution`, and more. Great for implementing NN-based RL policies without heavy dependencies.
+ Task                                            | Description                                                                                                                                                                                                                                              
+-------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Make A2C handle padding on observations         | To vectorize multiple observations into batched observations all observations must be the same length regardless of nr of instructions/gates. This requires padding the shorter observations and the agent must learn to ignore the padded instructions. 
+ Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved.                                                       
+ Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                                                                               
+ Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                                                                                     
+ Implement A2C using RNN                         | In addition to current convolutional A2C design, create an A2C design which uses RNN and compare its performance to the convolutional design.                                                                                                            
+ Implement A3C agent                             | Implement the Asynchronous Advantage Actor-Critic (A3C) algorithm using convolutional and/or RNN designs.                                                                                                                                                
+ Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or RNN designs.                                                                                                                                                       
+ Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                                                                                  
+ Research and implement StableBaselines3         | Research the StableBaselines3 library and implement it in the current agents.                                                                                                                                                                            
 
 ## Research Paper Notes
 
@@ -27,4 +31,69 @@
   the classical GNN models.  __[Page 30]__
 - Markov chain oracle outperforms the Independent Identically Distributed probability distribution oracle, followed by
   the RIC methodology using a uniform probability distribution. __[Page 120]__
-- 
+
+### 2. [Different Methods for Optimizing Quantum Computing](ResearchPapers/02_DifferentMethodsForOptimizingQuantumComputing.pdf)
+
+- On average, the agent manages to slightly reduce the gate count, although the depth is slightly increased. Even though
+  this agent is, thus, not able to reliably optimize the circuit, it is still able to sometimes achieve an improvement.
+  If we, however, train an agent via RL directly on this specific circuit, it does not only learn to reliably improve
+  the circuit, but it also finds two further optimizations, each reducing the depth by 1. __[Page 10]__
+- The manifold hypothesis is a conjecture of deep learning that posits that neural networks operate by learning low
+  dimensional manifolds in high dimensional spaces. A digit that is rotated, translated, or stretched still lies along
+  the same manifold. __[Page 79]__
+
+### 3. [Munich Quantum Toolkit and Optimizations of Quantum Programs](ResearchPapers/03_MunichQuantumToolkitAndOptimizationsOfQuantumPrograms.pdf)
+
+- The observations used to guide the reinforcement learning agent are based on seven features—namely the number of
+  qubits, the depth of the circuit, and the five composite features of program communication, critical-depth,
+  entanglement-ratio, parallelism, and liveness. __[Page 6]__
+- Vvarious characteristics are used to describe a quantum circuit for both models: the number of qubits, the depth of
+  the circuit, and the five composite features of program communication, critical-depth, entanglement-ratio,
+  parallelism, and liveness. __[Page 66]__
+- A key challenge in realizing fault-tolerant quantum computers is circuit optimization. Focusing on the most expensive
+  gates in fault-tolerant quantum computation, namely the T gates, we address the problem of T-count optimization,
+  minimizing the number of T gates that are needed to implement a given circuit. __[Page 77]__
+
+### 4. [Reinforcement Learning Barto Sutton](ResearchPapers/04_ReinforcementLearningBartoSutton.pdf)
+
+- The additional concept that we need is discounting. The agent tries to select actions so that the sum of the
+  discounted rewards it receives over the future is maximized. $\gamma$ is a parameter, $0\leq\gamma\leq1$, called the
+  discount rate. __[Page 62]__
+- The value function of a state $s$ under a policy $\pi$, denoted $v_\pi(s)$, is the expected return when starting
+  in $s$ and following $\pi$ thereafter. For Markov Decision Processes, we can define $v_\pi$ formally. Similarly, we
+  define the value of taking action $a$ in state $s$ under a policy $\pi$, denoted $q_\pi(s,a)$, as the expected return
+  starting from $s$, taking the action $a$, and thereafter following policy $\pi$. We call $q_\pi$ the action-value
+  function for policy $\pi$. __[Page 65]__
+- The quantity in brackets in the Temporal-Difference update is a sort of error, measuring the difference between the
+  estimated value of $S_t$ and the better estimate $R_{t+1}+\gamma V(S_{t+1})$. This quantity, called the
+  Temporal-Difference error $\delta_t$, arises in various forms throughout reinforcement learning. __[Page 126]__
+- Architecture of a deep convolutional network. This instance was designed to recognize hand-written characters. It
+  consists of alternating convolutional and subsampling layers, followed by several fully connected final layers. Each
+  convolutional layer produces a number of feature maps- __[Page 229]__
+- The TD($\lambda$) algorithm can be understood as one particular way of averaging   $n$-step updates. This average
+  contains all the $n$-step updates, each weighted proportionally to $\lambda^{n-1}$, where $\lambda\in[0,1]$, and is
+  normalized by a factor of $\lambda-1$ to ensure that the weights sum to $1$. The resulting update is toward a return,
+  called the $\lambda$-return. __[Page 290]__
+- Methods that learn approximations to both policy and value functions are often called actor–critic methods, where
+  actor is a reference to the learned policy, and critic refers to the learned value function, usually a state-value
+  function. __[Page 322]__
+- Only through bootstrapping do we introduce bias and an asymptotic dependence on the quality of the function
+  approximation. As we have seen, the bias introduced through bootstrapping and reliance on the state representation is
+  often beneficial because it reduces variance and accelerates learning. __[Page 332]__
+
+### 5. [Actor-Critic Reinforcement Learning Frameworks](ResearchPapers/05_ActorCriticReinforcementLearningFrameworks.pdf)
+
+-
+
+## ML/RL Frameworks
+
+- **LibTorch (PyTorch C++ API)**: Provides a high-level interface similar to PyTorch's Python API, allowing you to build
+  models with `torch::nn::Sequential`, `torch::nn::ReLU`, `torch::nn::LeakyReLU`, `torch::nn::Linear`,
+  `torch::nn::Conv2d`, etc. It's flexible for custom RL agents via neural nets and supports GPU acceleration.
+
+- **mlpack**: Mature C++ ML toolkit (Armadillo backend) with ANN modules and **built-in RL algorithms** (DQN, Double
+  DQN, DDPG, PPO, etc.). Handy if you want both the nets and ready RL baselines in pure C++. Alsoast, scalable C++ ML
+  library with an ANN module for feedforward networks (FFN acts like Sequential).
+  Supports layers such as `mlpack::ann::Linear`, `mlpack::ann::ReLU`, `mlpack::ann::LeakyReLU`,
+  `mlpack::ann::Convolution`, and more. Great for implementing NN-based RL policies without heavy dependencies.
+
