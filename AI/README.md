@@ -11,6 +11,9 @@ This list is unordered regarding priority.
  Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                                                                               
  Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                                                                                     
  Implement A2C using RNN                         | In addition to current convolutional A2C design, create an A2C design which uses RNN and compare its performance to the convolutional design.                                                                                                            
+ Implement Experience Replay                     | Implement Experience Replay into the A2C agent.                                                                                                                                                                                                          
+ Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A2C agent.                                                                                                                                                                                                   
+ Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or RNN designs.                                                                                                                                               
  Implement A3C agent                             | Implement the Asynchronous Advantage Actor-Critic (A3C) algorithm using convolutional and/or RNN designs.                                                                                                                                                
  Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or RNN designs.                                                                                                                                                       
  Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                                                                                  
@@ -102,7 +105,13 @@ This list is unordered regarding priority.
 - Asynchronous Advantage Actor-Critic is a classic policy gradient method with the special focus on parallel training.
   In $\mathrm{A3C}$, the critics learn the state-value function $V_w(s)$, while multiple actors are trained in parallel
   and get synced with global parameters from time to time. __[Page 57]__
-- 
+- Algorithm 2. Actor–Critic with Experience Replay. Estimators mentioned in Steps 6 and 7 are based on the samples in a
+  database. Due to more exhaustive exploitation of information experience replay leads to faster learning at the cost of
+  additional computation. __[Page 87]__
+- <span style="font-variant: small-caps; font-size:15px;">Stable-Baselines3</span> contains the following
+  state-of-the-art on-policy and off-policy algorithms, commonly used as experimental baselines: A2C, PPO, DDPG, SAC,
+  TD3, HER, and DQN. __[Page 111]__
+-
 
 ## ML/RL Frameworks
 
