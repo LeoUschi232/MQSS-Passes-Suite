@@ -132,6 +132,26 @@ This list is unordered regarding priority.
 
 ### 8. [Reinforcement Learning Algorithms and PySCF](ResearchPapers/08_ReinforcementLearningAlgorithmsAndPySCF.pdf)
 
+- We now present multi-threaded asynchronous variants of advantage actor-critic. Multiple actor-learners running in
+  parallel are likely to be exploring different parts of the environment. Moreover, one can explic itly use different
+  exploration policies in each actor-learner to maximize this diversity. __[Page 4]__
+- The algorithm, which we call asynchronous advantage actor-critic (A3C), maintains a policy $\pi(a_t|s_t,\theta$ and an
+  estimate of the value function $V(s_t|\theta_v)$. As with the value-based methods we rely on parallel actor-learners
+  and accumulated updates for improving training stability. __[Page 5]__
+- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
+  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
+  which can be processed offline. __[Page 30]__
+- Prioritized Level Replay is a general framework for selectively sampling the next training level by prioritizing those
+  with higher estimated learning potential when revisited in the future. TD-errors effectively estimate a level's future
+  learning potential. Variation across levels implies that at each point of training, each level likely holds different
+  potential for an agent to learn about the structure shared across levels to improve generalization. __[Page 77]__
+- The only requirements are satisfied by almost any problem that can be framed as Procedural Content Generation (PCG),
+  including RL environments implemented as seeded simulator. PCG environment is any computational process that, given a
+  level identifier like a a random seed, generates a level, defined as an environment instance exhibiting a unique
+  configuration of its underlying factors of variation. __[Page 78]__
+
+### 9. [Neural Network Architectures and Optimizations](ResearchPapers/09_NeuralNetworkArchitecturesAndOptimizations.pdf)
+
 -
 
 ## ML/RL Frameworks
