@@ -152,6 +152,39 @@ This list is unordered regarding priority.
 
 ### 9. [Neural Network Architectures and Optimizations](ResearchPapers/09_NeuralNetworkArchitecturesAndOptimizations.pdf)
 
+- Batch Normalization takes a step towards reducing internal covariate shift, and in doing so dramatically accelerates
+  the training of deep neural nets. It accomplishes this via a normalization step that fixes the means and variances of
+  layer inputs. Batch Normalization also has a beneficial effect on the gradient flow through the network, by reducing
+  the dependence of gradients on the scale of the parameters or of their initial values. This allows us to use much
+  higher learning rates without the risk of divergence. __[Page 3]__
+- Under layer normalization, all the hidden units in a layer share the same normalization terms $\mu$ and $\sigma$, but
+  different training cases have different normalization terms. Layer normaliztion does not impose any constraint on the
+  size of a mini-batch and it can be used in the pure online regime with batch size 1. __[Page 12]__
+- In a layer normalized RNN, the normalization terms make it invariant to re-scaling all of the summed inputs to a
+  layer, which results in much more stable hidden-to-hidden dynamics. __[Page 13]__
+- Deep Neural Networks (DNN) and Recurrent Neural Networks (RNN) are powerful models that were considered to be almost
+  impossible to train using stochastic gradient descent with momentum. When stochastic gradient descent with momentum
+  uses a well-designed random initialization and a particular type of slowly increasing schedule for the momentum
+  parameter, it can train both DNNs and RNNs on datasets with long-term dependencies to levels of performance that were
+  previously achievable only with Hessian-Free optimization. __[Page 64]__
+- Adam is an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive
+  estimates of lower-order moments. The method is computationally efficient, has little memory requirements, is
+  invariant to diagonal rescaling of the gradients, and is well suited for problems that are large in terms of data
+  and/or parameters. The method is also appropriate for non-stationary objectives and problems with very noisy and/or
+  sparse gradients. __[Page 72]__
+- Adagrad outperforms SGD with Nesterov momentum by a large margin both with and without dropout noise. Adam converges
+  as fast as Adagrad. Similar to Adagrad, Adam can take advantage of sparse features and obtain faster convergence rate
+  than normal SGD with momentum. Although Adam convergence analysis does not apply to non-convex problems, Adam often
+  outperforms other methods in such cases. __[Page 77]__
+- Adam and Adagrad make rapid progress lowering the cost in the initial stage of the training. Adam and SGD eventually
+  converge considerably faster than Adagrad for CNNs. The second moment estimate $\hat{v}_t$ vanishes to zeros after a
+  few epochs and is dominated by the $\epsilon$ in the Adam algorithm. The second moment estimate is therefore a poor
+  approximation to the geometry of the cost function in CNNs comparing to fully connected networks. Reducing the
+  minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
+  Adagrad converges much slower than others. __[Page 78]__
+
+### 10. [Soft Actor-Critic and Complex Transformer Layers](ResearchPapers/10_SoftActorCriticAndComplexTransformerLayers.pdf)
+
 -
 
 ## ML/RL Frameworks
