@@ -126,6 +126,12 @@ This list is unordered regarding priority.
 
 ### 7. [More Stuff about Quantum Circuit Passes and Optimization](ResearchPapers/07_MoreStuffAboutQuantumCircuitPassesAndOptimization.pdf)
 
+- The Munich Quantum Compiler provides a subset tailored for each submitted quantum circuit by conducting a two-fold
+  Design Space Exploration (DSE) to derive a Pareto-optimal solution. The two key stages of this process are the
+  Target-Agnostic Optimization Stage and the Target-Specific Optimization Stage. __[Page 3]__
+
+### 8. [Reinforcement Learning Algorithms and PySCF](ResearchPapers/08_ReinforcementLearningAlgorithmsAndPySCF.pdf)
+
 -
 
 ## ML/RL Frameworks
