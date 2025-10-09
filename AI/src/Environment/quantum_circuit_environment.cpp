@@ -52,6 +52,11 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
+  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
+                         torch::cuda::is_available()
+                     ? torch::kCUDA
+                     : torch::kCPU;
+
   try {
     this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
   } catch (const std::exception &error) {
@@ -428,6 +433,19 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() const {
     instruction_index++;
   });
   return observation;
+}
+
+torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
+    std::optional<torch::TensorOptions> tensor_options) const {
+  torch::TensorOptions options = tensor_options.value_or(
+      torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
+  InstructionsTensor<double> observation = this->get_observation();
+  unsigned int N = observation.shape[0];
+  unsigned int IRS = observation.shape[1];
+  if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
+    return torch::zeros({GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)}, options);
+  }
+  return torch::from_blob(observation.raw(), {N, IRS}, options).clone();
 }
 
 bool QuantumCircuitEnvironment::validate() {

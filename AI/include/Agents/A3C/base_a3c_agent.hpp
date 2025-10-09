@@ -22,10 +22,9 @@ protected:
   int actor_optimizer_type = 0;
   double critic_learning_rate = 0;
   double actor_learning_rate = 0;
-  unsigned int nr_parallel_environments = 0;
   torch::Device device = torch::kCPU;
 
-  /// Attributes on initialization
+  /// Global Attributes shared across all workers
   torch::nn::Sequential critic = nullptr;
   torch::nn::Sequential actor = nullptr;
   std::unique_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
@@ -60,11 +59,11 @@ public:
   ~BaseA3CAgent() override = default;
 
   /// Copy and move constructors and assignment operators
-  BaseA3CAgent(const BaseA3CAgent &other) = delete;
+  BaseA3CAgent(const BaseA3CAgent &other) noexcept = delete;
 
   BaseA3CAgent(BaseA3CAgent &&other) noexcept = default;
 
-  BaseA3CAgent &operator=(const BaseA3CAgent &other) = delete;
+  BaseA3CAgent &operator=(const BaseA3CAgent &other) noexcept = delete;
 
   BaseA3CAgent &operator=(BaseA3CAgent &&other) noexcept = delete;
 
@@ -73,31 +72,25 @@ public:
 
   /**
    *
-   * @param batched_observations
-   * @param mask
    * @return
    */
   std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &batched_observations, const torch::Tensor &mask);
+  forward(const torch::Tensor &batched_observations);
 
   /**
    *
    * @param batched_observations
-   * @param mask
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &batched_observations,
-                          const torch::Tensor &mask);
+  torch::Tensor get_value(const torch::Tensor &batched_observations);
 
   /**
    *
    * @param batched_observations
-   * @param mask
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &batched_observations,
-                const torch::Tensor &mask);
+  select_action(const torch::Tensor &batched_observations);
 
   /**
    *
@@ -120,16 +113,24 @@ public:
 
   /**
    *
-   * @param critic_loss
    * @param actor_loss
+   * @param critic_loss
    */
-  void update_parameters(const torch::Tensor &critic_loss,
-                         const torch::Tensor &actor_loss) const;
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_loss) const;
 
   /// Saving and Loading
   void save_model() const;
   void load_model();
   virtual std::string agentName() const = 0;
+
+  /**
+   * Necessary to create worker agents for asynchronous training.
+   * @return
+   */
+  virtual std::unique_ptr<BaseA3CAgent> clone() const = 0;
+
+  void zero_grad() const;
 };
 } // namespace ai_pass_selector
 

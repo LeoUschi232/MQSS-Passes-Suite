@@ -28,8 +28,6 @@ void BaseA3CAgent::configure(
       OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
   this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
   this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
-  this->nr_parallel_environments =
-      std::stoul(params["nr_parallel_environments"]);
   this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
                          torch::cuda::is_available()
                      ? torch::kCUDA
@@ -62,27 +60,22 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
 unsigned int BaseA3CAgent::getMaxQubits() const { return this->max_qubits; }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::forward(const torch::Tensor &batched_observations,
-                      const torch::Tensor &mask) {
-  std::lock_guard lock(*this->model_mutex);
+BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->actor->forward(x), this->critic->forward(x)};
 }
 
-torch::Tensor BaseA3CAgent::get_value(const torch::Tensor &batched_observations,
-                                      const torch::Tensor &mask) {
-  std::lock_guard lock(*this->model_mutex);
+torch::Tensor
+BaseA3CAgent::get_value(const torch::Tensor &batched_observations) {
   return this->critic->forward(
-      batched_observations.to(this->device).to(torch::kFloat),
-      mask.to(this->device).to(torch::kBool));
+      batched_observations.to(this->device).to(torch::kFloat));
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-BaseA3CAgent::select_action(const torch::Tensor &batched_observations,
-                            const torch::Tensor &mask) {
-  auto [action_probs, state_values] = this->forward(batched_observations, mask);
+BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
+  auto [action_probs, state_values] = this->forward(batched_observations);
 
   if (action_probs.lt(0).any().item<bool>()) {
     std::cerr << "Error: action_probs contains negative values: "
@@ -188,15 +181,15 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T, B]
   return {actor_loss, critic_loss};
 }
 
-void BaseA3CAgent::update_parameters(const torch::Tensor &critic_loss,
-                                     const torch::Tensor &actor_loss) const {
+void BaseA3CAgent::update_parameters(const torch::Tensor &actor_loss,
+                                     const torch::Tensor &critic_loss) const {
   std::lock_guard lock(*this->model_mutex);
-  this->critic_optimizer->zero_grad();
-  critic_loss.backward();
-  this->critic_optimizer->step();
   this->actor_optimizer->zero_grad();
   actor_loss.backward();
   this->actor_optimizer->step();
+  this->critic_optimizer->zero_grad();
+  critic_loss.backward();
+  this->critic_optimizer->step();
 }
 
 void BaseA3CAgent::save_model() const {
@@ -229,4 +222,9 @@ void BaseA3CAgent::load_model() {
   std::cout << "Loaded model: " << name << std::endl;
 }
 
+void BaseA3CAgent::zero_grad() const {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
+}
 } // namespace ai_pass_selector

@@ -18,6 +18,9 @@ using llvm::isa;
 #include "Environment/random_quantum_circuit_generator.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
+// Torch includes
+#include "torch/torch.h"
+
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 
@@ -71,6 +74,9 @@ class QuantumCircuitEnvironment {
       qubits_cholesky_params = std::nullopt;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights =
       std::nullopt;
+
+  /// Other attributes
+  torch::Device device = torch::kCPU;
 
 public:
   /// Constructors
@@ -155,6 +161,19 @@ public:
    * the current circuit.
    */
   InstructionsTensor<double> get_observation() const;
+
+  /**
+   * B = Batch size / Nr of parallel environments
+   * N = Nr of instructions in the quantum circuit
+   * IRS = Instruction Representation Size
+   * The transformation from shape {N×IRS} to {B, N, IRS} will be done by the
+   * ParallelEnvironments object.
+   * @param tensor_options
+   * @return Blob tensor of 1-axis shape {N×IRS} containing the observation of
+   * the current circuit.
+   */
+  torch::Tensor get_observation_as_torch_tensor(
+      std::optional<torch::TensorOptions> tensor_options = std::nullopt) const;
 
   /**
    *
