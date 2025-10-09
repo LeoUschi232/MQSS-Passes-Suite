@@ -92,7 +92,7 @@ train_a2c(std::unique_ptr<BaseA2CAgent> agent, const std::string &dataset,
            update_step++) {
 
         auto [batched_observations, instructions_mask] =
-            environments.get_batched_observations_with_padding();
+            environments.get_batched_observations_and_mask();
 
         auto [actions, log_action_probs, state_values, step_entropy] =
             agent->select_action(batched_observations, instructions_mask);

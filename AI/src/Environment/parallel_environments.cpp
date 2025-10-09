@@ -7,9 +7,9 @@
 #include <future>
 
 namespace ai_pass_selector {
-ParallelEnvironments::ParallelEnvironments(unsigned int nr_environments,
-                                           unsigned int max_qubits,
-                                           unsigned int max_steps)
+ParallelEnvironments::ParallelEnvironments(unsigned int max_qubits,
+                                           unsigned int max_steps,
+                                           unsigned int nr_environments)
     : nr_environments(std::max(1u, nr_environments)),
       max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)),
       max_steps(std::max(1u, max_steps)) {
@@ -20,7 +20,7 @@ ParallelEnvironments::ParallelEnvironments(unsigned int nr_environments,
 }
 
 bool ParallelEnvironments::register_quantum_circuit(
-    unsigned int index, const fs::path &circuit_path) {
+    const fs::path &circuit_path, unsigned int index) {
   if (index >= nr_environments) {
     throw std::out_of_range(
         "register_quantum_circuit index >= nr_environments");
@@ -109,13 +109,28 @@ ParallelEnvironments::step(const torch::Tensor &actions) {
   return step_returns;
 }
 
-torch::Tensor ParallelEnvironments::get_batched_observations() const {
-  auto [batched_observations, _] = get_batched_observations_with_padding();
-  return batched_observations;
+torch::Tensor ParallelEnvironments::get_observation() const {
+  if (this->nr_environments <= 0 ||
+      this->environments.size() != this->nr_environments) {
+    std::cerr << "ParallelEnvironments has no environments." << std::endl;
+    return torch::empty({0});
+  }
+  torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat32);
+  if (this->nr_environments == 1) {
+    InstructionsTensor<double> observation = environments[0].get_observation();
+    unsigned int N = observation.shape[0];
+    unsigned int IRS = observation.shape[1];
+    if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
+      return torch::zeros({GLOBAL_MIN_NR_GATES, MIN_IRS}, options);
+    }
+    return torch::from_blob(observation.raw(), {N, IRS}, options).clone();
+  }
+  auto [observation, _] = get_batched_observations_and_mask();
+  return observation;
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-ParallelEnvironments::get_batched_observations_with_padding() const {
+ParallelEnvironments::get_batched_observations_and_mask() const {
   const int64_t B = nr_environments;
 
   std::vector<std::future<InstructionsTensor<double>>> observation_futures;
@@ -131,7 +146,7 @@ ParallelEnvironments::get_batched_observations_with_padding() const {
   observations.reserve(B);
 
   unsigned int maxN = 0u;
-  int64_t IRS = 0u;
+  unsigned int IRS = 0u;
   for (auto &observation_future : observation_futures) {
     observations.emplace_back(observation_future.get());
     maxN = std::max(maxN, observations.back().shape[0]);
@@ -142,8 +157,10 @@ ParallelEnvironments::get_batched_observations_with_padding() const {
     }
   }
   torch::TensorOptions options = torch::TensorOptions().dtype(torch::kFloat32);
-  if (maxN <= 0) {
-    return {torch::zeros({B, 1, IRS}, options), torch::ones({B, 1}, options)};
+  if (maxN < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
+    return {
+        torch::zeros({B, GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)}, options),
+        torch::ones({B, GLOBAL_MIN_NR_GATES}, options)};
   }
 
   std::vector<torch::Tensor> torch_tensors;

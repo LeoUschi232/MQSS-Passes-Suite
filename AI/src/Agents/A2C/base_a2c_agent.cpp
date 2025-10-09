@@ -66,10 +66,9 @@ BaseA2CAgent::forward(const torch::Tensor &batched_observations,
                       const torch::Tensor &mask) {
   std::lock_guard lock(*this->model_mutex);
   torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
-  torch::Tensor m = mask.to(this->device).to(torch::kBool);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
-  return {this->actor->forward(x, m), this->critic->forward(x, m)};
+  return {this->actor->forward(x), this->critic->forward(x)};
 }
 
 torch::Tensor BaseA2CAgent::get_value(const torch::Tensor &batched_observations,
