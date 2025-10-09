@@ -50,12 +50,9 @@ This list is unordered regarding priority.
 - The observations used to guide the reinforcement learning agent are based on seven features—namely the number of
   qubits, the depth of the circuit, and the five composite features of program communication, critical-depth,
   entanglement-ratio, parallelism, and liveness. __[Page 6]__
-- Vvarious characteristics are used to describe a quantum circuit for both models: the number of qubits, the depth of
+- Various characteristics are used to describe a quantum circuit for both models: the number of qubits, the depth of
   the circuit, and the five composite features of program communication, critical-depth, entanglement-ratio,
   parallelism, and liveness. __[Page 66]__
-- A key challenge in realizing fault-tolerant quantum computers is circuit optimization. Focusing on the most expensive
-  gates in fault-tolerant quantum computation, namely the T gates, we address the problem of T-count optimization,
-  minimizing the number of T gates that are needed to implement a given circuit. __[Page 77]__
 
 ### 4. [Reinforcement Learning Barto Sutton](ResearchPapers/04_ReinforcementLearningBartoSutton.pdf)
 
@@ -94,7 +91,7 @@ This list is unordered regarding priority.
   of $k$-step estimators. The advantage estimator has a remarkably simple formula involving a discounted sum of Bellman
   residual terms. There are two notable special cases of this formula, obtained by setting $\lambda=0$
   and $\lambda=1$. __[Page 16]__
-- Each policy$\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
+- Each policy $\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
   action $\pi(a|s,g)$. Our policies are trained with PPO using the clipped surrogate objective. We maintain two
   networks, one for the policy $\pi_\theta(a|s,g)$ and another for the value function $V_\psi(s,g)$ with
   parameters $\theta$ and $\psi$ respectively. __[Page 28]__
