@@ -50,12 +50,9 @@ This list is unordered regarding priority.
 - The observations used to guide the reinforcement learning agent are based on seven features—namely the number of
   qubits, the depth of the circuit, and the five composite features of program communication, critical-depth,
   entanglement-ratio, parallelism, and liveness. __[Page 6]__
-- Vvarious characteristics are used to describe a quantum circuit for both models: the number of qubits, the depth of
+- Various characteristics are used to describe a quantum circuit for both models: the number of qubits, the depth of
   the circuit, and the five composite features of program communication, critical-depth, entanglement-ratio,
   parallelism, and liveness. __[Page 66]__
-- A key challenge in realizing fault-tolerant quantum computers is circuit optimization. Focusing on the most expensive
-  gates in fault-tolerant quantum computation, namely the T gates, we address the problem of T-count optimization,
-  minimizing the number of T gates that are needed to implement a given circuit. __[Page 77]__
 
 ### 4. [Reinforcement Learning Barto Sutton](ResearchPapers/04_ReinforcementLearningBartoSutton.pdf)
 
