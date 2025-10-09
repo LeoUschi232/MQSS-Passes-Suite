@@ -1,4 +1,4 @@
-#include "Agents/A2C/a2c_agents.hpp"
+#include "Agents/A3C/a3c_agents.hpp"
 
 // Environment includes
 #include "Environment/parallel_environments.hpp"
@@ -12,9 +12,9 @@
 
 namespace ai_pass_selector {
 
-A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
+A3C_CONV2::A3C_CONV2(unsigned int max_qubits,
                      std::unordered_map<std::string, std::string> params)
-    : BaseA2CAgent(max_qubits, std::move(params)) {
+    : BaseA3CAgent(max_qubits, std::move(params)) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
   unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
@@ -105,10 +105,10 @@ A2C_CONV2::A2C_CONV2(unsigned int max_qubits,
   this->initialize(actor, critic);
 }
 
-std::string A2C_CONV2::agentName() const {
+std::string A3C_CONV2::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "a2c-" << size_string << "-conv2";
+  oss << "a3c-" << size_string << "-conv2";
   return oss.str();
 }
 } // namespace ai_pass_selector

@@ -1,14 +1,11 @@
-#ifndef A2C_AGENTS_HPP
-#define A2C_AGENTS_HPP
-
-// Environment includes
-#include "Environment/quantum_circuit_tensor.hpp"
+#ifndef A3C_AGENTS_HPP
+#define A3C_AGENTS_HPP
 
 // Torch includes
-#include "Agents/A2C/base_a2c_agent.hpp"
+#include "Agents/A3C/base_a3c_agent.hpp"
 
-#define DECLARE_A2C_AGENT(ClassName)                                           \
-  class ClassName final : public ai_pass_selector::BaseA2CAgent {              \
+#define DECLARE_A3C_AGENT(ClassName)                                           \
+  class ClassName final : public ai_pass_selector::BaseA3CAgent {              \
   public:                                                                      \
     ClassName(unsigned int max_qubits,                                         \
               std::unordered_map<std::string, std::string> params);            \
@@ -36,10 +33,8 @@ inline Functional Transpose(int64_t dim0, int64_t dim1) {
 } // namespace torch::nn
 
 namespace ai_pass_selector {
-/// A2C = Advantage Actor-Critic
+/// A3C = Asynchronous Advantage Actor-Critic
 /// CONV{X} = Convolutional with depth X
-DECLARE_A2C_AGENT(A2C_CONV2)
-DECLARE_A2C_AGENT(A2C_CONV3)
-DECLARE_A2C_AGENT(A2C_CONV4)
+DECLARE_A3C_AGENT(A3C_CONV2)
 } // namespace ai_pass_selector
-#endif // A2C_TRAINER_HPP
+#endif // A3C_TRAINER_HPP

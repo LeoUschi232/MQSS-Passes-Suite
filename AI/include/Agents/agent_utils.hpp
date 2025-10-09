@@ -23,15 +23,20 @@ struct AgentAttributes {
 };
 
 /// Agent classes
-constexpr int A2C = 1;
-constexpr int A3C = 2;
-constexpr int PPO = 3;
+constexpr int A3C = 1;
+constexpr int SAC = 2;
+constexpr int ACKTR = 3;
+constexpr int ACER = 4;
+constexpr int PPO = 5;
+constexpr int CROSSQ = 6;
 
 const std::unordered_map<std::string, int> AGENT_NAME_TO_CLASS = {
-    {"a2c", A2C}, {"a3c", A3C}, {"ppo", PPO}};
+    {"a3c", A3C},   {"sac", SAC}, {"acktr", ACKTR},
+    {"acer", ACER}, {"ppo", PPO}, {"crossq", CROSSQ}};
 
 const std::unordered_map<int, std::string> AGENT_CLASS_TO_NAME = {
-    {A2C, "a2c"}, {A3C, "a3c"}, {PPO, "ppo"}};
+    {A3C, "a3c"},   {SAC, "sac"}, {ACKTR, "acktr"},
+    {ACER, "acer"}, {PPO, "ppo"}, {CROSSQ, "crossq"}};
 
 /// Optimizers
 constexpr int OPTIMIZER_ADAGRAD = 1;
