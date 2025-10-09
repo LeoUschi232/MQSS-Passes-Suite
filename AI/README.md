@@ -91,7 +91,7 @@ This list is unordered regarding priority.
   of $k$-step estimators. The advantage estimator has a remarkably simple formula involving a discounted sum of Bellman
   residual terms. There are two notable special cases of this formula, obtained by setting $\lambda=0$
   and $\lambda=1$. __[Page 16]__
-- Each policy$\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
+- Each policy $\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
   action $\pi(a|s,g)$. Our policies are trained with PPO using the clipped surrogate objective. We maintain two
   networks, one for the policy $\pi_\theta(a|s,g)$ and another for the value function $V_\psi(s,g)$ with
   parameters $\theta$ and $\psi$ respectively. __[Page 28]__
