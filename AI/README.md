@@ -185,17 +185,20 @@ This list is unordered regarding priority.
 
 ### 10. [Soft Actor-Critic and Complex Transformer Layers](ResearchPapers/10_SoftActorCriticAndComplexTransformerLayers.pdf)
 
--
+- SAC avoids the complexity and potential instability associated with approximate inference in prior off-policy maximum
+  entropy algorithms based on soft Q-learning. Empirical results show that soft actor-critic attains a substantial
+  improvement in both performance and sample efficiency over both off-policy and on-policy prior methods. __[Page 14]__
+- Choosing the optimal temperature is non-trivial, and the temperature needs to be tuned for each task. Formulate
+  different maximum entropy reinforcement learning objective, where the entropy is treated as a constraint. The
+  magnitude of the reward differs not only across tasks, but it also depends on the policy, which improves over time
+  during training. __[Page 30]__
+- Critic in SAC may be underfitted, as only a single gradient update step on the network parameters is performed for
+  each environment step. Randomized Ensembled Double Q-Learning was proposed, which increased this number of gradient
+  steps, termed update-to-data (UTD) ratio. In addition, Dropout Q functions improved the computational efficiency of
+  REDQ while maintaining the same sample efficiency by replacing its ensemble of critics with dropout. REDQ and DroQ
+  represent the state-of-the-art in terms of sample efficiency in Deep RL for continuous control. __[Page 40]__
+- Weight normalization allows CrossQ to scale effectively. Through the addition of Weight Normalization, CrossQ+WN
+  shows stable training and can stably scale with increasing UTD ratios. CrossQ benefits from the addition of WN, which
+  results in stable training and scales well with higher UTD ratios. __[Page 82]__
 
-## ML/RL Frameworks
-
-- **LibTorch (PyTorch C++ API)**: Provides a high-level interface similar to PyTorch's Python API, allowing you to build
-  models with `torch::nn::Sequential`, `torch::nn::ReLU`, `torch::nn::LeakyReLU`, `torch::nn::Linear`,
-  `torch::nn::Conv2d`, etc. It's flexible for custom RL agents via neural nets and supports GPU acceleration.
-
-- **mlpack**: Mature C++ ML toolkit (Armadillo backend) with ANN modules and **built-in RL algorithms** (DQN, Double
-  DQN, DDPG, PPO, etc.). Handy if you want both the nets and ready RL baselines in pure C++. Alsoast, scalable C++ ML
-  library with an ANN module for feedforward networks (FFN acts like Sequential).
-  Supports layers such as `mlpack::ann::Linear`, `mlpack::ann::ReLU`, `mlpack::ann::LeakyReLU`,
-  `mlpack::ann::Convolution`, and more. Great for implementing NN-based RL policies without heavy dependencies.
-
+## Nothing
