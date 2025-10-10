@@ -87,7 +87,13 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       // A3C doesn't have a max cap on the nr of qpisodes.
       // The cap is implicit on the nr of total steps performed by all
       // agents at the same time.
-      while (global_async_step < a3c_max_async_steps) {
+      while (true) {
+        {
+          std::lock_guard lock(*global_mutex);
+          if (global_async_step >= a3c_max_async_steps) {
+            break;
+          }
+        }
         if (interrupted) {
           std::cout << "\nCaught Ctrl+C Interruption in A3C training."
                     << std::endl;
@@ -135,11 +141,6 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             break;
           }
         }
-        {
-          std::lock_guard lock(*global_mutex);
-          global_async_step += update_step;
-          global_max_reward = std::max(global_max_reward, total_worker_reward);
-        }
 
         // Bootstrap value
         if (add_bootstrap) {
@@ -174,9 +175,15 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         // from agent boss, so no need to apply the global mutex here either.
         agent_boss->load_gradients(*agent);
         agent_boss->update_parameters_assuming_gradients_are_loaded();
-        updateProgress(global_async_step, a3c_max_async_steps,
-                       " | Reward: " + std::to_string(total_worker_reward) +
-                           "Global Max: " + std::to_string(global_max_reward));
+        {
+          std::lock_guard lock(*global_mutex);
+          global_async_step += update_step;
+          global_max_reward = std::max(global_max_reward, total_worker_reward);
+          updateProgress(
+              global_async_step, a3c_max_async_steps,
+              " | Reward: " + std::to_string(total_worker_reward) +
+                  "Global Max: " + std::to_string(global_max_reward));
+        }
       }
     }));
   }
