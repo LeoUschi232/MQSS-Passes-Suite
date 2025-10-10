@@ -59,10 +59,11 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
 
 unsigned int BaseA3CAgent::getMaxQubits() const { return this->max_qubits; }
 
-void BaseA3CAgent::zero_grad() const {
+void BaseA3CAgent::zero_grad() {
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->zero_grad();
   this->critic_optimizer->zero_grad();
+  this->gradients_zero = true;
 }
 
 void BaseA3CAgent::load_params(BaseA3CAgent &other) {
@@ -197,6 +198,7 @@ void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
       (void)value.mutable_grad().add_(source_gradient_detached);
     }
   }
+  this->gradients_zero = false;
 }
 
 std::pair<torch::Tensor, torch::Tensor>
@@ -327,8 +329,13 @@ void BaseA3CAgent::update_parameters(const torch::Tensor &actor_loss,
   this->critic_optimizer->step();
 }
 
-void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() const {
+void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() {
   std::lock_guard lock(*this->model_mutex);
+  if (this->gradients_zero) {
+    // Parameters were updated by another worker since load gradients was called
+    // using this worker => Nothing to do.
+    return;
+  }
   this->actor_optimizer->step();
   this->critic_optimizer->step();
   // Better not call this->zero_grad() because it would attempt to lock again.
@@ -336,6 +343,7 @@ void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() const {
   // allow races on gradient updates.
   this->actor_optimizer->zero_grad();
   this->critic_optimizer->zero_grad();
+  this->gradients_zero = true;
 }
 
 void BaseA3CAgent::save_model() const {

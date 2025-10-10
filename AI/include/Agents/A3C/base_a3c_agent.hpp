@@ -33,6 +33,9 @@ protected:
   /// Mutex for thread safety
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
+  /// A3C specific attributes
+  bool gradients_zero = true;
+
 public:
   /// Constructors
   BaseA3CAgent(unsigned int max_qubits,
@@ -121,7 +124,7 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// A3C specific methods for worker concurrency
-  void zero_grad() const;
+  void zero_grad();
 
   /**
    * Necessary to create worker agents for asynchronous training.
@@ -131,7 +134,7 @@ public:
 
   void load_params(BaseA3CAgent &other);
   void load_gradients(BaseA3CAgent &other);
-  void update_parameters_assuming_gradients_are_loaded() const;
+  void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading
