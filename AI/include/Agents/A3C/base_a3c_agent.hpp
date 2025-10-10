@@ -132,12 +132,6 @@ public:
   void load_params(BaseA3CAgent &other);
   void load_gradients(BaseA3CAgent &other);
   void update_parameters_assuming_gradients_are_loaded() const;
-  /**
-   * Warning: Worker agent MUST zero its own gradients somewhere else.
-   * This function will not zero out the worker's gradients.
-   * @param worker
-   */
-  void apply_async_update_from_worker(BaseA3CAgent &worker);
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading

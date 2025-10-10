@@ -166,9 +166,14 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         // boss.
         actor_loss.backward();
         critic_loss.backward();
-        // Apply async update from worker uses the inner mutex from both agents,
-        // so no need to apply the global mutex here either.
-        agent_boss->apply_async_update_from_worker(*agent);
+
+        // Truly asynchronous is  Hogwild-style with allowed races.
+        // Multiple workes could theoretically call load gradients before the
+        // update.
+        // Update parameters assuming gradients are loaded uses the inner mutex
+        // from agent boss, so no need to apply the global mutex here either.
+        agent_boss->load_gradients(*agent);
+        agent_boss->update_parameters_assuming_gradients_are_loaded();
         updateProgress(global_async_step, a3c_max_async_steps,
                        " | Reward: " + std::to_string(total_worker_reward) +
                            "Global Max: " + std::to_string(global_max_reward));

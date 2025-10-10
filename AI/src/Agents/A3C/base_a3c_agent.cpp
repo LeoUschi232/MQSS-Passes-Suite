@@ -331,12 +331,11 @@ void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() const {
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->step();
   this->critic_optimizer->step();
-}
-void BaseA3CAgent::apply_async_update_from_worker(BaseA3CAgent &worker) {
-  std::scoped_lock lock(*this->model_mutex, *worker.model_mutex);
-  this->zero_grad();
-  this->load_gradients(worker);
-  this->update_parameters_assuming_gradients_are_loaded();
+  // Better not call this->zero_grad() because it would attempt to lock again.
+  // Must zero out gradients here because other functions will not do it to
+  // allow races on gradient updates.
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
 }
 
 void BaseA3CAgent::save_model() const {
