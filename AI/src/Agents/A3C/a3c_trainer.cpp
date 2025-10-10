@@ -28,8 +28,10 @@ void signal_handler(int signal) {
 }
 
 namespace ai_pass_selector {
+
 std::unordered_map<std::string, std::string>
-train_a3c(std::unique_ptr<BaseA3CAgent> agent_boss, const std::string &dataset,
+train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
+          const std::string &dataset,
           std::unordered_map<std::string, std::string> params) {
   unsigned int max_qubits = agent_boss->getMaxQubits();
   if (params["print_param_info"] == "true") {
@@ -76,124 +78,109 @@ train_a3c(std::unique_ptr<BaseA3CAgent> agent_boss, const std::string &dataset,
   std::vector<std::future<void>> futures;
   futures.reserve(nr_asynchronous_agents);
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
+    futures.emplace_back(std::async(std::launch::async, [&] {
+      QuantumCircuitEnvironment environment(max_qubits, params);
+      environment.register_randomizer_params(qubits_cholesky_params,
+                                             gates_weights);
+      std::unique_ptr<BaseA3CAgent> agent = agent_boss->clone();
 
-    futures.emplace_back(
+      // A3C doesn't have a max cap on the nr of qpisodes.
+      // The cap is implicit on the nr of total steps performed by all
+      // agents at the same time.
+      while (global_async_step < a3c_max_async_steps) {
+        if (interrupted) {
+          std::cout << "\nCaught Ctrl+C Interruption in A3C training."
+                    << std::endl;
+          break;
+        }
+        environment.reset();
+        agent->zero_grad();
+        // Load params uses the inner mutex from both agents, so no need to
+        // apply the global mutex here.
+        agent->load_params(*agent_boss);
 
-        std::async(std::launch::async, [&] {
-          QuantumCircuitEnvironment environment(max_qubits, params);
-          environment.register_randomizer_params(qubits_cholesky_params,
-                                                 gates_weights);
-          std::unique_ptr<BaseA3CAgent> agent = agent_boss->clone();
+        std::vector<torch::Tensor> episode_log_probs_vector;
+        std::vector<torch::Tensor> episode_values_vector;
+        std::vector<torch::Tensor> episode_rewards_vector;
+        std::vector<torch::Tensor> episode_entropies_vector;
+        episode_log_probs_vector.reserve(T);
+        episode_values_vector.reserve(T + 1);
+        episode_rewards_vector.reserve(T);
+        episode_entropies_vector.reserve(T);
 
-          // A3C doesn't have a max cap on the nr of qpisodes.
-          // The cap is implicit on the nr of total steps performed by all
-          // agents at the same time.
-          while (global_async_step < a3c_max_async_steps) {
-            environment.reset();
-            agent->zero_grad();
-            agent.load_params(agent_boss);
+        double total_worker_reward = 0.0;
+        unsigned int update_step;
+        bool add_bootstrap = false;
+        for (update_step = 0u; update_step < max_steps_per_episode;
+             update_step++) {
 
+          auto [action, log_action_probs, state_values, step_entropy] =
+              agent->select_action(
+                  environment.get_observation_as_torch_tensor());
+          auto [reward, terminated, truncated] =
+              environment.step(action.item<int>());
+          total_worker_reward += reward;
 
-
+          episode_log_probs_vector.push_back(log_action_probs);
+          episode_values_vector.push_back(state_values);
+          episode_entropies_vector.push_back(step_entropy);
+          episode_rewards_vector.push_back(torch::tensor(reward, options));
+          // Only check truncated so that bootstrapping is applied for
+          // truncated but not for terminated environments.
+          if (truncated) {
+            add_bootstrap = true;
+            break;
           }
-        }));
+          if (terminated) {
+            break;
+          }
+        }
+        {
+          std::lock_guard lock(*global_mutex);
+          global_async_step += update_step;
+          global_max_reward = std::max(global_max_reward, total_worker_reward);
+        }
+
+        // Bootstrap value
+        if (add_bootstrap) {
+          episode_values_vector.push_back(
+              agent->get_value(environment.get_observation_as_torch_tensor()));
+        } else
+          episode_values_vector.push_back(torch::zeros({1}, options));
+
+        torch::Tensor episode_log_probs =
+            torch::stack(episode_log_probs_vector);
+        torch::Tensor episode_values = torch::stack(episode_values_vector);
+        torch::Tensor episode_rewards = torch::stack(episode_rewards_vector);
+        torch::Tensor episode_entropies =
+            torch::stack(episode_entropies_vector);
+
+        auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
+            episode_rewards, episode_log_probs, episode_values,
+            episode_entropies, discount_factor, gae_hyperparameter,
+            entropy_coefficient);
+
+        // In synchronous A2C one would now call agent->update_parameters().
+        // However, in A3C we manually compute the gradients, keep them without
+        // updating the worker agent, and use them to update the global agent
+        // boss.
+        actor_loss.backward();
+        critic_loss.backward();
+        // Apply async update from worker uses the inner mutex from both agents,
+        // so no need to apply the global mutex here either.
+        agent_boss->apply_async_update_from_worker(*agent);
+        updateProgress(global_async_step, a3c_max_async_steps,
+                       " | Reward: " + std::to_string(total_worker_reward) +
+                           "Global Max: " + std::to_string(global_max_reward));
+      }
+    }));
   }
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
     futures[i].wait();
   }
-
-  unsigned int nr_active_agents = 0u;
-  for (unsigned int async_step = 0u; async_step <= a3c_max_async_steps;
-       async_step++) {
-    if (interrupted) {
-      std::cout << "\nCaught Ctrl+C Interruption in A3C training." << std::endl;
-      break;
-    }
-    if (nr_active_agents >= nr_asynchronous_agents) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-      continue;
-    }
-
-    try {
-      std::async(
-          std::launch::async,
-          [&] {
-            environment.reset();
-            agent->load_model();
-            agent->zero_grad();
-            torch::Tensor episode_log_probs = torch::zeros({T}, options);
-            torch::Tensor episode_values = torch::zeros({T + 1}, options);
-            torch::Tensor episode_rewards = torch::zeros({T}, options);
-            torch::Tensor episode_entropies = torch::zeros({T}, options);
-            torch::Tensor termination_masks = torch::zeros({T}, options);
-
-            unsigned int update_step;
-            bool episode_terminated = false;
-            for (update_step = 0u; update_step < max_steps_per_episode;
-                 update_step++) {
-
-              auto [action, log_action_probs, state_values, step_entropy] =
-                  agent->select_action(
-                      environment.get_observation_as_torch_tensor());
-              auto [reward, terminated, truncated] =
-                  environment.step(action.item<int>());
-              episode_log_probs[update_step] = log_action_probs;
-              episode_values[update_step] = state_values;
-              episode_entropies[update_step] = step_entropy;
-              episode_rewards[update_step] = reward;
-              // Only check terminated so that bootstrapping is applied for
-              // truncated but not for terminated environments.
-              termination_masks[update_step] = terminated ? 0.0 : 1.0;
-              if (terminated) {
-                episode_terminated = true;
-                break;
-              }
-            }
-            {
-              std::lock_guard lock(*global_mutex);
-              async_step += update_step;
-            }
-
-            // Bootstrap value
-            episode_values[update_step] =
-                agent->get_value(environment.get_observation_as_torch_tensor());
-
-            auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
-                episode_rewards, episode_log_probs, episode_values,
-                episode_entropies, termination_masks, discount_factor,
-                gae_hyperparameter, entropy_coefficient);
-            agent->update_parameters(actor_loss, critic_loss);
-          })
-
-          double episode_max_reward = -std::numeric_limits<double>::max();
-      double episode_avg_reward = 0.0;
-      for (unsigned int i = 0; i < nr_asynchronous_agents; i++) {
-        auto [actor_loss, critic_loss, total_worker_reward] = futures[i].get();
-        episode_max_reward = std::max(episode_max_reward, total_worker_reward);
-        episode_avg_reward += total_worker_reward;
-        agent_boss->update_parameters(actor_loss, critic_loss);
-      }
-      agent_boss->save_model();
-      episode_avg_reward /= nr_asynchronous_agents;
-
-      updateProgress(
-          episode_nr, 1,
-          "Global Max: " + std::to_string(global_max_reward) +
-              " | Episode Max: " + std::to_string(episode_max_reward) +
-              " | Episode Avg: " + std::to_string(episode_avg_reward));
-    } catch (const std::exception &e) {
-      std::cerr << "\nEpisode " << episode_nr << ": " << e.what() << std::endl;
-      if (params["stop_training_on_error"] == "true") {
-        interrupted = 1;
-        break;
-      }
-    }
-  }
-
   if (!interrupted) {
     std::cout << "\nTraining finished." << std::endl;
   }
-
   return {{"global_max_reward", std::to_string(global_max_reward)}};
 }
 } // namespace ai_pass_selector

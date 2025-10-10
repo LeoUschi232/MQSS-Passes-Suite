@@ -12,7 +12,7 @@ namespace ai_pass_selector {
  * @return
  */
 std::unordered_map<std::string, std::string>
-train_a3c(std::unique_ptr<BaseA3CAgent> agent_boss, const std::string &dataset,
+train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss, const std::string &dataset,
           std::unordered_map<std::string, std::string> params);
 } // namespace ai_pass_selector
 

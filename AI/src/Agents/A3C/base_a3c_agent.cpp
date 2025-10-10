@@ -240,7 +240,7 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
   // X.squeeze(dim=-1) ~ [B]
   const torch::Tensor action_indexes_unsqueezed =
       action_probs.multinomial(/*num_samples=*/1);
-  const torch::Tensor action_indexes = action_indexes.squeeze(-1);
+  const torch::Tensor action_indexes = action_indexes_unsqueezed.squeeze(-1);
 
   // For advantage compute log π(a_t|s_t) for the sampled actions.
   // Gather extracts the values at specified indexes along the specified axis.
@@ -268,11 +268,10 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T, B]
-                         const torch::Tensor &log_action_probs, // Shape [T, B]
-                         const torch::Tensor &state_values, // Shape [T+1, B]
-                         const torch::Tensor &entropy,      // Shape [T, B]
-                         const torch::Tensor &termination_masks, // Shape [T, B]
+BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
+                         const torch::Tensor &log_action_probs, // Shape [T]
+                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &entropy,          // Shape [T]
                          const double discount_factor,
                          const double gae_hyperparameter,
                          const double entropy_coefficient) {
@@ -282,30 +281,26 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T, B]
   // An episode generates T actions from A_1 to A_T.
   // An episode generates T rewards from R_1 to R_T.
   int T = rewards.size(0);
-  int B = rewards.size(1);
   const torch::TensorOptions options = rewards.options();
-  torch::Tensor advantages = torch::zeros({T, B}, options);
+  torch::Tensor advantages = torch::zeros({T}, options);
 
   // Compute the advantages using Generalized Advantage Estimation.
   // Temporal Difference is a method used in Reinforcement Learning to estimate
   // the value function of a state based on the difference between the immediate
   // reward obtained from a current state and the estimated value of the next
   // state.
-  torch::Tensor A_gae = torch::zeros({B}, options);
+  torch::Tensor A_gae = torch::zeros({1}, options);
   for (int t = T - 1; t >= 0; t--) {
 
     // Temporal Difference Error of V(s) with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
     // Barto & Sutton Reinforcement Learning page 121, equation (6.5)
     torch::Tensor delta_t =
-        rewards[t] - state_values[t] +
-        discount_factor * state_values[t + 1] * termination_masks[t];
+        rewards[t] - state_values[t] + discount_factor * state_values[t + 1];
 
     // The generalized advantage estimation defined by Schulman et al is:
     // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
-    A_gae =
-        discount_factor * gae_hyperparameter * A_gae * termination_masks[t] +
-        delta_t;
+    A_gae = discount_factor * gae_hyperparameter * A_gae + delta_t;
     advantages[t] = A_gae;
   }
 
@@ -330,6 +325,18 @@ void BaseA3CAgent::update_parameters(const torch::Tensor &actor_loss,
   this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
+}
+
+void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() const {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->step();
+  this->critic_optimizer->step();
+}
+void BaseA3CAgent::apply_async_update_from_worker(BaseA3CAgent &worker) {
+  std::scoped_lock lock(*this->model_mutex, *worker.model_mutex);
+  this->zero_grad();
+  this->load_gradients(worker);
+  this->update_parameters_assuming_gradients_are_loaded();
 }
 
 void BaseA3CAgent::save_model() const {
