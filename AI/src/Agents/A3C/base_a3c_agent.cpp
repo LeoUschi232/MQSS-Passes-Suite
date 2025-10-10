@@ -46,10 +46,10 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     register_module("actor", this->actor);
     this->critic->to(this->device);
     this->actor->to(this->device);
-    this->critic_optimizer = makeOptimizer(critic_optimizer_type, this->critic,
-                                           this->critic_learning_rate);
-    this->actor_optimizer = makeOptimizer(actor_optimizer_type, this->actor,
-                                          this->actor_learning_rate);
+    this->critic_optimizer = std::shared_ptr(std::move(makeOptimizer(
+        critic_optimizer_type, this->critic, this->critic_learning_rate)));
+    this->actor_optimizer = std::shared_ptr(std::move(makeOptimizer(
+        actor_optimizer_type, this->actor, this->actor_learning_rate)));
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -58,6 +58,146 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
 }
 
 unsigned int BaseA3CAgent::getMaxQubits() const { return this->max_qubits; }
+
+void BaseA3CAgent::zero_grad() const {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
+}
+
+void BaseA3CAgent::load_params(BaseA3CAgent &other) {
+  // Most likely the self will be one of the worker agents and the other will
+  // be  the global boss agent.
+  // Step: Synchronize thread-specific parameters θ'=θ and θv'=θv from
+  // Mnih et al 2016.
+  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+  torch::NoGradGuard no_grad_guard;
+
+  // --- ACTOR ---
+  torch::OrderedDict<std::string, torch::Tensor> source_actor_params =
+      other.actor->named_parameters(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_actor_params =
+      this->actor->named_parameters(/*recurse=*/true);
+
+  for (auto &key_value : target_actor_params) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+    if (source_actor_params.contains(key)) {
+      value.copy_(source_actor_params[key].to(this->device));
+    } else {
+      std::cerr << "Warning: source actor model does not contain parameter "
+                << key << std::endl;
+    }
+  }
+  torch::OrderedDict<std::string, torch::Tensor> source_actor_buffers =
+      other.actor->named_buffers(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_actor_buffers =
+      this->actor->named_buffers(/*recurse=*/true);
+  for (auto &key_value : target_actor_buffers) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+    if (source_actor_buffers.contains(key)) {
+      value.copy_(source_actor_buffers[key].to(this->device));
+    } else {
+      std::cerr << "Warning: source actor model does not contain buffer " << key
+                << std::endl;
+    }
+  }
+
+  // --- CRITIC ---
+  torch::OrderedDict<std::string, torch::Tensor> source_critic_params =
+      other.critic->named_parameters(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_critic_params =
+      this->critic->named_parameters(/*recurse=*/true);
+  for (auto &key_value : target_critic_params) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+    if (source_critic_params.contains(key)) {
+      value.copy_(source_critic_params[key].to(this->device));
+    } else {
+      std::cerr << "Warning: source critic model does not contain parameter "
+                << key << std::endl;
+    }
+  }
+  torch::OrderedDict<std::string, torch::Tensor> source_critic_buffers =
+      other.critic->named_buffers(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_critic_buffers =
+      this->critic->named_buffers(/*recurse=*/true);
+  for (auto &key_value : target_critic_buffers) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+    if (source_critic_buffers.contains(key)) {
+      value.copy_(source_critic_buffers[key].to(this->device));
+    } else {
+      std::cerr << "Warning: source critic model does not contain buffer "
+                << key << std::endl;
+    }
+  }
+}
+void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
+  // Most likely the self will be the global boss agent and the other will be
+  // one of the worker agents.
+  // Step: Perform asynchronous update of θ using dθ and of θv using dθv from
+  // Mnih et al 2016.
+  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+
+  // --- ACTOR ---
+  torch::OrderedDict<std::string, torch::Tensor> source_actor_params =
+      other.actor->named_parameters(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_actor_params =
+      this->actor->named_parameters(/*recurse=*/true);
+  for (auto &key_value : target_actor_params) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+
+    if (!source_actor_params.contains(key)) {
+      std::cerr << "Warning: source actor model does not contain parameter "
+                << key << std::endl;
+      continue;
+    }
+    torch::Tensor source_gradient = source_actor_params[key].grad();
+    if (!source_gradient.defined()) {
+      std::cerr << "Warning: source actor model parameter " << key
+                << " does not have a gradient." << std::endl;
+      continue;
+    }
+    torch::Tensor source_gradient_detached =
+        source_gradient.detach().to(this->device);
+    if (!value.grad().defined()) {
+      value.mutable_grad() = source_gradient_detached.clone();
+    } else {
+      (void)value.mutable_grad().add_(source_gradient_detached);
+    }
+  }
+  // --- CRITIC ---
+  torch::OrderedDict<std::string, torch::Tensor> source_critic_params =
+      other.critic->named_parameters(/*recurse=*/true);
+  torch::OrderedDict<std::string, torch::Tensor> target_critic_params =
+      this->critic->named_parameters(/*recurse=*/true);
+  for (auto &key_value : target_critic_params) {
+    std::string key = key_value.key();
+    torch::Tensor &value = key_value.value();
+
+    if (!source_critic_params.contains(key)) {
+      std::cerr << "Warning: source critic model does not contain parameter "
+                << key << std::endl;
+      continue;
+    }
+    torch::Tensor source_gradient = source_critic_params[key].grad();
+    if (!source_gradient.defined()) {
+      std::cerr << "Warning: source critic model parameter " << key
+                << " does not have a gradient." << std::endl;
+      continue;
+    }
+    torch::Tensor source_gradient_detached =
+        source_gradient.detach().to(this->device);
+    if (!value.grad().defined()) {
+      value.mutable_grad() = source_gradient_detached.clone();
+    } else {
+      (void)value.mutable_grad().add_(source_gradient_detached);
+    }
+  }
+}
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
@@ -169,15 +309,15 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T, B]
     advantages[t] = A_gae;
   }
 
-  // The equation for the Value function performance measure is:
-  // J(w) = (1/N) * sum_{t=0}^{N-1} (A(s_t, a_t)^2)
-  auto critic_loss = advantages.pow(2).mean();
-
   // Give a bonus for higher entropy to encourage exploration.
   // The equation for the policy performance measure is:
   // J(θ) = (1/N) * sum_{t=0}^{N-1} (ln π_θ(a_t|s_t) * A(s_t, a_t))
   auto actor_loss = -(log_action_probs * advantages.detach()).mean() -
                     entropy_coefficient * entropy.mean();
+
+  // The equation for the Value function performance measure is:
+  // J(w) = (1/N) * sum_{t=0}^{N-1} (A(s_t, a_t)^2)
+  auto critic_loss = advantages.pow(2).mean();
   return {actor_loss, critic_loss};
 }
 
@@ -220,11 +360,5 @@ void BaseA3CAgent::load_model() {
   torch::load(this->critic, critic_path.string(), this->device);
   torch::load(this->actor, actor_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
-}
-
-void BaseA3CAgent::zero_grad() const {
-  std::lock_guard lock(*this->model_mutex);
-  this->actor_optimizer->zero_grad();
-  this->critic_optimizer->zero_grad();
 }
 } // namespace ai_pass_selector

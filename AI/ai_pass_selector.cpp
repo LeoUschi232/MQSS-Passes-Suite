@@ -136,6 +136,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"output", ""},
           {"nr_parallel_environments", "1"},
           {"nr_asynchronous_agents", "16"},
+          {"a3c_max_async_steps", "100000"},
           {"nr_episodes", "100"},
           {"max_steps_per_episode", "1300"},
           {"max_steps_no_improvement", "130"},
@@ -150,6 +151,7 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"critic_learning_rate", "0.01"},
           {"actor_learning_rate", "0.002"},
           {"ppo_epsilon", "0.2"},
+          {"sac_alpha", "0.1"},
           {"print_param_info", "true"},
           {"save_agent_at_end_of_training", "true"},
           {"stop_training_on_error", "false"}};

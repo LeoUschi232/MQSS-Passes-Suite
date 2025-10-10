@@ -27,8 +27,8 @@ protected:
   /// Global Attributes shared across all workers
   torch::nn::Sequential critic = nullptr;
   torch::nn::Sequential actor = nullptr;
-  std::unique_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
-  std::unique_ptr<torch::optim::Optimizer> critic_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Optimizer> critic_optimizer = nullptr;
 
   /// Mutex for thread safety
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
@@ -70,10 +70,8 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
 
-  /**
-   *
-   * @return
-   */
+  //////////////////////////////////////////////////////////////////////////////
+  /// A2C standard methods
   std::pair<torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &batched_observations);
 
@@ -118,11 +116,11 @@ public:
    */
   void update_parameters(const torch::Tensor &actor_loss,
                          const torch::Tensor &critic_loss) const;
+  //////////////////////////////////////////////////////////////////////////////
 
-  /// Saving and Loading
-  void save_model() const;
-  void load_model();
-  virtual std::string agentName() const = 0;
+  //////////////////////////////////////////////////////////////////////////////
+  /// A3C specific methods for worker concurrency
+  void zero_grad() const;
 
   /**
    * Necessary to create worker agents for asynchronous training.
@@ -130,7 +128,14 @@ public:
    */
   virtual std::unique_ptr<BaseA3CAgent> clone() const = 0;
 
-  void zero_grad() const;
+  void load_params(BaseA3CAgent &other);
+  void load_gradients(BaseA3CAgent &other);
+  //////////////////////////////////////////////////////////////////////////////
+
+  /// Saving and Loading
+  void save_model() const;
+  void load_model();
+  virtual std::string agentName() const = 0;
 };
 } // namespace ai_pass_selector
 
