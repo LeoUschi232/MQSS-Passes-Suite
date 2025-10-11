@@ -153,8 +153,8 @@ This list is unordered regarding priority.
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
   network to operate on a coarser scale than with a normal convolution. __[Page XX]__
 - Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
-  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the same. _
-  _[Page XX]__
+  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the
+  same. __[Page XX]__
 - Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
   function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
   bias threshold. __[Page XX]__
