@@ -152,24 +152,18 @@ public:
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
   /**
-   * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * The transformation from shape {N×IRS} to {B, N, IRS} will be done by the
-   * ParallelEnvironments object.
-   * @return Blob tensor of 1-axis shape {N×IRS} containing the observation of
+   * @return Blob Tensor of 1-axis shape {N×IRS} containing the observation of
    * the current circuit.
    */
   InstructionsTensor<double> get_observation() const;
 
   /**
-   * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * The transformation from shape {N×IRS} to {B, N, IRS} will be done by the
-   * ParallelEnvironments object.
    * @param tensor_options
-   * @return Blob tensor of 1-axis shape {N×IRS} containing the observation of
+   * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
    * the current circuit.
    */
   torch::Tensor get_observation_as_torch_tensor(

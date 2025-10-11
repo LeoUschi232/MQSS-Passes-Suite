@@ -22,6 +22,10 @@ A3C_TCN::A3C_TCN(unsigned int max_qubits,
   unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   unsigned int kernel_size = 5u;
   unsigned int padding = 2u;
+  unsigned int stride = 1u;
+
+
+
   // Ignore this for now.
   auto actor = torch::nn::Sequential();
   auto critic = torch::nn::Sequential();
@@ -29,9 +33,8 @@ A3C_TCN::A3C_TCN(unsigned int max_qubits,
 }
 
 std::unique_ptr<BaseA3CAgent> A3C_TCN::clone() const {
-  auto cloned = std::make_unique<A3C_TCN>(
+  return std::make_unique<A3C_TCN>(
       this->max_qubits, this->params_for_cloning, /*is_boss=*/false);
-  return cloned;
 }
 
 std::string A3C_TCN::agentName() const {
