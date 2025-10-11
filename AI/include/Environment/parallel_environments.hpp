@@ -22,8 +22,8 @@ class ParallelEnvironments {
 
 public:
   /// Constructor
-  ParallelEnvironments(unsigned int nr_environments, unsigned int max_qubits,
-                       unsigned int max_steps);
+  ParallelEnvironments(unsigned int max_qubits, unsigned int max_steps,
+                       unsigned int nr_environments = 1u);
 
   /// Destructor
   ~ParallelEnvironments() = default;
@@ -39,12 +39,12 @@ public:
 
   /**
    *
-   * @param index Environment slot that should own the circuit.
    * @param circuit_path Path to the circuit that should be registered.
+   * @param index Environment slot that should own the circuit.
    * @return True if the circuit could be registered successfully.
    */
-  bool register_quantum_circuit(unsigned int index,
-                                const fs::path &circuit_path);
+  bool register_quantum_circuit(const fs::path &circuit_path,
+                                unsigned int index = 0u);
 
   /**
    *
@@ -65,20 +65,19 @@ public:
   /**
    * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
-   * IRP = Instruction representation size
-   * @return Torch tensor of shape {B, N, IRP} containing the batched
-   * observations of all environments and mask of shape {B, N} containing 1.0 if
-   * legit instruction and 0.0 if padding.
+   * IRS = Instruction Representation Size
+   * @return Torch tensor of shape [N, IRS] if nr_environments=1, or {B, N, IRS}
+   * if nr_environments>=2 containing the batched observations of all
+   * environments.
    */
-  torch::Tensor get_batched_observations() const;
+  torch::Tensor get_observation() const;
 
   /**
    *
-   * @param compute_padding
-   * @return
+   * @return [batched_observations, mask(instr=1.0|padding=0.0)]
    */
-  std::pair<torch::Tensor, unsigned int>
-  get_batched_observations_with_padding(bool compute_padding = true) const;
+  std::pair<torch::Tensor, torch::Tensor>
+  get_batched_observations_and_mask() const;
 
   /**
    *

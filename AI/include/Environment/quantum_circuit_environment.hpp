@@ -18,6 +18,9 @@ using llvm::isa;
 #include "Environment/random_quantum_circuit_generator.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
+// Torch includes
+#include "torch/torch.h"
+
 // MLIR includes
 #include "mlir/IR/BuiltinOps.h"
 
@@ -71,6 +74,9 @@ class QuantumCircuitEnvironment {
       qubits_cholesky_params = std::nullopt;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights =
       std::nullopt;
+
+  /// Other attributes
+  torch::Device device = torch::kCPU;
 
 public:
   /// Constructors
@@ -146,23 +152,29 @@ public:
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
   /**
-   * B = Batch size / Nr of parallel environments
    * N = Nr of instructions in the quantum circuit
-   * IRP = Instruction representation size
-   * The transformation from shape {N×IRP} to {B, N, IRP} will be done by the
-   * ParallelEnvironments object.
-   * @return Blob tensor of 1-axis shape {N×IRP} containing the observation of
+   * IRS = Instruction Representation Size
+   * @return Blob Tensor of 1-axis shape {N×IRS} containing the observation of
    * the current circuit.
    */
   InstructionsTensor<double> get_observation() const;
 
   /**
+   * N = Nr of instructions in the quantum circuit
+   * IRS = Instruction Representation Size
+   * @param tensor_options
+   * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
+   * the current circuit.
+   */
+  torch::Tensor get_observation_as_torch_tensor(
+      std::optional<torch::TensorOptions> tensor_options = std::nullopt) const;
+
+  /**
    *
    * @param action
-   * @param atol
    * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<double, bool, bool> step(unsigned int action, double atol = 1e-12);
+  std::tuple<double, bool, bool> step(unsigned int action);
 
   /**
    *

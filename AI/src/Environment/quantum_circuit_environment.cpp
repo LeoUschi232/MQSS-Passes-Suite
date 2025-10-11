@@ -52,26 +52,31 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
+  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
+                         torch::cuda::is_available()
+                     ? torch::kCUDA
+                     : torch::kCPU;
+
   try {
-    if (params.find("max_steps_relative_to_qubits") != params.end() &&
-        params["max_steps_relative_to_qubits"] == "true") {
-      this->max_steps_per_episode =
-          std::round(max_qubits * std::stod(params["max_steps_per_episode"]));
-      this->max_steps_no_improvement = std::round(
-          max_qubits * std::stod(params["max_steps_no_improvement"]));
-      this->max_steps_no_change =
-          std::round(max_qubits * std::stod(params["max_steps_no_change"]));
-      this->max_steps_same_action =
-          std::round(max_qubits * std::stod(params["max_steps_same_action"]));
-    } else {
-      this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
-      this->max_steps_no_improvement =
-          std::stoul(params["max_steps_no_improvement"]);
-      this->max_steps_no_change = std::stoul(params["max_steps_no_change"]);
-      this->max_steps_same_action = std::stoul(params["max_steps_same_action"]);
-    }
-  } catch (const std::exception &_) {
-    // Ignore conversion errors and use defaults.
+    this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_per_episode: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_no_improvement =
+        std::stoul(params["max_steps_no_improvement"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_no_improvement: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_no_change = std::stoul(params["max_steps_no_change"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_no_change: " << error.what() << std::endl;
+  }
+  try {
+    this->max_steps_same_action = std::stoul(params["max_steps_same_action"]);
+  } catch (const std::exception &error) {
+    std::cerr << "max_steps_same_action: " << error.what() << std::endl;
   }
   this->max_steps_per_episode =
       std::max(this->max_steps_per_episode, MIN_NR_STEPS);
@@ -309,7 +314,7 @@ QuantumCircuitEnvironment::get_circuit_info() const {
 
 /// [Reward, Terminated, Truncated]
 std::tuple<double, bool, bool>
-QuantumCircuitEnvironment::step(unsigned int action, double atol) {
+QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->terminated || this->truncated) {
     return {0.0, this->terminated, this->truncated};
   }
@@ -338,8 +343,7 @@ QuantumCircuitEnvironment::step(unsigned int action, double atol) {
   } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
-  if (std::abs(nr_gates_reduction) < atol &&
-      std::abs(nr_gates_reduction) < atol) {
+  if (!isclose(nr_gates_reduction, 0.0) && !isclose(depth_reduction, 0.0)) {
     // Executing the same action many times in a row is only a valid termination
     // criterion IFF that action does not change the circuit.
     this->step_no_change = 0;
@@ -353,6 +357,7 @@ QuantumCircuitEnvironment::step(unsigned int action, double atol) {
     this->terminated = true;
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
+
   this->last_action = static_cast<int>(action);
   assert(!this->terminated || !this->truncated);
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
@@ -428,6 +433,19 @@ InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() const {
     instruction_index++;
   });
   return observation;
+}
+
+torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
+    std::optional<torch::TensorOptions> tensor_options) const {
+  torch::TensorOptions options = tensor_options.value_or(
+      torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
+  InstructionsTensor<double> observation = this->get_observation();
+  unsigned int N = observation.shape[0];
+  unsigned int IRS = observation.shape[1];
+  if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
+    return torch::zeros({GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)}, options);
+  }
+  return torch::from_blob(observation.raw(), {N, IRS}, options).clone();
 }
 
 bool QuantumCircuitEnvironment::validate() {

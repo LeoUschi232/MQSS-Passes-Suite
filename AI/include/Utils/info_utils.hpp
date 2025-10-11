@@ -40,6 +40,15 @@ constexpr unsigned int GLOBAL_MIN_NR_GATES = 2u;
 
 /**
  *
+ * @param a
+ * @param b
+ * @param atol
+ * @return
+ */
+bool isclose(double a, double b, double atol = 1e-12);
+
+/**
+ *
  * @param str
  * @param delimiter
  * @return

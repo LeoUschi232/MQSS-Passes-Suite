@@ -1,9 +1,8 @@
 #include "Testsuites/passtest.hpp"
 
 // MLIR includes
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/Passes.h"
+#include "mlir/Pass/PassManager.h"
 
 // Passes includes
 #include "Passes/Cancellations.hpp"

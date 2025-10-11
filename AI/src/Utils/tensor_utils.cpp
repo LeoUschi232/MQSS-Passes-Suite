@@ -283,13 +283,13 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
 
 QuantumCircuit
 recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
-  const unsigned int IRP = tensor.shape[1];
-  if (IRP < MIN_IRP) {
-    std::cerr << "Warning: tensor has IRP smaller than minimum IRP."
+  const unsigned int IRS = tensor.shape[1];
+  if (IRS < MIN_IRS) {
+    std::cerr << "Warning: tensor has IRS smaller than minimum IRS."
               << std::endl;
     return QuantumCircuit();
   }
-  const unsigned int max_qubits = IRP - NR_GATES - MAX_GATE_PARAMS;
+  const unsigned int max_qubits = IRS - NR_GATES - MAX_GATE_PARAMS;
   const unsigned int nr_qubits = nrUsedQubitsInTensor(tensor);
   const unsigned int nr_instructions = tensor.shape[0];
   unsigned int nr_gates = nr_instructions;
@@ -350,7 +350,7 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
     }
 
     std::vector<double> angles;
-    for (; j < IRP; j++) {
+    for (; j < IRS; j++) {
       angles.push_back(tensor(instr, j));
     }
     if (angles.size() != MAX_GATE_PARAMS) {
