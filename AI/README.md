@@ -145,7 +145,23 @@ This list is unordered regarding priority.
   time. The requisite retention time can be controlled by varying the sequence length $T$. TCN outperforms LSTMs and
   vanilla RNNs by a significant margin in perplexity on LAMBADA, with a substantially smaller network and virtually no
   tuning. __[Page 15]__
--
+- Convolutional networks do not depend on the computations of the previoustime step and therefore allow parallelization
+  over every ele ment in a sequence. This contrasts with RNNs which main tain a hidden state of the entire past that
+  prevents parallel computation within a sequence. __[Page XX]__
+- A dilated convolution is a convolution where the filter is applied over an area larger than its length by skipping
+  input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
+  filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
+  network to operate on a coarser scale than with a normal convolution. __[Page XX]__
+- Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
+  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the same. _
+  _[Page XX]__
+- Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
+  function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
+  bias threshold. __[Page XX]__
+- Efficient Unitary Neural Network (EUNN) whose computational cost is merely $\mathcal{O}(1)$ per parameter, which
+  is  $\mathcal{O}(\log(N)))$  more efficient than the other methods discussed. It significantly outperforms existing
+  RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
+  demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
 
 ### 5. [Neural Networks for Sequences](ResearchPapers/05_NeuralNetworksForSequences.pdf)
 
