@@ -43,17 +43,13 @@ TCNResidualBlockWithReLU::TCNResidualBlockWithReLU(unsigned int in_channels,
   this->convolutional_block = torch::nn::Sequential(
       this->weight_norm_conv1, // -> [C_out, N] // <- Here I want weight norm to
                                // remove layer norm
-      torch::nn::Transpose(0, 1), // -> [N, C_out]
-      torch::nn::ReLU(),          // -> [N, C_out]
+      torch::nn::ReLU(),       // -> [C_out, N]
       torch::nn::Dropout(
-          torch::nn::DropoutOptions().p(dropout)), // -> [N, C_out]
-      torch::nn::TransposeContiguous(0, 1),        // -> [C_out, N]
+          torch::nn::DropoutOptions().p(dropout)), // -> [C_out, N]
       this->weight_norm_conv2,                     // -> [C_out, N]
-      torch::nn::Transpose(0, 1),                  // -> [N, C_out]
-      torch::nn::ReLU(),                           // -> [N, C_out]
+      torch::nn::ReLU(),                           // -> [C_out, N]
       torch::nn::Dropout(
-          torch::nn::DropoutOptions().p(dropout)), // -> [N, C_out]
-      torch::nn::TransposeContiguous(0, 1)         // -> [C_out, N]
+          torch::nn::DropoutOptions().p(dropout)) // -> [C_out, N]
   );
   this->final_relu = torch::nn::ReLU();
   this->register_module("convolutional_block", convolutional_block);
@@ -78,20 +74,16 @@ TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
   // Expects input shape: [C_in, N]
   // Exerts output shape: [C_out, N]
   this->convolutional_block = torch::nn::Sequential(
-      this->weight_norm_conv1,    // -> [C_out, N]
-      torch::nn::Transpose(0, 1), // -> [N, C_out]
+      this->weight_norm_conv1, // -> [C_out, N]
       torch::nn::PReLU(
-          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [N, C_out]
+          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [C_out, N]
       torch::nn::Dropout(
-          torch::nn::DropoutOptions().p(dropout)), // -> [N, C_out]
-      torch::nn::TransposeContiguous(0, 1),        // -> [C_out, N]
+          torch::nn::DropoutOptions().p(dropout)), // -> [C_out, N]
       this->weight_norm_conv2,                     // -> [C_out, N]
-      torch::nn::Transpose(0, 1),                  // -> [N, C_out]
       torch::nn::PReLU(
-          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [N, C_out]
+          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [C_out, N]
       torch::nn::Dropout(
-          torch::nn::DropoutOptions().p(dropout)), // -> [N, C_out]
-      torch::nn::TransposeContiguous(0, 1)         // -> [C_out, N]
+          torch::nn::DropoutOptions().p(dropout)) // -> [C_out, N]
   );
   this->final_prelu =
       torch::nn::PReLU(torch::nn::PReLUOptions().init(final_prelu_init));
