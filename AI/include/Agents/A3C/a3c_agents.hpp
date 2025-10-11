@@ -8,8 +8,10 @@
   class ClassName final : public ai_pass_selector::BaseA3CAgent {              \
   public:                                                                      \
     ClassName(unsigned int max_qubits,                                         \
-              std::unordered_map<std::string, std::string> params);            \
+              std::unordered_map<std::string, std::string> params,             \
+              bool is_boss = true);                                            \
     std::string agentName() const override;                                    \
+    std::unique_ptr<BaseA3CAgent> clone() const override;                      \
   };
 
 namespace torch::nn {
@@ -34,7 +36,7 @@ inline Functional Transpose(int64_t dim0, int64_t dim1) {
 
 namespace ai_pass_selector {
 /// A3C = Asynchronous Advantage Actor-Critic
-/// CONV{X} = Convolutional with depth X
-DECLARE_A3C_AGENT(A3C_CONV2)
+/// TCN = Temporal Convolutional Network
+DECLARE_A3C_AGENT(A3C_TCN)
 } // namespace ai_pass_selector
 #endif // A3C_TRAINER_HPP

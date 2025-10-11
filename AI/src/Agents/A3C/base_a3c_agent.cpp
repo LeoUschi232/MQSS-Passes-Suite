@@ -5,6 +5,8 @@
 #include "torch/torch.h"
 
 // Standard library includes
+#include "Utils/info_utils.hpp"
+
 #include <cmath>
 #include <memory>
 #include <tuple>
@@ -12,26 +14,33 @@
 
 namespace ai_pass_selector {
 
-BaseA3CAgent::BaseA3CAgent(
-    unsigned int max_qubits,
-    std::unordered_map<std::string, std::string> params) {
-  this->configure(max_qubits, std::move(params));
+BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits,
+                           std::unordered_map<std::string, std::string> params,
+                           bool is_boss)
+    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)), is_boss(is_boss) {
+  this->configure(std::move(params));
 }
 
 void BaseA3CAgent::configure(
-    unsigned int max_qubits,
     std::unordered_map<std::string, std::string> params) {
-  this->max_qubits = max_qubits;
-  this->critic_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
-  this->actor_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
-  this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
-  this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
+  if (this->is_boss) {
+    this->params_for_cloning = {
+        {"device", params["device"]},
+        {"actor_optimizer", params["actor_optimizer"]},
+        {"critic_optimizer", params["critic_optimizer"]},
+        {"actor_learning_rate", params["actor_learning_rate"]},
+        {"critic_learning_rate", params["critic_learning_rate"]}};
+  }
   this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
                          torch::cuda::is_available()
                      ? torch::kCUDA
                      : torch::kCPU;
+  this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
+  this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
+  this->actor_optimizer_type =
+      OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+  this->critic_optimizer_type =
+      OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
 }
 
 bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
@@ -46,10 +55,15 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     register_module("actor", this->actor);
     this->critic->to(this->device);
     this->actor->to(this->device);
-    this->critic_optimizer = std::shared_ptr(std::move(makeOptimizer(
-        critic_optimizer_type, this->critic, this->critic_learning_rate)));
-    this->actor_optimizer = std::shared_ptr(std::move(makeOptimizer(
-        actor_optimizer_type, this->actor, this->actor_learning_rate)));
+    if (this->is_boss) {
+      // Worker agents do not need optimizers.
+      // Only boss agent needs optimizers.
+      this->critic_optimizer = std::shared_ptr(
+          std::move(makeOptimizer(this->critic_optimizer_type, this->critic,
+                                  this->critic_learning_rate)));
+      this->actor_optimizer = std::shared_ptr(std::move(makeOptimizer(
+          this->actor_optimizer_type, this->actor, this->actor_learning_rate)));
+    }
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -61,8 +75,11 @@ unsigned int BaseA3CAgent::getMaxQubits() const { return this->max_qubits; }
 
 void BaseA3CAgent::zero_grad() {
   std::lock_guard lock(*this->model_mutex);
-  this->actor_optimizer->zero_grad();
-  this->critic_optimizer->zero_grad();
+  for (auto &parameter : this->parameters()) {
+    if (parameter.grad().defined()) {
+      (void)parameter.grad().zero_();
+    }
+  }
   this->gradients_zero = true;
 }
 
@@ -277,7 +294,6 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
                          const double discount_factor,
                          const double gae_hyperparameter,
                          const double entropy_coefficient) {
-
   // Let T = final timestep of an episode.
   // An episode generates T+1 states from S_0 to S_T.
   // An episode generates T actions from A_1 to A_T.
@@ -320,6 +336,10 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
 
 void BaseA3CAgent::update_parameters(const torch::Tensor &actor_loss,
                                      const torch::Tensor &critic_loss) const {
+  if (!this->is_boss) {
+    std::cerr << "Worker agents should not update parameters." << std::endl;
+    return;
+  }
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->zero_grad();
   actor_loss.backward();
@@ -330,6 +350,10 @@ void BaseA3CAgent::update_parameters(const torch::Tensor &actor_loss,
 }
 
 void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() {
+  if (!this->is_boss) {
+    std::cerr << "Worker agents should not update parameters." << std::endl;
+    return;
+  }
   std::lock_guard lock(*this->model_mutex);
   if (this->gradients_zero) {
     // Parameters were updated by another worker since load gradients was called
@@ -347,6 +371,10 @@ void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() {
 }
 
 void BaseA3CAgent::save_model() const {
+  if (!this->is_boss) {
+    std::cerr << "Worker agents should not be saved." << std::endl;
+    return;
+  }
   std::lock_guard lock(*this->model_mutex);
   std::string name = this->agentName();
   if (name.empty()) {
@@ -360,7 +388,6 @@ void BaseA3CAgent::save_model() const {
 }
 
 void BaseA3CAgent::load_model() {
-  // Silently don't load if model doesn't exist.
   std::lock_guard lock(*this->model_mutex);
   std::string name = this->agentName();
   if (name.empty()) {

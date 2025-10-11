@@ -17,11 +17,11 @@ namespace ai_pass_selector {
 class BaseA3CAgent : public torch::nn::Module {
 protected:
   /// Attributes on configuration
-  unsigned int max_qubits = 0;
+  unsigned int max_qubits = 0u;
   int critic_optimizer_type = 0;
   int actor_optimizer_type = 0;
-  double critic_learning_rate = 0;
-  double actor_learning_rate = 0;
+  double critic_learning_rate = 0.0;
+  double actor_learning_rate = 0.0;
   torch::Device device = torch::kCPU;
 
   /// Global Attributes shared across all workers
@@ -34,20 +34,21 @@ protected:
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
   /// A3C specific attributes
+  std::unordered_map<std::string, std::string> params_for_cloning = {};
   bool gradients_zero = true;
+  bool is_boss = true;
 
 public:
   /// Constructors
   BaseA3CAgent(unsigned int max_qubits,
-               std::unordered_map<std::string, std::string> params);
+               std::unordered_map<std::string, std::string> params,
+               bool is_boss = true);
 
   /**
    *
-   * @param max_qubits
    * @param params
    */
-  void configure(unsigned int max_qubits,
-                 std::unordered_map<std::string, std::string> params);
+  void configure(std::unordered_map<std::string, std::string> params);
 
   /**
    *
