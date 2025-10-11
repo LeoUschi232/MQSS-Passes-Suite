@@ -144,6 +144,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
         // Bootstrap value
         if (add_bootstrap) {
+          torch::NoGradGuard _;
           episode_values_vector.push_back(
               agent->get_value(environment.get_observation_as_torch_tensor()));
         } else {
@@ -228,7 +229,7 @@ train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
 
   torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat64);
+      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
 
   std::cout << "Beginning training." << std::endl;
@@ -275,6 +276,7 @@ train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
       }
       // Bootstrap value
       if (add_bootstrap) {
+        torch::NoGradGuard _;
         episode_values_vector.push_back(
             agent->get_value(environment.get_observation_as_torch_tensor()));
       } else {
@@ -287,7 +289,7 @@ train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
           /*state_values=*/torch::stack(episode_values_vector),
           /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
           gae_hyperparameter, entropy_coefficient);
-      agent->update_parameters(critic_loss, actor_loss);
+      agent->update_parameters(actor_loss, critic_loss);
       updateProgress(
           /*current=*/episode_idx, /*total=*/nr_episodes,
           /*display_message=*/" | Episode Reward: " +
