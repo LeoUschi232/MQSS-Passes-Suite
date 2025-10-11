@@ -28,8 +28,8 @@ train(const std::string &agent_name, const std::string &dataset,
             attributes.agent_class) {
     case A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
-      if (attributes.extras == "conv2") {
-        agent = std::make_unique<A3C_CONV2>(attributes.max_qubits, params);
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits, params);
       } else {
         std::cerr << "No such A3C agent yet: " << agent_name << std::endl;
         return {};
