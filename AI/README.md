@@ -4,18 +4,16 @@
 
 This list is unordered regarding priority.
 
- Task                                            | Description                                                                                                                                                                                                                                              
--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved.                                                       
- Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                                                                               
- Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                                                                                     
- Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                                                                          
- Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A3C agent.                                                                                                                                                                                                   
- Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or RNN designs.                                                                                                                                               
- Implement A3C agent                             | Implement the Asynchronous Advantage Actor-Critic (A3C) algorithm using convolutional and/or RNN designs.                                                                                                                                                
- Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or RNN designs.                                                                                                                                                       
- Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                                                                                  
- Research and implement StableBaselines3         | Research the StableBaselines3 library and implement it in the current agents.                                                                                                                                                                            
+ Task                                            | Description                                                                                                                                                                                        
+-------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved. 
+ Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                         
+ Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                               
+ Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
+ Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A3C agent.                                                                                                                                             
+ Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                         
+ Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                 
+ Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
 
 ## Research Paper Notes
 
@@ -127,9 +125,22 @@ This list is unordered regarding priority.
   REDQ while maintaining the same sample efficiency by replacing its ensemble of critics with dropout. REDQ and DroQ
   represent the state-of-the-art in terms of sample efficiency in Deep RL for continuous control. __[Page 141]__
 
-
 ### 4. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/04_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
 
+- Each layer can have a small kernel, for example `size=3`, but withxl dilation factors doubling at each
+  layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
+  of time-steps, without needing an impractically large kernel. __[Page 2]__
+- The TCN formulation distilled many of these best practices into a simple architecture can learn complex sequence
+  patterns, even something as unusual as quantum gate sequences, given sufficient depth and training.
+- Results indicate that a simple convolutional architecture outperforms canonical recurrent networks such as LSTMs
+  across a diverse range of tasks and datasets, while demonstrating longer effective memory. To represent convolutional
+  networks, we describe a generic Temporal Convolutional Network (TCN) architecture that is applied across all tasks.
+  This architecture is informed by recent research, but is deliberately kept simple, combining some of the best
+  practices of modern convolutional architectures. __[Page 8]__
+- The TCN architecture appears not only more accurate than canonical recurrent networks such as LSTMs and GRUs, but also
+  simpler and clearer. It may therefore be a more appropriate starting point in the application of deep networks to
+  sequences. Basic RNN architectures are notoriously difficult to train and more elaborate architectures are commonly
+  used instead, such as the LSTM and the GRU. __[Page 3]__
 - 
 
 ### 5. [Neural Networks for Sequences](ResearchPapers/05_NeuralNetworksForSequences.pdf)
