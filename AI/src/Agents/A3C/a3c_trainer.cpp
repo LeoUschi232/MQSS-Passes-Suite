@@ -146,20 +146,16 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         if (add_bootstrap) {
           episode_values_vector.push_back(
               agent->get_value(environment.get_observation_as_torch_tensor()));
-        } else
+        } else {
           episode_values_vector.push_back(torch::zeros({1}, options));
-
-        torch::Tensor episode_log_probs =
-            torch::stack(episode_log_probs_vector);
-        torch::Tensor episode_values = torch::stack(episode_values_vector);
-        torch::Tensor episode_rewards = torch::stack(episode_rewards_vector);
-        torch::Tensor episode_entropies =
-            torch::stack(episode_entropies_vector);
+        }
 
         auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
-            episode_rewards, episode_log_probs, episode_values,
-            episode_entropies, discount_factor, gae_hyperparameter,
-            entropy_coefficient);
+            /*rewards=*/torch::stack(episode_rewards_vector),
+            /*log_action_probs=*/torch::stack(episode_log_probs_vector),
+            /*state_values=*/torch::stack(episode_values_vector),
+            /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
+            gae_hyperparameter, entropy_coefficient);
 
         // In synchronous A2C one would now call agent->update_parameters().
         // However, in A3C we manually compute the gradients, keep them without
@@ -194,5 +190,126 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
     std::cout << "\nTraining finished." << std::endl;
   }
   return {{"global_max_reward", std::to_string(global_max_reward)}};
+}
+
+std::unordered_map<std::string, std::string>
+train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
+          std::unordered_map<std::string, std::string> params) {
+  unsigned int max_qubits = agent->getMaxQubits();
+  if (params["print_param_info"] == "true") {
+    std::cout << "Training A2C agent with parameters:" << std::endl;
+    std::cout << "  max_qubits: " << max_qubits << std::endl;
+    for (auto [key, value] : params) {
+      std::cout << "  " << key << ": " << value << std::endl;
+    }
+  }
+
+  // Default values
+  unsigned int nr_episodes = std::stoul(params["nr_episodes"]);
+  unsigned int max_steps_per_episode =
+      std::stoul(params["max_steps_per_episode"]);
+  double discount_factor = std::stod(params["discount_factor"]);
+  double gae_hyperparameter = std::stod(params["gae_hyperparameter"]);
+  double entropy_coefficient = std::stod(params["entropy_coefficient"]);
+  torch::Device device = DEVICE_NAME_TO_TORCH.at(params["device"]);
+
+  if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
+    std::cerr << "Nothing to train." << std::endl;
+    return {};
+  }
+  auto optional_statistics = get_precomputed_dataset_statistics(dataset);
+  if (!optional_statistics.has_value()) {
+    std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
+              << std::endl;
+    return {};
+  }
+  auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
+  QuantumCircuitEnvironment environment(max_qubits, params);
+  environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
+
+  torch::TensorOptions options =
+      torch::TensorOptions().device(device).dtype(torch::kFloat64);
+  int64_t T = max_steps_per_episode;
+
+  std::cout << "Beginning training." << std::endl;
+  updateProgress(0, nr_episodes, "Beginning training");
+  for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
+       episode_idx++) {
+    if (interrupted) {
+      std::cout << "\nCaught Ctrl+C Interruption in A2c training." << std::endl;
+      break;
+    }
+    try {
+      double total_episode_reward = 0.0;
+      environment.reset();
+      std::vector<torch::Tensor> episode_log_probs_vector;
+      std::vector<torch::Tensor> episode_values_vector;
+      std::vector<torch::Tensor> episode_rewards_vector;
+      std::vector<torch::Tensor> episode_entropies_vector;
+      episode_log_probs_vector.reserve(T);
+      episode_values_vector.reserve(T + 1);
+      episode_rewards_vector.reserve(T);
+      episode_entropies_vector.reserve(T);
+
+      bool add_bootstrap = false;
+      for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
+           update_step++) {
+
+        auto [action, log_action_probs, state_values, step_entropy] =
+            agent->select_action(environment.get_observation_as_torch_tensor());
+        auto [reward, terminated, truncated] =
+            environment.step(action.item<int>());
+
+        episode_log_probs_vector.push_back(log_action_probs);
+        episode_values_vector.push_back(state_values);
+        episode_entropies_vector.push_back(step_entropy);
+        total_episode_reward += reward;
+        episode_rewards_vector.push_back(torch::tensor(reward, options));
+        if (truncated) {
+          add_bootstrap = true;
+          break;
+        }
+        if (terminated) {
+          break;
+        }
+      }
+      // Bootstrap value
+      if (add_bootstrap) {
+        episode_values_vector.push_back(
+            agent->get_value(environment.get_observation_as_torch_tensor()));
+      } else {
+        episode_values_vector.push_back(torch::zeros({1}, options));
+      }
+
+      auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
+          /*rewards=*/torch::stack(episode_rewards_vector),
+          /*log_action_probs=*/torch::stack(episode_log_probs_vector),
+          /*state_values=*/torch::stack(episode_values_vector),
+          /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
+          gae_hyperparameter, entropy_coefficient);
+      agent->update_parameters(critic_loss, actor_loss);
+      updateProgress(
+          /*current=*/episode_idx, /*total=*/nr_episodes,
+          /*display_message=*/" | Episode Reward: " +
+              std::to_string(total_episode_reward)
+
+      );
+    } catch (const std::exception &e) {
+      std::cerr << "\nEpisode " << episode_idx << ": " << e.what() << std::endl;
+      if (params["stop_training_on_error"] == "true") {
+        interrupted = 1;
+        break;
+      }
+    }
+  }
+  if (!interrupted) {
+    std::cout << "\nTraining finished." << std::endl;
+  }
+
+  if (params["save_agent_at_end_of_training"] == "true") {
+    agent->save_model();
+    std::cout << "Saved: " << agent->agentName() << std::endl;
+  }
+  return {};
 }
 } // namespace ai_pass_selector

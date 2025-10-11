@@ -35,6 +35,7 @@ inline Functional Transpose(int64_t dim0, int64_t dim1) {
 } // namespace torch::nn
 
 namespace ai_pass_selector {
+/// A2C = Advantage Actor-Critic
 /// A3C = Asynchronous Advantage Actor-Critic
 /// TCN = Temporal Convolutional Network
 DECLARE_A3C_AGENT(A3C_TCN)

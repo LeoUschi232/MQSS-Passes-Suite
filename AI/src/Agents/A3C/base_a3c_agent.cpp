@@ -50,7 +50,9 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     this->critic = critic;
     // Load the model before putting it to the device to avoid device
     // scheduling issus.
-    this->load_model();
+    if (this->is_boss) {
+      this->load_model();
+    }
     register_module("critic", this->critic);
     register_module("actor", this->actor);
     this->critic->to(this->device);
@@ -220,7 +222,7 @@ void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
-  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat);
+  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat32);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->actor->forward(x), this->critic->forward(x)};
@@ -229,7 +231,7 @@ BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
 torch::Tensor
 BaseA3CAgent::get_value(const torch::Tensor &batched_observations) {
   return this->critic->forward(
-      batched_observations.to(this->device).to(torch::kFloat));
+      batched_observations.to(this->device).to(torch::kFloat32));
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
