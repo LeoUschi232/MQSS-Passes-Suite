@@ -21,6 +21,9 @@ class WeightNormConv1dImpl final : public Module {
   int64_t dilation;
   int64_t padding;
   int64_t stride = 1;
+  Tensor bias;
+
+  /// Extra Parameters
   double epsilon = 1e-12;
 
 public:
@@ -34,25 +37,30 @@ public:
           "Kernel size in WeightNormConv1dImpl must be odd.");
     }
     std::vector weight_shape = {out_channels, in_channels, kernel_size};
-    weight_v = register_parameter("weight_v", torch::empty(weight_shape));
+    this->weight_v = register_parameter("weight_v", torch::empty(weight_shape));
+    this->weight_g = register_parameter("weight_g", ones({out_channels, 1, 1}));
+    this->bias = register_parameter("bias", zeros({out_channels}));
+    this->init_weights();
+  }
+
+  void init_weights() const {
+    (void)this->weight_v.normal_(0, 0.01);
+    (void)this->weight_g.fill_(1);
+  }
+
+  Tensor forward(const Tensor &input) {
     // Syntax of norm(2,{1,2},true)
     // p=2: L2-Norm
     // dim={1,2}: Take the norm over dimensionss 1 and 2, so over C_in and K
     // leaving dimension 0, so C_out alone.
     // keepdims=true: Keep reduced dimensions with size 1, so g can broadcast
     // back to [C_out, C_in, K].
-    weight_g =
-        register_parameter("weight_g", weight_v.norm(/*p=*/2, /*dim=*/{1, 2},
-                                                     /*keepdim=*/true));
-  }
-
-  Tensor forward(const Tensor &input) {
     return conv1d(input,
                   weight_g * weight_v /
                       (weight_v.norm(/*p=*/2, /*dim=*/{1, 2},
                                      /*keepdim=*/true) +
                        epsilon),
-                  Tensor(), {stride}, {padding}, {dilation});
+                  this->bias, {stride}, {padding}, {dilation});
   }
 };
 

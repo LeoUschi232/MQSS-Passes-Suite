@@ -2,20 +2,20 @@
 #define TCN_HPP
 
 // Torch includes
+#include "agent_layers_and_networks.hpp"
 #include "torch/torch.h"
 
 namespace ai_pass_selector {
 class TCNResidualBlock : public torch::nn::Module {
 protected:
-  torch::nn::Conv1d conv1{nullptr};
-  torch::nn::Conv1d conv2{nullptr};
+  torch::nn::WeightNormConv1d weight_norm_conv1{nullptr};
+  torch::nn::WeightNormConv1d weight_norm_conv2{nullptr};
   torch::nn::Conv1d downsample{nullptr};
   torch::nn::Sequential convolutional_block{nullptr};
 
 public:
   TCNResidualBlock(unsigned int in_channels, unsigned int out_channels,
                    unsigned int kernel_size, unsigned int dilation);
-  void init_weights();
 };
 class TCNResidualBlockWithReLU final : public TCNResidualBlock {
   torch::nn::ReLU final_relu{nullptr};
