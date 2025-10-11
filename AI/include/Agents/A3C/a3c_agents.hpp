@@ -14,25 +14,6 @@
     std::unique_ptr<BaseA3CAgent> clone() const override;                      \
   };
 
-namespace torch::nn {
-/// Custom torch LeakyReLU layer with learnable parameter for negative inputs.
-inline PReLU HalfScalingLayer(double prelu_init = 1.0) {
-  return PReLU(PReLUOptions().init(prelu_init));
-}
-/// Instruction tensor will have shape {B, N, IRS}
-/// B = Batch size / Nr of parallel environments
-/// N = Nr of instructions in the quantum circuit
-/// IRS = Instruction Representation Size
-inline Functional TransposeContiguous(int64_t dim0, int64_t dim1) {
-  return Functional([dim0, dim1](const Tensor &x) {
-    return x.transpose(dim0, dim1).contiguous();
-  });
-}
-inline Functional Transpose(int64_t dim0, int64_t dim1) {
-  return Functional(
-      [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
-}
-} // namespace torch::nn
 
 namespace ai_pass_selector {
 /// A2C = Advantage Actor-Critic
