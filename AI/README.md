@@ -11,8 +11,8 @@ This list is unordered regarding priority.
  Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                               
  Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
  Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A3C agent.                                                                                                                                             
- Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                         
- Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                 
+ Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                        
+ Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                
  Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
 
 ## Research Paper Notes
@@ -141,8 +141,11 @@ This list is unordered regarding priority.
   simpler and clearer. It may therefore be a more appropriate starting point in the application of deep networks to
   sequences. Basic RNN architectures are notoriously difficult to train and more elaborate architectures are commonly
   used instead, such as the LSTM and the GRU. __[Page 3]__
-- The copy memory task is perfectly set up to examine a model's ability to retain information for different lengths of time. The requisite retention time can be controlled by varying the sequence length $T$. TCN outperforms LSTMs and vanilla RNNs by a significant margin in perplexity on LAMBADA, with a substantially smaller network and virtually no tuning. __[Page 15]__
-- 
+- The copy memory task is perfectly set up to examine a model's ability to retain information for different lengths of
+  time. The requisite retention time can be controlled by varying the sequence length $T$. TCN outperforms LSTMs and
+  vanilla RNNs by a significant margin in perplexity on LAMBADA, with a substantially smaller network and virtually no
+  tuning. __[Page 15]__
+-
 
 ### 5. [Neural Networks for Sequences](ResearchPapers/05_NeuralNetworksForSequences.pdf)
 
