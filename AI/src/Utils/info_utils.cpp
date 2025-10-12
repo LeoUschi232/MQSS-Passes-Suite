@@ -22,7 +22,6 @@ using llvm::isa;
 #include <filesystem>
 #include <iostream>
 #include <string>
-#include <unordered_set>
 
 namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;

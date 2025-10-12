@@ -15,20 +15,25 @@ class WeightNormConv1dImpl final : public Module {
   Tensor weight_g;
 
   /// Conv1d Parameters
-  int64_t in_channels;
-  int64_t out_channels;
-  int64_t kernel_size;
-  int64_t dilation;
-  int64_t padding;
-  int64_t stride = 1;
+  int32_t in_channels;
+  int32_t out_channels;
+  int32_t kernel_size;
+  int32_t dilation;
+  int32_t padding;
   Tensor bias;
 
+  // Constant parameters
+  const int32_t stride = 1;
+  const int32_t normL2 = 2;
+  const std::array<int64_t, 2> normDims = {1, 2};
+  const bool keepDims = true;
+
   /// Extra Parameters
-  double epsilon = 1e-12;
+  const double epsilon = 1e-8;
 
 public:
-  WeightNormConv1dImpl(int64_t in_channels, int64_t out_channels,
-                       int64_t kernel_size, int64_t dilation)
+  WeightNormConv1dImpl(int32_t in_channels, int32_t out_channels,
+                       int32_t kernel_size, int32_t dilation)
       : in_channels(in_channels), out_channels(out_channels),
         kernel_size(kernel_size), dilation(dilation),
         padding(dilation * (kernel_size - 1) / 2) {
@@ -36,7 +41,8 @@ public:
       throw std::invalid_argument(
           "Kernel size in WeightNormConv1dImpl must be odd.");
     }
-    std::vector weight_shape = {out_channels, in_channels, kernel_size};
+    std::vector<int64_t> weight_shape = {out_channels, in_channels,
+                                         kernel_size};
     this->weight_v = register_parameter("weight_v", torch::empty(weight_shape));
     this->weight_g = register_parameter("weight_g", ones({out_channels, 1, 1}));
     this->bias = register_parameter("bias", zeros({out_channels}));
@@ -44,6 +50,7 @@ public:
   }
 
   void init_weights() const {
+    NoGradGuard _;
     (void)this->weight_v.normal_(0, 0.01);
     (void)this->weight_g.fill_(1);
   }
@@ -57,31 +64,14 @@ public:
     // back to [C_out, C_in, K].
     return conv1d(input,
                   weight_g * weight_v /
-                      (weight_v.norm(/*p=*/2, /*dim=*/{1, 2},
-                                     /*keepdim=*/true) +
+                      (weight_v.norm(/*p=*/this->normL2, /*dim=*/this->normDims,
+                                     /*keepdim=*/this->keepDims) +
                        epsilon),
-                  this->bias, {stride}, {padding}, {dilation});
+                  this->bias, this->stride, this->padding, this->dilation);
   }
 };
 
 TORCH_MODULE(WeightNormConv1d);
-
-/**
- * Nonlinearity modReLU from the paper Tunable Efficient Unitary Neural Networks
- * (EUNN) and their application to RNNs.
- */
-class ModReLUImpl final : public Module {
-  Tensor bias;
-
-public:
-  explicit ModReLUImpl(int64_t num_features) {
-    bias = register_parameter("bias", zeros({num_features}));
-  }
-  Tensor forward(const Tensor &z) const {
-    return sign(z) * relu(abs(z) + bias);
-  }
-};
-TORCH_MODULE(ModReLU);
 
 /**
  * Instruction tensor will have shape [N, IRS]
@@ -93,7 +83,7 @@ TORCH_MODULE(ModReLU);
  * @param dim1
  * @return
  */
-inline Functional TransposeContiguous(int64_t dim0, int64_t dim1) {
+inline Functional TransposeContiguous(int32_t dim0, int32_t dim1) {
   return Functional([dim0, dim1](const Tensor &x) {
     return x.transpose(dim0, dim1).contiguous();
   });
@@ -109,7 +99,7 @@ inline Functional TransposeContiguous(int64_t dim0, int64_t dim1) {
  * @param dim1
  * @return
  */
-inline Functional Transpose(int64_t dim0, int64_t dim1) {
+inline Functional Transpose(int32_t dim0, int32_t dim1) {
   return Functional(
       [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
 }

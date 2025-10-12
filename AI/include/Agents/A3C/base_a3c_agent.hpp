@@ -34,21 +34,12 @@ protected:
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
   /// A3C specific attributes
-  std::unordered_map<std::string, std::string> params_for_cloning = {};
   bool gradients_zero = true;
   bool is_boss = true;
 
 public:
   /// Constructors
-  BaseA3CAgent(unsigned int max_qubits,
-               std::unordered_map<std::string, std::string> params,
-               bool is_boss = true);
-
-  /**
-   *
-   * @param params
-   */
-  void configure(std::unordered_map<std::string, std::string> params);
+  explicit BaseA3CAgent(unsigned int max_qubits, bool is_boss = true);
 
   /**
    *
@@ -74,25 +65,28 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
 
+  /// Diagnostics
+  void check_params(double big = 1e6, double tiny = 1e-12) const;
+
   //////////////////////////////////////////////////////////////////////////////
   /// A2C standard methods
   std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &batched_observations);
+  forward(const torch::Tensor &observation);
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &batched_observations);
+  torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &batched_observations);
+  select_action(const torch::Tensor &observation);
 
   /**
    * No termination masks because A3C uses asynchronous worker agents, each of
@@ -133,7 +127,7 @@ public:
    */
   virtual std::unique_ptr<BaseA3CAgent> clone() const = 0;
 
-  void load_params(BaseA3CAgent &other);
+  void load_weights(BaseA3CAgent &other);
   void load_gradients(BaseA3CAgent &other);
   void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////

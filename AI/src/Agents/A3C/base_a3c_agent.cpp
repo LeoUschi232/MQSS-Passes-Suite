@@ -13,34 +13,21 @@
 #include <utility>
 
 namespace ai_pass_selector {
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
 
-BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits,
-                           std::unordered_map<std::string, std::string> params,
-                           bool is_boss)
+BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits, bool is_boss)
     : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)), is_boss(is_boss) {
-  this->configure(std::move(params));
-}
-
-void BaseA3CAgent::configure(
-    std::unordered_map<std::string, std::string> params) {
-  if (this->is_boss) {
-    this->params_for_cloning = {
-        {"device", params["device"]},
-        {"actor_optimizer", params["actor_optimizer"]},
-        {"critic_optimizer", params["critic_optimizer"]},
-        {"actor_learning_rate", params["actor_learning_rate"]},
-        {"critic_learning_rate", params["critic_learning_rate"]}};
-  }
-  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
-                         torch::cuda::is_available()
-                     ? torch::kCUDA
-                     : torch::kCPU;
-  this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
-  this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
+  this->device =
+      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
+              torch::cuda::is_available()
+          ? torch::kCUDA
+          : torch::kCPU;
+  this->actor_learning_rate = std::stod(GLOBAL_PARAMS["actor_learning_rate"]);
+  this->critic_learning_rate = std::stod(GLOBAL_PARAMS["critic_learning_rate"]);
   this->actor_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["actor_optimizer"]);
   this->critic_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
+      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["critic_optimizer"]);
 }
 
 bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
@@ -85,12 +72,17 @@ void BaseA3CAgent::zero_grad() {
   this->gradients_zero = true;
 }
 
-void BaseA3CAgent::load_params(BaseA3CAgent &other) {
-  // Most likely the self will be one of the worker agents and the other will
-  // be  the global boss agent.
+void BaseA3CAgent::load_weights(BaseA3CAgent &other) {
+  if (this->is_boss || !other.is_boss) {
+    std::cerr << "Loading weights only from boss to worker allowed."
+              << std::endl;
+    return;
+  }
   // Step: Synchronize thread-specific parameters θ'=θ and θv'=θv from
   // Mnih et al 2016.
-  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+  // Don't have to lock worker's mutex because that one is not going to be
+  // undergoing changes anyway.
+  std::scoped_lock lock(*other.model_mutex);
   torch::NoGradGuard no_grad_guard;
 
   // --- ACTOR ---
@@ -155,11 +147,16 @@ void BaseA3CAgent::load_params(BaseA3CAgent &other) {
   }
 }
 void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
-  // Most likely the self will be the global boss agent and the other will be
-  // one of the worker agents.
+  if (!this->is_boss || other.is_boss) {
+    std::cerr << "Loading gradients only from worker to boss allowed."
+              << std::endl;
+    return;
+  }
   // Step: Perform asynchronous update of θ using dθ and of θv using dθv from
   // Mnih et al 2016.
-  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+  // Don't have to lock worker's mutex because that one is not going to be
+  // undergoing changes anyway.
+  std::scoped_lock lock(*this->model_mutex);
 
   // --- ACTOR ---
   torch::OrderedDict<std::string, torch::Tensor> source_actor_params =
@@ -221,22 +218,21 @@ void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
-  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat32);
+BaseA3CAgent::forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->actor->forward(x), this->critic->forward(x)};
 }
 
-torch::Tensor
-BaseA3CAgent::get_value(const torch::Tensor &batched_observations) {
+torch::Tensor BaseA3CAgent::get_value(const torch::Tensor &observation) {
   return this->critic->forward(
-      batched_observations.to(this->device).to(torch::kFloat32));
+      observation.to(this->device).to(torch::kFloat32));
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
-  auto [action_probs, state_values] = this->forward(batched_observations);
+BaseA3CAgent::select_action(const torch::Tensor &observation) {
+  auto [action_probs, state_values] = this->forward(observation);
 
   if (action_probs.lt(0).any().item<bool>()) {
     std::cerr << "Error: action_probs contains negative values: "
@@ -256,9 +252,9 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.
-  // action_probs ~ [B, NR_PASSES]
-  // X.multinomial(num_samples=1) ~ [B, 1]
-  // X.squeeze(dim=-1) ~ [B]
+  // action_probs ~ [NR_PASSES]
+  // X.multinomial(num_samples=1) ~ [1]
+  // X.squeeze(dim=-1) ~ 1
   const torch::Tensor action_indexes_unsqueezed =
       action_probs.multinomial(/*num_samples=*/1);
   const torch::Tensor action_indexes = action_indexes_unsqueezed.squeeze(-1);
@@ -267,24 +263,24 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
   // Gather extracts the values at specified indexes along the specified axis.
   // Parameter indexes must have the same nr of axes as the input tensor, here
   // each has 2 axes.
-  // log_action_probs ~ [B, NR_PASSES]
-  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [B, 1]
-  // X.squeeze(dim=-1) ~ [B]
+  // log_action_probs ~ [NR_PASSES]
+  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [1]
+  // X.squeeze(dim=-1) ~ 1
   const torch::Tensor log_action_probs = action_probs.log();
   const torch::Tensor squeezed_log_action_probs =
       log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_indexes_unsqueezed)
           .squeeze(-1);
 
   // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
-  // action_probs * log_action_probs ~ [B, NR_PASSES]
-  // -X.sum(dim=-1) ~ [B]
+  // action_probs * log_action_probs ~ [NR_PASSES]
+  // -X.sum(dim=-1) ~ [1]
   const torch::Tensor entropy =
       -(action_probs * log_action_probs).sum(/*dim=*/-1);
   return {
-      action_indexes,            // Shape [B]
-      squeezed_log_action_probs, // Shape [B]
-      state_values,              // Shape [B]
-      entropy                    // Shape [B]
+      action_indexes,            // Shape [1]
+      squeezed_log_action_probs, // Shape [1]
+      state_values,              // Shape [1]
+      entropy                    // Shape [1]
   };
 }
 
@@ -309,7 +305,7 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
   // the value function of a state based on the difference between the immediate
   // reward obtained from a current state and the estimated value of the next
   // state.
-  torch::Tensor A_gae = torch::zeros({1}, options);
+  torch::Tensor A_gae = torch::zeros({}, options);
   for (int t = T - 1; t >= 0; t--) {
 
     // Temporal Difference Error of V(s) with discount gamma is:
@@ -404,4 +400,44 @@ void BaseA3CAgent::load_model() {
   torch::load(this->actor, actor_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
 }
+
+void BaseA3CAgent::check_params(double big, double tiny) const {
+  auto check = [&](const char *tag, const torch::nn::Sequential &network) {
+    size_t total = 0, bad = 0;
+    for (auto &keyvalue : network->named_parameters(/*recurse=*/true)) {
+      const std::string &name = keyvalue.key();
+      const torch::Tensor &value = keyvalue.value();
+      total += value.numel();
+      bool has_nan = value.isnan().any().item<bool>();
+      bool has_inf = value.isinf().any().item<bool>();
+      double abs_max = value.abs().max().item<double>();
+      double abs_min_not_zero = 0.0;
+      {
+        torch::Tensor abs_value = value.abs();
+        torch::Tensor flat = abs_value.view({-1});
+        if (torch::Tensor non_zero = flat.index({flat.gt(0)});
+            non_zero.numel() > 0) {
+          abs_min_not_zero = non_zero.min().item<double>();
+        }
+      }
+      if (has_nan || has_inf || abs_max > big ||
+          (abs_min_not_zero > 0.0 && abs_min_not_zero < tiny)) {
+        ++bad;
+        std::cout << "[PARAM] " << tag << "." << name << " nan=" << has_nan
+                  << " inf=" << has_inf << " abs_max=" << abs_max
+                  << " abs_min_not_zero=" << abs_min_not_zero
+                  << " shape=" << value.sizes() << "\n";
+      }
+    }
+    std::cout << "[SUMMARY] " << tag << " total_params=" << total
+              << " suspicious=" << bad << "\n";
+  };
+  if (this->actor) {
+    check("actor", this->actor);
+  }
+  if (this->critic) {
+    check("critic", this->critic);
+  }
+}
+
 } // namespace ai_pass_selector

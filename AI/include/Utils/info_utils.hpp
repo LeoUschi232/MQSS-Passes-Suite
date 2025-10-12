@@ -10,6 +10,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 
@@ -35,6 +36,7 @@ inline int randomInt(int start, int end) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// All no-nonsense quantum circuit should have at least 2 qubits and 2 gates.
+inline std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
 constexpr unsigned int GLOBAL_MIN_NR_QUBITS = 2u;
 constexpr unsigned int GLOBAL_MIN_NR_GATES = 2u;
 

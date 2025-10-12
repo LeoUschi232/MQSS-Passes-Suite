@@ -136,6 +136,12 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
 QuantumCircuit
 recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor);
 
+/**
+ *
+ * @param tensor
+ */
+void check_tensor(const InstructionsTensor<double> &tensor);
+
 } // namespace ai_pass_selector
 
 #endif // TENSOR_UTILS_HPP

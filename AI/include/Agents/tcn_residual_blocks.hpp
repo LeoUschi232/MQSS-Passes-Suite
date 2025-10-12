@@ -1,5 +1,5 @@
-#ifndef TCN_HPP
-#define TCN_HPP
+#ifndef TCN_RESIDUAL_BLOCK_HPP
+#define TCN_RESIDUAL_BLOCK_HPP
 
 // Torch includes
 #include "agent_layers_and_networks.hpp"
@@ -32,10 +32,9 @@ class TCNResidualBlockWithPReLU final : public TCNResidualBlock {
 public:
   TCNResidualBlockWithPReLU(unsigned int in_channels, unsigned int out_channels,
                             unsigned int kernel_size, unsigned int dilation,
-                            double dropout = 0.2,
-                            double final_prelu_init = 0.1);
+                            double prelu_init = 0.1, double dropout = 0.2);
   torch::Tensor forward(const torch::Tensor &x);
 };
 } // namespace ai_pass_selector
 
-#endif // TCN_HPP
+#endif // TCN_RESIDUAL_BLOCK_HPP
