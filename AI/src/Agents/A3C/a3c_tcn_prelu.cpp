@@ -42,7 +42,16 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(
       torch::nn::Flatten(),                            // -> [NR_PASSES]
       torch::nn::Softmax(/*dim=*/0u)                   // -> [NR_PASSES]
   );
-  auto critic = torch::nn::Sequential();
+  auto critic = torch::nn::Sequential(
+      torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+      TCNFullNetworkWithPReLU(IRS, nr_residual_blocks,
+                              inner_kernel_size), // -> [IRS, N]
+      torch::nn::Conv1d(
+          torch::nn::Conv1dOptions(IRS, 1u, final_kernel_size)),    // -> [1, N]
+      torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init)), // -> [1, N]
+      torch::nn::AdaptiveAvgPool1d(1u),                             // -> [1, 1]
+      torch::nn::Flatten()                                          // -> [1]
+  );
   this->initialize(actor, critic);
 }
 
