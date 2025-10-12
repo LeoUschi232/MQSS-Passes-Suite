@@ -17,11 +17,12 @@
 #include <unordered_map>
 
 namespace fs = std::filesystem;
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+
 
 namespace ai_pass_selector {
 std::unordered_map<std::string, std::string>
-train(const std::string &agent_name, const std::string &dataset,
-      std::unordered_map<std::string, std::string> params) {
+train(const std::string &agent_name, const std::string &dataset) {
   std::unordered_map<std::string, std::string> training_results;
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
@@ -29,9 +30,9 @@ train(const std::string &agent_name, const std::string &dataset,
     case A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
       if (attributes.extras == "tcnrelu") {
-        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits, params);
+        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
       } else if (attributes.extras == "tcnprelu") {
-        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits, params);
+        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
       } else if (attributes.extras == "lstmrelu") {
         std::cerr << "A3C_LSTM_RELU not implemented yet: " << agent_name
                   << std::endl;
@@ -44,13 +45,13 @@ train(const std::string &agent_name, const std::string &dataset,
       }
       agent->load_model();
       unsigned int nr_asynchronous_agents =
-          std::stoul(params["nr_asynchronous_agents"]);
+          std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
       if (nr_asynchronous_agents <= 1u) {
         std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
                   << std::endl;
-        training_results = train_a2c(agent, dataset, params);
+        training_results = train_a2c(agent, dataset);
       } else {
-        training_results = train_a3c(agent, dataset, params);
+        training_results = train_a3c(agent, dataset);
       }
       break;
     }

@@ -28,30 +28,30 @@ void signal_handler(int signal) {
 }
 
 namespace ai_pass_selector {
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
 
 std::unordered_map<std::string, std::string>
 train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
-          const std::string &dataset,
-          std::unordered_map<std::string, std::string> params) {
+          const std::string &dataset) {
   unsigned int max_qubits = agent_boss->getMaxQubits();
-  if (params["print_param_info"] == "true") {
+  if (GLOBAL_PARAMS["print_param_info"] == "true") {
     std::cout << "Training A3C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
-    for (auto [key, value] : params) {
+    for (auto [key, value] : GLOBAL_PARAMS) {
       std::cout << "  " << key << ": " << value << std::endl;
     }
   }
 
   // Default values
   unsigned int nr_asynchronous_agents =
-      std::stoul(params["nr_asynchronous_agents"]);
-  unsigned int a3c_max_async_steps = std::stoul(params["a3c_max_async_steps"]);
+      std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
+  unsigned int a3c_max_async_steps = std::stoul(GLOBAL_PARAMS["a3c_max_async_steps"]);
   unsigned int max_steps_per_episode =
-      std::stoul(params["max_steps_per_episode"]);
-  double discount_factor = std::stod(params["discount_factor"]);
-  double gae_hyperparameter = std::stod(params["gae_hyperparameter"]);
-  double entropy_coefficient = std::stod(params["entropy_coefficient"]);
-  torch::Device device = DEVICE_NAME_TO_TORCH.at(params["device"]);
+      std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
+  double discount_factor = std::stod(GLOBAL_PARAMS["discount_factor"]);
+  double gae_hyperparameter = std::stod(GLOBAL_PARAMS["gae_hyperparameter"]);
+  double entropy_coefficient = std::stod(GLOBAL_PARAMS["entropy_coefficient"]);
+  torch::Device device = DEVICE_NAME_TO_TORCH.at(GLOBAL_PARAMS["device"]);
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -80,7 +80,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   std::signal(SIGINT, signal_handler);
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
     futures.emplace_back(std::async(std::launch::async, [&] {
-      QuantumCircuitEnvironment environment(max_qubits, params);
+      QuantumCircuitEnvironment environment(max_qubits);
       environment.register_randomizer_params(qubits_cholesky_params,
                                              gates_weights);
       std::unique_ptr<BaseA3CAgent> agent = agent_boss->clone();
@@ -194,7 +194,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         // accessed for rough diagnostics, it doesn't have to be exact.
         std::cerr << "Step: " << global_async_step << ": " << error.what()
                   << std::endl;
-        if (params["stop_training_on_error"] == "true") {
+        if (GLOBAL_PARAMS["stop_training_on_error"] == "true") {
           interrupted = 1;
         }
       }
@@ -211,28 +211,27 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
 std::unordered_map<std::string, std::string>
 train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
-          const std::string &dataset,
-          std::unordered_map<std::string, std::string> params) {
+          const std::string &dataset) {
   unsigned int max_qubits = agent->getMaxQubits();
-  if (params["print_param_info"] == "true") {
+  if (GLOBAL_PARAMS["print_param_info"] == "true") {
     std::cout << "Training A2C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
-    for (auto [key, value] : params) {
+    for (auto [key, value] : GLOBAL_PARAMS) {
       std::cout << "  " << key << ": " << value << std::endl;
     }
   }
-  if (params["print_diagnostics"] == "true") {
+  if (GLOBAL_PARAMS["print_diagnostics"] == "true") {
     agent->check_params();
   }
 
   // Default values
-  unsigned int nr_episodes = std::stoul(params["nr_episodes"]);
+  unsigned int nr_episodes = std::stoul(GLOBAL_PARAMS["nr_episodes"]);
   unsigned int max_steps_per_episode =
-      std::stoul(params["max_steps_per_episode"]);
-  double discount_factor = std::stod(params["discount_factor"]);
-  double gae_hyperparameter = std::stod(params["gae_hyperparameter"]);
-  double entropy_coefficient = std::stod(params["entropy_coefficient"]);
-  torch::Device device = DEVICE_NAME_TO_TORCH.at(params["device"]);
+      std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
+  double discount_factor = std::stod(GLOBAL_PARAMS["discount_factor"]);
+  double gae_hyperparameter = std::stod(GLOBAL_PARAMS["gae_hyperparameter"]);
+  double entropy_coefficient = std::stod(GLOBAL_PARAMS["entropy_coefficient"]);
+  torch::Device device = DEVICE_NAME_TO_TORCH.at(GLOBAL_PARAMS["device"]);
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -245,7 +244,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  QuantumCircuitEnvironment environment(max_qubits, params);
+  QuantumCircuitEnvironment environment(max_qubits);
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
 
   torch::TensorOptions options =
@@ -323,7 +322,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
-      if (params["stop_training_on_error"] == "true") {
+      if (GLOBAL_PARAMS["stop_training_on_error"] == "true") {
         interrupted = 1;
         break;
       }
@@ -333,7 +332,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     std::cout << "\nTraining finished." << std::endl;
   }
 
-  if (params["save_agent_at_end_of_training"] == "true") {
+  if (GLOBAL_PARAMS["save_agent_at_end_of_training"] == "true") {
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }

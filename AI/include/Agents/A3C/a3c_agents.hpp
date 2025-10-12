@@ -7,9 +7,7 @@
 #define DECLARE_A3C_AGENT(ClassName)                                           \
   class ClassName final : public ai_pass_selector::BaseA3CAgent {              \
   public:                                                                      \
-    ClassName(unsigned int max_qubits,                                         \
-              std::unordered_map<std::string, std::string> params,             \
-              bool is_boss = true);                                            \
+    ClassName(unsigned int max_qubits, bool is_boss = true);                   \
     std::string agentName() const override;                                    \
     std::unique_ptr<BaseA3CAgent> clone() const override;                      \
   };

@@ -34,6 +34,7 @@ using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits, unsigned int max_steps,
@@ -48,33 +49,35 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
   }
 }
 
-QuantumCircuitEnvironment::QuantumCircuitEnvironment(
-    unsigned int max_qubits,
-    std::unordered_map<std::string, std::string> params)
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
-  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
-                         torch::cuda::is_available()
-                     ? torch::kCUDA
-                     : torch::kCPU;
+  this->device =
+      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
+              torch::cuda::is_available()
+          ? torch::kCUDA
+          : torch::kCPU;
 
   try {
-    this->max_steps_per_episode = std::stoul(params["max_steps_per_episode"]);
+    this->max_steps_per_episode =
+        std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
   } catch (const std::exception &error) {
     std::cerr << "max_steps_per_episode: " << error.what() << std::endl;
   }
   try {
     this->max_steps_no_improvement =
-        std::stoul(params["max_steps_no_improvement"]);
+        std::stoul(GLOBAL_PARAMS["max_steps_no_improvement"]);
   } catch (const std::exception &error) {
     std::cerr << "max_steps_no_improvement: " << error.what() << std::endl;
   }
   try {
-    this->max_steps_no_change = std::stoul(params["max_steps_no_change"]);
+    this->max_steps_no_change =
+        std::stoul(GLOBAL_PARAMS["max_steps_no_change"]);
   } catch (const std::exception &error) {
     std::cerr << "max_steps_no_change: " << error.what() << std::endl;
   }
   try {
-    this->max_steps_same_action = std::stoul(params["max_steps_same_action"]);
+    this->max_steps_same_action =
+        std::stoul(GLOBAL_PARAMS["max_steps_same_action"]);
   } catch (const std::exception &error) {
     std::cerr << "max_steps_same_action: " << error.what() << std::endl;
   }
@@ -85,8 +88,9 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
   this->max_steps_no_change = std::max(this->max_steps_no_change, MIN_NR_STEPS);
   this->max_steps_same_action =
       std::max(this->max_steps_same_action, MIN_NR_STEPS);
-  if (params.find("circuit") != params.end() && !params["circuit"].empty()) {
-    this->register_quantum_circuit(params["circuit"]);
+  if (GLOBAL_PARAMS.find("circuit") != GLOBAL_PARAMS.end() &&
+      !GLOBAL_PARAMS["circuit"].empty()) {
+    this->register_quantum_circuit(GLOBAL_PARAMS["circuit"]);
   }
 }
 

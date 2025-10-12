@@ -17,10 +17,8 @@
 
 namespace ai_pass_selector {
 
-A3C_TCN_PRELU::A3C_TCN_PRELU(
-    unsigned int max_qubits,
-    std::unordered_map<std::string, std::string> params, bool is_boss)
-    : BaseA3CAgent(max_qubits, std::move(params), is_boss) {
+A3C_TCN_PRELU::A3C_TCN_PRELU(unsigned int max_qubits, bool is_boss)
+    : BaseA3CAgent(max_qubits, is_boss) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
@@ -40,8 +38,8 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(
           torch::nn::PReLUOptions().init(prelu_init)), // -> [NR_PASSES, N]
       torch::nn::AdaptiveAvgPool1d(1u),                // -> [NR_PASSES, 1]
       torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(/*dim=*/0)),                            // -> [NR_PASSES]
-      torch::nn::Softmax(/*dim=*/0u)                   // -> [NR_PASSES]
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
   );
   auto critic = torch::nn::Sequential(
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
@@ -58,8 +56,7 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(
 }
 
 std::unique_ptr<BaseA3CAgent> A3C_TCN_PRELU::clone() const {
-  return std::make_unique<A3C_TCN_PRELU>(
-      this->max_qubits, this->params_for_cloning, /*is_boss=*/false);
+  return std::make_unique<A3C_TCN_PRELU>(this->max_qubits, /*is_boss=*/false);
 }
 
 std::string A3C_TCN_PRELU::agentName() const {
