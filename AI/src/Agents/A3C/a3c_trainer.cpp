@@ -198,7 +198,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 }
 
 std::unordered_map<std::string, std::string>
-train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
+train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
+          const std::string &dataset,
           std::unordered_map<std::string, std::string> params) {
   unsigned int max_qubits = agent->getMaxQubits();
   if (params["print_param_info"] == "true") {

@@ -43,7 +43,15 @@ train(const std::string &agent_name, const std::string &dataset,
         return {};
       }
       agent->load_model();
-      training_results = train_a3c(std::move(agent), dataset, params);
+      unsigned int nr_asynchronous_agents =
+          std::stoul(params["nr_asynchronous_agents"]);
+      if (nr_asynchronous_agents <= 1u) {
+        std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
+                  << std::endl;
+        training_results = train_a2c(agent, dataset, params);
+      } else {
+        training_results = train_a3c(agent, dataset, params);
+      }
       break;
     }
     default:
