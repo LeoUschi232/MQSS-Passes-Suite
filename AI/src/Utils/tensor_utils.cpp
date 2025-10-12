@@ -262,7 +262,7 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
   }
 }
 
-unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<float> &tensor) {
   const int nr_instructions = tensor.shape[0];
   const int instruction_features = tensor.shape[1];
   const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
@@ -282,7 +282,7 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
 }
 
 QuantumCircuit
-recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
+recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
   const unsigned int IRS = tensor.shape[1];
   if (IRS < MIN_IRS) {
     std::cerr << "Warning: tensor has IRS smaller than minimum IRS."
@@ -376,8 +376,8 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
           nr_gates, get_max_depth(depths)};
 }
 
-void check_tensor(const InstructionsTensor<double> &tensor) {
-  std::cout << "Called: check_tensor(const InstructionsTensor<double> &tensor)."
+void check_tensor(const InstructionsTensor<float> &tensor) {
+  std::cout << "Called: check_tensor(const InstructionsTensor<float> &tensor)."
             << std::endl;
   const unsigned N = tensor.shape[0];
   const unsigned IRS = tensor.shape[1];

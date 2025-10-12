@@ -126,7 +126,7 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
  * @param tensor
  * @return
  */
-unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<float> &tensor);
 
 /**
  *
@@ -134,13 +134,13 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
  * @return
  */
 QuantumCircuit
-recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor);
+recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor);
 
 /**
  *
  * @param tensor
  */
-void check_tensor(const InstructionsTensor<double> &tensor);
+void check_tensor(const InstructionsTensor<float> &tensor);
 
 } // namespace ai_pass_selector
 

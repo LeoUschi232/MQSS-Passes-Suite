@@ -368,8 +368,8 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
-InstructionsTensor<double> QuantumCircuitEnvironment::get_observation() const {
-  InstructionsTensor<double> observation(this->max_qubits);
+InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
+  InstructionsTensor<float> observation(this->max_qubits);
   observation.reserve(/*nr_instructions=*/GLOBAL_MIN_NR_GATES);
   if (!this->circuit.exists() || this->truncated) {
     // Changed to exclude this->truncated so that for truncated episodes, we
@@ -444,7 +444,7 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
     std::optional<torch::TensorOptions> tensor_options) const {
   torch::TensorOptions options = tensor_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
-  InstructionsTensor<double> observation = this->get_observation();
+  InstructionsTensor<float> observation = this->get_observation();
   if (GLOBAL_PARAMS["print_diagnostics"] == "true") {
     check_tensor(observation);
   }

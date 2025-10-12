@@ -151,7 +151,7 @@ void load_default_params() {
                    {"critic_learning_rate", "0.005"},
                    {"ppo_epsilon", "0.2"},
                    {"sac_alpha", "0.1"},
-                   {"print_param_info", "true"},
+                   {"print_param_info", "false"},
                    {"save_agent_after_training", "false"},
                    {"stop_training_on_error", "true"},
                    {"print_diagnostics", "true"}};

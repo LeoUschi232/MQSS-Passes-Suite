@@ -235,18 +235,15 @@ BaseA3CAgent::select_action(const torch::Tensor &observation) {
   auto [action_probs, state_values] = this->forward(observation);
 
   if (action_probs.lt(0).any().item<bool>()) {
-    std::cerr << "Error: action_probs contains negative values: "
-              << action_probs << std::endl;
+    std::cerr << "Error: action_probs contains negative values: " << std::endl;
     throw std::runtime_error("Negative probabilities detected.");
   }
   if (action_probs.isnan().any().item<bool>()) {
-    std::cerr << "Error: action_probs contains NaN: " << action_probs
-              << std::endl;
+    std::cerr << "Error: action_probs contains NaN: " << std::endl;
     throw std::runtime_error("NaN in probabilities.");
   }
   if (action_probs.isinf().any().item<bool>()) {
-    std::cerr << "Error: action_probs contains Inf: " << action_probs
-              << std::endl;
+    std::cerr << "Error: action_probs contains Inf: " << std::endl;
     throw std::runtime_error("Inf in probabilities.");
   }
 
