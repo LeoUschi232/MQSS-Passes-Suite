@@ -332,7 +332,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     std::cout << "\nTraining finished." << std::endl;
   }
 
-  if (GLOBAL_PARAMS["save_agent_at_end_of_training"] == "true") {
+  if (GLOBAL_PARAMS["save_agent_after_training"] == "true") {
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }

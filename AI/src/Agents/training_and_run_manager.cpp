@@ -17,10 +17,10 @@
 #include <unordered_map>
 
 namespace fs = std::filesystem;
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
-
 
 namespace ai_pass_selector {
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+
 std::unordered_map<std::string, std::string>
 train(const std::string &agent_name, const std::string &dataset) {
   std::unordered_map<std::string, std::string> training_results;
@@ -66,10 +66,9 @@ train(const std::string &agent_name, const std::string &dataset) {
   return training_results;
 }
 
-std::unordered_map<std::string, std::string>
-run(const std::string &agent_name, const std::string &circuit,
-    const std::string &output,
-    std::unordered_map<std::string, std::string> params) {
+std::unordered_map<std::string, std::string> run(const std::string &agent_name,
+                                                 const std::string &circuit,
+                                                 const std::string &output) {
   throw std::runtime_error("Not implemented yet");
 }
 
