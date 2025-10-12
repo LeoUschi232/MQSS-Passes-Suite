@@ -38,8 +38,9 @@ A3C_TCN_RELU::A3C_TCN_RELU(unsigned int max_qubits,
           IRS, NR_PASSES, final_kernel_size)), // -> [NR_PASSES, N]
       torch::nn::ReLU(),                       // -> [NR_PASSES, N]
       torch::nn::AdaptiveAvgPool1d(1u),        // -> [NR_PASSES, 1]
-      torch::nn::Flatten(),                    // -> [NR_PASSES]
-      torch::nn::Softmax(/*dim=*/0u)           // -> [NR_PASSES]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
   );
   auto critic = torch::nn::Sequential(
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
@@ -49,7 +50,8 @@ A3C_TCN_RELU::A3C_TCN_RELU(unsigned int max_qubits,
           torch::nn::Conv1dOptions(IRS, 1u, final_kernel_size)), // -> [1, N]
       torch::nn::ReLU(),                                         // -> [1, N]
       torch::nn::AdaptiveAvgPool1d(1u),                          // -> [1, 1]
-      torch::nn::Flatten()                                       // -> [1]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)) // -> [1]
   );
   this->initialize(actor, critic);
 }

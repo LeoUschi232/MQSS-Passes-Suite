@@ -88,102 +88,114 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       // A3C doesn't have a max cap on the nr of qpisodes.
       // The cap is implicit on the nr of total steps performed by all
       // agents at the same time.
-      while (true) {
-        {
-          std::lock_guard lock(*global_mutex);
-          if (global_async_step >= a3c_max_async_steps) {
-            break;
+      try {
+        while (true) {
+          {
+            std::lock_guard lock(*global_mutex);
+            if (global_async_step >= a3c_max_async_steps) {
+              break;
+            }
           }
-        }
-        if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in A3C training."
-                    << std::endl;
-          break;
-        }
-        environment.reset();
-        agent->zero_grad();
-        // Load params uses the inner mutex from both agents, so no need to
-        // apply the global mutex here.
-        agent->load_params(*agent_boss);
-
-        std::vector<torch::Tensor> episode_log_probs_vector;
-        std::vector<torch::Tensor> episode_values_vector;
-        std::vector<torch::Tensor> episode_rewards_vector;
-        std::vector<torch::Tensor> episode_entropies_vector;
-        episode_log_probs_vector.reserve(T);
-        episode_values_vector.reserve(T + 1);
-        episode_rewards_vector.reserve(T);
-        episode_entropies_vector.reserve(T);
-
-        double total_worker_reward = 0.0;
-        unsigned int update_step;
-        bool add_bootstrap = false;
-        for (update_step = 0u; update_step < max_steps_per_episode;
-             update_step++) {
           if (interrupted) {
             break;
           }
+          environment.reset();
+          agent->zero_grad();
+          // Load params uses the inner mutex from both agents, so no need to
+          // apply the global mutex here.
+          agent->load_params(*agent_boss);
 
-          auto [action, log_action_probs, state_values, step_entropy] =
-              agent->select_action(
-                  environment.get_observation_as_torch_tensor());
-          auto [reward, terminated, truncated] =
-              environment.step(action.item<int>());
-          total_worker_reward += reward;
+          std::vector<torch::Tensor> episode_log_probs_vector;
+          std::vector<torch::Tensor> episode_values_vector;
+          std::vector<torch::Tensor> episode_rewards_vector;
+          std::vector<torch::Tensor> episode_entropies_vector;
+          episode_log_probs_vector.reserve(T);
+          episode_values_vector.reserve(T + 1);
+          episode_rewards_vector.reserve(T);
+          episode_entropies_vector.reserve(T);
 
-          episode_log_probs_vector.push_back(log_action_probs);
-          episode_values_vector.push_back(state_values);
-          episode_entropies_vector.push_back(step_entropy);
-          episode_rewards_vector.push_back(torch::tensor(reward, options));
-          // Only check truncated so that bootstrapping is applied for
-          // truncated but not for terminated environments.
-          if (truncated) {
-            add_bootstrap = true;
-            break;
+          double total_worker_reward = 0.0;
+          unsigned int update_step;
+          bool add_bootstrap = false;
+          for (update_step = 0u; update_step < max_steps_per_episode;
+               update_step++) {
+            if (interrupted) {
+              std::cout << "Caught Ctrl+C Interruption in A3C training."
+                        << std::endl;
+              break;
+            }
+
+            auto [action, log_action_probs, state_values, step_entropy] =
+                agent->select_action(
+                    environment.get_observation_as_torch_tensor());
+            auto [reward, terminated, truncated] =
+                environment.step(action.item<int>());
+            total_worker_reward += reward;
+
+            episode_log_probs_vector.push_back(log_action_probs);
+            episode_values_vector.push_back(state_values);
+            episode_entropies_vector.push_back(step_entropy);
+            episode_rewards_vector.push_back(torch::tensor(reward, options));
+            // Only check truncated so that bootstrapping is applied for
+            // truncated but not for terminated environments.
+            if (truncated) {
+              add_bootstrap = true;
+              break;
+            }
+            if (terminated) {
+              break;
+            }
           }
-          if (terminated) {
-            break;
+
+          // Bootstrap value
+          if (add_bootstrap) {
+            torch::NoGradGuard _;
+            episode_values_vector.push_back(agent->get_value(
+                environment.get_observation_as_torch_tensor()));
+          } else {
+            episode_values_vector.push_back(torch::zeros({1}, options));
+          }
+
+          auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
+              /*rewards=*/torch::stack(episode_rewards_vector),
+              /*log_action_probs=*/torch::stack(episode_log_probs_vector),
+              /*state_values=*/torch::stack(episode_values_vector),
+              /*entropy=*/torch::stack(episode_entropies_vector),
+              discount_factor, gae_hyperparameter, entropy_coefficient);
+
+          // In synchronous A2C one would now call agent->update_parameters().
+          // However, in A3C we manually compute the gradients, keep them
+          // without updating the worker agent, and use them to update the
+          // global agent boss.
+          actor_loss.backward();
+          critic_loss.backward();
+
+          // Truly asynchronous is  Hogwild-style with allowed races.
+          // Multiple workes could theoretically call load gradients before the
+          // update.
+          // Update parameters assuming gradients are loaded uses the inner
+          // mutex from agent boss, so no need to apply the global mutex here
+          // either.
+          agent_boss->load_gradients(*agent);
+          agent_boss->update_parameters_assuming_gradients_are_loaded();
+          {
+            std::lock_guard lock(*global_mutex);
+            global_async_step += update_step;
+            global_max_reward =
+                std::max(global_max_reward, total_worker_reward);
+            updateProgress(
+                global_async_step, a3c_max_async_steps,
+                " | Reward: " + std::to_string(total_worker_reward) +
+                    "Global Max: " + std::to_string(global_max_reward));
           }
         }
-
-        // Bootstrap value
-        if (add_bootstrap) {
-          torch::NoGradGuard _;
-          episode_values_vector.push_back(
-              agent->get_value(environment.get_observation_as_torch_tensor()));
-        } else {
-          episode_values_vector.push_back(torch::zeros({1}, options));
-        }
-
-        auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
-            /*rewards=*/torch::stack(episode_rewards_vector),
-            /*log_action_probs=*/torch::stack(episode_log_probs_vector),
-            /*state_values=*/torch::stack(episode_values_vector),
-            /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
-            gae_hyperparameter, entropy_coefficient);
-
-        // In synchronous A2C one would now call agent->update_parameters().
-        // However, in A3C we manually compute the gradients, keep them without
-        // updating the worker agent, and use them to update the global agent
-        // boss.
-        actor_loss.backward();
-        critic_loss.backward();
-
-        // Truly asynchronous is  Hogwild-style with allowed races.
-        // Multiple workes could theoretically call load gradients before the
-        // update.
-        // Update parameters assuming gradients are loaded uses the inner mutex
-        // from agent boss, so no need to apply the global mutex here either.
-        agent_boss->load_gradients(*agent);
-        agent_boss->update_parameters_assuming_gradients_are_loaded();
-        {
-          std::lock_guard lock(*global_mutex);
-          global_async_step += update_step;
-          global_max_reward = std::max(global_max_reward, total_worker_reward);
-          updateProgress(
-              global_async_step, a3c_max_async_steps,
-              " | Reward: " + std::to_string(total_worker_reward) +
-                  "Global Max: " + std::to_string(global_max_reward));
+      } catch (const std::exception &error) {
+        // No need to lock global mutex because global_async_step is only
+        // accessed for rough diagnostics, it doesn't have to be exact.
+        std::cerr << "Step: " << global_async_step << ": " << error.what()
+                  << std::endl;
+        if (params["stop_training_on_error"] == "true") {
+          interrupted = 1;
         }
       }
     }));
@@ -208,6 +220,10 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     for (auto [key, value] : params) {
       std::cout << "  " << key << ": " << value << std::endl;
     }
+  }
+  if (params["print_diagnostics"] == "true") {
+    agent->check_params();
+    return {};
   }
 
   // Default values
@@ -242,7 +258,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
-      std::cout << "Caught Ctrl+C Interruption in A2c training." << std::endl;
       break;
     }
     try {
@@ -261,6 +276,8 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
         if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in A2C training."
+                    << std::endl;
           break;
         }
 
@@ -304,8 +321,9 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
               std::to_string(total_episode_reward)
 
       );
-    } catch (const std::exception &e) {
-      std::cerr << "\nEpisode " << episode_idx << ": " << e.what() << std::endl;
+    } catch (const std::exception &error) {
+      std::cerr << "Episode " << episode_idx << ": " << error.what()
+                << std::endl;
       if (params["stop_training_on_error"] == "true") {
         interrupted = 1;
         break;

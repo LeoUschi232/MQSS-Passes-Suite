@@ -74,6 +74,9 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
 
+  /// Diagnostics
+  void check_params(double big = 1e6, double tiny = 1e-12) const;
+
   //////////////////////////////////////////////////////////////////////////////
   /// A2C standard methods
   std::pair<torch::Tensor, torch::Tensor>

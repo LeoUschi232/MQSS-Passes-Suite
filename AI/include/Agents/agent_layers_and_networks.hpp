@@ -29,7 +29,7 @@ class WeightNormConv1dImpl final : public Module {
   const bool keepDims = true;
 
   /// Extra Parameters
-  const double epsilon = 1e-12;
+  const double epsilon = 1e-8;
 
 public:
   WeightNormConv1dImpl(int32_t in_channels, int32_t out_channels,

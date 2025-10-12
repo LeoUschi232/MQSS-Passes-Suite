@@ -307,7 +307,7 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
       } else if (value == 1.0) {
         targetIndexes.push_back(j);
       } else if (value != 0.0) {
-        throw std::runtime_error("Control trigger: " + std::to_string(value));
+        throw std::runtime_error("Qubit trigger: " + std::to_string(value));
       }
     }
     // Skip unused qubits.
@@ -374,6 +374,64 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
   }
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner), nr_qubits,
           nr_gates, get_max_depth(depths)};
+}
+
+void check_tensor(const InstructionsTensor<double> &tensor) {
+  const unsigned N = tensor.shape[0];
+  const unsigned IRS = tensor.shape[1];
+  if (IRS < MIN_IRS) {
+    std::cerr << "Warning: tensor has IRS smaller than minimum IRS."
+              << std::endl;
+    return;
+  }
+  const unsigned int max_qubits = IRS - NR_GATES - MAX_GATE_PARAMS;
+  const unsigned int nr_qubits = nrUsedQubitsInTensor(tensor);
+
+  for (unsigned int instr = 0u; instr < N; instr++) {
+    unsigned int j = 0u;
+    bool tagrets_empty = true;
+    for (; j < nr_qubits; j++) {
+      if (double value = tensor(instr, j);
+          std::abs(value) != 1.0 && value != 0.0) {
+        std::cerr << "Qubit trigger: " << value << std::endl;
+      } else if (value == 1.0) {
+        tagrets_empty = false;
+      }
+    }
+    j = max_qubits;
+    if (tagrets_empty) {
+      std::cerr << "Tensor without targets." << std::endl;
+    }
+
+    int gateIndex = -1;
+    for (; j < max_qubits + NR_GATES; j++) {
+      if (double value = tensor(instr, j);
+          std::abs(value) != 1.0 && value != 0.0) {
+        std::cerr << "Gate trigger: " << value << std::endl;
+      } else if (std::abs(value) == 1.0) {
+        if (gateIndex >= 0) {
+          std::cerr << "Multiple gates triggered in one row." << std::endl;
+        }
+        gateIndex = j - max_qubits;
+      }
+    }
+    if (gateIndex < 0) {
+      std::cerr << "Tensor without gate." << std::endl;
+    }
+
+    std::vector<double> angles;
+    for (; j < IRS; j++) {
+      if (double angle = tensor(instr, j);
+          !std::isfinite(angle) || angle < -TWO_PI || angle > TWO_PI) {
+        std::cerr << "Gate angle: " << angle << std::endl;
+      } else {
+        angles.push_back(angle);
+      }
+    }
+    if (angles.size() != MAX_GATE_PARAMS) {
+      std::cerr << "Nr gate angles: " << angles.size() << std::endl;
+    }
+  }
 }
 
 } // namespace ai_pass_selector

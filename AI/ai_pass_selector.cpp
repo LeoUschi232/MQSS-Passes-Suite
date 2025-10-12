@@ -154,5 +154,6 @@ std::unordered_map<std::string, std::string> load_default_params() {
           {"sac_alpha", "0.1"},
           {"print_param_info", "true"},
           {"save_agent_at_end_of_training", "true"},
-          {"stop_training_on_error", "false"}};
+          {"stop_training_on_error", "true"},
+          {"print_diagnostics", "true"}};
 }

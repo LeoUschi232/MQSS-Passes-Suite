@@ -413,4 +413,44 @@ void BaseA3CAgent::load_model() {
   torch::load(this->actor, actor_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
 }
+
+void BaseA3CAgent::check_params(double big, double tiny) const {
+  auto check = [&](const char *tag, const torch::nn::Sequential &network) {
+    size_t total = 0, bad = 0;
+    for (auto &keyvalue : network->named_parameters(/*recurse=*/true)) {
+      const std::string &name = keyvalue.key();
+      const torch::Tensor &value = keyvalue.value();
+      total += value.numel();
+      bool has_nan = value.isnan().any().item<bool>();
+      bool has_inf = value.isinf().any().item<bool>();
+      double abs_max = value.abs().max().item<double>();
+      double abs_min_not_zero = 0.0;
+      {
+        torch::Tensor abs_value = value.abs();
+        torch::Tensor flat = abs_value.view({-1});
+        if (torch::Tensor non_zero = flat.index({flat.gt(0)});
+            non_zero.numel() > 0) {
+          abs_min_not_zero = non_zero.min().item<double>();
+        }
+      }
+      if (has_nan || has_inf || abs_max > big ||
+          (abs_min_not_zero > 0.0 && abs_min_not_zero < tiny)) {
+        ++bad;
+        std::cout << "[PARAM] " << tag << "." << name << " nan=" << has_nan
+                  << " inf=" << has_inf << " abs_max=" << abs_max
+                  << " abs_min_not_zero=" << abs_min_not_zero
+                  << " shape=" << value.sizes() << "\n";
+      }
+    }
+    std::cout << "[SUMMARY] " << tag << " total_params=" << total
+              << " suspicious=" << bad << "\n";
+  };
+  if (this->actor) {
+    check("actor", this->actor);
+  }
+  if (this->critic) {
+    check("critic", this->critic);
+  }
+}
+
 } // namespace ai_pass_selector
