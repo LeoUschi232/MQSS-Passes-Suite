@@ -77,14 +77,14 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   /// A2C standard methods
   std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &batched_observations);
+  forward(const torch::Tensor &observation);
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &batched_observations);
+  torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *

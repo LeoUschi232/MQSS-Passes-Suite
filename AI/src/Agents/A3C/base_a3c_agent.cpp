@@ -221,17 +221,17 @@ void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::forward(const torch::Tensor &batched_observations) {
-  torch::Tensor x = batched_observations.to(this->device).to(torch::kFloat32);
+BaseA3CAgent::forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
   // Do NOT reshape/flatten here.
   // Let the models handle shapes.
   return {this->actor->forward(x), this->critic->forward(x)};
 }
 
 torch::Tensor
-BaseA3CAgent::get_value(const torch::Tensor &batched_observations) {
+BaseA3CAgent::get_value(const torch::Tensor &observation) {
   return this->critic->forward(
-      batched_observations.to(this->device).to(torch::kFloat32));
+      observation.to(this->device).to(torch::kFloat32));
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
