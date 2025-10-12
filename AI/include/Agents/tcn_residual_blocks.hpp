@@ -1,5 +1,5 @@
-#ifndef TCN_HPP
-#define TCN_HPP
+#ifndef TCN_RESIDUAL_BLOCK_HPP
+#define TCN_RESIDUAL_BLOCK_HPP
 
 // Torch includes
 #include "agent_layers_and_networks.hpp"
@@ -38,4 +38,4 @@ public:
 };
 } // namespace ai_pass_selector
 
-#endif // TCN_HPP
+#endif // TCN_RESIDUAL_BLOCK_HPP
