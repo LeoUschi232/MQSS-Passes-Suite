@@ -377,6 +377,8 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
 }
 
 void check_tensor(const InstructionsTensor<double> &tensor) {
+  std::cout << "Called: check_tensor(const InstructionsTensor<double> &tensor)."
+            << std::endl;
   const unsigned N = tensor.shape[0];
   const unsigned IRS = tensor.shape[1];
   if (IRS < MIN_IRS) {

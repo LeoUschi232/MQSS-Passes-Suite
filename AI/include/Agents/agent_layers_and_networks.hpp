@@ -62,12 +62,10 @@ public:
     // leaving dimension 0, so C_out alone.
     // keepdims=true: Keep reduced dimensions with size 1, so g can broadcast
     // back to [C_out, C_in, K].
-    return conv1d(input,
-                  weight_g * weight_v /
-                      (weight_v.norm(/*p=*/this->normL2, /*dim=*/this->normDims,
-                                     /*keepdim=*/this->keepDims) +
-                       epsilon),
-                  this->bias, this->stride, this->padding, this->dilation);
+    auto the_norm = weight_v.norm(/*p=*/this->normL2, /*dim=*/this->normDims,
+                                  /*keepdim=*/this->keepDims);
+    return conv1d(input, weight_g * weight_v / (the_norm + epsilon), this->bias,
+                  this->stride, this->padding, this->dilation);
   }
 };
 
@@ -103,6 +101,49 @@ inline Functional Transpose(int32_t dim0, int32_t dim1) {
   return Functional(
       [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
 }
+
+/**
+ * Check for NaN and Inf values in the tensor.
+ * If any are found, print the stage name, min and max values.
+ * @param stage_name Name of the stage to identify where the values might be inf
+ * or nan.
+ * @return
+ */
+inline Functional FiniteCheck(std::string stage_name) {
+  return Functional([name = std::move(stage_name)](const Tensor &tensor) {
+    if (const bool has_inf = tensor.isinf().any().item<bool>(),
+        has_nan = tensor.isnan().any().item<bool>();
+        has_nan || has_inf) {
+      const double min_val = tensor.amin().item<double>();
+      const double max_val = tensor.amax().item<double>();
+      std::cerr << "[FiniteCheck] " << name << " nan=" << has_nan
+                << " inf=" << has_inf << " min=" << min_val
+                << " max=" << max_val << "\n";
+    }
+    return tensor;
+  });
+}
+
+/**
+ *
+ * @param stage_name
+ * @return
+ */
+inline Functional ShapeProbe(std::string stage_name) {
+  return Functional([name = std::move(stage_name)](const Tensor &x) {
+    std::ostringstream oss;
+    oss << "[ShapeProbe] " << name << " sizes=[";
+    for (size_t i = 0; i < x.sizes().size(); ++i) {
+      oss << x.sizes()[i] << (i + 1 < x.sizes().size() ? "," : "");
+    }
+    oss << "] min=" << x.amin().item<double>()
+       << " max=" << x.amax().item<double>()
+       << " finite=" << x.isfinite().all().item<bool>() << "\n";
+    std::cerr << oss.str();
+    return x;
+  });
+}
+
 } // namespace torch::nn
 
 #endif // AGENT_LAYERS_AND_NETWORKS_HPP
