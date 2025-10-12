@@ -374,14 +374,14 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
   if (!this->circuit.exists() || this->truncated) {
     // Changed to exclude this->truncated so that for truncated episodes, we
     // return the actual observation for bootstrapping.
-    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0);
+    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
     return observation;
   }
   const unsigned int nr_gates = this->circuit.get_nr_gates();
   const unsigned int nr_qubits = this->circuit.get_nr_qubits();
   if (nr_gates < GLOBAL_MIN_NR_GATES || nr_qubits < GLOBAL_MIN_NR_QUBITS) {
     // Any valid normal circuit should have at least 2 instructions.
-    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0);
+    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
     return observation;
   }
   observation.reserve(nr_gates);
@@ -401,38 +401,41 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
     }
     std::vector<int> controls = {};
     std::vector<int> targets = {};
-    std::vector params(MAX_GATE_PARAMS, 0.0);
+    std::vector float_params(MAX_GATE_PARAMS, 0.0f);
     bool isAdj = false;
 
     if (isMeasurement(op)) {
       targets = getMeasurementTargets(op, nr_qubits);
     } else {
-      std::tie(controls, targets, params, isAdj) =
+      std::vector double_params(MAX_GATE_PARAMS, 0.0);
+      std::tie(controls, targets, double_params, isAdj) =
           getOperatingControlsTargetsParams(op);
+      for (unsigned i = 0u; i < MAX_GATE_PARAMS; i++) {
+        float_params[i] = static_cast<float>(double_params[i]);
+      }
     }
-
-    std::vector features(observation.shape[1], 0.0);
+    std::vector features(observation.shape[1], 0.0f);
 
     // Controls
     for (int qubit : controls) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        features[qubit] = -1.0;
+        features[qubit] = -1.0f;
       }
     }
 
     // Targets
     for (int qubit : targets) {
       if (0 <= qubit && qubit < MAX_QUBITS) {
-        features[qubit] = 1.0;
+        features[qubit] = 1.0f;
       }
     }
 
     // Gate
-    features[GATE_OFFSET + gate_index] = isAdj ? -1.0 : 1.0;
+    features[GATE_OFFSET + gate_index] = isAdj ? -1.0f : 1.0f;
 
     // params: [angle1, angle2, angle3]
     for (int i = 0; i < MAX_GATE_PARAMS; i++) {
-      features[PARAM_OFFSET + i] = params[i];
+      features[PARAM_OFFSET + i] = float_params[i];
     }
     observation.append(features);
     instruction_index++;

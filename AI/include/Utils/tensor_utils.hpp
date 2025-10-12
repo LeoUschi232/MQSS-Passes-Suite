@@ -96,7 +96,7 @@ Operation *findReturn(ModuleOp module);
  * @return
  */
 std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
-                                  llvm::ArrayRef<double> angles);
+                                  llvm::ArrayRef<float> angles);
 
 /**
  *
@@ -119,7 +119,7 @@ static void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
 void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
                 const std::vector<int> &targetIndexes,
                 const std::vector<int> &controlIndexes = {},
-                const std::vector<double> &angles = {}, bool isAdj = false);
+                const std::vector<float> &angles = {}, bool isAdj = false);
 
 /**
  * Count which qubits are actually used in the instruction-based circuit tensor.

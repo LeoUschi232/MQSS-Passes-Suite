@@ -64,10 +64,10 @@ Operation *findReturn(ModuleOp module) {
 }
 
 std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
-                                  const std::vector<double> &angles) {
+                                  const std::vector<float> &angles) {
   std::vector<Value> vals;
   vals.reserve(angles.size());
-  for (double angle : angles) {
+  for (float angle : angles) {
     vals.push_back(createFloatValue(builder, loc, angle));
   }
   return vals;
@@ -151,7 +151,7 @@ void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
 void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
                 const std::vector<int> &targetIndexes,
                 const std::vector<int> &controlIndexes,
-                const std::vector<double> &angles, bool isAdj) {
+                const std::vector<float> &angles, bool isAdj) {
   // HOLD the storage for the whole iteration.
   std::vector<Value> controlVals = rebuildSetup.getRefs(controlIndexes);
   std::vector<Value> targetVals = rebuildSetup.getRefs(targetIndexes);
@@ -269,11 +269,11 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<float> &tensor) {
   unsigned int max_used_qubit_index = 0;
   for (unsigned int instr = 0; instr < nr_instructions; instr++) {
     for (unsigned int j = 0; j < max_qubits; j++) {
-      if (double value = tensor(instr, j); value == -1.0) {
+      if (float value = tensor(instr, j); value == -1.0f) {
         max_used_qubit_index = std::max(max_used_qubit_index, j);
-      } else if (value == 1.0) {
+      } else if (value == 1.0f) {
         max_used_qubit_index = std::max(max_used_qubit_index, j);
-      } else if (value != 0.0) {
+      } else if (value != 0.0f) {
         throw std::runtime_error("Control trigger: " + std::to_string(value));
       }
     }
@@ -302,11 +302,11 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
     std::vector<int> controlIndexes, targetIndexes;
     unsigned int j = 0u;
     for (; j < nr_qubits; j++) {
-      if (double value = tensor(instr, j); value == -1.0) {
+      if (float value = tensor(instr, j); value == -1.0f) {
         controlIndexes.push_back(j);
-      } else if (value == 1.0) {
+      } else if (value == 1.0f) {
         targetIndexes.push_back(j);
-      } else if (value != 0.0) {
+      } else if (value != 0.0f) {
         throw std::runtime_error("Qubit trigger: " + std::to_string(value));
       }
     }
@@ -327,15 +327,15 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
     int gateIndex = -1;
     bool isAdj = false;
     for (; j < max_qubits + NR_GATES; j++) {
-      if (double value = tensor(instr, j); std::abs(value) == 1.0) {
+      if (float value = tensor(instr, j); std::abs(value) == 1.0f) {
         if (gateIndex >= 0) {
           throw std::runtime_error("Multiple gates triggered in one row.");
         }
         gateIndex = j - max_qubits;
-        if (value < 0.0) {
+        if (value < 0.0f) {
           isAdj = true;
         }
-      } else if (value != 0.0) {
+      } else if (value != 0.0f) {
         throw std::runtime_error("Gate trigger: " + std::to_string(value));
       }
     }
@@ -349,7 +349,7 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
       break;
     }
 
-    std::vector<double> angles;
+    std::vector<float> angles;
     for (; j < IRS; j++) {
       angles.push_back(tensor(instr, j));
     }
@@ -393,10 +393,10 @@ void check_tensor(const InstructionsTensor<float> &tensor) {
     unsigned int j = 0u;
     bool tagrets_empty = true;
     for (; j < nr_qubits; j++) {
-      if (double value = tensor(instr, j);
-          std::abs(value) != 1.0 && value != 0.0) {
+      if (float value = tensor(instr, j);
+          std::abs(value) != 1.0f && value != 0.0f) {
         std::cerr << "Qubit trigger: " << value << std::endl;
-      } else if (value == 1.0) {
+      } else if (value == 1.0f) {
         tagrets_empty = false;
       }
     }
@@ -407,10 +407,10 @@ void check_tensor(const InstructionsTensor<float> &tensor) {
 
     int gateIndex = -1;
     for (; j < max_qubits + NR_GATES; j++) {
-      if (double value = tensor(instr, j);
-          std::abs(value) != 1.0 && value != 0.0) {
+      if (float value = tensor(instr, j);
+          std::abs(value) != 1.0f && value != 0.0f) {
         std::cerr << "Gate trigger: " << value << std::endl;
-      } else if (std::abs(value) == 1.0) {
+      } else if (std::abs(value) == 1.0f) {
         if (gateIndex >= 0) {
           std::cerr << "Multiple gates triggered in one row." << std::endl;
         }
@@ -421,10 +421,11 @@ void check_tensor(const InstructionsTensor<float> &tensor) {
       std::cerr << "Tensor without gate." << std::endl;
     }
 
-    std::vector<double> angles;
+    std::vector<float> angles;
     for (; j < IRS; j++) {
-      if (double angle = tensor(instr, j);
-          !std::isfinite(angle) || angle < -TWO_PI || angle > TWO_PI) {
+      if (float angle = tensor(instr, j); !std::isfinite(angle) ||
+                                          angle < -TWO_PI_FLOAT ||
+                                          angle > TWO_PI_FLOAT) {
         std::cerr << "Gate angle: " << angle << std::endl;
       } else {
         angles.push_back(angle);
