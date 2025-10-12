@@ -13,34 +13,21 @@
 #include <utility>
 
 namespace ai_pass_selector {
+extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
 
-BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits,
-                           std::unordered_map<std::string, std::string> params,
-                           bool is_boss)
+BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits, bool is_boss)
     : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)), is_boss(is_boss) {
-  this->configure(std::move(params));
-}
-
-void BaseA3CAgent::configure(
-    std::unordered_map<std::string, std::string> params) {
-  if (this->is_boss) {
-    this->params_for_cloning = {
-        {"device", params["device"]},
-        {"actor_optimizer", params["actor_optimizer"]},
-        {"critic_optimizer", params["critic_optimizer"]},
-        {"actor_learning_rate", params["actor_learning_rate"]},
-        {"critic_learning_rate", params["critic_learning_rate"]}};
-  }
-  this->device = (params["device"] == "cuda" || params["device"] == "gpu") &&
-                         torch::cuda::is_available()
-                     ? torch::kCUDA
-                     : torch::kCPU;
-  this->actor_learning_rate = std::stod(params["actor_learning_rate"]);
-  this->critic_learning_rate = std::stod(params["critic_learning_rate"]);
+  this->device =
+      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
+              torch::cuda::is_available()
+          ? torch::kCUDA
+          : torch::kCPU;
+  this->actor_learning_rate = std::stod(GLOBAL_PARAMS["actor_learning_rate"]);
+  this->critic_learning_rate = std::stod(GLOBAL_PARAMS["critic_learning_rate"]);
   this->actor_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["actor_optimizer"]);
+      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["actor_optimizer"]);
   this->critic_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(params["critic_optimizer"]);
+      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["critic_optimizer"]);
 }
 
 bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
@@ -85,9 +72,9 @@ void BaseA3CAgent::zero_grad() {
   this->gradients_zero = true;
 }
 
-void BaseA3CAgent::load_params(BaseA3CAgent &other) {
+void BaseA3CAgent::load_weights(BaseA3CAgent &other) {
   if (this->is_boss || !other.is_boss) {
-    std::cerr << "Loading params only from boss to worker allowed."
+    std::cerr << "Loading weights only from boss to worker allowed."
               << std::endl;
     return;
   }

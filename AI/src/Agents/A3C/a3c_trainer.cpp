@@ -103,7 +103,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           agent->zero_grad();
           // Load params uses the inner mutex from both agents, so no need to
           // apply the global mutex here.
-          agent->load_params(*agent_boss);
+          agent->load_weights(*agent_boss);
 
           std::vector<torch::Tensor> episode_log_probs_vector;
           std::vector<torch::Tensor> episode_values_vector;
@@ -223,7 +223,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   }
   if (params["print_diagnostics"] == "true") {
     agent->check_params();
-    return {};
   }
 
   // Default values

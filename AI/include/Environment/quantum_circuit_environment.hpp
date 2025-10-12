@@ -83,9 +83,7 @@ public:
   QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
                             const fs::path &circuit_path = "");
 
-  QuantumCircuitEnvironment(
-      unsigned int max_qubits,
-      std::unordered_map<std::string, std::string> params);
+  explicit QuantumCircuitEnvironment(unsigned int max_qubits);
 
   /// Destructor
   ~QuantumCircuitEnvironment() = default;

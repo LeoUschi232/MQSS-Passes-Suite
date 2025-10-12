@@ -40,15 +40,7 @@ protected:
 
 public:
   /// Constructors
-  BaseA3CAgent(unsigned int max_qubits,
-               std::unordered_map<std::string, std::string> params,
-               bool is_boss = true);
-
-  /**
-   *
-   * @param params
-   */
-  void configure(std::unordered_map<std::string, std::string> params);
+  explicit BaseA3CAgent(unsigned int max_qubits, bool is_boss = true);
 
   /**
    *
@@ -136,7 +128,7 @@ public:
    */
   virtual std::unique_ptr<BaseA3CAgent> clone() const = 0;
 
-  void load_params(BaseA3CAgent &other);
+  void load_weights(BaseA3CAgent &other);
   void load_gradients(BaseA3CAgent &other);
   void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////
