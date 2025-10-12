@@ -1,8 +1,5 @@
 #include "Agents/A3C/a3c_trainer.hpp"
 
-// Environment includes
-#include "Environment/parallel_environments.hpp"
-
 // Agents includes
 #include "Agents/agent_utils.hpp"
 

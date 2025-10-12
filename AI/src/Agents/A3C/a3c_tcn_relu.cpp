@@ -1,12 +1,10 @@
 #include "Agents/A3C/a3c_agents.hpp"
 
 // Environment includes
-#include "Environment/parallel_environments.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
 #include "Agents/agent_layers_and_networks.hpp"
-#include "Agents/agent_utils.hpp"
 #include "Agents/tcn_full_network.hpp"
 
 // Utils includes

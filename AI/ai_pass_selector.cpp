@@ -133,7 +133,6 @@ void load_default_params() {
                    {"dataset", "mqtbench"},
                    {"circuit", ""},
                    {"output", ""},
-                   {"nr_parallel_environments", "1"},
                    {"nr_asynchronous_agents", "1"},
                    {"a3c_max_async_steps", "100000"},
                    {"nr_episodes", "100"},
