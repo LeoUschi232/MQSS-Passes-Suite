@@ -65,8 +65,8 @@ TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
                                                      unsigned int out_channels,
                                                      unsigned int kernel_size,
                                                      unsigned int dilation,
-                                                     double dropout,
-                                                     double prelu_init)
+                                                     double prelu_init,
+                                                     double dropout)
     : TCNResidualBlock(in_channels, out_channels, kernel_size, dilation) {
   // C_in = number of input channels
   // C_out = number of output channels

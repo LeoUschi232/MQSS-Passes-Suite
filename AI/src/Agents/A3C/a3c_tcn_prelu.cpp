@@ -4,8 +4,12 @@
 #include "Environment/parallel_environments.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 
-// Utils includes
+// Agents includes
+#include "Agents/agent_layers_and_networks.hpp"
 #include "Agents/agent_utils.hpp"
+#include "Agents/tcn_full_network.hpp"
+
+// Utils includes
 #include "Utils/passes_utils.hpp"
 
 // Standard library includes
@@ -19,11 +23,25 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(
     : BaseA3CAgent(max_qubits, std::move(params), is_boss) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
-  unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
-  unsigned int kernel_size = 5u;
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int inner_kernel_size = 5u;
+  constexpr unsigned int final_kernel_size = 1u;
+  constexpr double prelu_init = 0.1;
 
   // Ignore this for now.
-  auto actor = torch::nn::Sequential();
+  auto actor = torch::nn::Sequential(
+      torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+      TCNFullNetworkWithPReLU(IRS, nr_residual_blocks, inner_kernel_size,
+                              prelu_init), // -> [IRS, N]
+      torch::nn::Conv1d(torch::nn::Conv1dOptions(
+          IRS, NR_PASSES, final_kernel_size)), // -> [NR_PASSES, N]
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // -> [NR_PASSES, N]
+      torch::nn::AdaptiveAvgPool1d(1u),                // -> [NR_PASSES, 1]
+      torch::nn::Flatten(),                            // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                   // -> [NR_PASSES]
+  );
   auto critic = torch::nn::Sequential();
   this->initialize(actor, critic);
 }

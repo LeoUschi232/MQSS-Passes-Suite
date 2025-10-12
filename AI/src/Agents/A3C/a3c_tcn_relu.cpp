@@ -4,7 +4,7 @@
 #include "Environment/parallel_environments.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 
-// Utils includes
+// Agents includes
 #include "Agents/agent_layers_and_networks.hpp"
 #include "Agents/agent_utils.hpp"
 #include "Agents/tcn_full_network.hpp"
@@ -22,10 +22,10 @@ A3C_TCN_RELU::A3C_TCN_RELU(unsigned int max_qubits,
     : BaseA3CAgent(max_qubits, std::move(params), is_boss) {
   // Treat the nr of neurons for an instruction representation as the nr of
   // input channels in a single unit of the chain.
-  unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
-  unsigned int nr_residual_blocks = 12u;
-  unsigned int inner_kernel_size = 5u;
-  unsigned int final_kernel_size = 1u;
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int inner_kernel_size = 5u;
+  constexpr unsigned int final_kernel_size = 1u;
 
   // Instructions Tensor will have shape [N, IRS]
   // N = Nr of instructions in the quantum circuit

@@ -28,10 +28,12 @@ public:
   explicit TCNFullNetworkWithPReLU(unsigned int nr_channels,
                                    unsigned int nr_residual_blocks = 12u,
                                    unsigned int kernel_size = 5u,
+                                   double prelu_init = 0.1,
                                    double dropout = 0.2);
   explicit TCNFullNetworkWithPReLU(
       const std::vector<unsigned int> &nr_channels_per_layer,
-      unsigned int kernel_size = 5u, double dropout = 0.2);
+      unsigned int kernel_size = 5u, double prelu_init = 0.1,
+      double dropout = 0.2);
 };
 
 } // namespace ai_pass_selector

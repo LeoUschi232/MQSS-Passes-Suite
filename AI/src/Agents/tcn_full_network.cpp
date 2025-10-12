@@ -51,13 +51,13 @@ TCNFullNetworkWithReLU::TCNFullNetworkWithReLU(
 
 TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
     unsigned int nr_channels, unsigned int nr_residual_blocks,
-    unsigned int kernel_size, double dropout)
+    unsigned int kernel_size, double prelu_init, double dropout)
     : TCNFullNetwork(kernel_size) {
   this->network = torch::nn::Sequential();
   unsigned int dilation = 1u;
   for (unsigned i = 0u; i < nr_residual_blocks; i++) {
     this->network->push_back(TCNResidualBlockWithPReLU(
-        nr_channels, nr_channels, kernel_size, dilation, dropout));
+        nr_channels, nr_channels, kernel_size, dilation, prelu_init, dropout));
     dilation <<= 1u;
   }
   this->register_module("network", this->network);
@@ -65,14 +65,14 @@ TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
 
 TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
     const std::vector<unsigned int> &nr_channels_per_layer,
-    unsigned int kernel_size, double dropout)
+    unsigned int kernel_size, double prelu_init, double dropout)
     : TCNFullNetwork(kernel_size) {
   this->network = torch::nn::Sequential();
   unsigned int dilation = 1u;
   for (unsigned int i = 1u; i < nr_channels_per_layer.size(); i++) {
     this->network->push_back(TCNResidualBlockWithPReLU(
         nr_channels_per_layer[i - 1u], nr_channels_per_layer[i], kernel_size,
-        dilation, dropout));
+        dilation, prelu_init, dropout));
     dilation <<= 1u;
   }
   this->register_module("network", this->network);
