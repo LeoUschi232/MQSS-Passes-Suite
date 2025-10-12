@@ -15,6 +15,7 @@
 #include "Support/mlir_utils.hpp"
 #include "Utils/info_utils.hpp"
 #include "Utils/passes_utils.hpp"
+#include "Utils/tensor_utils.hpp"
 
 // Standard library includes
 #include <filesystem>
@@ -444,6 +445,7 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
   torch::TensorOptions options = tensor_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
   InstructionsTensor<double> observation = this->get_observation();
+  check_tensor(observation);
   unsigned int N = observation.shape[0];
   unsigned int IRS = observation.shape[1];
   if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
