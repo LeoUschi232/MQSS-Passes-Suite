@@ -34,7 +34,6 @@ protected:
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
   /// A3C specific attributes
-  std::unordered_map<std::string, std::string> params_for_cloning = {};
   bool gradients_zero = true;
   bool is_boss = true;
 
