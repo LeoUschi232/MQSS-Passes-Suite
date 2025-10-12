@@ -162,7 +162,7 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
   return {targets, controls};
 }
 
-std::vector<double> makeAngles(int baseGate) {
+std::vector<float> makeAngles(int baseGate) {
   switch (baseGate) {
   case RX:
   case RY:
@@ -350,7 +350,7 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
     try {
       auto [targets, controls] = sample_distinct_targets_and_controls(
           nr_targets, nr_controls, nr_qubits);
-      std::vector<double> angles = makeAngles(baseGate);
+      std::vector<float> angles = makeAngles(baseGate);
       insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
 
       if (baseGate == MX || baseGate == MY || baseGate == MZ) {

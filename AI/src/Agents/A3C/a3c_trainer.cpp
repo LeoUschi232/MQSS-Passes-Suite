@@ -3,6 +3,10 @@
 // Agents includes
 #include "Agents/agent_utils.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+#include "Environment/statistics_for_rqcg.hpp"
+
 // Utils includes
 #include "Support/mlir_utils.hpp"
 #include "Utils/info_utils.hpp"
@@ -42,7 +46,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   // Default values
   unsigned int nr_asynchronous_agents =
       std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
-  unsigned int a3c_max_async_steps = std::stoul(GLOBAL_PARAMS["a3c_max_async_steps"]);
+  unsigned int a3c_max_async_steps =
+      std::stoul(GLOBAL_PARAMS["a3c_max_async_steps"]);
   unsigned int max_steps_per_episode =
       std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
   double discount_factor = std::stod(GLOBAL_PARAMS["discount_factor"]);

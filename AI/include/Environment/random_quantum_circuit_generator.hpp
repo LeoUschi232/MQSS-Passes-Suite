@@ -82,7 +82,7 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
  * @param baseGate
  * @return
  */
-std::vector<double> makeAngles(int baseGate);
+std::vector<float> makeAngles(int baseGate);
 
 /**
  *

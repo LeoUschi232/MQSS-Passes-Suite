@@ -26,8 +26,8 @@ inline double random01() {
   thread_local std::uniform_real_distribution dist01(0.0, 1.0);
   return dist01(qc_rng());
 }
-inline double randomAngle() {
-  thread_local std::uniform_real_distribution distAngle(0.0, 2.0 * PI);
+inline float randomAngle() {
+  thread_local std::uniform_real_distribution<float> distAngle(0.0, 2.0 * PI);
   return distAngle(qc_rng());
 }
 inline int randomInt(int start, int end) {
