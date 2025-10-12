@@ -28,10 +28,18 @@ train(const std::string &agent_name, const std::string &dataset,
             attributes.agent_class) {
     case A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
-      if (attributes.extras == "tcn") {
+      if (attributes.extras == "tcnrelu") {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits, params);
+      } else if (attributes.extras == "tcnprelu") {
+        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits, params);
+      } else if (attributes.extras == "lstmrelu") {
+        std::cerr << "A3C_LSTM_RELU not implemented yet: " << agent_name
+                  << std::endl;
+      } else if (attributes.extras == "lstmprelu") {
+        std::cerr << "A3C_LSTM_PRELU not implemented yet: " << agent_name
+                  << std::endl;
       } else {
-        std::cerr << "No such A3C agent yet: " << agent_name << std::endl;
+        std::cerr << "No such A3C agent: " << agent_name << std::endl;
         return {};
       }
       agent->load_model();
