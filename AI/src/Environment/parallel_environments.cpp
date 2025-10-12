@@ -169,7 +169,7 @@ ParallelEnvironments::get_batched_observations_and_mask() const {
   for (int64_t batch = 0; batch < B; batch++) {
     InstructionsTensor<float> instruction_tensor = observations[batch];
     unsigned int N = instruction_tensor.shape[0];
-    instruction_tensor.pad(maxN, 0.0);
+    instruction_tensor.pad(maxN, 0.0f);
     torch::Tensor tensor =
         torch::from_blob(instruction_tensor.raw(), {maxN, IRS}, options)
             .clone();
