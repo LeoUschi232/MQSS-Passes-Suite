@@ -86,11 +86,16 @@ void BaseA3CAgent::zero_grad() {
 }
 
 void BaseA3CAgent::load_params(BaseA3CAgent &other) {
-  // Most likely the self will be one of the worker agents and the other will
-  // be  the global boss agent.
+  if (this->is_boss || !other.is_boss) {
+    std::cerr << "Loading params only from boss to worker allowed."
+              << std::endl;
+    return;
+  }
   // Step: Synchronize thread-specific parameters θ'=θ and θv'=θv from
   // Mnih et al 2016.
-  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+  // Don't have to lock worker's mutex because that one is not going to be
+  // undergoing changes anyway.
+  std::scoped_lock lock(*other.model_mutex);
   torch::NoGradGuard no_grad_guard;
 
   // --- ACTOR ---
@@ -155,11 +160,16 @@ void BaseA3CAgent::load_params(BaseA3CAgent &other) {
   }
 }
 void BaseA3CAgent::load_gradients(BaseA3CAgent &other) {
-  // Most likely the self will be the global boss agent and the other will be
-  // one of the worker agents.
+  if (!this->is_boss || other.is_boss) {
+    std::cerr << "Loading gradients only from worker to boss allowed."
+              << std::endl;
+    return;
+  }
   // Step: Perform asynchronous update of θ using dθ and of θv using dθv from
   // Mnih et al 2016.
-  std::scoped_lock lock(*this->model_mutex, *other.model_mutex);
+  // Don't have to lock worker's mutex because that one is not going to be
+  // undergoing changes anyway.
+  std::scoped_lock lock(*this->model_mutex);
 
   // --- ACTOR ---
   torch::OrderedDict<std::string, torch::Tensor> source_actor_params =
@@ -228,8 +238,7 @@ BaseA3CAgent::forward(const torch::Tensor &observation) {
   return {this->actor->forward(x), this->critic->forward(x)};
 }
 
-torch::Tensor
-BaseA3CAgent::get_value(const torch::Tensor &observation) {
+torch::Tensor BaseA3CAgent::get_value(const torch::Tensor &observation) {
   return this->critic->forward(
       observation.to(this->device).to(torch::kFloat32));
 }

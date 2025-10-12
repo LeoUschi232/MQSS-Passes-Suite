@@ -77,6 +77,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
   std::vector<std::future<void>> futures;
   futures.reserve(nr_asynchronous_agents);
+  std::signal(SIGINT, signal_handler);
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
     futures.emplace_back(std::async(std::launch::async, [&] {
       QuantumCircuitEnvironment environment(max_qubits, params);
@@ -95,7 +96,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           }
         }
         if (interrupted) {
-          std::cout << "\nCaught Ctrl+C Interruption in A3C training."
+          std::cout << "Caught Ctrl+C Interruption in A3C training."
                     << std::endl;
           break;
         }
@@ -119,6 +120,9 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         bool add_bootstrap = false;
         for (update_step = 0u; update_step < max_steps_per_episode;
              update_step++) {
+          if (interrupted) {
+            break;
+          }
 
           auto [action, log_action_probs, state_values, step_entropy] =
               agent->select_action(
@@ -237,7 +241,7 @@ train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
-      std::cout << "\nCaught Ctrl+C Interruption in A2c training." << std::endl;
+      std::cout << "Caught Ctrl+C Interruption in A2c training." << std::endl;
       break;
     }
     try {
@@ -255,6 +259,9 @@ train_a2c(std::unique_ptr<BaseA3CAgent> agent, const std::string &dataset,
       bool add_bootstrap = false;
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
+        if (interrupted) {
+          break;
+        }
 
         auto [action, log_action_probs, state_values, step_entropy] =
             agent->select_action(environment.get_observation_as_torch_tensor());

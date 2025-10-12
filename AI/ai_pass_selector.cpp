@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 }
 
 std::unordered_map<std::string, std::string> load_default_params() {
-  return {{"agent", "a3c-mq130-conv2"},
+  return {{"agent", "a3c-mq130-tcnrelu"},
           {"dataset", "mqtbench"},
           {"circuit", ""},
           {"output", ""},

@@ -26,6 +26,7 @@ TCNResidualBlock::TCNResidualBlock(unsigned int in_channels,
   this->register_module("weight_norm_conv2", this->weight_norm_conv2);
   if (this->downsample) {
     this->register_module("downsample", downsample);
+    torch::NoGradGuard _;
     (void)this->downsample->weight.normal_(0, 0.01);
   }
 }

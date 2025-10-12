@@ -50,6 +50,7 @@ public:
   }
 
   void init_weights() const {
+    NoGradGuard _;
     (void)this->weight_v.normal_(0, 0.01);
     (void)this->weight_g.fill_(1);
   }
