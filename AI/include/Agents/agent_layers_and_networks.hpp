@@ -25,7 +25,7 @@ class WeightNormConv1dImpl final : public Module {
   // Constant parameters
   const int32_t stride = 1;
   const int32_t normL2 = 2;
-  const ArrayRef<int64_t> normDims = {1, 2};
+  const std::array<int64_t, 2> normDims = {1, 2};
   const bool keepDims = true;
 
   /// Extra Parameters
@@ -71,23 +71,6 @@ public:
 };
 
 TORCH_MODULE(WeightNormConv1d);
-
-/**
- * Nonlinearity modReLU from the paper Tunable Efficient Unitary Neural Networks
- * (EUNN) and their application to RNNs.
- */
-class ModReLUImpl final : public Module {
-  Tensor bias;
-
-public:
-  explicit ModReLUImpl(int32_t num_features) {
-    bias = register_parameter("bias", zeros({num_features}));
-  }
-  Tensor forward(const Tensor &z) const {
-    return sign(z) * relu(abs(z) + bias);
-  }
-};
-TORCH_MODULE(ModReLU);
 
 /**
  * Instruction tensor will have shape [N, IRS]

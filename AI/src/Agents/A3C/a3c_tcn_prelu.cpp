@@ -21,8 +21,6 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(
   // input channels in a single unit of the chain.
   unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   unsigned int kernel_size = 5u;
-  unsigned int padding = 2u;
-  unsigned int stride = 1u;
 
   // Ignore this for now.
   auto actor = torch::nn::Sequential();

@@ -32,8 +32,7 @@ class TCNResidualBlockWithPReLU final : public TCNResidualBlock {
 public:
   TCNResidualBlockWithPReLU(unsigned int in_channels, unsigned int out_channels,
                             unsigned int kernel_size, unsigned int dilation,
-                            double dropout = 0.2,
-                            double final_prelu_init = 0.1);
+                            double dropout = 0.2, double prelu_init = 0.1);
   torch::Tensor forward(const torch::Tensor &x);
 };
 } // namespace ai_pass_selector

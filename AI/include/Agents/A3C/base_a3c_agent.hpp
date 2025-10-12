@@ -88,11 +88,11 @@ public:
 
   /**
    *
-   * @param batched_observations
+   * @param observation
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &batched_observations);
+  select_action(const torch::Tensor &observation);
 
   /**
    * No termination masks because A3C uses asynchronous worker agents, each of

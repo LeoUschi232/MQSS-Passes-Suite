@@ -235,8 +235,8 @@ BaseA3CAgent::get_value(const torch::Tensor &batched_observations) {
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
-  auto [action_probs, state_values] = this->forward(batched_observations);
+BaseA3CAgent::select_action(const torch::Tensor &observation) {
+  auto [action_probs, state_values] = this->forward(observation);
 
   if (action_probs.lt(0).any().item<bool>()) {
     std::cerr << "Error: action_probs contains negative values: "
@@ -256,9 +256,9 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.
-  // action_probs ~ [B, NR_PASSES]
-  // X.multinomial(num_samples=1) ~ [B, 1]
-  // X.squeeze(dim=-1) ~ [B]
+  // action_probs ~ [NR_PASSES]
+  // X.multinomial(num_samples=1) ~ [1]
+  // X.squeeze(dim=-1) ~ 1
   const torch::Tensor action_indexes_unsqueezed =
       action_probs.multinomial(/*num_samples=*/1);
   const torch::Tensor action_indexes = action_indexes_unsqueezed.squeeze(-1);
@@ -267,24 +267,24 @@ BaseA3CAgent::select_action(const torch::Tensor &batched_observations) {
   // Gather extracts the values at specified indexes along the specified axis.
   // Parameter indexes must have the same nr of axes as the input tensor, here
   // each has 2 axes.
-  // log_action_probs ~ [B, NR_PASSES]
-  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [B, 1]
-  // X.squeeze(dim=-1) ~ [B]
+  // log_action_probs ~ [NR_PASSES]
+  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [1]
+  // X.squeeze(dim=-1) ~ 1
   const torch::Tensor log_action_probs = action_probs.log();
   const torch::Tensor squeezed_log_action_probs =
       log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_indexes_unsqueezed)
           .squeeze(-1);
 
   // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
-  // action_probs * log_action_probs ~ [B, NR_PASSES]
-  // -X.sum(dim=-1) ~ [B]
+  // action_probs * log_action_probs ~ [NR_PASSES]
+  // -X.sum(dim=-1) ~ [1]
   const torch::Tensor entropy =
       -(action_probs * log_action_probs).sum(/*dim=*/-1);
   return {
-      action_indexes,            // Shape [B]
-      squeezed_log_action_probs, // Shape [B]
-      state_values,              // Shape [B]
-      entropy                    // Shape [B]
+      action_indexes,            // Shape [1]
+      squeezed_log_action_probs, // Shape [1]
+      state_values,              // Shape [1]
+      entropy                    // Shape [1]
   };
 }
 
@@ -309,7 +309,7 @@ BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
   // the value function of a state based on the difference between the immediate
   // reward obtained from a current state and the estimated value of the next
   // state.
-  torch::Tensor A_gae = torch::zeros({1}, options);
+  torch::Tensor A_gae = torch::zeros({}, options);
   for (int t = T - 1; t >= 0; t--) {
 
     // Temporal Difference Error of V(s) with discount gamma is:

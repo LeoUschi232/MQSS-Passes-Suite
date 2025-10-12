@@ -66,7 +66,7 @@ TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
                                                      unsigned int kernel_size,
                                                      unsigned int dilation,
                                                      double dropout,
-                                                     double final_prelu_init)
+                                                     double prelu_init)
     : TCNResidualBlock(in_channels, out_channels, kernel_size, dilation) {
   // C_in = number of input channels
   // C_out = number of output channels
@@ -76,17 +76,17 @@ TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
   this->convolutional_block = torch::nn::Sequential(
       this->weight_norm_conv1, // -> [C_out, N]
       torch::nn::PReLU(
-          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [C_out, N]
+          torch::nn::PReLUOptions().init(prelu_init)), // -> [C_out, N]
       torch::nn::Dropout(
           torch::nn::DropoutOptions().p(dropout)), // -> [C_out, N]
       this->weight_norm_conv2,                     // -> [C_out, N]
       torch::nn::PReLU(
-          torch::nn::PReLUOptions().init(final_prelu_init)), // -> [C_out, N]
+          torch::nn::PReLUOptions().init(prelu_init)), // -> [C_out, N]
       torch::nn::Dropout(
           torch::nn::DropoutOptions().p(dropout)) // -> [C_out, N]
   );
   this->final_prelu =
-      torch::nn::PReLU(torch::nn::PReLUOptions().init(final_prelu_init));
+      torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init));
   this->register_module("convolutional_block", convolutional_block);
   this->register_module("final_prelu", final_prelu);
 }

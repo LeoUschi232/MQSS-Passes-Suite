@@ -29,7 +29,7 @@ TCNFullNetworkWithReLU::TCNFullNetworkWithReLU(unsigned int nr_channels,
   for (unsigned i = 0u; i < nr_residual_blocks; i++) {
     this->network->push_back(TCNResidualBlockWithReLU(
         nr_channels, nr_channels, kernel_size, dilation, dropout));
-    dilation <<= 2u;
+    dilation <<= 1u;
   }
   this->register_module("network", this->network);
 }
@@ -44,7 +44,7 @@ TCNFullNetworkWithReLU::TCNFullNetworkWithReLU(
     this->network->push_back(TCNResidualBlockWithReLU(
         nr_channels_per_layer[i - 1u], nr_channels_per_layer[i], kernel_size,
         dilation, dropout));
-    dilation <<= 2u;
+    dilation <<= 1u;
   }
   this->register_module("network", this->network);
 }
@@ -58,7 +58,7 @@ TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
   for (unsigned i = 0u; i < nr_residual_blocks; i++) {
     this->network->push_back(TCNResidualBlockWithPReLU(
         nr_channels, nr_channels, kernel_size, dilation, dropout));
-    dilation <<= 2u;
+    dilation <<= 1u;
   }
   this->register_module("network", this->network);
 }
@@ -73,7 +73,7 @@ TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
     this->network->push_back(TCNResidualBlockWithPReLU(
         nr_channels_per_layer[i - 1u], nr_channels_per_layer[i], kernel_size,
         dilation, dropout));
-    dilation <<= 2u;
+    dilation <<= 1u;
   }
   this->register_module("network", this->network);
 }
