@@ -40,8 +40,8 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     if (this->is_boss) {
       this->load_model();
     }
-    register_module("critic", this->critic);
-    register_module("actor", this->actor);
+    this->register_module("critic", this->critic);
+    this->register_module("actor", this->actor);
     this->critic->to(this->device);
     this->actor->to(this->device);
     if (this->is_boss) {

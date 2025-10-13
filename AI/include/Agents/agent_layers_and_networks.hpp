@@ -53,6 +53,7 @@ public:
     NoGradGuard _;
     (void)this->weight_v.normal_(0, 0.01);
     (void)this->weight_g.fill_(1);
+    (void)this->bias.zero_();
   }
 
   Tensor forward(const Tensor &input) {
@@ -62,10 +63,14 @@ public:
     // leaving dimension 0, so C_out alone.
     // keepdims=true: Keep reduced dimensions with size 1, so g can broadcast
     // back to [C_out, C_in, K].
-    auto the_norm = weight_v.norm(/*p=*/this->normL2, /*dim=*/this->normDims,
-                                  /*keepdim=*/this->keepDims);
-    return conv1d(input, weight_g * weight_v / (the_norm + epsilon), this->bias,
-                  this->stride, this->padding, this->dilation);
+    auto the_norm = this->weight_v
+                        .norm(/*p=*/this->normL2, /*dim=*/this->normDims,
+                              /*keepdim=*/this->keepDims)
+                        .clamp_min(this->epsilon);
+    // Autograd will backprop through the normalization and automatically
+    // produce the gradients for g and v exactly.
+    return conv1d(input, this->weight_g * (this->weight_v / the_norm),
+                  this->bias, this->stride, this->padding, this->dilation);
   }
 };
 
@@ -137,8 +142,8 @@ inline Functional ShapeProbe(std::string stage_name) {
       oss << x.sizes()[i] << (i + 1 < x.sizes().size() ? "," : "");
     }
     oss << "] min=" << x.amin().item<double>()
-       << " max=" << x.amax().item<double>()
-       << " finite=" << x.isfinite().all().item<bool>() << "\n";
+        << " max=" << x.amax().item<double>()
+        << " finite=" << x.isfinite().all().item<bool>() << "\n";
     std::cerr << oss.str();
     return x;
   });

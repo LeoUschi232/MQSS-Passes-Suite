@@ -163,12 +163,35 @@ This list is unordered regarding priority.
   RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
   demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
 
-
 ### 5. [Recurrent Neural Networks: Architectures and Applications](ResearchPapers/05_RecurrentNeuralNetworksArchitecturesAndApplications.pdf)
 
+- With the efficient, truncated update rule, error flows only through connections to output unit, and through fixed
+  self-connections within cell blocks. Error flow is truncated once it wants to leave memory cells or gate units.
+  Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates,
+  although the connections themselves are modifiable. That is why the trun cated LSTM algorithm is so efficient, despite
+  its ability to bridge very long time lags. __[Page XX]__
+- We always use online learning, as opposed to batch learning, and logistic sigmoids as activation functions. Initial
+  weights are chosen in the range $[−0.2,0.2]$, for the other experiments in $[−0.1,0.1]$. Training sequences are
+  generated randomly according to the various task descriptions. __[Page XX]__
+- LSTM based RNN architectures can obtain state of the art performance in a large vocabulary speech recognition system
+  with thousands of context dependent states. The proposed architectures modify the standard architecture of the LSTM
+  networks to make better use of the model parameters while addressing the computational efficiency problems of large
+  networks. __[Page XX]__
 - RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
   sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
   which can be processed offline. __[Page 55]__
+- One of the methods for training RNN is Backpropagation Through Time (BPTT), which is very similar to the
+  backpropagation algorithm because it is based on gradient descent and chain rule, but it has also chain rule through
+  time. BPTT was developed by several works. This algorithm is very solid in theory, however, it does not show the best
+  performance in practice. In BPTT, the loss is considered as a summation of loss functions at the previous time steps
+  until now. __[Page 56]__
+- The bidirectional LSTM includes two LSTM networks each of which processes the sequence from one direction. In other
+  words, there are two LSTM networks which are fed with the sequence in opposite orders. Experiments have shown that the
+  bidirectional LSTM outperforms the unidirectional LSTM. __[Page 66]__#
+- Sequence modeling aims at learning a probability distribution over sequences, by maximizing the log-likelihood of a
+  model given a set of training sequences. __[Page 72]__
+- Finite-sized RNNs with nonlinear activations are a rich family of models, capable of nearly arbitrary computation.
+  With sigmoidal activation functions they can simulate a universal Turing machine. __[Page 79]__
 - 
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
