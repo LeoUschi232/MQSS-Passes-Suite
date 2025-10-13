@@ -163,9 +163,6 @@ This list is unordered regarding priority.
   RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
   demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
 
-### 5. [Neural Networks for Sequences](ResearchPapers/05_NeuralNetworksForSequences.pdf)
-
--
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
