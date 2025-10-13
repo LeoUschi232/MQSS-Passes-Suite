@@ -164,6 +164,13 @@ This list is unordered regarding priority.
   demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
 
 
+### 5. [Recurrent Neural Networks: Architectures and Applications](ResearchPapers/05_RecurrentNeuralNetworksArchitecturesAndApplications.pdf)
+
+- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
+  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
+  which can be processed offline. __[Page 55]__
+- 
+
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
 - Batch Normalization takes a step towards reducing internal covariate shift, and in doing so dramatically accelerates
@@ -210,11 +217,5 @@ This list is unordered regarding priority.
   approximation to the geometry of the cost function in CNNs comparing to fully connected networks. Reducing the
   minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
   Adagrad converges much slower than others. __[Page 106]__
-
-### 7. [Recurrent Neural Networks: Architectures and Applications](ResearchPapers/07_RecurrentNeuralNetworksArchitecturesAndApplications.pdf)
-
-- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
-  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
-  which can be processed offline. __[Page 55]__
 
 ## Nothing
