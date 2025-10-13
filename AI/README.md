@@ -192,6 +192,11 @@ This list is unordered regarding priority.
   model given a set of training sequences. __[Page 72]__
 - Finite-sized RNNs with nonlinear activations are a rich family of models, capable of nearly arbitrary computation.
   With sigmoidal activation functions they can simulate a universal Turing machine. __[Page 79]__
+- For the intuition of the peephole connection consider a network which must learn to count objects and emit some
+  desired output when n objects have been seen. The network might learn to let some fixed amount of activation into the
+  internal state after each object is seen. This activation is trapped in the internal state by the constant error
+  carousel, and is incremented iteratively each time another object is seen. When the nth object is seen, the network
+  needs to know to let out content from the internal state so that it can affect the output. __[Page 94]__
 - 
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
