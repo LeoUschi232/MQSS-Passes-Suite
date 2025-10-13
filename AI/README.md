@@ -125,7 +125,52 @@ This list is unordered regarding priority.
   REDQ while maintaining the same sample efficiency by replacing its ensemble of critics with dropout. REDQ and DroQ
   represent the state-of-the-art in terms of sample efficiency in Deep RL for continuous control. __[Page 141]__
 
-### 4. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/04_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
+### 4. [RNN & LSTM for Sequences: Variants, Evaluations and Applications](ResearchPapers/04_RNNandLSTMforSequencesVariantsEvaluationsAndApplications.pdf)
+
+- With the efficient, truncated update rule, error flows only through connections to output unit, and through fixed
+  self-connections within cell blocks. Error flow is truncated once it wants to leave memory cells or gate units.
+  Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates,
+  although the connections themselves are modifiable. That is why the trun cated LSTM algorithm is so efficient, despite
+  its ability to bridge very long time lags. __[Page 12]__
+- We always use online learning, as opposed to batch learning, and logistic sigmoids as activation functions. Initial
+  weights are chosen in the range $[−0.2,0.2]$, for the other experiments in $[−0.1,0.1]$. Training sequences are
+  generated randomly according to the various task descriptions. __[Page 15]__
+- LSTM based RNN architectures can obtain state of the art performance in a large vocabulary speech recognition system
+  with thousands of context dependent states. The proposed architectures modify the standard architecture of the LSTM
+  networks to make better use of the model parameters while addressing the computational efficiency problems of large
+  networks. __[Page 46]__
+- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
+  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
+  which can be processed offline. __[Page 51]__
+- One of the methods for training RNN is Backpropagation Through Time (BPTT), which is very similar to the
+  backpropagation algorithm because it is based on gradient descent and chain rule, but it has also chain rule through
+  time. BPTT was developed by several works. This algorithm is very solid in theory, however, it does not show the best
+  performance in practice. In BPTT, the loss is considered as a summation of loss functions at the previous time steps
+  until now. __[Page 52]__
+- The bidirectional LSTM includes two LSTM networks each of which processes the sequence from one direction. In other
+  words, there are two LSTM networks which are fed with the sequence in opposite orders. Experiments have shown that the
+  bidirectional LSTM outperforms the unidirectional LSTM. __[Page 62]__
+- Sequence modeling aims at learning a probability distribution over sequences, by maximizing the log-likelihood of a
+  model given a set of training sequences. __[Page 68]__
+- Finite-sized RNNs with nonlinear activations are a rich family of models, capable of nearly arbitrary computation.
+  With sigmoidal activation functions they can simulate a universal Turing machine. __[Page 75]__
+- For the intuition of the peephole connection consider a network which must learn to count objects and emit some
+  desired output when n objects have been seen. The network might learn to let some fixed amount of activation into the
+  internal state after each object is seen. This activation is trapped in the internal state by the constant error
+  carousel, and is incremented iteratively each time another object is seen. When the nth object is seen, the network
+  needs to know to let out content from the internal state so that it can affect the output. __[Page 90]__
+- Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
+  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the
+  same. __[Page 116]__
+- Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
+  function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
+  bias threshold. __[Page 130]__
+- Efficient Unitary Neural Network (EUNN) whose computational cost is merely $\mathcal{O}(1)$ per parameter, which
+  is  $\mathcal{O}(\log(N)))$  more efficient than the other methods discussed. It significantly outperforms existing
+  RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
+  demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page 133]__
+
+### 5. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/04_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
 
 - Each layer can have a small kernel, for example `size=3`, but withxl dilation factors doubling at each
   layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
@@ -152,52 +197,7 @@ This list is unordered regarding priority.
   input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
   network to operate on a coarser scale than with a normal convolution. __[Page XX]__
-- Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
-  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the
-  same. __[Page XX]__
-- Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
-  function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
-  bias threshold. __[Page XX]__
-- Efficient Unitary Neural Network (EUNN) whose computational cost is merely $\mathcal{O}(1)$ per parameter, which
-  is  $\mathcal{O}(\log(N)))$  more efficient than the other methods discussed. It significantly outperforms existing
-  RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
-  demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
 
-### 5. [Recurrent Neural Networks: Architectures and Applications](ResearchPapers/05_RecurrentNeuralNetworksArchitecturesAndApplications.pdf)
-
-- With the efficient, truncated update rule, error flows only through connections to output unit, and through fixed
-  self-connections within cell blocks. Error flow is truncated once it wants to leave memory cells or gate units.
-  Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates,
-  although the connections themselves are modifiable. That is why the trun cated LSTM algorithm is so efficient, despite
-  its ability to bridge very long time lags. __[Page XX]__
-- We always use online learning, as opposed to batch learning, and logistic sigmoids as activation functions. Initial
-  weights are chosen in the range $[−0.2,0.2]$, for the other experiments in $[−0.1,0.1]$. Training sequences are
-  generated randomly according to the various task descriptions. __[Page XX]__
-- LSTM based RNN architectures can obtain state of the art performance in a large vocabulary speech recognition system
-  with thousands of context dependent states. The proposed architectures modify the standard architecture of the LSTM
-  networks to make better use of the model parameters while addressing the computational efficiency problems of large
-  networks. __[Page XX]__
-- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
-  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
-  which can be processed offline. __[Page 55]__
-- One of the methods for training RNN is Backpropagation Through Time (BPTT), which is very similar to the
-  backpropagation algorithm because it is based on gradient descent and chain rule, but it has also chain rule through
-  time. BPTT was developed by several works. This algorithm is very solid in theory, however, it does not show the best
-  performance in practice. In BPTT, the loss is considered as a summation of loss functions at the previous time steps
-  until now. __[Page 56]__
-- The bidirectional LSTM includes two LSTM networks each of which processes the sequence from one direction. In other
-  words, there are two LSTM networks which are fed with the sequence in opposite orders. Experiments have shown that the
-  bidirectional LSTM outperforms the unidirectional LSTM. __[Page 66]__#
-- Sequence modeling aims at learning a probability distribution over sequences, by maximizing the log-likelihood of a
-  model given a set of training sequences. __[Page 72]__
-- Finite-sized RNNs with nonlinear activations are a rich family of models, capable of nearly arbitrary computation.
-  With sigmoidal activation functions they can simulate a universal Turing machine. __[Page 79]__
-- For the intuition of the peephole connection consider a network which must learn to count objects and emit some
-  desired output when n objects have been seen. The network might learn to let some fixed amount of activation into the
-  internal state after each object is seen. This activation is trapped in the internal state by the constant error
-  carousel, and is incremented iteratively each time another object is seen. When the nth object is seen, the network
-  needs to know to let out content from the internal state so that it can affect the output. __[Page 94]__
-- 
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
