@@ -5,7 +5,7 @@
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 
 #define DECLARE_A3C_AGENT(ClassName)                                           \
-  class ClassName final : public ai_pass_selector::BaseA3CAgent {              \
+  class ClassName final : public BaseA3CAgent {                                \
   public:                                                                      \
     ClassName(unsigned int max_qubits, bool is_boss = true);                   \
     std::string agentName() const override;                                    \

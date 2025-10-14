@@ -1,4 +1,3 @@
-
 #ifndef BASE_PPO_AGENT_HPP
 #define BASE_PPO_AGENT_HPP
 
