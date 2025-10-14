@@ -2,7 +2,7 @@
 #define A3C_AGENTS_HPP
 
 // Torch includes
-#include "Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 
 #define DECLARE_A3C_AGENT(ClassName)                                           \
   class ClassName final : public ai_pass_selector::BaseA3CAgent {              \

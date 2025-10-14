@@ -1,11 +1,11 @@
-#include "Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
-#include "Agents/agent_layers_and_networks.hpp"
-#include "Agents/tcn_full_network.hpp"
+#include "NeuralNetworks/Agents/agent_layers_and_networks.hpp"
+#include "NeuralNetworks/Agents/tcn_full_network.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"

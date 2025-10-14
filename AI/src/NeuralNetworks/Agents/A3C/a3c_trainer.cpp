@@ -1,7 +1,7 @@
-#include "Agents/A3C/a3c_trainer.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 
 // Agents includes
-#include "Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"

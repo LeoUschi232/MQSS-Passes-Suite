@@ -1,13 +1,13 @@
-#include "Agents/training_and_run_manager.hpp"
+#include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
-#include "Agents/A3C/a3c_agents.hpp"
-#include "Agents/A3C/a3c_trainer.hpp"
-#include "Agents/A3C/base_a3c_agent.hpp"
-#include "Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
+#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"

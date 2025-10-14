@@ -1,6 +1,7 @@
 #include "Utils/info_utils.hpp"
 
 // Utils includes
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "Support/mlir_utils.hpp"
 #include "Utils/progress_bar.hpp"
 
@@ -15,6 +16,10 @@ using llvm::isa;
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
 
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
@@ -27,9 +32,7 @@ namespace fs = std::filesystem;
 using namespace mqss::support::quakeDialect;
 
 namespace ai_pass_selector {
-bool isclose(double a, double b, double atol) {
-  return std::abs(a - b) < atol;
-}
+bool isclose(double a, double b, double atol) { return std::abs(a - b) < atol; }
 
 std::vector<std::string> split_string(const std::string &str, char delimiter) {
   std::vector<std::string> parts;
@@ -219,8 +222,39 @@ void print_dataset_info(const std::string &dataset_name) {
 }
 
 void print_agent_info(const std::string &agent_name) {
-  (void)agent_name;
-  std::cerr << "Function print_agent_info not implemented yet" << std::endl;
+  unsigned int nr_parameters = 0;
+  try {
+    switch (AgentAttributes attributes = parseAgentName(agent_name);
+            attributes.agent_class) {
+    case A3C: {
+      std::unique_ptr<BaseA3CAgent> agent;
+      if (attributes.extras == "tcnrelu") {
+        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
+      } else if (attributes.extras == "tcnprelu") {
+        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
+      } else if (attributes.extras == "lstmrelu") {
+        std::cerr << "A3C_LSTM_RELU not implemented yet: " << agent_name
+                  << std::endl;
+      } else if (attributes.extras == "lstmprelu") {
+        std::cerr << "A3C_LSTM_PRELU not implemented yet: " << agent_name
+                  << std::endl;
+      } else {
+        std::cerr << "No such A3C agent: " << agent_name << std::endl;
+        return;
+      }
+      nr_parameters = count_trainable_parameters(*agent);
+      break;
+    }
+    default:
+      std::cerr << "No such agent yet: " << agent_name << std::endl;
+      return;
+    }
+  } catch (const std::runtime_error &e) {
+    std::cerr << "\n" << e.what() << std::endl;
+    return;
+  }
+  std::cout << "Agent name: " << agent_name << "\n"
+            << "Agent nr parameter: " << nr_parameters << std::endl;
 }
 
 } // namespace ai_pass_selector

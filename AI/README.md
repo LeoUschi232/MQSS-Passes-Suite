@@ -197,7 +197,10 @@ This list is unordered regarding priority.
   input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
   network to operate on a coarser scale than with a normal convolution. __[Page XX]__
-- 
+- Adam clearly comes out ahead, reaching a high accuracy. RMSProp never quite reaches this level. These results suggest
+  that Adam is a worthwhile improvement over our SGD baseline, especially in terms of training speed. Adam enables
+  us to reach the same accuracy as SGD at a training budget of half as many epochs. __[Page XX]__
+-
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 

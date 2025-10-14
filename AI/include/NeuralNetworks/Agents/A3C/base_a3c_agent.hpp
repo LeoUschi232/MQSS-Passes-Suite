@@ -4,17 +4,18 @@
 // Torch includes
 #include "torch/torch.h"
 
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/base_actor_critic.hpp"
+
 // Standard library includes
 #include <memory>
 #include <mutex>
-#include <tuple>
-#include <utility>
 
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
-class BaseA3CAgent : public torch::nn::Module {
+class BaseA3CAgent : public BaseActorCritic {
 protected:
   /// Attributes on configuration
   unsigned int max_qubits = 0u;
@@ -48,7 +49,7 @@ public:
    * @return
    */
   bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic);
+                  const torch::nn::Sequential &critic) override;
 
   /// Destructor
   ~BaseA3CAgent() override = default;
@@ -62,51 +63,8 @@ public:
 
   BaseA3CAgent &operator=(BaseA3CAgent &&other) noexcept = delete;
 
-  /// Getters
-  unsigned int getMaxQubits() const;
-
-  /// Diagnostics
-  void check_params(double big = 1e6, double tiny = 1e-12) const;
-
   //////////////////////////////////////////////////////////////////////////////
-  /// A2C standard methods
-  std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &observation);
-
-  /**
-   *
-   * @param observation
-   * @return
-   */
-  torch::Tensor get_value(const torch::Tensor &observation);
-
-  /**
-   *
-   * @param observation
-   * @return
-   */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation);
-
-  /**
-   * No termination masks because A3C uses asynchronous worker agents, each of
-   * which has just 1 environment instance instead of a synchronous agent with a
-   * batch of environments.
-   * @param rewards
-   * @param log_action_probs
-   * @param state_values
-   * @param entropy
-   * @param discount_factor
-   * @param gae_hyperparameter
-   * @param entropy_coefficient
-   * @return
-   */
-  static std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &rewards,
-             const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &entropy,
-             double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient);
+  /// A2C/A3C standard methods
 
   /**
    *
@@ -114,7 +72,7 @@ public:
    * @param critic_loss
    */
   void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const;
+                         const torch::Tensor &critic_loss) const override;
   //////////////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////////////
@@ -133,9 +91,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading
-  void save_model() const;
-  void load_model();
-  virtual std::string agentName() const = 0;
+  void save_model() const override;
 };
 } // namespace ai_pass_selector
 

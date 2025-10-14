@@ -1,4 +1,4 @@
-#include "Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Mlir includes
 #include "mlir_utils.hpp"
@@ -120,5 +120,15 @@ getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
   unsigned int max_qubits =
       static_cast<unsigned int>(std::stoul(agent_attributes[1].substr(2)));
   return {};
+}
+
+unsigned int count_trainable_parameters(const torch::nn::Module &network) {
+  unsigned int total = 0;
+  for (const torch::Tensor &param : network.parameters(/*recurse=*/true)) {
+    if (param.requires_grad()) {
+      total += static_cast<unsigned>(param.numel());
+    }
+  }
+  return total;
 }
 } // namespace ai_pass_selector

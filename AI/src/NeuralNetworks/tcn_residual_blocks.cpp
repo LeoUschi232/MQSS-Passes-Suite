@@ -1,7 +1,7 @@
-#include "Agents/tcn_residual_blocks.hpp"
+#include "NeuralNetworks/Agents/tcn_residual_blocks.hpp"
 
 // Agents includes
-#include "Agents/agent_layers_and_networks.hpp"
+#include "NeuralNetworks/Agents/agent_layers_and_networks.hpp"
 
 // Torch includes
 #include "torch/torch.h"

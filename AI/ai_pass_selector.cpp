@@ -4,8 +4,8 @@
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Torch includes
-#include "Agents/agent_utils.hpp"
-#include "Agents/training_and_run_manager.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Standard library includes
 #include <iostream>

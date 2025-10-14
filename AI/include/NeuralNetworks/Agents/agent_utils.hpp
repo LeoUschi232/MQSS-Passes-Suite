@@ -96,6 +96,13 @@ std::string select_best_agent(const std::string &circuit);
 std::tuple<std::vector<std::string>, std::vector<unsigned int>>
 getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
                      unsigned int nr_passes, fs::path output_path = fs::path());
+
+/**
+ *
+ * @param network
+ * @return
+ */
+unsigned int count_trainable_parameters(const torch::nn::Module &network);
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP
