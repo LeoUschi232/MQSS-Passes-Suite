@@ -170,7 +170,7 @@ This list is unordered regarding priority.
   RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
   demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page 133]__
 
-### 5. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/04_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
+### 5. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/05_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
 
 - Each layer can have a small kernel, for example `size=3`, but withxl dilation factors doubling at each
   layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
@@ -197,7 +197,7 @@ This list is unordered regarding priority.
   input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
   network to operate on a coarser scale than with a normal convolution. __[Page XX]__
-
+- 
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
@@ -246,4 +246,7 @@ This list is unordered regarding priority.
   minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
   Adagrad converges much slower than others. __[Page 106]__
 
-## Nothing
+### 7. [Reinforcement Learning Algorithms Set 2](ResearchPapers/07_ReinforcementLearningAlgorithmsSet2.pdf)
+
+- 
+
