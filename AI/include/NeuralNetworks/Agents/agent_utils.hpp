@@ -102,7 +102,7 @@ getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
  * @param network
  * @return
  */
-unsigned int count_trainable_parameters(const torch::nn::Module &network);
+unsigned int nr_trainable_parameters(const torch::nn::Module &network);
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP

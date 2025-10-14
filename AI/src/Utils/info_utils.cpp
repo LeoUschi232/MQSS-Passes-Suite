@@ -242,7 +242,7 @@ void print_agent_info(const std::string &agent_name) {
         std::cerr << "No such A3C agent: " << agent_name << std::endl;
         return;
       }
-      nr_parameters = count_trainable_parameters(*agent);
+      nr_parameters = nr_trainable_parameters(*agent);
       break;
     }
     default:
