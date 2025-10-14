@@ -172,7 +172,7 @@ This list is unordered regarding priority.
 
 ### 5. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/05_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
 
-- Each layer can have a small kernel, for example `size=3`, but withxl dilation factors doubling at each
+- Each layer can have a small kernel, for example `size=3`, but with dilation factors doubling at each
   layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
   of time-steps, without needing an impractically large kernel. __[Page 2]__
 - The TCN formulation distilled many of these best practices into a simple architecture can learn complex sequence
@@ -249,7 +249,4 @@ This list is unordered regarding priority.
   minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
   Adagrad converges much slower than others. __[Page 106]__
 
-### 7. [Reinforcement Learning Algorithms Set 2](ResearchPapers/07_ReinforcementLearningAlgorithmsSet2.pdf)
-
-- 
 
