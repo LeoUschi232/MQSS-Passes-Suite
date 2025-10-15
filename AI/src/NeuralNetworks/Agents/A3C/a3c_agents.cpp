@@ -29,4 +29,22 @@ std::string A3C_TCN_RELU::agentName() const {
   oss << "a3c-" << size_string << "-tcnrelu";
   return oss.str();
 }
+
+A3C_TCN_PRELU::A3C_TCN_PRELU(unsigned int max_qubits, bool is_boss)
+    : BaseA3CAgent(max_qubits, is_boss) {
+  constexpr double prelu_init = 0.1;
+  this->BaseA3CAgent::initialize(make_TCN_actor(max_qubits, prelu_init),
+                                 make_TCN_critic(max_qubits, prelu_init));
+}
+
+std::unique_ptr<BaseA3CAgent> A3C_TCN_PRELU::clone() const {
+  return std::make_unique<A3C_TCN_PRELU>(this->max_qubits, /*is_boss=*/false);
+}
+
+std::string A3C_TCN_PRELU::agentName() const {
+  std::string size_string = "mq" + std::to_string(this->max_qubits);
+  std::ostringstream oss;
+  oss << "a3c-" << size_string << "-tcnprelu";
+  return oss.str();
+}
 } // namespace ai_pass_selector
