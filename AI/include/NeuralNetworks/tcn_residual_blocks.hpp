@@ -2,7 +2,7 @@
 #define TCN_RESIDUAL_BLOCK_HPP
 
 // Neural-Network includes
-#include "NeuralNetworks/weight_norm_conv1d.hpp"
+#include "NeuralNetworks/layers_and_wrappers.hpp"
 
 // Torch includes
 #include "torch/torch.h"

@@ -4,7 +4,7 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
-#include "NeuralNetworks/layers_and_networks.hpp"
+#include "NeuralNetworks/agent_architectures.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
