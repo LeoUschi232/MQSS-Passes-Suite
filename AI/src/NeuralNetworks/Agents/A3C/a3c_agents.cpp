@@ -70,10 +70,7 @@ A3C_HYBRID::A3C_HYBRID(unsigned int max_qubits, bool is_boss)
                         hidden_size_multiplier, projection_size_multiplier),
       make_hybrid_critic(max_qubits, nr_residual_blocks, kernel_size,
                          hidden_size_multiplier, projection_size_multiplier));
-
-
-
-  }
+}
 
 std::unique_ptr<BaseA3CAgent> A3C_TCN_RELU::clone() const {
   return std::make_unique<A3C_TCN_RELU>(this->max_qubits, /*is_boss=*/false);
@@ -89,6 +86,10 @@ std::unique_ptr<BaseA3CAgent> A3C_LSTM_HMPP::clone() const {
 
 std::unique_ptr<BaseA3CAgent> A3C_LSTM_BMNP::clone() const {
   return std::make_unique<A3C_LSTM_BMNP>(this->max_qubits, /*is_boss=*/false);
+}
+
+std::unique_ptr<BaseA3CAgent> A3C_HYBRID::clone() const {
+  return std::make_unique<A3C_HYBRID>(this->max_qubits, /*is_boss=*/false);
 }
 
 std::string A3C_TCN_RELU::agentName() const {
@@ -116,6 +117,13 @@ std::string A3C_LSTM_BMNP::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
   oss << "a3c-" << size_string << "-lstmbmnp";
+  return oss.str();
+}
+
+std::string A3C_HYBRID::agentName() const {
+  std::string size_string = "mq" + std::to_string(this->max_qubits);
+  std::ostringstream oss;
+  oss << "a3c-" << size_string << "-hybrid";
   return oss.str();
 }
 } // namespace ai_pass_selector
