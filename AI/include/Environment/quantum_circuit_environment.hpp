@@ -43,12 +43,15 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 constexpr unsigned int MIN_NR_STEPS = 1u;
-constexpr int CIRCUIT_VALID = 0;
-constexpr int NO_CIRCUIT = 1;
-constexpr int INVALID_NR_QUBITS = 2;
-constexpr int INVALID_NR_GATES = 3;
-constexpr int INVALID_NR_ALLOCATIONS = 4;
-constexpr int AMBIGUOUS_MEASUREMENT = 5;
+
+enum class CircuitValidity : int {
+  Valid = 0,
+  NoCircuit = 1,
+  InvalidNrQubits = 2,
+  InvalidNrGates = 3,
+  InvalidNrAllocations = 4,
+  AmbiguousMeasurement = 5
+};
 
 class QuantumCircuitEnvironment {
   /// Attributes for circuit
@@ -114,7 +117,7 @@ public:
    *
    * @return
    */
-  int get_advanced_circuit_validity();
+  CircuitValidity get_advanced_circuit_validity();
 
   /**
    *

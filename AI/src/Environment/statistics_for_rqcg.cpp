@@ -69,11 +69,11 @@ extract_dataset_statistics(const std::string &dataset_name) {
       }
       if (isMeasurement(op)) {
         if (isa<quake::MxOp>(op)) {
-          gates_weights[MX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::MX)]++;
         } else if (isa<quake::MyOp>(op)) {
-          gates_weights[MY_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::MY)]++;
         } else if (isa<quake::MzOp>(op)) {
-          gates_weights[MZ_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::MZ)]++;
         } else {
           throw std::runtime_error("Measurement gate op not Mx|My|Mz.");
         }
@@ -114,120 +114,120 @@ extract_dataset_statistics(const std::string &dataset_name) {
       switch (GATE_INDEX(getOnlyGateName(op))) {
       case X:
         if (nr_controls <= 0) {
-          gates_weights[X_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::X)]++;
         } else if (nr_controls == 1) {
-          gates_weights[CX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::CX)]++;
         } else if (nr_controls == 2) {
-          gates_weights[CCX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::CCX)]++;
         } else {
-          gates_weights[C3plus_X_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::C3PlusX)]++;
         }
         break;
       case Y:
         if (nr_controls <= 0) {
-          gates_weights[Y_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::Y)]++;
         } else {
-          gates_weights[controlled_Y_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledY)]++;
         }
         break;
       case Z:
         if (nr_controls <= 0) {
-          gates_weights[Z_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::Z)]++;
         } else {
-          gates_weights[controlled_Z_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledZ)]++;
         }
         break;
       case H:
         if (nr_controls <= 0) {
-          gates_weights[H_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::H)]++;
         } else {
-          gates_weights[controlled_H_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledH)]++;
         }
         break;
       case S:
         if (nr_controls <= 0) {
           if (isAdj) {
-            gates_weights[SDG_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::SDG)]++;
           } else {
-            gates_weights[S_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::S)]++;
           }
         } else {
           if (isAdj) {
-            gates_weights[controlled_SDG_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::ControlledSDG)]++;
           } else {
-            gates_weights[controlled_S_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::ControlledS)]++;
           }
         }
         break;
       case T:
         if (nr_controls <= 0) {
           if (isAdj) {
-            gates_weights[TDG_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::TDG)]++;
           } else {
-            gates_weights[T_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::T)]++;
           }
         } else {
           if (isAdj) {
-            gates_weights[controlled_TDG_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::ControlledTDG)]++;
           } else {
-            gates_weights[controlled_T_INDEX]++;
+            gates_weights[to_index(GateWeightIndex::ControlledT)]++;
           }
         }
         break;
       case RX:
         if (nr_controls <= 0) {
-          gates_weights[RX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::RX)]++;
         } else {
-          gates_weights[controlled_RX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledRX)]++;
         }
         break;
       case RY:
         if (nr_controls <= 0) {
-          gates_weights[RY_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::RY)]++;
         } else {
-          gates_weights[controlled_RY_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledRY)]++;
         }
         break;
       case RZ:
         if (nr_controls <= 0) {
-          gates_weights[RZ_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::RZ)]++;
         } else {
-          gates_weights[controlled_RZ_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledRZ)]++;
         }
         break;
       case SWAP:
         if (nr_controls <= 0) {
-          gates_weights[SWAP_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::SWAP)]++;
         } else {
-          gates_weights[controlled_SWAP_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledSWAP)]++;
         }
         break;
       case R1:
         if (nr_controls <= 0) {
-          gates_weights[R1_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::R1)]++;
         } else {
-          gates_weights[controlled_R1_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledR1)]++;
         }
         break;
       case U2:
         if (nr_controls <= 0) {
-          gates_weights[U2_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::U2)]++;
         } else {
-          gates_weights[controlled_U2_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledU2)]++;
         }
         break;
       case U3:
         if (nr_controls <= 0) {
-          gates_weights[U3_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::U3)]++;
         } else {
-          gates_weights[controlled_U3_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledU3)]++;
         }
         break;
       case PHASED_RX:
         if (nr_controls <= 0) {
-          gates_weights[PHASED_RX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::PhasedRX)]++;
         } else {
-          gates_weights[controlled_PHASED_RX_INDEX]++;
+          gates_weights[to_index(GateWeightIndex::ControlledPhasedRX)]++;
         }
         break;
       default:
@@ -298,63 +298,63 @@ extract_dataset_statistics(const std::string &dataset_name) {
   variance_measurements /= N - 1;
   covariance_measurements /= N - 1;
   std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params{};
-  cholesky_params[MEAN_QUBITS_INDEX] = mean_qubits;
-  cholesky_params[MEAN_GATES_INDEX] = mean_gates;
-  cholesky_params[MEAN_OPERATIONS_INDEX] = mean_operations;
-  cholesky_params[MEAN_MEASUREMENTS_INDEX] = mean_measurements;
-  cholesky_params[QUBITS_L11_INDEX] = std::sqrt(variance_qubits);
+  cholesky_params[to_index(CholeskyParamIndex::MeanQubits)] = mean_qubits;
+  cholesky_params[to_index(CholeskyParamIndex::MeanGates)] = mean_gates;
+  cholesky_params[to_index(CholeskyParamIndex::MeanOperations)] = mean_operations;
+  cholesky_params[to_index(CholeskyParamIndex::MeanMeasurements)] = mean_measurements;
+  cholesky_params[to_index(CholeskyParamIndex::QubitsL11)] = std::sqrt(variance_qubits);
 
   if (variance_qubits <= 0.0) {
-    cholesky_params[GATES_L21_INDEX] = 0.0;
-    cholesky_params[GATES_L22_INDEX] = std::sqrt(variance_gates);
-    cholesky_params[OPERATIONS_L21_INDEX] = 0.0;
-    cholesky_params[OPERATIONS_L22_INDEX] = std::sqrt(covariance_operations);
-    cholesky_params[MEASUREMENTS_L21_INDEX] = 0.0;
-    cholesky_params[MEASUREMENTS_L22_INDEX] = std::sqrt(variance_measurements);
+    cholesky_params[to_index(CholeskyParamIndex::GatesL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::GatesL22)] = std::sqrt(variance_gates);
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] = std::sqrt(covariance_operations);
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] = std::sqrt(variance_measurements);
     return std::make_pair(cholesky_params, gates_weights);
   }
   if (variance_gates <= 0.0) {
-    cholesky_params[GATES_L21_INDEX] = 0.0;
-    cholesky_params[GATES_L22_INDEX] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::GatesL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::GatesL22)] = 0.0;
   } else if (double determinant = variance_qubits * variance_gates -
                                   covariance_gates * covariance_gates;
              determinant <= 0.0) {
     return std::nullopt;
   } else {
-    cholesky_params[GATES_L21_INDEX] =
-        covariance_gates / cholesky_params[QUBITS_L11_INDEX];
-    cholesky_params[GATES_L22_INDEX] =
-        std::sqrt(variance_gates - cholesky_params[GATES_L21_INDEX] *
-                                       cholesky_params[GATES_L21_INDEX]);
+    cholesky_params[to_index(CholeskyParamIndex::GatesL21)] =
+        covariance_gates / cholesky_params[to_index(CholeskyParamIndex::QubitsL11)];
+    cholesky_params[to_index(CholeskyParamIndex::GatesL22)] =
+        std::sqrt(variance_gates - cholesky_params[to_index(CholeskyParamIndex::GatesL21)] *
+                                       cholesky_params[to_index(CholeskyParamIndex::GatesL21)]);
   }
   if (variance_operations <= 0.0) {
-    cholesky_params[OPERATIONS_L21_INDEX] = 0.0;
-    cholesky_params[OPERATIONS_L22_INDEX] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] = 0.0;
   } else if (double determinant = variance_qubits * variance_operations -
                                   covariance_operations * covariance_operations;
              determinant <= 0.0) {
     return std::nullopt;
   } else {
-    cholesky_params[OPERATIONS_L21_INDEX] =
-        covariance_operations / cholesky_params[QUBITS_L11_INDEX];
-    cholesky_params[OPERATIONS_L22_INDEX] = std::sqrt(
-        variance_operations - cholesky_params[OPERATIONS_L21_INDEX] *
-                                  cholesky_params[OPERATIONS_L21_INDEX]);
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] =
+        covariance_operations / cholesky_params[to_index(CholeskyParamIndex::QubitsL11)];
+    cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] = std::sqrt(
+        variance_operations - cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] *
+                                  cholesky_params[to_index(CholeskyParamIndex::OperationsL21)]);
   }
   if (variance_measurements <= 0.0) {
-    cholesky_params[MEASUREMENTS_L21_INDEX] = 0.0;
-    cholesky_params[MEASUREMENTS_L22_INDEX] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] = 0.0;
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] = 0.0;
   } else if (double determinant =
                  variance_qubits * variance_measurements -
                  covariance_measurements * covariance_measurements;
              determinant <= 0.0) {
     return std::nullopt;
   } else {
-    cholesky_params[MEASUREMENTS_L21_INDEX] =
-        covariance_measurements / cholesky_params[QUBITS_L11_INDEX];
-    cholesky_params[MEASUREMENTS_L22_INDEX] = std::sqrt(
-        variance_measurements - cholesky_params[MEASUREMENTS_L21_INDEX] *
-                                    cholesky_params[MEASUREMENTS_L21_INDEX]);
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] =
+        covariance_measurements / cholesky_params[to_index(CholeskyParamIndex::QubitsL11)];
+    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] = std::sqrt(
+        variance_measurements - cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] *
+                                    cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)]);
   }
   return std::make_pair(cholesky_params, gates_weights);
 }
@@ -369,79 +369,79 @@ void print_dataset_statistics(const std::string &dataset_name) {
   auto [cholesky_params, gates_weights] = dataset_statistics.value();
   std::cout << "dataset_name: \"" << dataset_name << "\"" << std::endl;
   std::cout << "cholesky_params: " << std::endl;
-  std::cout << "  mean_qubits: " << cholesky_params[MEAN_QUBITS_INDEX]
+  std::cout << "  mean_qubits: " << cholesky_params[to_index(CholeskyParamIndex::MeanQubits)]
             << std::endl;
-  std::cout << "  mean_gates: " << cholesky_params[MEAN_GATES_INDEX]
+  std::cout << "  mean_gates: " << cholesky_params[to_index(CholeskyParamIndex::MeanGates)]
             << std::endl;
-  std::cout << "  mean_operations: " << cholesky_params[MEAN_OPERATIONS_INDEX]
+  std::cout << "  mean_operations: " << cholesky_params[to_index(CholeskyParamIndex::MeanOperations)]
             << std::endl;
   std::cout << "  mean_measurements: "
-            << cholesky_params[MEAN_MEASUREMENTS_INDEX] << std::endl;
-  std::cout << "  qubits_L11: " << cholesky_params[QUBITS_L11_INDEX]
+            << cholesky_params[to_index(CholeskyParamIndex::MeanMeasurements)] << std::endl;
+  std::cout << "  qubits_L11: " << cholesky_params[to_index(CholeskyParamIndex::QubitsL11)]
             << std::endl;
-  std::cout << "  gates_L21: " << cholesky_params[GATES_L21_INDEX] << std::endl;
-  std::cout << "  gates_L22: " << cholesky_params[GATES_L22_INDEX] << std::endl;
-  std::cout << "  operations_L21: " << cholesky_params[OPERATIONS_L21_INDEX]
+  std::cout << "  gates_L21: " << cholesky_params[to_index(CholeskyParamIndex::GatesL21)] << std::endl;
+  std::cout << "  gates_L22: " << cholesky_params[to_index(CholeskyParamIndex::GatesL22)] << std::endl;
+  std::cout << "  operations_L21: " << cholesky_params[to_index(CholeskyParamIndex::OperationsL21)]
             << std::endl;
-  std::cout << "  operations_L22: " << cholesky_params[OPERATIONS_L22_INDEX]
+  std::cout << "  operations_L22: " << cholesky_params[to_index(CholeskyParamIndex::OperationsL22)]
             << std::endl;
-  std::cout << "  measurements_L21: " << cholesky_params[MEASUREMENTS_L21_INDEX]
+  std::cout << "  measurements_L21: " << cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)]
             << std::endl;
-  std::cout << "  measurements_L22: " << cholesky_params[MEASUREMENTS_L22_INDEX]
+  std::cout << "  measurements_L22: " << cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)]
             << std::endl;
   std::cout << "gates_weights:" << std::endl;
-  std::cout << "  X: " << gates_weights[X_INDEX] << std::endl;
-  std::cout << "  CX: " << gates_weights[CX_INDEX] << std::endl;
-  std::cout << "  CCX: " << gates_weights[CCX_INDEX] << std::endl;
-  std::cout << "  C3plus_X: " << gates_weights[C3plus_X_INDEX] << std::endl;
-  std::cout << "  Y: " << gates_weights[Y_INDEX] << std::endl;
-  std::cout << "  controlled_Y: " << gates_weights[controlled_Y_INDEX]
+  std::cout << "  X: " << gates_weights[to_index(GateWeightIndex::X)] << std::endl;
+  std::cout << "  CX: " << gates_weights[to_index(GateWeightIndex::CX)] << std::endl;
+  std::cout << "  CCX: " << gates_weights[to_index(GateWeightIndex::CCX)] << std::endl;
+  std::cout << "  C3plus_X: " << gates_weights[to_index(GateWeightIndex::C3PlusX)] << std::endl;
+  std::cout << "  Y: " << gates_weights[to_index(GateWeightIndex::Y)] << std::endl;
+  std::cout << "  controlled_Y: " << gates_weights[to_index(GateWeightIndex::ControlledY)]
             << std::endl;
-  std::cout << "  Z: " << gates_weights[Z_INDEX] << std::endl;
-  std::cout << "  controlled_Z: " << gates_weights[controlled_Z_INDEX]
+  std::cout << "  Z: " << gates_weights[to_index(GateWeightIndex::Z)] << std::endl;
+  std::cout << "  controlled_Z: " << gates_weights[to_index(GateWeightIndex::ControlledZ)]
             << std::endl;
-  std::cout << "  H: " << gates_weights[H_INDEX] << std::endl;
-  std::cout << "  controlled_H: " << gates_weights[controlled_H_INDEX]
+  std::cout << "  H: " << gates_weights[to_index(GateWeightIndex::H)] << std::endl;
+  std::cout << "  controlled_H: " << gates_weights[to_index(GateWeightIndex::ControlledH)]
             << std::endl;
-  std::cout << "  S: " << gates_weights[S_INDEX] << std::endl;
-  std::cout << "  controlled_S: " << gates_weights[controlled_S_INDEX]
+  std::cout << "  S: " << gates_weights[to_index(GateWeightIndex::S)] << std::endl;
+  std::cout << "  controlled_S: " << gates_weights[to_index(GateWeightIndex::ControlledS)]
             << std::endl;
-  std::cout << "  SDG: " << gates_weights[SDG_INDEX] << std::endl;
-  std::cout << "  controlled_SDG: " << gates_weights[controlled_SDG_INDEX]
+  std::cout << "  SDG: " << gates_weights[to_index(GateWeightIndex::SDG)] << std::endl;
+  std::cout << "  controlled_SDG: " << gates_weights[to_index(GateWeightIndex::ControlledSDG)]
             << std::endl;
-  std::cout << "  T: " << gates_weights[T_INDEX] << std::endl;
-  std::cout << "  controlled_T: " << gates_weights[controlled_T_INDEX]
+  std::cout << "  T: " << gates_weights[to_index(GateWeightIndex::T)] << std::endl;
+  std::cout << "  controlled_T: " << gates_weights[to_index(GateWeightIndex::ControlledT)]
             << std::endl;
-  std::cout << "  TDG: " << gates_weights[TDG_INDEX] << std::endl;
-  std::cout << "  controlled_TDG: " << gates_weights[controlled_TDG_INDEX]
+  std::cout << "  TDG: " << gates_weights[to_index(GateWeightIndex::TDG)] << std::endl;
+  std::cout << "  controlled_TDG: " << gates_weights[to_index(GateWeightIndex::ControlledTDG)]
             << std::endl;
-  std::cout << "  RX: " << gates_weights[RX_INDEX] << std::endl;
-  std::cout << "  controlled_RX: " << gates_weights[controlled_RX_INDEX]
+  std::cout << "  RX: " << gates_weights[to_index(GateWeightIndex::RX)] << std::endl;
+  std::cout << "  controlled_RX: " << gates_weights[to_index(GateWeightIndex::ControlledRX)]
             << std::endl;
-  std::cout << "  RY: " << gates_weights[RY_INDEX] << std::endl;
-  std::cout << "  controlled_RY: " << gates_weights[controlled_RY_INDEX]
+  std::cout << "  RY: " << gates_weights[to_index(GateWeightIndex::RY)] << std::endl;
+  std::cout << "  controlled_RY: " << gates_weights[to_index(GateWeightIndex::ControlledRY)]
             << std::endl;
-  std::cout << "  RZ: " << gates_weights[RZ_INDEX] << std::endl;
-  std::cout << "  controlled_RZ: " << gates_weights[controlled_RZ_INDEX]
+  std::cout << "  RZ: " << gates_weights[to_index(GateWeightIndex::RZ)] << std::endl;
+  std::cout << "  controlled_RZ: " << gates_weights[to_index(GateWeightIndex::ControlledRZ)]
             << std::endl;
-  std::cout << "  SWAP: " << gates_weights[SWAP_INDEX] << std::endl;
-  std::cout << "  controlled_SWAP: " << gates_weights[controlled_SWAP_INDEX]
+  std::cout << "  SWAP: " << gates_weights[to_index(GateWeightIndex::SWAP)] << std::endl;
+  std::cout << "  controlled_SWAP: " << gates_weights[to_index(GateWeightIndex::ControlledSWAP)]
             << std::endl;
-  std::cout << "  R1: " << gates_weights[R1_INDEX] << std::endl;
-  std::cout << "  controlled_R1: " << gates_weights[controlled_R1_INDEX]
+  std::cout << "  R1: " << gates_weights[to_index(GateWeightIndex::R1)] << std::endl;
+  std::cout << "  controlled_R1: " << gates_weights[to_index(GateWeightIndex::ControlledR1)]
             << std::endl;
-  std::cout << "  U2: " << gates_weights[U2_INDEX] << std::endl;
-  std::cout << "  controlled_U2: " << gates_weights[controlled_U2_INDEX]
+  std::cout << "  U2: " << gates_weights[to_index(GateWeightIndex::U2)] << std::endl;
+  std::cout << "  controlled_U2: " << gates_weights[to_index(GateWeightIndex::ControlledU2)]
             << std::endl;
-  std::cout << "  U3: " << gates_weights[U3_INDEX] << std::endl;
-  std::cout << "  controlled_U3: " << gates_weights[controlled_U3_INDEX]
+  std::cout << "  U3: " << gates_weights[to_index(GateWeightIndex::U3)] << std::endl;
+  std::cout << "  controlled_U3: " << gates_weights[to_index(GateWeightIndex::ControlledU3)]
             << std::endl;
-  std::cout << "  PHASED_RX: " << gates_weights[PHASED_RX_INDEX] << std::endl;
+  std::cout << "  PHASED_RX: " << gates_weights[to_index(GateWeightIndex::PhasedRX)] << std::endl;
   std::cout << "  controlled_PHASED_RX: "
-            << gates_weights[controlled_PHASED_RX_INDEX] << std::endl;
-  std::cout << "  MX: " << gates_weights[MX_INDEX] << std::endl;
-  std::cout << "  MY: " << gates_weights[MY_INDEX] << std::endl;
-  std::cout << "  MZ: " << gates_weights[MZ_INDEX] << std::endl;
+            << gates_weights[to_index(GateWeightIndex::ControlledPhasedRX)] << std::endl;
+  std::cout << "  MX: " << gates_weights[to_index(GateWeightIndex::MX)] << std::endl;
+  std::cout << "  MY: " << gates_weights[to_index(GateWeightIndex::MY)] << std::endl;
+  std::cout << "  MZ: " << gates_weights[to_index(GateWeightIndex::MZ)] << std::endl;
 }
 
 std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
