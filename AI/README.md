@@ -7,13 +7,11 @@ This list is unordered regarding priority.
  Task                                            | Description                                                                                                                                                                                        
 -------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved. 
- Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                         
  Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                               
  Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
- Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A3C agent.                                                                                                                                             
  Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                        
  Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                
- Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
+ Implement Prioritized Level Replay              | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
 
 ## Research Paper Notes
 
