@@ -9,6 +9,11 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 
+// Standard library includes
+#include <string_view>
+
+using namespace std::literals;
+
 using mlir::Location;
 using mlir::MLIRContext;
 using mlir::ModuleOp;
@@ -19,7 +24,6 @@ using mlir::ValueRange;
 using mlir::func::FuncOp;
 
 namespace ai_pass_selector {
-
 enum class GateSymbol : int {
   X = GATE_INDEX("x"sv),
   Y = GATE_INDEX("y"sv),
@@ -39,6 +43,16 @@ enum class GateSymbol : int {
   MY = GATE_INDEX("my"sv),
   MZ = GATE_INDEX("mz"sv)
 };
+
+constexpr GateSymbol GATE_SYMBOL(std::string_view gate) {
+  for (int i = 0; i < NR_GATES; i++) {
+    if (SUPPORTED_GATES[i] == gate) {
+      return static_cast<GateSymbol>(i);
+    }
+  }
+  throw std::invalid_argument("GATE_SYMBOL: unsupported gate " +
+                              std::string(gate));
+}
 
 constexpr int to_gate_index(GateSymbol symbol) {
   return static_cast<int>(symbol);

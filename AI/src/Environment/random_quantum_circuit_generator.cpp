@@ -355,7 +355,8 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
       std::vector<float> angles = makeAngles(baseGate);
       insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
 
-      if (baseGate == GateSymbol::MX || baseGate == GateSymbol::MY || baseGate == GateSymbol::MZ) {
+      if (baseGate == GateSymbol::MX || baseGate == GateSymbol::MY ||
+          baseGate == GateSymbol::MZ) {
         // Measurement by default do not have controls so there is no need to
         // consider controls as possibly involved qubits.
         for (int qubit : targets) {
@@ -376,7 +377,8 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
 
     } catch (const std::runtime_error &error) {
       std::cerr << "\n"
-                << error.what() << "\nGate: " << SUPPORTED_GATES[baseGate]
+                << error.what()
+                << "\nGate: " << SUPPORTED_GATES[static_cast<int>(baseGate)]
                 << std::endl;
     }
   }

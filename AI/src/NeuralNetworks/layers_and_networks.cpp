@@ -28,7 +28,7 @@ make_TCN_actor(unsigned int max_qubits,
                                kernel_size), // -> [IRS, N]
         torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
         torch::nn::Flatten(
-            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
         torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
         torch::nn::ReLU(),                                     // -> [NR_PASSES]
         torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
@@ -41,7 +41,7 @@ make_TCN_actor(unsigned int max_qubits,
                               prelu_init), // -> [IRS, N]
       torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
       torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
       torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
       torch::nn::PReLU(
           torch::nn::PReLUOptions().init(prelu_init)), // -> [NR_PASSES]
@@ -63,7 +63,7 @@ make_TCN_critic(unsigned int max_qubits,
                                kernel_size), // -> [IRS, N]
         torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
         torch::nn::Flatten(
-            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
         torch::nn::Linear(IRS, 1),                             // -> [1]
         torch::nn::ReLU()                                      // -> [1]
     );
@@ -75,7 +75,7 @@ make_TCN_critic(unsigned int max_qubits,
                               prelu_init), // -> [IRS, N]
       torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
       torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
       torch::nn::Linear(IRS, 1),                             // -> [1]
       torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init)) // -> [1]
   );

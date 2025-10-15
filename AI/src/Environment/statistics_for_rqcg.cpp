@@ -111,8 +111,8 @@ extract_dataset_statistics(const std::string &dataset_name) {
                   << std::endl;
       }
 
-      switch (GATE_INDEX(getOnlyGateName(op))) {
-      case X:
+      switch (GATE_SYMBOL(getOnlyGateName(op))) {
+      case GateSymbol::X:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::X)]++;
         } else if (nr_controls == 1) {
@@ -123,28 +123,28 @@ extract_dataset_statistics(const std::string &dataset_name) {
           gates_weights[to_index(GateWeightIndex::C3PlusX)]++;
         }
         break;
-      case Y:
+      case GateSymbol::Y:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::Y)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledY)]++;
         }
         break;
-      case Z:
+      case GateSymbol::Z:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::Z)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledZ)]++;
         }
         break;
-      case H:
+      case GateSymbol::H:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::H)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledH)]++;
         }
         break;
-      case S:
+      case GateSymbol::S:
         if (nr_controls <= 0) {
           if (isAdj) {
             gates_weights[to_index(GateWeightIndex::SDG)]++;
@@ -159,7 +159,7 @@ extract_dataset_statistics(const std::string &dataset_name) {
           }
         }
         break;
-      case T:
+      case GateSymbol::T:
         if (nr_controls <= 0) {
           if (isAdj) {
             gates_weights[to_index(GateWeightIndex::TDG)]++;
@@ -174,56 +174,56 @@ extract_dataset_statistics(const std::string &dataset_name) {
           }
         }
         break;
-      case RX:
+      case GateSymbol::RX:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::RX)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledRX)]++;
         }
         break;
-      case RY:
+      case GateSymbol::RY:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::RY)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledRY)]++;
         }
         break;
-      case RZ:
+      case GateSymbol::RZ:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::RZ)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledRZ)]++;
         }
         break;
-      case SWAP:
+      case GateSymbol::SWAP:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::SWAP)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledSWAP)]++;
         }
         break;
-      case R1:
+      case GateSymbol::R1:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::R1)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledR1)]++;
         }
         break;
-      case U2:
+      case GateSymbol::U2:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::U2)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledU2)]++;
         }
         break;
-      case U3:
+      case GateSymbol::U3:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::U3)]++;
         } else {
           gates_weights[to_index(GateWeightIndex::ControlledU3)]++;
         }
         break;
-      case PHASED_RX:
+      case GateSymbol::PHASED_RX:
         if (nr_controls <= 0) {
           gates_weights[to_index(GateWeightIndex::PhasedRX)]++;
         } else {

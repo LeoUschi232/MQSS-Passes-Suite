@@ -29,7 +29,7 @@ constexpr unsigned int NR_GATES = SUPPORTED_GATES.size();
 constexpr unsigned int MAX_GATE_PARAMS = 3;
 
 constexpr int GATE_INDEX(std::string_view gate) {
-  for (int i = 0; i < NR_GATES; ++i) {
+  for (int i = 0; i < NR_GATES; i++) {
     if (SUPPORTED_GATES[i] == gate) {
       return i;
     }
