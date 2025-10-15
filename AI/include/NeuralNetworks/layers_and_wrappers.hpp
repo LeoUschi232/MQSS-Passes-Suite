@@ -1,5 +1,5 @@
-#ifndef WEIGHT_NORM_CONV1D_HPP
-#define WEIGHT_NORM_CONV1D_HPP
+#ifndef LAYERS_AND_WRAPPERS_HPP
+#define LAYERS_AND_WRAPPERS_HPP
 
 // Torch includes
 #include "torch/torch.h"
@@ -93,4 +93,4 @@ Functional FiniteCheck(std::string stage_name);
  */
 Functional ShapeProbe(std::string stage_name);
 } // namespace torch::nn
-#endif // WEIGHT_NORM_CONV1D_HPP
+#endif // LAYERS_AND_WRAPPERS_HPP

@@ -15,24 +15,28 @@
 namespace ai_pass_selector {
 A3C_TCN_RELU::A3C_TCN_RELU(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  this->BaseA3CAgent::initialize(make_TCN_actor(max_qubits),
-                                 make_TCN_critic(max_qubits));
+  // Nr trainable parameters: unknown
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int kernel_size = 5u;
+  this->BaseA3CAgent::initialize(
+      make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size),
+      make_TCN_critic(max_qubits, nr_residual_blocks, kernel_size));
 }
 
 A3C_TCN_PRELU::A3C_TCN_PRELU(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
+  // Nr trainable parameters: unknown
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int kernel_size = 5u;
   constexpr double prelu_init = 0.1;
-  this->BaseA3CAgent::initialize(make_TCN_actor(max_qubits, prelu_init),
-                                 make_TCN_critic(max_qubits, prelu_init));
+  this->BaseA3CAgent::initialize(
+      make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size, prelu_init),
+      make_TCN_critic(max_qubits, nr_residual_blocks, kernel_size, prelu_init));
 }
 
 A3C_LSTM_HMPP::A3C_LSTM_HMPP(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  // MQTBench case: IRS=150
-  // H=8·IRS=1200
-  // P=2·IRS=300
-  // D=2
-  // → Nr trainable parameters: 5,111,487
+  // Nr trainable parameters: 5,111,487
   constexpr unsigned int hidden_size_multiplier = 8u;
   constexpr unsigned int projection_size_multiplier = 2u;
   this->BaseA3CAgent::initialize(
@@ -44,11 +48,7 @@ A3C_LSTM_HMPP::A3C_LSTM_HMPP(unsigned int max_qubits, bool is_boss)
 
 A3C_LSTM_BMNP::A3C_LSTM_BMNP(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  // MQTBench case: IRS=150
-  // H=5·IRS=750
-  // P=5·IRS=750
-  // D=2
-  // → Nr trainable parameters: 5,542,587
+  // Nr trainable parameters: 5,542,587
   constexpr unsigned int hidden_size_multiplier = 5u;
   constexpr unsigned int projection_size_multiplier = 5u;
   this->BaseA3CAgent::initialize(
@@ -57,6 +57,23 @@ A3C_LSTM_BMNP::A3C_LSTM_BMNP(unsigned int max_qubits, bool is_boss)
       make_LSTM_critic(max_qubits, hidden_size_multiplier,
                        projection_size_multiplier));
 }
+
+A3C_HYBRID::A3C_HYBRID(unsigned int max_qubits, bool is_boss)
+    : BaseA3CAgent(max_qubits, is_boss) {
+  // Nr trainable parameters: unknown
+  constexpr unsigned int nr_residual_blocks = 8u;
+  constexpr unsigned int kernel_size = 3u;
+  constexpr unsigned int hidden_size_multiplier = 3u;
+  constexpr unsigned int projection_size_multiplier = 3u;
+  this->BaseA3CAgent::initialize(
+      make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
+                        hidden_size_multiplier, projection_size_multiplier),
+      make_hybrid_critic(max_qubits, nr_residual_blocks, kernel_size,
+                         hidden_size_multiplier, projection_size_multiplier));
+
+
+
+  }
 
 std::unique_ptr<BaseA3CAgent> A3C_TCN_RELU::clone() const {
   return std::make_unique<A3C_TCN_RELU>(this->max_qubits, /*is_boss=*/false);

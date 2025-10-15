@@ -114,7 +114,7 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
 }
 
 torch::nn::Sequential
-make_HYBRID_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
+make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
                   unsigned int kernel_size, unsigned int hidden_size_multiplier,
                   unsigned int projection_size_multiplier,
                   const std::optional<double> &optional_prelu_init) {
@@ -153,7 +153,7 @@ make_HYBRID_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
   return actor;
 }
 torch::nn::Sequential
-make_HYBRID_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
+make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
                    unsigned int kernel_size,
                    unsigned int hidden_size_multiplier,
                    unsigned int projection_size_multiplier,
