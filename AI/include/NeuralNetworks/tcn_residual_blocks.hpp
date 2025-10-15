@@ -2,7 +2,7 @@
 #define TCN_RESIDUAL_BLOCK_HPP
 
 // Torch includes
-#include "agent_layers_and_networks.hpp"
+#include "layers_and_networks.hpp"
 #include "torch/torch.h"
 
 namespace ai_pass_selector {

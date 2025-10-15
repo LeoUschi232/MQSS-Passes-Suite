@@ -1,5 +1,5 @@
-#ifndef AGENT_LAYERS_AND_NETWORKS_HPP
-#define AGENT_LAYERS_AND_NETWORKS_HPP
+#ifndef LAYERS_AND_NETWORKS_HPP
+#define LAYERS_AND_NETWORKS_HPP
 
 // Torch includes
 #include "torch/torch.h"
@@ -151,4 +151,4 @@ inline Functional ShapeProbe(std::string stage_name) {
 
 } // namespace torch::nn
 
-#endif // AGENT_LAYERS_AND_NETWORKS_HPP
+#endif // LAYERS_AND_NETWORKS_HPP
