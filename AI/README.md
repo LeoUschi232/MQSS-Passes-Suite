@@ -170,13 +170,13 @@ This list is unordered regarding priority.
   RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
   demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page 133]__
 
-### 5. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/05_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
+### 5. [Neural Network Architectures for Sequences of Elements: TCN & LSTM](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf)
 
 - Each layer can have a small kernel, for example `size=3`, but with dilation factors doubling at each
   layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
   of time-steps, without needing an impractically large kernel. __[Page 2]__
 - The TCN formulation distilled many of these best practices into a simple architecture can learn complex sequence
-  patterns, even something as unusual as quantum gate sequences, given sufficient depth and training.
+  patterns, even something as unusual as quantum gate sequences, given sufficient depth and training. __[Page 3]__
 - Results indicate that a simple convolutional architecture outperforms canonical recurrent networks such as LSTMs
   across a diverse range of tasks and datasets, while demonstrating longer effective memory. To represent convolutional
   networks, we describe a generic Temporal Convolutional Network (TCN) architecture that is applied across all tasks.
@@ -185,22 +185,36 @@ This list is unordered regarding priority.
 - The TCN architecture appears not only more accurate than canonical recurrent networks such as LSTMs and GRUs, but also
   simpler and clearer. It may therefore be a more appropriate starting point in the application of deep networks to
   sequences. Basic RNN architectures are notoriously difficult to train and more elaborate architectures are commonly
-  used instead, such as the LSTM and the GRU. __[Page 3]__
+  used instead, such as the LSTM and the GRU. __[Page 9]__
 - The copy memory task is perfectly set up to examine a model's ability to retain information for different lengths of
   time. The requisite retention time can be controlled by varying the sequence length $T$. TCN outperforms LSTMs and
   vanilla RNNs by a significant margin in perplexity on LAMBADA, with a substantially smaller network and virtually no
   tuning. __[Page 15]__
 - Convolutional networks do not depend on the computations of the previoustime step and therefore allow parallelization
   over every ele ment in a sequence. This contrasts with RNNs which main tain a hidden state of the entire past that
-  prevents parallel computation within a sequence. __[Page XX]__
+  prevents parallel computation within a sequence. __[Page 39]__
 - A dilated convolution is a convolution where the filter is applied over an area larger than its length by skipping
   input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
-  network to operate on a coarser scale than with a normal convolution. __[Page XX]__
-- Adam clearly comes out ahead, reaching a high accuracy. RMSProp never quite reaches this level. These results suggest
-  that Adam is a worthwhile improvement over our SGD baseline, especially in terms of training speed. Adam enables
-  us to reach the same accuracy as SGD at a training budget of half as many epochs. __[Page XX]__
--
+  network to operate on a coarser scale than with a normal convolution. __[Page 54]__
+- Architecture of LSTM-DQN: The Representation Generator $\phi_R$ takes as input a stream of words observed in state s
+  and produces a vector representation $v_s$, which is fed into the action scorer $\phi_A$ to produce scores for all
+  actions and argument objects. __[Page 72]__
+- To further enhance the agent's capacity to remember previous states, replace the shared MLP in $\phi_A$ by an LSTM
+  cell. LSTM-DRQN processes textual observations word-by-word to generate a fixed-length vector representation. This
+  representation is used by the recurrent policy to estimate Q-values for all verbs $Q(s,v)$ and
+  objects $Q(s,o)$. __[Page 80]__
+- Bi-directional LSTMs extend the idea of LSTMs by having two LSTMs in each layer. One LSTM processes the sequence from
+  left to right, and the other from right to left. The outputs of both LSTMs are then concatenated. This allows the
+  network to have access to past and future contexts at the same time. __[Page 94]__
+- For both $PM_{2.5}$ and $PM_{10}$  concentrations, the TCN-LSTM model produced the highest $R^2$ values of all the
+  tested models, indicating that the TCN-LSTM model achieved the closest agreement between the predicted and observed
+  value. These results indicate that the TCN-LSTM model had the highest prediction accuracy among the four deep learning
+  models considered: TCN-LSTM, CNN-LSTM, LSTM, and TCN.__[Page 112]__
+- The TCN-LSTM model predicted $PM_{2.5}$ and $PM_{10}$ concentrations with satisfactory $R^2$ values of $0.95$
+  and $0.88$, respectively higher than those achieved by any other model considered in this study. The Monte Carlo
+  cross-validation of the time series tests the robustness of the model, and the results showed the high stability of
+  the TCN-LSTM model. __[Page 116]__
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
@@ -248,5 +262,3 @@ This list is unordered regarding priority.
   approximation to the geometry of the cost function in CNNs comparing to fully connected networks. Reducing the
   minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
   Adagrad converges much slower than others. __[Page 106]__
-
-
