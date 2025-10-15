@@ -9,6 +9,11 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 
+// Standard library includes
+#include <string_view>
+
+using namespace std::literals;
+
 using mlir::Location;
 using mlir::MLIRContext;
 using mlir::ModuleOp;
@@ -19,23 +24,39 @@ using mlir::ValueRange;
 using mlir::func::FuncOp;
 
 namespace ai_pass_selector {
-constexpr int X = GATE_INDEX("x"sv);
-constexpr int Y = GATE_INDEX("y"sv);
-constexpr int Z = GATE_INDEX("z"sv);
-constexpr int H = GATE_INDEX("h"sv);
-constexpr int S = GATE_INDEX("s"sv);
-constexpr int T = GATE_INDEX("t"sv);
-constexpr int RX = GATE_INDEX("rx"sv);
-constexpr int RY = GATE_INDEX("ry"sv);
-constexpr int RZ = GATE_INDEX("rz"sv);
-constexpr int SWAP = GATE_INDEX("swap"sv);
-constexpr int R1 = GATE_INDEX("r1"sv);
-constexpr int U2 = GATE_INDEX("u2"sv);
-constexpr int U3 = GATE_INDEX("u3"sv);
-constexpr int PHASED_RX = GATE_INDEX("phased_rx"sv);
-constexpr int MX = GATE_INDEX("mx"sv);
-constexpr int MY = GATE_INDEX("my"sv);
-constexpr int MZ = GATE_INDEX("mz"sv);
+enum class GateSymbol : int {
+  X = GATE_INDEX("x"sv),
+  Y = GATE_INDEX("y"sv),
+  Z = GATE_INDEX("z"sv),
+  H = GATE_INDEX("h"sv),
+  S = GATE_INDEX("s"sv),
+  T = GATE_INDEX("t"sv),
+  RX = GATE_INDEX("rx"sv),
+  RY = GATE_INDEX("ry"sv),
+  RZ = GATE_INDEX("rz"sv),
+  SWAP = GATE_INDEX("swap"sv),
+  R1 = GATE_INDEX("r1"sv),
+  U2 = GATE_INDEX("u2"sv),
+  U3 = GATE_INDEX("u3"sv),
+  PHASED_RX = GATE_INDEX("phased_rx"sv),
+  MX = GATE_INDEX("mx"sv),
+  MY = GATE_INDEX("my"sv),
+  MZ = GATE_INDEX("mz"sv)
+};
+
+constexpr GateSymbol GATE_SYMBOL(std::string_view gate) {
+  for (int i = 0; i < NR_GATES; i++) {
+    if (SUPPORTED_GATES[i] == gate) {
+      return static_cast<GateSymbol>(i);
+    }
+  }
+  throw std::invalid_argument("GATE_SYMBOL: unsupported gate " +
+                              std::string(gate));
+}
+
+constexpr int to_gate_index(GateSymbol symbol) {
+  return static_cast<int>(symbol);
+}
 
 struct RebuildSetup {
   std::unique_ptr<MLIRContext> ctxOwner;
@@ -96,7 +117,7 @@ Operation *findReturn(ModuleOp module);
  * @return
  */
 std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
-                                  llvm::ArrayRef<double> angles);
+                                  llvm::ArrayRef<float> angles);
 
 /**
  *
@@ -104,7 +125,7 @@ std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
  * @param gateIndex
  * @param targets
  */
-static void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
+static void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
                                ValueRange targets);
 
 /**
@@ -116,17 +137,17 @@ static void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
  * @param angles
  * @param isAdj
  */
-void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
+void insertGate(RebuildSetup &rebuildSetup, GateSymbol gate,
                 const std::vector<int> &targetIndexes,
                 const std::vector<int> &controlIndexes = {},
-                const std::vector<double> &angles = {}, bool isAdj = false);
+                const std::vector<float> &angles = {}, bool isAdj = false);
 
 /**
  * Count which qubits are actually used in the instruction-based circuit tensor.
  * @param tensor
  * @return
  */
-unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<float> &tensor);
 
 /**
  *
@@ -134,13 +155,13 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor);
  * @return
  */
 QuantumCircuit
-recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor);
+recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor);
 
 /**
  *
  * @param tensor
  */
-void check_tensor(const InstructionsTensor<double> &tensor);
+void check_tensor(const InstructionsTensor<float> &tensor);
 
 } // namespace ai_pass_selector
 

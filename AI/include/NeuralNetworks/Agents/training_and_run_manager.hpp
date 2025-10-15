@@ -1,5 +1,5 @@
-#ifndef TRAINING_HPP
-#define TRAINING_HPP
+#ifndef TRAINING_AND_RUN_MANAGER_HPP
+#define TRAINING_AND_RUN_MANAGER_HPP
 
 #include <string>
 #include <unordered_map>
@@ -27,4 +27,4 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
 
 } // namespace ai_pass_selector
 
-#endif // TRAINING_HPP
+#endif // TRAINING_AND_RUN_MANAGER_HPP

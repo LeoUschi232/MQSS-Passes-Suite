@@ -4,13 +4,15 @@
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Torch includes
-#include "Agents/agent_utils.hpp"
-#include "Agents/training_and_run_manager.hpp"
+#include <torch/torch.h>
+
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Standard library includes
 #include <iostream>
 #include <string>
-#include <torch/torch.h>
 #include <vector>
 
 using namespace ai_pass_selector;
@@ -90,15 +92,15 @@ int main(int argc, char **argv) {
     }
     i++;
   }
-  std::string agent = GLOBAL_PARAMS["agent"];
-  std::string dataset = GLOBAL_PARAMS["dataset"];
-  std::string circuit = GLOBAL_PARAMS["circuit"];
-  std::string output = GLOBAL_PARAMS["output"];
+  auto agent = std::string(GLOBAL_PARAMS["agent"]);
+  auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
+  auto circuit = std::string(GLOBAL_PARAMS["circuit"]);
+  auto output = std::string(GLOBAL_PARAMS["output"]);
 
   if (info) {
     std::cout << "Parameters:" << std::endl;
     for (auto [key, value] : GLOBAL_PARAMS) {
-      std::cout << "  " << key << ": " << value << std::endl;
+      std::cout << "  " << key << ": " << value.to_string() << std::endl;
     }
     std::cout << std::endl;
     if (!circuit.empty()) {
@@ -129,30 +131,30 @@ int main(int argc, char **argv) {
 }
 
 void load_default_params() {
-  GLOBAL_PARAMS = {{"agent", "a3c-mq130-tcnrelu"},
-                   {"dataset", "mqtbench"},
-                   {"circuit", ""},
-                   {"output", ""},
-                   {"nr_parallel_environments", "1"},
-                   {"nr_asynchronous_agents", "1"},
-                   {"a3c_max_async_steps", "100000"},
-                   {"nr_episodes", "100"},
-                   {"max_steps_per_episode", "1300"},
-                   {"max_steps_no_improvement", "130"},
-                   {"max_steps_no_change", "26"},
-                   {"max_steps_same_action", "6"},
-                   {"discount_factor", "0.995"},
-                   {"gae_hyperparameter", "0.96"},
-                   {"entropy_coefficient", "0.01"},
-                   {"device", torch::cuda::is_available() ? "cuda" : "cpu"},
-                   {"critic_optimizer", "adam"},
-                   {"actor_optimizer", "adam"},
-                   {"actor_learning_rate", "0.001"},
-                   {"critic_learning_rate", "0.005"},
-                   {"ppo_epsilon", "0.2"},
-                   {"sac_alpha", "0.1"},
-                   {"print_param_info", "true"},
-                   {"save_agent_after_training", "true"},
-                   {"stop_training_on_error", "true"},
-                   {"print_diagnostics", "true"}};
+  GLOBAL_PARAMS = {
+      {"agent", "a3c-mq130-tcnrelu"},
+      {"dataset", "mqtbench"},
+      {"circuit", ""},
+      {"output", ""},
+      {"nr_asynchronous_agents", 1},
+      {"a3c_max_async_steps", 100000},
+      {"nr_episodes", 100},
+      {"max_steps_per_episode", 1300},
+      {"max_steps_no_improvement", 130},
+      {"max_steps_no_change", 26},
+      {"max_steps_same_action", 6},
+      {"discount_factor", 0.995},
+      {"gae_hyperparameter", 0.96},
+      {"entropy_coefficient", 0.01},
+      {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
+      {"critic_optimizer", "adam"},
+      {"actor_optimizer", "adam"},
+      {"actor_learning_rate", 0.001},
+      {"critic_learning_rate", 0.005},
+      {"ppo_epsilon", 0.2},
+      {"sac_alpha", 0.1},
+      {"print_param_info", false},
+      {"save_agent_after_training", false},
+      {"stop_training_on_error", true},
+      {"print_diagnostics", true}};
 }

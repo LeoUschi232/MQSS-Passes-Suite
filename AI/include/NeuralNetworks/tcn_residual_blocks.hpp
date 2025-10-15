@@ -1,8 +1,10 @@
 #ifndef TCN_RESIDUAL_BLOCK_HPP
 #define TCN_RESIDUAL_BLOCK_HPP
 
+// Neural-Network includes
+#include "NeuralNetworks/layers_and_wrappers.hpp"
+
 // Torch includes
-#include "agent_layers_and_networks.hpp"
 #include "torch/torch.h"
 
 namespace ai_pass_selector {

@@ -1,13 +1,13 @@
-#include "Agents/training_and_run_manager.hpp"
+#include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
-#include "Agents/A3C/a3c_agents.hpp"
-#include "Agents/A3C/a3c_trainer.hpp"
-#include "Agents/A3C/base_a3c_agent.hpp"
-#include "Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
+#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
@@ -19,7 +19,7 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 std::unordered_map<std::string, std::string>
 train(const std::string &agent_name, const std::string &dataset) {
@@ -27,7 +27,7 @@ train(const std::string &agent_name, const std::string &dataset) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case A3C: {
+    case AgentClass::A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
       if (attributes.extras == "tcnrelu") {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
@@ -45,7 +45,7 @@ train(const std::string &agent_name, const std::string &dataset) {
       }
       agent->load_model();
       unsigned int nr_asynchronous_agents =
-          std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
+          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
       if (nr_asynchronous_agents <= 1u) {
         std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
                   << std::endl;

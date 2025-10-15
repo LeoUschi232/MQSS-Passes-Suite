@@ -28,6 +28,7 @@ using mlir::func::ReturnOp;
 
 namespace mqss::support::quakeDialect {
 constexpr double TWO_PI = 6.28318530717958647692;
+constexpr float TWO_PI_FLOAT = 6.28318530717958647692f;
 
 /**
  *

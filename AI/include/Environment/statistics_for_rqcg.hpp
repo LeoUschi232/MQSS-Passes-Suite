@@ -6,6 +6,7 @@
 
 // Standard library includes
 #include <filesystem>
+#include <cstddef>
 
 namespace fs = std::filesystem;
 
@@ -15,55 +16,68 @@ constexpr unsigned int GATES_WEIGHTS_SIZE = 37;
 constexpr unsigned int OPERATIONS_SUBSET_SIZE = 34;
 constexpr unsigned int CHOLESKY_PARAMS_SIZE = 11;
 /// Gates Indexes
-constexpr unsigned int X_INDEX = 0;
-constexpr unsigned int CX_INDEX = 1;
-constexpr unsigned int CCX_INDEX = 2;
-constexpr unsigned int C3plus_X_INDEX = 3;
-constexpr unsigned int Y_INDEX = 4;
-constexpr unsigned int controlled_Y_INDEX = 5;
-constexpr unsigned int Z_INDEX = 6;
-constexpr unsigned int controlled_Z_INDEX = 7;
-constexpr unsigned int H_INDEX = 8;
-constexpr unsigned int controlled_H_INDEX = 9;
-constexpr unsigned int S_INDEX = 10;
-constexpr unsigned int controlled_S_INDEX = 11;
-constexpr unsigned int SDG_INDEX = 12;
-constexpr unsigned int controlled_SDG_INDEX = 13;
-constexpr unsigned int T_INDEX = 14;
-constexpr unsigned int controlled_T_INDEX = 15;
-constexpr unsigned int TDG_INDEX = 16;
-constexpr unsigned int controlled_TDG_INDEX = 17;
-constexpr unsigned int RX_INDEX = 18;
-constexpr unsigned int controlled_RX_INDEX = 19;
-constexpr unsigned int RY_INDEX = 20;
-constexpr unsigned int controlled_RY_INDEX = 21;
-constexpr unsigned int RZ_INDEX = 22;
-constexpr unsigned int controlled_RZ_INDEX = 23;
-constexpr unsigned int SWAP_INDEX = 24;
-constexpr unsigned int controlled_SWAP_INDEX = 25;
-constexpr unsigned int R1_INDEX = 26;
-constexpr unsigned int controlled_R1_INDEX = 27;
-constexpr unsigned int U2_INDEX = 28;
-constexpr unsigned int controlled_U2_INDEX = 29;
-constexpr unsigned int U3_INDEX = 30;
-constexpr unsigned int controlled_U3_INDEX = 31;
-constexpr unsigned int PHASED_RX_INDEX = 32;
-constexpr unsigned int controlled_PHASED_RX_INDEX = 33;
-constexpr unsigned int MX_INDEX = 34;
-constexpr unsigned int MY_INDEX = 35;
-constexpr unsigned int MZ_INDEX = 36;
+enum class GateWeightIndex : unsigned int {
+  X = 0,
+  CX = 1,
+  CCX = 2,
+  C3PlusX = 3,
+  Y = 4,
+  ControlledY = 5,
+  Z = 6,
+  ControlledZ = 7,
+  H = 8,
+  ControlledH = 9,
+  S = 10,
+  ControlledS = 11,
+  SDG = 12,
+  ControlledSDG = 13,
+  T = 14,
+  ControlledT = 15,
+  TDG = 16,
+  ControlledTDG = 17,
+  RX = 18,
+  ControlledRX = 19,
+  RY = 20,
+  ControlledRY = 21,
+  RZ = 22,
+  ControlledRZ = 23,
+  SWAP = 24,
+  ControlledSWAP = 25,
+  R1 = 26,
+  ControlledR1 = 27,
+  U2 = 28,
+  ControlledU2 = 29,
+  U3 = 30,
+  ControlledU3 = 31,
+  PhasedRX = 32,
+  ControlledPhasedRX = 33,
+  MX = 34,
+  MY = 35,
+  MZ = 36
+};
+
 /// Cholseky Indexes
-constexpr unsigned int MEAN_QUBITS_INDEX = 0;
-constexpr unsigned int MEAN_GATES_INDEX = 1;
-constexpr unsigned int MEAN_OPERATIONS_INDEX = 2;
-constexpr unsigned int MEAN_MEASUREMENTS_INDEX = 3;
-constexpr unsigned int QUBITS_L11_INDEX = 4;
-constexpr unsigned int GATES_L21_INDEX = 5;
-constexpr unsigned int GATES_L22_INDEX = 6;
-constexpr unsigned int OPERATIONS_L21_INDEX = 7;
-constexpr unsigned int OPERATIONS_L22_INDEX = 8;
-constexpr unsigned int MEASUREMENTS_L21_INDEX = 9;
-constexpr unsigned int MEASUREMENTS_L22_INDEX = 10;
+enum class CholeskyParamIndex : unsigned int {
+  MeanQubits = 0,
+  MeanGates = 1,
+  MeanOperations = 2,
+  MeanMeasurements = 3,
+  QubitsL11 = 4,
+  GatesL21 = 5,
+  GatesL22 = 6,
+  OperationsL21 = 7,
+  OperationsL22 = 8,
+  MeasurementsL21 = 9,
+  MeasurementsL22 = 10
+};
+
+constexpr std::size_t to_index(GateWeightIndex index) {
+  return static_cast<std::size_t>(index);
+}
+
+constexpr std::size_t to_index(CholeskyParamIndex index) {
+  return static_cast<std::size_t>(index);
+}
 
 /**
  *

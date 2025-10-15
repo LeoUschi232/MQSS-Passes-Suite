@@ -7,13 +7,11 @@ This list is unordered regarding priority.
  Task                                            | Description                                                                                                                                                                                        
 -------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved. 
- Optimize convolutional design                   | Read research on designs of convolutional neural networks and make the design of agents with convolutional layers similar to state-of-the-art standardized practices uses.                         
  Create Chemistry Dataset                        | In addition to the MQTBench dataset, create a dataset of quantum checmistry circuits using PySCF and/or OpenFermion.                                                                               
  Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
- Implement Prioritized Level Replay              | Implement Prioritized Level Replay into the A3C agent.                                                                                                                                             
  Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                        
  Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                
- Research and implement Prioritized Level Replay | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
+ Implement Prioritized Level Replay              | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
 
 ## Research Paper Notes
 
@@ -125,13 +123,58 @@ This list is unordered regarding priority.
   REDQ while maintaining the same sample efficiency by replacing its ensemble of critics with dropout. REDQ and DroQ
   represent the state-of-the-art in terms of sample efficiency in Deep RL for continuous control. __[Page 141]__
 
-### 4. [AI Research on Deep Convolutional Neural Network Designs](ResearchPapers/04_AIResearchOnDeepConvolutionalNeuralNetworkDesigns.pdf)
+### 4. [RNN & LSTM for Sequences: Variants, Evaluations and Applications](ResearchPapers/04_RNNandLSTMforSequencesVariantsEvaluationsAndApplications.pdf)
 
-- Each layer can have a small kernel, for example `size=3`, but withxl dilation factors doubling at each
+- With the efficient, truncated update rule, error flows only through connections to output unit, and through fixed
+  self-connections within cell blocks. Error flow is truncated once it wants to leave memory cells or gate units.
+  Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates,
+  although the connections themselves are modifiable. That is why the truncated LSTM algorithm is so efficient, despite
+  its ability to bridge very long time lags. __[Page 12]__
+- We always use online learning, as opposed to batch learning, and logistic sigmoids as activation functions. Initial
+  weights are chosen in the range $[−0.2,0.2]$, for the other experiments in $[−0.1,0.1]$. Training sequences are
+  generated randomly according to the various task descriptions. __[Page 15]__
+- LSTM based RNN architectures can obtain state of the art performance in a large vocabulary speech recognition system
+  with thousands of context dependent states. The proposed architectures modify the standard architecture of the LSTM
+  networks to make better use of the model parameters while addressing the computational efficiency problems of large
+  networks. __[Page 46]__
+- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
+  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
+  which can be processed offline. __[Page 51]__
+- One of the methods for training RNN is Backpropagation Through Time (BPTT), which is very similar to the
+  backpropagation algorithm because it is based on gradient descent and chain rule, but it has also chain rule through
+  time. BPTT was developed by several works. This algorithm is very solid in theory, however, it does not show the best
+  performance in practice. In BPTT, the loss is considered as a summation of loss functions at the previous time steps
+  until now. __[Page 52]__
+- The bidirectional LSTM includes two LSTM networks each of which processes the sequence from one direction. In other
+  words, there are two LSTM networks which are fed with the sequence in opposite orders. Experiments have shown that the
+  bidirectional LSTM outperforms the unidirectional LSTM. __[Page 62]__
+- Sequence modeling aims at learning a probability distribution over sequences, by maximizing the log-likelihood of a
+  model given a set of training sequences. __[Page 68]__
+- Finite-sized RNNs with nonlinear activations are a rich family of models, capable of nearly arbitrary computation.
+  With sigmoidal activation functions they can simulate a universal Turing machine. __[Page 75]__
+- For the intuition of the peephole connection consider a network which must learn to count objects and emit some
+  desired output when n objects have been seen. The network might learn to let some fixed amount of activation into the
+  internal state after each object is seen. This activation is trapped in the internal state by the constant error
+  carousel, and is incremented iteratively each time another object is seen. When the nth object is seen, the network
+  needs to know to let out content from the internal state so that it can affect the output. __[Page 90]__
+- Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
+  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the
+  same. __[Page 116]__
+- Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
+  function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
+  bias threshold. __[Page 130]__
+- Efficient Unitary Neural Network (EUNN) whose computational cost is merely $\mathcal{O}(1)$ per parameter, which
+  is  $\mathcal{O}(\log(N)))$  more efficient than the other methods discussed. It significantly outperforms existing
+  RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
+  demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page 133]__
+
+### 5. [Neural Network Architectures for Sequences of Elements: TCN & LSTM](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf)
+
+- Each layer can have a small kernel, for example `size=3`, but with dilation factors doubling at each
   layer $(1,2,4,8)$. This way, a relatively deep network, up to 12 layers, can capture long-range dependencies, hundreds
   of time-steps, without needing an impractically large kernel. __[Page 2]__
 - The TCN formulation distilled many of these best practices into a simple architecture can learn complex sequence
-  patterns, even something as unusual as quantum gate sequences, given sufficient depth and training.
+  patterns, even something as unusual as quantum gate sequences, given sufficient depth and training. __[Page 3]__
 - Results indicate that a simple convolutional architecture outperforms canonical recurrent networks such as LSTMs
   across a diverse range of tasks and datasets, while demonstrating longer effective memory. To represent convolutional
   networks, we describe a generic Temporal Convolutional Network (TCN) architecture that is applied across all tasks.
@@ -140,32 +183,36 @@ This list is unordered regarding priority.
 - The TCN architecture appears not only more accurate than canonical recurrent networks such as LSTMs and GRUs, but also
   simpler and clearer. It may therefore be a more appropriate starting point in the application of deep networks to
   sequences. Basic RNN architectures are notoriously difficult to train and more elaborate architectures are commonly
-  used instead, such as the LSTM and the GRU. __[Page 3]__
+  used instead, such as the LSTM and the GRU. __[Page 9]__
 - The copy memory task is perfectly set up to examine a model's ability to retain information for different lengths of
   time. The requisite retention time can be controlled by varying the sequence length $T$. TCN outperforms LSTMs and
   vanilla RNNs by a significant margin in perplexity on LAMBADA, with a substantially smaller network and virtually no
   tuning. __[Page 15]__
 - Convolutional networks do not depend on the computations of the previoustime step and therefore allow parallelization
   over every ele ment in a sequence. This contrasts with RNNs which main tain a hidden state of the entire past that
-  prevents parallel computation within a sequence. __[Page XX]__
+  prevents parallel computation within a sequence. __[Page 39]__
 - A dilated convolution is a convolution where the filter is applied over an area larger than its length by skipping
   input values with a certain step. It is equivalent to a convolution with a larger filter derived from the original
   filter by dilating it with zeros, but is significantly more efficient. A dilated convolution effectively allows the
-  network to operate on a coarser scale than with a normal convolution. __[Page XX]__
-- Unitary/Orthogonal matrices keep the norm of vectors. By enforcing hidden to hidden transition matrix to be
-  unitary/orthogonal, no matter how many time steps are propagated, the norm of the gradient will stay the
-  same. __[Page XX]__
-- Use nonlinearity $\mathrm{modReLU}(z_i,b_i)=\mathrm{sign}(z_i)\cdot\mathrm{ReLU}(|z_i|+b_i)$. This nonlinearity
-  function performs the best. This function possibly also serves as a forgetting filter that removes the noise using the
-  bias threshold. __[Page XX]__
-- Efficient Unitary Neural Network (EUNN) whose computational cost is merely $\mathcal{O}(1)$ per parameter, which
-  is  $\mathcal{O}(\log(N)))$  more efficient than the other methods discussed. It significantly outperforms existing
-  RNN architectures on the standard Copying Task, and the pixel-permuted MNIST Task using a comparable parameter count,
-  demonstrating the highest recorded ability to memorize sequential information over long time periods. __[Page XX]__
-
-### 5. [Neural Networks for Sequences](ResearchPapers/05_NeuralNetworksForSequences.pdf)
-
--
+  network to operate on a coarser scale than with a normal convolution. __[Page 54]__
+- Architecture of LSTM-DQN: The Representation Generator $\phi_R$ takes as input a stream of words observed in state s
+  and produces a vector representation $v_s$, which is fed into the action scorer $\phi_A$ to produce scores for all
+  actions and argument objects. __[Page 72]__
+- To further enhance the agent's capacity to remember previous states, replace the shared MLP in $\phi_A$ by an LSTM
+  cell. LSTM-DRQN processes textual observations word-by-word to generate a fixed-length vector representation. This
+  representation is used by the recurrent policy to estimate Q-values for all verbs $Q(s,v)$ and
+  objects $Q(s,o)$. __[Page 80]__
+- Bi-directional LSTMs extend the idea of LSTMs by having two LSTMs in each layer. One LSTM processes the sequence from
+  left to right, and the other from right to left. The outputs of both LSTMs are then concatenated. This allows the
+  network to have access to past and future contexts at the same time. __[Page 94]__
+- For both $PM_{2.5}$ and $PM_{10}$  concentrations, the TCN-LSTM model produced the highest $R^2$ values of all the
+  tested models, indicating that the TCN-LSTM model achieved the closest agreement between the predicted and observed
+  value. These results indicate that the TCN-LSTM model had the highest prediction accuracy among the four deep learning
+  models considered: TCN-LSTM, CNN-LSTM, LSTM, and TCN.__[Page 112]__
+- The TCN-LSTM model predicted $PM_{2.5}$ and $PM_{10}$ concentrations with satisfactory $R^2$ values of $0.95$
+  and $0.88$, respectively higher than those achieved by any other model considered in this study. The Monte Carlo
+  cross-validation of the time series tests the robustness of the model, and the results showed the high stability of
+  the TCN-LSTM model. __[Page 116]__
 
 ### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
 
@@ -213,11 +260,3 @@ This list is unordered regarding priority.
   approximation to the geometry of the cost function in CNNs comparing to fully connected networks. Reducing the
   minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As a result,
   Adagrad converges much slower than others. __[Page 106]__
-
-### 7. [Recurrent Neural Networks: Architectures and Applications](ResearchPapers/07_RecurrentNeuralNetworksArchitecturesAndApplications.pdf)
-
-- RNN and LSTM networks are causal models which condition every sequence element on the previous elements in the
-  sequence. Later researches showed that processing the sequence in both directions can perform better for the sequences
-  which can be processed offline. __[Page 55]__
-
-## Nothing

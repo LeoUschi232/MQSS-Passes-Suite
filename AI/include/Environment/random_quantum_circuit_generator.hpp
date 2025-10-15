@@ -14,9 +14,10 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+enum class GateSymbol : int;
 struct GateSpec {
   // X,Y,Z,H,S,T,RX,RY,RZ,SWAP,R1,U2,U3,PHASED_RX
-  int baseGate;
+  GateSymbol baseGate;
   // Sdg/Tdg
   bool isAdj;
   // >=0 exact; -1 = not exact
@@ -82,7 +83,7 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
  * @param baseGate
  * @return
  */
-std::vector<double> makeAngles(int baseGate);
+std::vector<float> makeAngles(GateSymbol baseGate);
 
 /**
  *
