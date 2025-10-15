@@ -27,7 +27,7 @@ train(const std::string &agent_name, const std::string &dataset) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case A3C: {
+    case AgentClass::A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
       if (attributes.extras == "tcnrelu") {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);

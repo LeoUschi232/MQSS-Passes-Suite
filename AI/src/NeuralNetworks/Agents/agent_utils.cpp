@@ -29,7 +29,7 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
       AGENT_NAME_TO_CLASS.end()) {
     throw std::runtime_error("Unsupported agent: " + agent_attributes[0]);
   }
-  int agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
+  AgentClass agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
   if (agent_attributes[1].rfind("mq", 0) != 0) {
     throw std::invalid_argument("Missing <mq> prefix");
   }
@@ -39,30 +39,31 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
 }
 
 std::unique_ptr<torch::optim::Optimizer>
-makeOptimizer(int optimizerType, const torch::nn::Sequential &agentModel,
+makeOptimizer(OptimizerType optimizerType,
+              const torch::nn::Sequential &agentModel,
               double learningRate) {
   switch (optimizerType) {
-  case OPTIMIZER_ADAGRAD:
+  case OptimizerType::Adagrad:
     return std::make_unique<torch::optim::Adagrad>(
         agentModel->parameters(), torch::optim::AdagradOptions(learningRate));
-  case OPTIMIZER_ADAM:
+  case OptimizerType::Adam:
     return std::make_unique<torch::optim::Adam>(
         agentModel->parameters(), torch::optim::AdamOptions(learningRate));
-  case OPTIMIZER_ADAMW:
+  case OptimizerType::AdamW:
     return std::make_unique<torch::optim::AdamW>(
         agentModel->parameters(), torch::optim::AdamWOptions(learningRate));
-  case OPTIMIZER_LBFGS:
+  case OptimizerType::LBFGS:
     return std::make_unique<torch::optim::LBFGS>(
         agentModel->parameters(), torch::optim::LBFGSOptions(learningRate));
-  case OPTIMIZER_RMSPROP:
+  case OptimizerType::RMSProp:
     return std::make_unique<torch::optim::RMSprop>(
         agentModel->parameters(), torch::optim::RMSpropOptions(learningRate));
-  case OPTIMIZER_SGD:
+  case OptimizerType::SGD:
     return std::make_unique<torch::optim::SGD>(
         agentModel->parameters(), torch::optim::SGDOptions(learningRate));
   default:
     throw std::runtime_error("Unsupported optimizer type: " +
-                             std::to_string(optimizerType));
+                             std::to_string(static_cast<int>(optimizerType)));
   }
 }
 
@@ -113,7 +114,7 @@ getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
     std::cerr << "Unsupported agent: " << agent_attributes[0] << std::endl;
     return {};
   }
-  int agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
+  AgentClass agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
   if (agent_attributes[1].rfind("mq", 0) != 0) {
     throw std::invalid_argument("Missing 'mq' prefix");
   }

@@ -14,13 +14,14 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+enum class OptimizerType : int;
 
 class BaseA3CAgent : public BaseActorCritic {
 protected:
   /// Attributes on configuration
   unsigned int max_qubits = 0u;
-  int critic_optimizer_type = 0;
-  int actor_optimizer_type = 0;
+  OptimizerType critic_optimizer_type{};
+  OptimizerType actor_optimizer_type{};
   double critic_learning_rate = 0.0;
   double actor_learning_rate = 0.0;
   torch::Device device = torch::kCPU;

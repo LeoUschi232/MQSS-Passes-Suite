@@ -121,7 +121,7 @@ std::vector<Value> RebuildSetup::getRefs(const std::vector<int> &indexes) {
   return refsVector;
 }
 
-void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
+void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
                         ValueRange targets) {
   if (targets.empty()) {
     throw std::runtime_error("Measurement needs at least 1 target.");
@@ -129,26 +129,26 @@ void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
   llvm::SmallVector<Value> targetsVec(targets.begin(), targets.end());
   mlir::Type measureType =
       quake::MeasureType::get(rebuildSetup.builder.getContext());
-  switch (gateIndex) {
-  case MX:
+  switch (gate) {
+  case GateSymbol::MX:
     rebuildSetup.builder.create<quake::MxOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
-  case MY:
+  case GateSymbol::MY:
     rebuildSetup.builder.create<quake::MyOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
-  case MZ:
+  case GateSymbol::MZ:
     rebuildSetup.builder.create<quake::MzOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
   default:
     throw std::runtime_error("Not a measurement: " +
-                             std::string(SUPPORTED_GATES[gateIndex]));
+                             std::string(SUPPORTED_GATES[to_gate_index(gate)]));
   }
 }
 
-void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
+void insertGate(RebuildSetup &rebuildSetup, GateSymbol gate,
                 const std::vector<int> &targetIndexes,
                 const std::vector<int> &controlIndexes,
                 const std::vector<float> &angles, bool isAdj) {
@@ -160,70 +160,70 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
   ValueRange controls(controlVals);
   ValueRange targets(targetVals);
   std::vector<Value> paramsVector;
-  switch (gateIndex) {
-  case X:
+  switch (gate) {
+  case GateSymbol::X:
     rebuildSetup.builder.create<quake::XOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case Y:
+  case GateSymbol::Y:
     rebuildSetup.builder.create<quake::YOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case Z:
+  case GateSymbol::Z:
     rebuildSetup.builder.create<quake::ZOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case H:
+  case GateSymbol::H:
     rebuildSetup.builder.create<quake::HOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case S:
+  case GateSymbol::S:
     rebuildSetup.builder.create<quake::SOp>(rebuildSetup.loc, isAdj,
                                             ValueRange{}, controls, targets);
     break;
-  case T:
+  case GateSymbol::T:
     rebuildSetup.builder.create<quake::TOp>(rebuildSetup.loc, isAdj,
                                             ValueRange{}, controls, targets);
     break;
-  case RX:
+  case GateSymbol::RX:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RxOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case RY:
+  case GateSymbol::RY:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RyOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case RZ:
+  case GateSymbol::RZ:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RzOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case SWAP:
+  case GateSymbol::SWAP:
     if (targets.size() != 2) {
       throw std::runtime_error("Swap requires exactly 2 targets.");
     }
     rebuildSetup.builder.create<quake::SwapOp>(rebuildSetup.loc, false,
                                                ValueRange{}, controls, targets);
     break;
-  case R1:
+  case GateSymbol::R1:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::R1Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case U2:
+  case GateSymbol::U2:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1])};
     rebuildSetup.builder.create<quake::U2Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case U3:
+  case GateSymbol::U3:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1]),
@@ -231,34 +231,34 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
     rebuildSetup.builder.create<quake::U3Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case PHASED_RX:
+  case GateSymbol::PHASED_RX:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1])};
     rebuildSetup.builder.create<quake::PhasedRxOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case MX:
+  case GateSymbol::MX:
     if (!controls.empty()) {
       throw std::runtime_error("Mx cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MX, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MX, targets);
     break;
-  case MY:
+  case GateSymbol::MY:
     if (!controls.empty()) {
       throw std::runtime_error("My cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MY, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MY, targets);
     break;
-  case MZ:
+  case GateSymbol::MZ:
     if (!controls.empty()) {
       throw std::runtime_error("Mz cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MZ, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MZ, targets);
     break;
   default:
     throw std::runtime_error("Unsupported gate index: " +
-                             std::to_string(gateIndex));
+                             std::to_string(to_gate_index(gate)));
   }
 }
 
@@ -357,7 +357,7 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
       throw std::runtime_error("Nr gate angles: " +
                                std::to_string(angles.size()));
     }
-    insertGate(rebuildSetup, gateIndex, targetIndexes, controlIndexes, angles,
+    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes, controlIndexes, angles,
                isAdj);
 
     // Adjust the depths only if everything ran smoothly.
