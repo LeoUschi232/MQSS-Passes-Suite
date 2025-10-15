@@ -13,21 +13,16 @@
 #include <utility>
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
-    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
-  this->device =
-      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
-              torch::cuda::is_available()
-          ? torch::kCUDA
-          : torch::kCPU;
-  this->actor_learning_rate = std::stod(GLOBAL_PARAMS["actor_learning_rate"]);
-  this->critic_learning_rate = std::stod(GLOBAL_PARAMS["critic_learning_rate"]);
-  this->actor_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["actor_optimizer"]);
-  this->critic_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["critic_optimizer"]);
+: max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
+  this->device = GLOBAL_PARAMS["device"].to_device_type();
+  this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
+  this->critic_learning_rate =
+      GLOBAL_PARAMS["critic_learning_rate"].to_double();
+  this->actor_optimizer_type = GLOBAL_PARAMS["actor_optimizer_type"].to_int();
+  this->critic_optimizer_type = GLOBAL_PARAMS["critic_optimizer_type"].to_int();
 }
 
 bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,

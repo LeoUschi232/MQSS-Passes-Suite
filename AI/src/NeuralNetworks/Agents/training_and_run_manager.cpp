@@ -19,7 +19,7 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 std::unordered_map<std::string, std::string>
 train(const std::string &agent_name, const std::string &dataset) {
@@ -45,7 +45,7 @@ train(const std::string &agent_name, const std::string &dataset) {
       }
       agent->load_model();
       unsigned int nr_asynchronous_agents =
-          std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
+          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
       if (nr_asynchronous_agents <= 1u) {
         std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
                   << std::endl;

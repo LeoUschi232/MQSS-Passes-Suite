@@ -29,31 +29,31 @@ void signal_handler(int signal) {
 }
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 std::unordered_map<std::string, std::string>
 train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           const std::string &dataset) {
   unsigned int max_qubits = agent_boss->getMaxQubits();
-  if (GLOBAL_PARAMS["print_param_info"] == "true") {
+  if (GLOBAL_PARAMS["print_param_info"].to_bool()) {
     std::cout << "Training A3C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
     for (auto [key, value] : GLOBAL_PARAMS) {
-      std::cout << "  " << key << ": " << value << std::endl;
+      std::cout << "  " << key << ": " << value.to_string() << std::endl;
     }
   }
 
   // Default values
   unsigned int nr_asynchronous_agents =
-      std::stoul(GLOBAL_PARAMS["nr_asynchronous_agents"]);
+      GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
   unsigned int a3c_max_async_steps =
-      std::stoul(GLOBAL_PARAMS["a3c_max_async_steps"]);
+      GLOBAL_PARAMS["a3c_max_async_steps"].to_int();
   unsigned int max_steps_per_episode =
-      std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
-  double discount_factor = std::stod(GLOBAL_PARAMS["discount_factor"]);
-  double gae_hyperparameter = std::stod(GLOBAL_PARAMS["gae_hyperparameter"]);
-  double entropy_coefficient = std::stod(GLOBAL_PARAMS["entropy_coefficient"]);
-  torch::Device device = DEVICE_NAME_TO_TORCH.at(GLOBAL_PARAMS["device"]);
+      GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  double discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
+  double gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
+  double entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
+  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -196,7 +196,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         // accessed for rough diagnostics, it doesn't have to be exact.
         std::cerr << "Step: " << global_async_step << ": " << error.what()
                   << std::endl;
-        if (GLOBAL_PARAMS["stop_training_on_error"] == "true") {
+        if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
           interrupted = 1;
         }
       }
@@ -215,25 +215,25 @@ std::unordered_map<std::string, std::string>
 train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           const std::string &dataset) {
   unsigned int max_qubits = agent->getMaxQubits();
-  if (GLOBAL_PARAMS["print_param_info"] == "true") {
+  if (GLOBAL_PARAMS["print_param_info"].to_bool()) {
     std::cout << "Training A2C agent with parameters:" << std::endl;
     std::cout << "  max_qubits: " << max_qubits << std::endl;
     for (auto [key, value] : GLOBAL_PARAMS) {
-      std::cout << "  " << key << ": " << value << std::endl;
+      std::cout << "  " << key << ": " << value.to_string() << std::endl;
     }
   }
-  if (GLOBAL_PARAMS["print_diagnostics"] == "true") {
+  if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
     agent->check_params();
   }
 
   // Default values
-  unsigned int nr_episodes = std::stoul(GLOBAL_PARAMS["nr_episodes"]);
+  unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =
-      std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
-  double discount_factor = std::stod(GLOBAL_PARAMS["discount_factor"]);
-  double gae_hyperparameter = std::stod(GLOBAL_PARAMS["gae_hyperparameter"]);
-  double entropy_coefficient = std::stod(GLOBAL_PARAMS["entropy_coefficient"]);
-  torch::Device device = DEVICE_NAME_TO_TORCH.at(GLOBAL_PARAMS["device"]);
+      GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  double discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
+  double gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
+  double entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
+  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -324,7 +324,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
-      if (GLOBAL_PARAMS["stop_training_on_error"] == "true") {
+      if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
         interrupted = 1;
         break;
       }
@@ -334,7 +334,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     std::cout << "\nTraining finished." << std::endl;
   }
 
-  if (GLOBAL_PARAMS["save_agent_after_training"] == "true") {
+  if (GLOBAL_PARAMS["save_agent_after_training"].to_bool()) {
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }

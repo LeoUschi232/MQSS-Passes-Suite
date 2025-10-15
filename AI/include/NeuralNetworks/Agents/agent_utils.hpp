@@ -56,10 +56,6 @@ const std::unordered_map<int, std::string> OPTIMIZER_TYPE_TO_NAME = {
     {OPTIMIZER_ADAMW, "adamw"},     {OPTIMIZER_LBFGS, "lbfgs"},
     {OPTIMIZER_RMSPROP, "rmsprop"}, {OPTIMIZER_SGD, "sgd"}};
 
-/// Devices
-const std::unordered_map<std::string, torch::Device> DEVICE_NAME_TO_TORCH = {
-    {"cpu", torch::kCPU}, {"cuda", torch::kCUDA}, {"gpu", torch::kCUDA}};
-
 /**
  *
  * @param agent_name

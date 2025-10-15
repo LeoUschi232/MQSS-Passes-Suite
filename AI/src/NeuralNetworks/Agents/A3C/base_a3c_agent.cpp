@@ -14,22 +14,10 @@
 #include <utility>
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 BaseA3CAgent::BaseA3CAgent(unsigned int max_qubits, bool is_boss)
-    : BaseActorCritic(max_qubits), is_boss(is_boss) {
-  this->device =
-      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
-              torch::cuda::is_available()
-          ? torch::kCUDA
-          : torch::kCPU;
-  this->actor_learning_rate = std::stod(GLOBAL_PARAMS["actor_learning_rate"]);
-  this->critic_learning_rate = std::stod(GLOBAL_PARAMS["critic_learning_rate"]);
-  this->actor_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["actor_optimizer"]);
-  this->critic_optimizer_type =
-      OPTIMIZER_NAME_TO_TYPE.at(GLOBAL_PARAMS["critic_optimizer"]);
-}
+    : BaseActorCritic(max_qubits), is_boss(is_boss) {}
 
 bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
                               const torch::nn::Sequential &critic) {

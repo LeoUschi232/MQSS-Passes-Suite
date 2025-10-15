@@ -35,7 +35,7 @@ using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
-extern std::unordered_map<std::string, std::string> GLOBAL_PARAMS;
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
     unsigned int max_qubits, unsigned int max_steps,
@@ -52,47 +52,22 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
-  this->device =
-      (GLOBAL_PARAMS["device"] == "cuda" || GLOBAL_PARAMS["device"] == "gpu") &&
-              torch::cuda::is_available()
-          ? torch::kCUDA
-          : torch::kCPU;
-
-  try {
-    this->max_steps_per_episode =
-        std::stoul(GLOBAL_PARAMS["max_steps_per_episode"]);
-  } catch (const std::exception &error) {
-    std::cerr << "max_steps_per_episode: " << error.what() << std::endl;
-  }
-  try {
-    this->max_steps_no_improvement =
-        std::stoul(GLOBAL_PARAMS["max_steps_no_improvement"]);
-  } catch (const std::exception &error) {
-    std::cerr << "max_steps_no_improvement: " << error.what() << std::endl;
-  }
-  try {
-    this->max_steps_no_change =
-        std::stoul(GLOBAL_PARAMS["max_steps_no_change"]);
-  } catch (const std::exception &error) {
-    std::cerr << "max_steps_no_change: " << error.what() << std::endl;
-  }
-  try {
-    this->max_steps_same_action =
-        std::stoul(GLOBAL_PARAMS["max_steps_same_action"]);
-  } catch (const std::exception &error) {
-    std::cerr << "max_steps_same_action: " << error.what() << std::endl;
-  }
-  this->max_steps_per_episode =
-      std::max(this->max_steps_per_episode, MIN_NR_STEPS);
-  this->max_steps_no_improvement =
-      std::max(this->max_steps_no_improvement, MIN_NR_STEPS);
-  this->max_steps_no_change = std::max(this->max_steps_no_change, MIN_NR_STEPS);
-  this->max_steps_same_action =
-      std::max(this->max_steps_same_action, MIN_NR_STEPS);
-  if (GLOBAL_PARAMS.find("circuit") != GLOBAL_PARAMS.end() &&
-      !GLOBAL_PARAMS["circuit"].empty()) {
-    this->register_quantum_circuit(GLOBAL_PARAMS["circuit"]);
-  }
+  this->device = GLOBAL_PARAMS["device"].to_device_type();
+  this->max_steps_per_episode = std::max(
+      static_cast<unsigned>(GLOBAL_PARAMS["max_steps_per_episode"].to_int()),
+      MIN_NR_STEPS);
+  this->max_steps_no_improvement = std::max(
+      static_cast<unsigned>(GLOBAL_PARAMS["max_steps_no_improvement"].to_int()),
+      MIN_NR_STEPS);
+  this->max_steps_no_change = std::max(
+      static_cast<unsigned>(GLOBAL_PARAMS["max_steps_no_change"].to_int()),
+      MIN_NR_STEPS);
+  this->max_steps_same_action = std::max(
+      static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int()),
+      MIN_NR_STEPS);
+  // Do not worry about not having a circuit because the method
+  // register_quantum_circuit will handle empty strings.
+  this->register_quantum_circuit(GLOBAL_PARAMS["circuit"].to_string());
 }
 
 void QuantumCircuitEnvironment::clear(bool hard) {
@@ -448,7 +423,7 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
   torch::TensorOptions options = tensor_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
   InstructionsTensor<float> observation = this->get_observation();
-  if (GLOBAL_PARAMS["print_diagnostics"] == "true") {
+  if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
     check_tensor(observation);
   }
   unsigned int N = observation.shape[0];
