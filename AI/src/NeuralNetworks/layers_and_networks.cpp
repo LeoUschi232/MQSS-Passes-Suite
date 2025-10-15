@@ -16,6 +16,8 @@ namespace ai_pass_selector {
 torch::nn::Sequential
 make_TCN_actor(unsigned int max_qubits,
                const std::optional<double> &optional_prelu_init) {
+  // Treat the nr of neurons for an instruction representation as the nr of
+  // input channels in a single unit of the chain.
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   constexpr unsigned int nr_residual_blocks = 12u;
   constexpr unsigned int kernel_size = 5u;
@@ -49,6 +51,8 @@ make_TCN_actor(unsigned int max_qubits,
 torch::nn::Sequential
 make_TCN_critic(unsigned int max_qubits,
                 const std::optional<double> &optional_prelu_init) {
+  // Treat the nr of neurons for an instruction representation as the nr of
+  // input channels in a single unit of the chain.
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   constexpr unsigned int nr_residual_blocks = 12u;
   constexpr unsigned int kernel_size = 5u;
