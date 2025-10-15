@@ -30,7 +30,6 @@ make_TCN_actor(unsigned int max_qubits,
         torch::nn::Flatten(
             torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
         torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
-        torch::nn::ReLU(),                                     // -> [NR_PASSES]
         torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
     );
   }
@@ -43,9 +42,7 @@ make_TCN_actor(unsigned int max_qubits,
       torch::nn::Flatten(
           torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
       torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
-      torch::nn::PReLU(
-          torch::nn::PReLUOptions().init(prelu_init)), // -> [NR_PASSES]
-      torch::nn::Softmax(/*dim=*/0u)                   // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
   );
 }
 torch::nn::Sequential
@@ -75,31 +72,76 @@ make_TCN_critic(unsigned int max_qubits,
                               prelu_init), // -> [IRS, N]
       torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
       torch::nn::Flatten(
-          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [IRS]
-      torch::nn::Linear(IRS, 1),                             // -> [1]
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)),       // -> [IRS]
+      torch::nn::Linear(IRS, 1),                                   // -> [1]
       torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init)) // -> [1]
   );
 }
-torch::nn::Sequential
-make_LSTM_actor(unsigned int max_qubits,
-                const std::optional<double> &optional_prelu_init) {
-  throw std::runtime_error("Not implemented yet.");
+torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
+                                      unsigned int hidden_size_multiplier,
+                                      unsigned int projection_size_multiplier) {
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  const unsigned int H = hidden_size_multiplier * IRS;
+  const unsigned int P = projection_size_multiplier * IRS;
+  if (H == P) {
+    return torch::nn::Sequential(
+        torch::nn::LSTM(
+            torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
+                .bidirectional(true)),          // -> [N, 2*H]
+        torch::nn::TransposeContiguous(0u, 1u), // -> [2*H, N]
+        torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*H, 1]
+        torch::nn::Flatten(
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*H]
+        torch::nn::Linear(2 * H, NR_PASSES),                   // -> [NR_PASSES]
+        torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
+    );
+  }
+  return torch::nn::Sequential(
+      torch::nn::LSTM(
+          torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
+              .bidirectional(true)
+              .proj_size(P)),                 // -> [N, 2*P]
+      torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
+      torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*P]
+      torch::nn::Linear(2 * P, NR_PASSES),                   // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
+  );
 }
 torch::nn::Sequential
-make_LSTM_critic(unsigned int max_qubits,
-                 const std::optional<double> &optional_prelu_init) {
-  throw std::runtime_error("Not implemented yet.");
+make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
+                 unsigned int projection_size_multiplier) {
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  const unsigned int H = hidden_size_multiplier * IRS;
+  const unsigned int P = projection_size_multiplier * IRS;
+  if (H == P) {
+    return torch::nn::Sequential(
+        torch::nn::LSTM(
+            torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
+                .bidirectional(true)),          // -> [N, 2*H]
+        torch::nn::TransposeContiguous(0u, 1u), // -> [2*H, N]
+        torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*H, 1]
+        torch::nn::Flatten(
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*H]
+        torch::nn::Linear(2 * H, 1),                           // -> [1]
+        torch::nn::Softmax(/*dim=*/0u)                         // -> [1]
+    );
+  }
+  return torch::nn::Sequential(
+      torch::nn::LSTM(
+          torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
+              .bidirectional(true)
+              .proj_size(P)),                 // -> [N, 2*P]
+      torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
+      torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*P]
+      torch::nn::Linear(2 * P, 1),                           // -> [NR_PASSES]
+      torch::nn::ReLU()                                      // -> [NR_PASSES]
+  );
 }
-torch::nn::Sequential
-make_HYBRID_actor(unsigned int max_qubits,
-                  const std::optional<double> &optional_prelu_init) {
-  throw std::runtime_error("Not implemented yet.");
-}
-torch::nn::Sequential
-make_HYBRID_critic(unsigned int max_qubits,
-                   const std::optional<double> &optional_prelu_init) {
-  throw std::runtime_error("Not implemented yet.");
-}
+
 } // namespace ai_pass_selector
 
 namespace torch::nn {

@@ -128,7 +128,7 @@ This list is unordered regarding priority.
 - With the efficient, truncated update rule, error flows only through connections to output unit, and through fixed
   self-connections within cell blocks. Error flow is truncated once it wants to leave memory cells or gate units.
   Therefore, no connection shown above serves to propagate error back to the unit from which the connection originates,
-  although the connections themselves are modifiable. That is why the trun cated LSTM algorithm is so efficient, despite
+  although the connections themselves are modifiable. That is why the truncated LSTM algorithm is so efficient, despite
   its ability to bridge very long time lags. __[Page 12]__
 - We always use online learning, as opposed to batch learning, and logistic sigmoids as activation functions. Initial
   weights are chosen in the range $[−0.2,0.2]$, for the other experiments in $[−0.1,0.1]$. Training sequences are
