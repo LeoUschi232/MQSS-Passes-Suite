@@ -122,7 +122,7 @@ getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
   return {};
 }
 
-unsigned int count_trainable_parameters(const torch::nn::Module &network) {
+unsigned int nr_trainable_parameters(const torch::nn::Module &network) {
   unsigned int total = 0;
   for (const torch::Tensor &param : network.parameters(/*recurse=*/true)) {
     if (param.requires_grad()) {
