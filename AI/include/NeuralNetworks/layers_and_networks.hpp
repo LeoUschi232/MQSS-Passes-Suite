@@ -4,14 +4,18 @@
 // Torch includes
 #include "torch/torch.h"
 
-namespace ai_pass_selector {
+#define NETWORK_CONSTRUCTION_FUNCTION(FunctionName)                            \
+  torch::nn::Sequential FunctionName(                                          \
+      unsigned int max_qubits,                                                 \
+      std::optional<double> optional_prelu_init = std::nullopt);
 
-torch::nn::Sequential make_TCN_actor(unsigned int max_qubits);
-torch::nn::Sequential make_TCN_critic(unsigned int max_qubits);
-torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits);
-torch::nn::Sequential make_LSTM_critic(unsigned int max_qubits);
-torch::nn::Sequential make_HYBRID_actor(unsigned int max_qubits);
-torch::nn::Sequential make_HYBRID_critic(unsigned int max_qubits);
+namespace ai_pass_selector {
+NETWORK_CONSTRUCTION_FUNCTION(make_TCN_actor)
+NETWORK_CONSTRUCTION_FUNCTION(make_TCN_critic)
+NETWORK_CONSTRUCTION_FUNCTION(make_LSTM_actor)
+NETWORK_CONSTRUCTION_FUNCTION(make_LSTM_critic)
+NETWORK_CONSTRUCTION_FUNCTION(make_HYBRID_actor)
+NETWORK_CONSTRUCTION_FUNCTION(make_HYBRID_critic)
 } // namespace ai_pass_selector
 
 namespace torch::nn {

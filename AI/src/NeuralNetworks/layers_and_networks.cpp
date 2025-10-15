@@ -1,16 +1,89 @@
 #include "NeuralNetworks/layers_and_networks.hpp"
 
+// Neural-Networks includes
+#include "NeuralNetworks/tcn_full_network.hpp"
+
+// Environment includes
+#include "Environment/quantum_circuit_tensor.hpp"
+
+// Utils includes
+#include "Utils/passes_utils.hpp"
+
 // Torch includes
 #include "torch/torch.h"
 namespace ai_pass_selector {
-torch::nn::Sequential make_TCN_actor(unsigned int max_qubits){
-
+torch::nn::Sequential
+make_TCN_actor(unsigned int max_qubits,
+               std::optional<double> optional_prelu_init) {
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int kernel_size = 5u;
+  if (!optional_prelu_init.has_value()) {
+    return torch::nn::Sequential(
+        torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+        TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
+                               kernel_size), // -> [IRS, N]
+        torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
+        torch::nn::Flatten(
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+        torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
+        torch::nn::ReLU(),                                     // -> [NR_PASSES]
+        torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
+    );
+  }
+  double prelu_init = optional_prelu_init.value();
+  return torch::nn::Sequential(
+      torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+      TCNFullNetworkWithPReLU(IRS, nr_residual_blocks, kernel_size,
+                              prelu_init), // -> [IRS, N]
+      torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+      torch::nn::Linear(IRS, NR_PASSES),                     // -> [NR_PASSES]
+      torch::nn::PReLU(
+          torch::nn::PReLUOptions().init(prelu_init)), // -> [NR_PASSES]
+      torch::nn::Softmax(/*dim=*/0u)                   // -> [NR_PASSES]
+  );
 }
-torch::nn::Sequential make_TCN_critic(unsigned int max_qubits);
-torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits);
-torch::nn::Sequential make_LSTM_critic(unsigned int max_qubits);
-torch::nn::Sequential make_HYBRID_actor(unsigned int max_qubits);
-torch::nn::Sequential make_HYBRID_critic(unsigned int max_qubits);
+torch::nn::Sequential
+make_TCN_critic(unsigned int max_qubits,
+                std::optional<double> optional_prelu_init) {
+
+  const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
+  constexpr unsigned int nr_residual_blocks = 12u;
+  constexpr unsigned int kernel_size = 5u;
+  if (!optional_prelu_init.has_value()) {
+    return torch::nn::Sequential(
+        torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+        TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
+                               kernel_size), // -> [IRS, N]
+        torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
+        torch::nn::Flatten(
+            torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+        torch::nn::Linear(IRS, 1),                             // -> [1]
+        torch::nn::ReLU()                                      // -> [1]
+    );
+  }
+  double prelu_init = optional_prelu_init.value();
+  return torch::nn::Sequential(
+      torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+      TCNFullNetworkWithPReLU(IRS, nr_residual_blocks, kernel_size,
+                              prelu_init), // -> [IRS, N]
+      torch::nn::AdaptiveAvgPool1d(1u),    // -> [IRS, 1]
+      torch::nn::Flatten(
+          torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [NR_PASSES]
+      torch::nn::Linear(IRS, 1),                             // -> [1]
+      torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init)) // -> [1]
+  );
+}
+torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
+                                      std::optional<double> prelu_init) {}
+torch::nn::Sequential make_LSTM_critic(unsigned int max_qubits,
+                                       std::optional<double> prelu_init) {}
+torch::nn::Sequential make_HYBRID_actor(unsigned int max_qubits,
+                                        std::optional<double> prelu_init) {}
+torch::nn::Sequential make_HYBRID_critic(unsigned int max_qubits,
+                                         std::optional<double> prelu_init) {}
 } // namespace ai_pass_selector
 
 namespace torch::nn {
