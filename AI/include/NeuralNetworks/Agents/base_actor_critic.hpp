@@ -17,12 +17,14 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 
+enum class OptimizerType : int;
+
 class BaseActorCritic : public torch::nn::Module {
 protected:
   /// Attributes on configuration
   unsigned int max_qubits = 0u;
-  int actor_optimizer_type = 0;
-  int critic_optimizer_type = 0;
+  OptimizerType actor_optimizer_type{};
+  OptimizerType critic_optimizer_type{};
   double actor_learning_rate = 0.0;
   double critic_learning_rate = 0.0;
   torch::Device device = torch::kCPU;

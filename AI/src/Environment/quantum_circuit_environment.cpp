@@ -114,28 +114,28 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
     return false;
   }
   this->circuit = QuantumCircuit(circuit_path);
-  int circuit_validity = this->get_advanced_circuit_validity();
+  CircuitValidity circuit_validity = this->get_advanced_circuit_validity();
   switch (circuit_validity) {
-  case CIRCUIT_VALID:
+  case CircuitValidity::Valid:
     break;
-  case NO_CIRCUIT:
+  case CircuitValidity::NoCircuit:
     std::cerr << "No circuit provided to the environment." << std::endl;
     break;
-  case INVALID_NR_QUBITS:
+  case CircuitValidity::InvalidNrQubits:
     std::cerr << "Passed circuit has invalid nr qubits." << std::endl;
     break;
-  case INVALID_NR_GATES:
+  case CircuitValidity::InvalidNrGates:
     std::cerr << "Passed circuit has invalid nr gates." << std::endl;
     break;
-  case INVALID_NR_ALLOCATIONS:
+  case CircuitValidity::InvalidNrAllocations:
     std::cerr << "Passed circuit has invalid allocations." << std::endl;
     break;
-  case AMBIGUOUS_MEASUREMENT:
+  case CircuitValidity::AmbiguousMeasurement:
     std::cerr << "Passed circuit has ambiguous measurements." << std::endl;
     break;
   default:;
   }
-  if (circuit_validity != CIRCUIT_VALID) {
+  if (circuit_validity != CircuitValidity::Valid) {
     this->clear(/*hard=*/false);
     return false;
   }
@@ -173,9 +173,9 @@ void QuantumCircuitEnvironment::register_randomizer_params(
   this->gates_weights = gates_weights;
 }
 
-int QuantumCircuitEnvironment::get_advanced_circuit_validity() {
+CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
   if (!this->circuit.exists()) {
-    return NO_CIRCUIT;
+    return CircuitValidity::NoCircuit;
   }
   unsigned int nr_qubits = 0u;
   unsigned int nr_gates = 0u;
@@ -257,16 +257,16 @@ int QuantumCircuitEnvironment::get_advanced_circuit_validity() {
     return mlir::WalkResult::advance();
   });
   if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_qubits > max_qubits) {
-    return INVALID_NR_QUBITS;
+    return CircuitValidity::InvalidNrQubits;
   }
   if (nr_gates < GLOBAL_MIN_NR_GATES) {
-    return INVALID_NR_GATES;
+    return CircuitValidity::InvalidNrGates;
   }
   if (nr_allocations != 1) {
-    return INVALID_NR_ALLOCATIONS;
+    return CircuitValidity::InvalidNrAllocations;
   }
   if (ambiguous_measurement) {
-    return AMBIGUOUS_MEASUREMENT;
+    return CircuitValidity::AmbiguousMeasurement;
   }
   if (nr_qubits != this->circuit.get_nr_qubits() ||
       nr_gates != this->circuit.get_nr_gates()) {
@@ -278,7 +278,7 @@ int QuantumCircuitEnvironment::get_advanced_circuit_validity() {
         "Mismatch in algorithms computing nr_circuits and nr_gates between "
         "QuantumCircuit and QuantumCircuitEnvironment.");
   }
-  return CIRCUIT_VALID;
+  return CircuitValidity::Valid;
 }
 
 std::unordered_map<std::string, unsigned int>

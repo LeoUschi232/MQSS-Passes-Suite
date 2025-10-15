@@ -21,8 +21,10 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
   this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
   this->critic_learning_rate =
       GLOBAL_PARAMS["critic_learning_rate"].to_double();
-  this->actor_optimizer_type = GLOBAL_PARAMS["actor_optimizer_type"].to_int();
-  this->critic_optimizer_type = GLOBAL_PARAMS["critic_optimizer_type"].to_int();
+  this->actor_optimizer_type = static_cast<OptimizerType>(
+      GLOBAL_PARAMS["actor_optimizer_type"].to_int());
+  this->critic_optimizer_type = static_cast<OptimizerType>(
+      GLOBAL_PARAMS["critic_optimizer_type"].to_int());
 }
 
 bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,

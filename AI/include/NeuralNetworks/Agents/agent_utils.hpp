@@ -10,51 +10,70 @@
 // Standard Library includes
 #include <filesystem>
 #include <memory>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 
 using namespace mqss::opt;
 
 namespace ai_pass_selector {
+enum class AgentClass : int {
+  A3C = 1,
+  SAC = 2,
+  ACKTR = 3,
+  ACER = 4,
+  PPO = 5,
+  CROSSQ = 6
+};
+
+enum class OptimizerType : int {
+  Adagrad = 1,
+  Adam = 2,
+  AdamW = 3,
+  LBFGS = 4,
+  RMSProp = 5,
+  SGD = 6
+};
+
+struct EnumClassHash {
+  template <typename T>
+  std::size_t operator()(T value) const noexcept {
+    return static_cast<std::size_t>(value);
+  }
+};
+
 struct AgentAttributes {
-  int agent_class;
+  AgentClass agent_class;
   unsigned int max_qubits;
   std::string extras;
 };
 
-/// Agent classes
-constexpr int A3C = 1;
-constexpr int SAC = 2;
-constexpr int ACKTR = 3;
-constexpr int ACER = 4;
-constexpr int PPO = 5;
-constexpr int CROSSQ = 6;
+const std::unordered_map<std::string, AgentClass> AGENT_NAME_TO_CLASS = {
+    {"a3c", AgentClass::A3C},   {"sac", AgentClass::SAC},
+    {"acktr", AgentClass::ACKTR}, {"acer", AgentClass::ACER},
+    {"ppo", AgentClass::PPO},   {"crossq", AgentClass::CROSSQ}};
 
-const std::unordered_map<std::string, int> AGENT_NAME_TO_CLASS = {
-    {"a3c", A3C},   {"sac", SAC}, {"acktr", ACKTR},
-    {"acer", ACER}, {"ppo", PPO}, {"crossq", CROSSQ}};
-
-const std::unordered_map<int, std::string> AGENT_CLASS_TO_NAME = {
-    {A3C, "a3c"},   {SAC, "sac"}, {ACKTR, "acktr"},
-    {ACER, "acer"}, {PPO, "ppo"}, {CROSSQ, "crossq"}};
+const std::unordered_map<AgentClass, std::string, EnumClassHash>
+    AGENT_CLASS_TO_NAME = {{AgentClass::A3C, "a3c"},
+                           {AgentClass::SAC, "sac"},
+                           {AgentClass::ACKTR, "acktr"},
+                           {AgentClass::ACER, "acer"},
+                           {AgentClass::PPO, "ppo"},
+                           {AgentClass::CROSSQ, "crossq"}};
 
 /// Optimizers
-constexpr int OPTIMIZER_ADAGRAD = 1;
-constexpr int OPTIMIZER_ADAM = 2;
-constexpr int OPTIMIZER_ADAMW = 3;
-constexpr int OPTIMIZER_LBFGS = 4;
-constexpr int OPTIMIZER_RMSPROP = 5;
-constexpr int OPTIMIZER_SGD = 6;
+const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
+    {"adagrad", OptimizerType::Adagrad}, {"adam", OptimizerType::Adam},
+    {"adamw", OptimizerType::AdamW},     {"lbfgs", OptimizerType::LBFGS},
+    {"rmsprop", OptimizerType::RMSProp}, {"sgd", OptimizerType::SGD}};
 
-const std::unordered_map<std::string, int> OPTIMIZER_NAME_TO_TYPE = {
-    {"adagrad", OPTIMIZER_ADAGRAD}, {"adam", OPTIMIZER_ADAM},
-    {"adamw", OPTIMIZER_ADAMW},     {"lbfgs", OPTIMIZER_LBFGS},
-    {"rmsprop", OPTIMIZER_RMSPROP}, {"sgd", OPTIMIZER_SGD}};
-
-const std::unordered_map<int, std::string> OPTIMIZER_TYPE_TO_NAME = {
-    {OPTIMIZER_ADAGRAD, "adagrad"}, {OPTIMIZER_ADAM, "adam"},
-    {OPTIMIZER_ADAMW, "adamw"},     {OPTIMIZER_LBFGS, "lbfgs"},
-    {OPTIMIZER_RMSPROP, "rmsprop"}, {OPTIMIZER_SGD, "sgd"}};
+const std::unordered_map<OptimizerType, std::string, EnumClassHash>
+    OPTIMIZER_TYPE_TO_NAME = {{OptimizerType::Adagrad, "adagrad"},
+                              {OptimizerType::Adam, "adam"},
+                              {OptimizerType::AdamW, "adamw"},
+                              {OptimizerType::LBFGS, "lbfgs"},
+                              {OptimizerType::RMSProp, "rmsprop"},
+                              {OptimizerType::SGD, "sgd"}};
 
 /**
  *
@@ -71,8 +90,8 @@ AgentAttributes parseAgentName(const std::string &agent_name);
  * @return
  */
 std::unique_ptr<torch::optim::Optimizer>
-makeOptimizer(int optimizerType, const torch::nn::Sequential &agentModel,
-              double learningRate);
+makeOptimizer(OptimizerType optimizerType,
+              const torch::nn::Sequential &agentModel, double learningRate);
 
 /**
  *
