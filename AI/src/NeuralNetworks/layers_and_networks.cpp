@@ -6,15 +6,16 @@
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
 
+// Torch includes
+#include "torch/torch.h"
+
 // Utils includes
 #include "Utils/passes_utils.hpp"
 
-// Torch includes
-#include "torch/torch.h"
 namespace ai_pass_selector {
 torch::nn::Sequential
 make_TCN_actor(unsigned int max_qubits,
-               std::optional<double> optional_prelu_init) {
+               const std::optional<double> &optional_prelu_init) {
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   constexpr unsigned int nr_residual_blocks = 12u;
   constexpr unsigned int kernel_size = 5u;
@@ -47,8 +48,7 @@ make_TCN_actor(unsigned int max_qubits,
 }
 torch::nn::Sequential
 make_TCN_critic(unsigned int max_qubits,
-                std::optional<double> optional_prelu_init) {
-
+                const std::optional<double> &optional_prelu_init) {
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   constexpr unsigned int nr_residual_blocks = 12u;
   constexpr unsigned int kernel_size = 5u;
@@ -76,14 +76,26 @@ make_TCN_critic(unsigned int max_qubits,
       torch::nn::PReLU(torch::nn::PReLUOptions().init(prelu_init)) // -> [1]
   );
 }
-torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
-                                      std::optional<double> prelu_init) {}
-torch::nn::Sequential make_LSTM_critic(unsigned int max_qubits,
-                                       std::optional<double> prelu_init) {}
-torch::nn::Sequential make_HYBRID_actor(unsigned int max_qubits,
-                                        std::optional<double> prelu_init) {}
-torch::nn::Sequential make_HYBRID_critic(unsigned int max_qubits,
-                                         std::optional<double> prelu_init) {}
+torch::nn::Sequential
+make_LSTM_actor(unsigned int max_qubits,
+                const std::optional<double> &optional_prelu_init) {
+  throw std::runtime_error("Not implemented yet.");
+}
+torch::nn::Sequential
+make_LSTM_critic(unsigned int max_qubits,
+                 const std::optional<double> &optional_prelu_init) {
+  throw std::runtime_error("Not implemented yet.");
+}
+torch::nn::Sequential
+make_HYBRID_actor(unsigned int max_qubits,
+                  const std::optional<double> &optional_prelu_init) {
+  throw std::runtime_error("Not implemented yet.");
+}
+torch::nn::Sequential
+make_HYBRID_critic(unsigned int max_qubits,
+                   const std::optional<double> &optional_prelu_init) {
+  throw std::runtime_error("Not implemented yet.");
+}
 } // namespace ai_pass_selector
 
 namespace torch::nn {

@@ -4,10 +4,14 @@
 // Torch includes
 #include "torch/torch.h"
 
+// Standard library includes
+#include <optional>
+#include <string>
+
 #define NETWORK_CONSTRUCTION_FUNCTION(FunctionName)                            \
   torch::nn::Sequential FunctionName(                                          \
       unsigned int max_qubits,                                                 \
-      std::optional<double> optional_prelu_init = std::nullopt);
+      const std::optional<double> &optional_prelu_init = std::nullopt);
 
 namespace ai_pass_selector {
 NETWORK_CONSTRUCTION_FUNCTION(make_TCN_actor)
@@ -53,7 +57,7 @@ Functional Transpose(int32_t dim0, int32_t dim1);
 Functional FiniteCheck(std::string stage_name);
 
 /**
- *
+ * Check the shape of the tensor and print it.
  * @param stage_name
  * @return
  */
