@@ -9,18 +9,12 @@ estimate of the standard deviation of the (discounted) return**. In Gymnasium’
 maintained via an **exponential moving average (EMA)** so it adapts smoothly.
 
 Concretely, maintain the *discounted return trace*
-$$
-G_t ;;=;; \gamma , G_{t-1},(1-\text{done}*{t}) ;+; r_t,
-$$
+$$G_t ;;=;; \gamma , G_{t-1},(1-\text{done}*{t}) ;+; r_t,$$
 and track an EMA of its **mean** and **variance**:
-$$
-\mu_t \leftarrow (1-\alpha)\mu*{t-1} + \alpha G_t,\qquad
-v_t \leftarrow (1-\alpha)v_{t-1} + \alpha ,(G_t-\mu_t)^2.
-$$
+$$\mu_t \leftarrow (1-\alpha)\mu*{t-1} + \alpha G_t,\qquad
+v_t \leftarrow (1-\alpha)v_{t-1} + \alpha ,(G_t-\mu_t)^2.$$
 Then normalize rewards as:
-$$
-\tilde r_t ;=; \frac{r_t}{\sqrt{v_t + \varepsilon}}.
-$$
+$$\tilde r_t ;=; \frac{r_t}{\sqrt{v_t + \varepsilon}}.$$
 
 ### Why this helps
 
