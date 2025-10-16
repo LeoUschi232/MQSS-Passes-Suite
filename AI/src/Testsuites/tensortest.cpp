@@ -114,8 +114,7 @@ int convertTensortestCircuitToTikz(int index) {
   }
 
   // Build instruction/depth observations and reconstruct two modules
-  QuantumCircuitEnvironment quantum_circuit_environment(TENSORTEST_MAX_QUBITS,
-                                                        0);
+  QuantumCircuitEnvironment quantum_circuit_environment(TENSORTEST_MAX_QUBITS);
   if (!quantum_circuit_environment.register_quantum_circuit(
           quake_source_input_file)) {
     return -1;
