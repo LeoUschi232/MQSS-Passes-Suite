@@ -9,7 +9,6 @@
 
 // Standard library includes
 #include <memory>
-#include <mutex>
 
 namespace fs = std::filesystem;
 
@@ -18,23 +17,6 @@ enum class OptimizerType : int;
 
 class BaseA3CAgent : public BaseActorCritic {
 protected:
-  /// Attributes on configuration
-  unsigned int max_qubits = 0u;
-  OptimizerType critic_optimizer_type{};
-  OptimizerType actor_optimizer_type{};
-  double critic_learning_rate = 0.0;
-  double actor_learning_rate = 0.0;
-  torch::Device device = torch::kCPU;
-
-  /// Global Attributes shared across all workers
-  torch::nn::Sequential critic = nullptr;
-  torch::nn::Sequential actor = nullptr;
-  std::shared_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
-  std::shared_ptr<torch::optim::Optimizer> critic_optimizer = nullptr;
-
-  /// Mutex for thread safety
-  std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
-
   /// A3C specific attributes
   bool gradients_zero = true;
   bool is_boss = true;

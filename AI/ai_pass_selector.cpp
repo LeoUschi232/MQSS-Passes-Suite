@@ -19,6 +19,8 @@ using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 /// Default values for agent/environment/training parameters.
+/// ssh -Y ge78zic2@cool.hpc.lrz.de
+/// 7McMGcmhX_27McMGcmhX_2
 void load_default_params();
 
 void print_help() {
@@ -147,8 +149,8 @@ void load_default_params() {
       {"gae_hyperparameter", 0.96},
       {"entropy_coefficient", 0.01},
       {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
-      {"critic_optimizer", "adam"},
-      {"actor_optimizer", "adam"},
+      {"critic_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
+      {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
       {"actor_learning_rate", 0.001},
       {"critic_learning_rate", 0.005},
       {"ppo_epsilon", 0.2},
