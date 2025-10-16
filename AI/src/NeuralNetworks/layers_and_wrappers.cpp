@@ -61,6 +61,9 @@ Functional Transpose(int32_t dim0, int32_t dim1) {
   return Functional(
       [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
 }
+Functional Squeeze(int32_t dim) {
+  return Functional([dim](const Tensor &x) { return x.squeeze(dim); });
+}
 
 Functional FiniteCheck(std::string stage_name) {
   return Functional([name = std::move(stage_name)](const Tensor &tensor) {

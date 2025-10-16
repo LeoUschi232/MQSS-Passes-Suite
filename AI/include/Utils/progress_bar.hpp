@@ -1,7 +1,9 @@
 #ifndef PROGRESS_BAR_HPP
 #define PROGRESS_BAR_HPP
 
+//  Standard Library includes
 #include <string>
+#include <vector>
 
 namespace ai_pass_selector {
 /**
@@ -11,7 +13,16 @@ namespace ai_pass_selector {
  * @param display_message Message to display alongside the progress bar.
  */
 void updateProgress(int current, int total,
-                    const std::string &display_message);
+                    const std::string &display_message = "");
+
+/**
+ *
+ * @param progresses
+ * @param display_message
+ */
+void updateProgresses(const std::vector<std::pair<int, int>> &progresses,
+                    const std::string &display_message = "");
+
 } // namespace ai_pass_selector
 
 #endif // PROGRESS_BAR_HPP

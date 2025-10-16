@@ -141,10 +141,10 @@ void load_default_params() {
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
       {"nr_episodes", 100},
-      {"max_steps_per_episode", 1300},
-      {"max_steps_no_improvement", 130},
-      {"max_steps_no_change", 26},
-      {"max_steps_same_action", 6},
+      {"max_steps_per_episode", 130},
+      {"max_steps_no_improvement", 13},
+      {"max_steps_no_change", 6},
+      {"max_steps_same_action", 3},
       {"discount_factor", 0.995},
       {"gae_hyperparameter", 0.96},
       {"entropy_coefficient", 0.01},
@@ -158,5 +158,5 @@ void load_default_params() {
       {"print_param_info", false},
       {"save_agent_after_training", false},
       {"stop_training_on_error", true},
-      {"print_diagnostics", true}};
+      {"print_diagnostics", false}};
 }

@@ -78,6 +78,13 @@ Functional TransposeContiguous(int32_t dim0, int32_t dim1);
 Functional Transpose(int32_t dim0, int32_t dim1);
 
 /**
+ *
+ * @param dim
+ * @return
+ */
+Functional Squeeze(int32_t dim);
+
+/**
  * Check for NaN and Inf values in the tensor.
  * If any are found, print the stage name, min and max values.
  * @param stage_name Name of the stage to identify where the values might be inf

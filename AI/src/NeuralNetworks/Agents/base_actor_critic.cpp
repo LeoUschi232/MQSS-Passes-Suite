@@ -6,6 +6,7 @@
 
 // Standard library includes
 #include "Utils/info_utils.hpp"
+#include "Utils/tensor_utils.hpp"
 
 #include <cmath>
 #include <memory>
@@ -19,21 +20,12 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
     : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
   this->device = GLOBAL_PARAMS["device"].to_device_type();
   this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
-  this->critic_learning_rate = GLOBAL_PARAMS["critic_learning_rate"].to_double();
+  this->critic_learning_rate =
+      GLOBAL_PARAMS["critic_learning_rate"].to_double();
   this->actor_optimizer_type =
       static_cast<OptimizerType>(GLOBAL_PARAMS["actor_optimizer_idx"].to_int());
   this->critic_optimizer_type = static_cast<OptimizerType>(
       GLOBAL_PARAMS["critic_optimizer_idx"].to_int());
-
-  std::cout << "Optimizer types: "
-            << std::to_string(GLOBAL_PARAMS["actor_optimizer_idx"].to_int())
-            << " "
-            << std::to_string(static_cast<int>(this->actor_optimizer_type))
-            << " "
-            << std::to_string(GLOBAL_PARAMS["critic_optimizer_idx"].to_int())
-            << " "
-            << std::to_string(static_cast<int>(this->actor_optimizer_type))
-            << std::endl;
 }
 
 bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,
@@ -78,6 +70,9 @@ torch::Tensor BaseActorCritic::get_value(const torch::Tensor &observation) {
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseActorCritic::select_action(const torch::Tensor &observation) {
   auto [action_probs, state_values] = this->forward(observation);
+
+  std::cout << "Action probabilities: " << tensor_to_string(action_probs)
+            << std::endl;
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.
@@ -136,7 +131,6 @@ BaseActorCritic::get_losses(const torch::Tensor &rewards,          // Shape [T]
   // state.
   torch::Tensor A_gae = torch::zeros({}, options);
   for (int t = T - 1; t >= 0; t--) {
-
     // Temporal Difference Error of V(s) with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
     // Barto & Sutton Reinforcement Learning page 121, equation (6.5)

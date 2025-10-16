@@ -163,6 +163,12 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor);
  */
 void check_tensor(const InstructionsTensor<float> &tensor);
 
+/**
+ *
+ * @param tensor
+ * @return
+ */
+std::string tensor_to_string(const torch::Tensor &tensor);
 } // namespace ai_pass_selector
 
 #endif // TENSOR_UTILS_HPP

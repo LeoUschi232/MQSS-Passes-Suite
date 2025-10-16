@@ -155,7 +155,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_values_vector.push_back(agent->get_value(
                 environment.get_observation_as_torch_tensor()));
           } else {
-            episode_values_vector.push_back(torch::zeros({1}, options));
+            episode_values_vector.push_back(torch::zeros({}, options));
           }
 
           auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
@@ -275,6 +275,11 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       bool add_bootstrap = false;
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
+        updateProgresses({{episode_idx, nr_episodes},
+                          {update_step + 1, max_steps_per_episode}},
+                         /*display_message=*/" | Episode Reward: " +
+                             std::to_string(total_episode_reward));
+
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in A2C training."
                     << std::endl;
@@ -305,8 +310,12 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
         episode_values_vector.push_back(
             agent->get_value(environment.get_observation_as_torch_tensor()));
       } else {
-        episode_values_vector.push_back(torch::zeros({1}, options));
+        episode_values_vector.push_back(torch::zeros({}, options));
       }
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/" | Episode Reward: " +
+                           std::to_string(total_episode_reward));
 
       auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
           /*rewards=*/torch::stack(episode_rewards_vector),
@@ -315,12 +324,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
           gae_hyperparameter, entropy_coefficient);
       agent->update_parameters(actor_loss, critic_loss);
-      updateProgress(
-          /*current=*/episode_idx, /*total=*/nr_episodes,
-          /*display_message=*/" | Episode Reward: " +
-              std::to_string(total_episode_reward)
-
-      );
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;

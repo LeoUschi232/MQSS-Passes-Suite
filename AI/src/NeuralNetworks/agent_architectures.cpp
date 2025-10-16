@@ -59,6 +59,7 @@ make_TCN_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
   critic->push_back(torch::nn::Flatten(
       torch::nn::FlattenOptions().start_dim(/*dim=*/0))); // -> [IRS]
   critic->push_back(torch::nn::Linear(IRS, 1));           // -> [1]
+  critic->push_back(torch::nn::Squeeze(/*dim=*/0));       // -> []
   return critic;
 }
 torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
@@ -110,6 +111,7 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
   critic->push_back(torch::nn::Flatten(
       torch::nn::FlattenOptions().start_dim(/*dim=*/0))); // -> [2*P]
   critic->push_back(torch::nn::Linear(2 * P, 1));         // -> [1]
+  critic->push_back(torch::nn::Squeeze(/*dim=*/0));       // -> []
   return critic;
 }
 
@@ -188,6 +190,7 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
   critic->push_back(torch::nn::Flatten(
       torch::nn::FlattenOptions().start_dim(/*dim=*/0))); // -> [2*P]
   critic->push_back(torch::nn::Linear(2 * P, 1));         // -> [1]
+  critic->push_back(torch::nn::Squeeze(/*dim=*/0));       // -> []
   return critic;
 }
 

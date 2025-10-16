@@ -357,8 +357,8 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
       throw std::runtime_error("Nr gate angles: " +
                                std::to_string(angles.size()));
     }
-    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes, controlIndexes, angles,
-               isAdj);
+    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes,
+               controlIndexes, angles, isAdj);
 
     // Adjust the depths only if everything ran smoothly.
     std::vector<int> involvedQubits = targetIndexes;
@@ -377,8 +377,6 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
 }
 
 void check_tensor(const InstructionsTensor<float> &tensor) {
-  std::cout << "Called: check_tensor(const InstructionsTensor<float> &tensor)."
-            << std::endl;
   const unsigned N = tensor.shape[0];
   const unsigned IRS = tensor.shape[1];
   if (IRS < MIN_IRS) {
@@ -437,4 +435,20 @@ void check_tensor(const InstructionsTensor<float> &tensor) {
   }
 }
 
+std::string tensor_to_string(const torch::Tensor &tensor) {
+  torch::Tensor cpu_tensor =
+      tensor.detach().to(torch::kCPU).contiguous().view(-1);
+  std::ostringstream oss;
+  oss << "[";
+  oss.setf(std::ios::fixed);
+  oss.precision(/*prec=*/3);
+  for (unsigned int i = 0; i < cpu_tensor.size(0); i++) {
+    if (i) {
+      oss << ", ";
+    }
+    oss << cpu_tensor[i].item<float>();
+  }
+  oss << "]";
+  return oss.str();
+}
 } // namespace ai_pass_selector
