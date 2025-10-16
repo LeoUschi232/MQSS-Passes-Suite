@@ -38,19 +38,7 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(
-    unsigned int max_qubits, unsigned int max_steps,
-    const fs::path &circuit_path)
-    : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)),
-      max_steps_per_episode(std::max(1u, max_steps)),
-      max_steps_no_improvement(max_steps_per_episode),
-      max_steps_no_change(max_steps_per_episode),
-      max_steps_same_action(max_steps_per_episode) {
-  if (!circuit_path.empty()) {
-    this->register_quantum_circuit(circuit_path);
-  }
-}
-
-QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
+    unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
   this->device = GLOBAL_PARAMS["device"].to_device_type();
   this->max_steps_per_episode = std::max(

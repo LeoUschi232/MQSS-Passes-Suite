@@ -83,9 +83,6 @@ class QuantumCircuitEnvironment {
 
 public:
   /// Constructors
-  QuantumCircuitEnvironment(unsigned int max_qubits, unsigned int max_steps,
-                            const fs::path &circuit_path = "");
-
   explicit QuantumCircuitEnvironment(unsigned int max_qubits);
 
   /// Destructor
@@ -97,16 +94,17 @@ public:
   // them if the copies are then untied from their originals but tied to each
   // other.
   QuantumCircuitEnvironment(const QuantumCircuitEnvironment &other) = delete;
-
   QuantumCircuitEnvironment &
   operator=(const QuantumCircuitEnvironment &other) = delete;
 
   /// Move Constructors
   QuantumCircuitEnvironment(QuantumCircuitEnvironment &&other) noexcept =
       default;
-
   QuantumCircuitEnvironment &
   operator=(QuantumCircuitEnvironment &&) noexcept = default;
+
+  /// Getters
+  unsigned int getMaxQubits() const { return max_qubits; }
 
   /// Short functions
   void clear(bool hard = true);
