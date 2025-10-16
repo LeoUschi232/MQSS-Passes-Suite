@@ -175,7 +175,7 @@ public:
    * @param action
    * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<float , bool, bool> step(unsigned int action);
+  std::tuple<float, bool, bool> step(unsigned int action);
 
   /**
    *

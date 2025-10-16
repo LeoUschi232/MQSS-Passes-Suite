@@ -293,7 +293,7 @@ QuantumCircuitEnvironment::get_circuit_info() const {
 }
 
 /// [Reward, Terminated, Truncated]
-std::tuple<double, bool, bool>
+std::tuple<float, bool, bool>
 QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->terminated || this->truncated) {
     return {0.0, this->terminated, this->truncated};
