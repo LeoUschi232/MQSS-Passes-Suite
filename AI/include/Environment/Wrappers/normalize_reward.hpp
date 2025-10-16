@@ -11,7 +11,8 @@ class NormalizeReward : public QuantumCircuitEnvironment {
   double discounted_reward = 0.0;
   unsigned int count = 0u;
   double mean = 0.0;
-  double variance = 0.0;
+  double variance = 1.0;
+
 public:
   /// Constructor
   explicit NormalizeReward(const QuantumCircuitEnvironment &environment)
