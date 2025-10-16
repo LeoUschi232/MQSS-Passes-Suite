@@ -1,6 +1,7 @@
 #include "NeuralNetworks/layers_and_wrappers.hpp"
 
 // Torch includes
+#include "Utils/tensor_utils.hpp"
 #include "torch/torch.h"
 
 namespace torch::nn {
@@ -91,6 +92,31 @@ Functional ShapeProbe(std::string stage_name) {
         << " max=" << x.amax().item<double>()
         << " finite=" << x.isfinite().all().item<bool>() << "\n";
     std::cerr << oss.str();
+    return x;
+  });
+}
+
+std::string tensor_to_string(const Tensor &tensor, int precision) {
+  Tensor cpu_tensor = tensor.detach().to(kCPU).contiguous().view(-1);
+  const float *data = cpu_tensor.data_ptr<float>();
+  const unsigned int size = cpu_tensor.numel();
+  std::ostringstream oss;
+  oss << "[";
+  oss.setf(std::ios::fixed);
+  oss.precision(precision);
+  for (unsigned int i = 0; i < size; i++) {
+    if (i) {
+      oss << ", ";
+    }
+    oss << data[i];
+  }
+  oss << "]";
+  return oss.str();
+}
+
+Functional PrintTensor(unsigned int precision) {
+  return Functional([precision](const Tensor &x) {
+    std::cout << tensor_to_string(x, precision) << std::endl;
     return x;
   });
 }

@@ -99,5 +99,19 @@ Functional FiniteCheck(std::string stage_name);
  * @return
  */
 Functional ShapeProbe(std::string stage_name);
+
+/**
+ *
+ * @param tensor
+ * @param precision
+ * @return
+ */
+std::string tensor_to_string(const torch::Tensor &tensor, int precision = 6);
+
+/**
+ * @param precision Number of decimal places to print.
+ * @return
+ */
+Functional PrintTensor(unsigned int precision = 3);
 } // namespace torch::nn
 #endif // LAYERS_AND_WRAPPERS_HPP

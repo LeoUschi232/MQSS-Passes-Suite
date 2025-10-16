@@ -5,6 +5,7 @@
 #include "torch/torch.h"
 
 // Standard library includes
+#include "NeuralNetworks/layers_and_wrappers.hpp"
 #include "Utils/info_utils.hpp"
 #include "Utils/tensor_utils.hpp"
 
@@ -71,8 +72,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseActorCritic::select_action(const torch::Tensor &observation) {
   auto [action_probs, state_values] = this->forward(observation);
 
-  std::cout << "Action probabilities: " << tensor_to_string(action_probs)
-            << std::endl;
+  std::cout << "Action probabilities: "
+            << torch::nn::tensor_to_string(action_probs) << std::endl;
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.

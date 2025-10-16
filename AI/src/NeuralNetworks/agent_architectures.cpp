@@ -35,6 +35,7 @@ make_TCN_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
   actor->push_back(torch::nn::Flatten(
       torch::nn::FlattenOptions().start_dim(/*dim=*/0))); // -> [IRS]
   actor->push_back(torch::nn::Linear(IRS, NR_PASSES));    // -> [NR_PASSES]
+  actor->push_back(torch::nn::PrintTensor());             // -> [NR_PASSES]
   actor->push_back(torch::nn::Softmax(/*dim=*/0u));       // -> [NR_PASSES]
   return actor;
 }
