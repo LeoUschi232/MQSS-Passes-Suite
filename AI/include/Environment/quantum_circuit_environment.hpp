@@ -86,7 +86,7 @@ public:
   explicit QuantumCircuitEnvironment(unsigned int max_qubits);
 
   /// Destructor
-  ~QuantumCircuitEnvironment() = default;
+  virtual ~QuantumCircuitEnvironment() = default;
 
   /// Copy constructors
   // Forbid copying the QuantumCircuitEnvironment because the MLIRContext is
@@ -104,7 +104,7 @@ public:
   operator=(QuantumCircuitEnvironment &&) noexcept = default;
 
   /// Getters
-  unsigned int getMaxQubits() const { return max_qubits; }
+  unsigned int getMaxQubits() const;
 
   /// Short functions
   void clear(bool hard = true);
@@ -173,7 +173,7 @@ public:
    * @param action
    * @return [Reward, Terminated, Truncated]
    */
-  std::tuple<float, bool, bool> step(unsigned int action);
+  virtual std::tuple<float, bool, bool> step(unsigned int action);
 
   /**
    *

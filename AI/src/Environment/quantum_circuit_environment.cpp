@@ -37,8 +37,7 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
-QuantumCircuitEnvironment::QuantumCircuitEnvironment(
-    unsigned int max_qubits)
+QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
   this->device = GLOBAL_PARAMS["device"].to_device_type();
   this->max_steps_per_episode = std::max(
@@ -56,6 +55,10 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
   this->register_quantum_circuit(GLOBAL_PARAMS["circuit"].to_string());
+}
+
+unsigned int QuantumCircuitEnvironment::getMaxQubits() const {
+  return max_qubits;
 }
 
 void QuantumCircuitEnvironment::clear(bool hard) {
