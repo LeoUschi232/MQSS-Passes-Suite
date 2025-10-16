@@ -308,15 +308,15 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   if (action >= NR_PASSES) {
     throw std::runtime_error("Invalid action: " + std::to_string(action));
   }
-  double previous_nr_gates = this->circuit.get_nr_gates();
-  double previous_depth = this->circuit.get_depth();
+  float previous_nr_gates = this->circuit.get_nr_gates();
+  float previous_depth = this->circuit.get_depth();
   if (!this->circuit.run_pass(/*pass_index=*/action)) {
     std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
     return {0.0, /*Terminated=*/false, /*Truncated=*/false};
   }
-  double nr_gates_reduction = previous_nr_gates - this->circuit.get_nr_gates();
-  double depth_reduction = previous_depth - this->circuit.get_depth();
-  double reward = nr_gates_reduction + depth_reduction;
+  float nr_gates_reduction = previous_nr_gates - this->circuit.get_nr_gates();
+  float depth_reduction = previous_depth - this->circuit.get_depth();
+  float reward = nr_gates_reduction + depth_reduction;
 
   if (reward > 0.0) {
     this->step_no_improvement = 0;
