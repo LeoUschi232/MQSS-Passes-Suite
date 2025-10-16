@@ -296,11 +296,11 @@ QuantumCircuitEnvironment::get_circuit_info() const {
 std::tuple<float, bool, bool>
 QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->terminated || this->truncated) {
-    return {0.0, this->terminated, this->truncated};
+    return {0.0f, this->terminated, this->truncated};
   }
   if (++this->step_per_episode > this->max_steps_per_episode) {
     this->truncated = true;
-    return {0.0, /*Terminated=*/false, /*Truncated=*/true};
+    return {0.0f, /*Terminated=*/false, /*Truncated=*/true};
   }
   if (!this->circuit.exists()) {
     throw std::runtime_error("No circuit registered in the environment.");
@@ -312,13 +312,13 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   float previous_depth = this->circuit.get_depth();
   if (!this->circuit.run_pass(/*pass_index=*/action)) {
     std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
-    return {0.0, /*Terminated=*/false, /*Truncated=*/false};
+    return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
   }
   float nr_gates_reduction = previous_nr_gates - this->circuit.get_nr_gates();
   float depth_reduction = previous_depth - this->circuit.get_depth();
   float reward = nr_gates_reduction + depth_reduction;
 
-  if (reward > 0.0) {
+  if (reward > 0.0f) {
     this->step_no_improvement = 0;
   } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
