@@ -1,6 +1,12 @@
 #include "Environment/Wrappers/normalize_reward.hpp"
 
 namespace ai_pass_selector {
+NormalizeReward::NormalizeReward(const QuantumCircuitEnvironment &environment)
+    : QuantumCircuitEnvironment(environment.getMaxQubits()) {
+  this->circuit_path = environment.getCircuitPath();
+  std::tie(this->qubits_cholesky_params, this->gates_weights) =
+      environment.getRegisteredRandomizerParams();
+}
 
 std::tuple<float, bool, bool> NormalizeReward::step(unsigned int action) {
   auto [reward, terminated, truncated] =

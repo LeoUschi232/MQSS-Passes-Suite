@@ -61,6 +61,19 @@ unsigned int QuantumCircuitEnvironment::getMaxQubits() const {
   return max_qubits;
 }
 
+fs::path QuantumCircuitEnvironment::getCircuitPath() const {
+  return circuit_path;
+}
+
+std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+           std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+QuantumCircuitEnvironment::getRegisteredRandomizerParams() const {
+  if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
+    return {qubits_cholesky_params.value(), gates_weights.value()};
+  }
+  return {};
+}
+
 void QuantumCircuitEnvironment::clear(bool hard) {
   if (hard) {
     this->circuit_path = "";
@@ -135,26 +148,6 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   // nr_gates and depth.
   this->circuit_path = circuit_path;
   return true;
-}
-
-bool QuantumCircuitEnvironment::custom_randomize_circuit(
-    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
-    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
-    const RandomizerOptions &randomizer_options) {
-  try {
-    randomizer_options.min_nr_qubits =
-        std::max(static_cast<int>(GLOBAL_MIN_NR_QUBITS),
-                 randomizer_options.min_nr_qubits);
-    // Cap nr of qubits but don't cap nr of gates.
-    randomizer_options.max_nr_qubits = std::min(
-        randomizer_options.max_nr_qubits, static_cast<int>(this->max_qubits));
-    this->circuit = random_quantum_circuit_from_embedded_statistics(
-        cholesky_params, gates_weights, randomizer_options);
-  } catch (const std::runtime_error &error) {
-    std::cerr << error.what() << std::endl;
-    return false;
-  }
-  return this->validate();
 }
 
 void QuantumCircuitEnvironment::register_randomizer_params(

@@ -4,6 +4,7 @@
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Environment includes
+#include "Environment/Wrappers/normalize_reward.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
@@ -82,7 +83,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   std::signal(SIGINT, signal_handler);
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
     futures.emplace_back(std::async(std::launch::async, [&] {
-      QuantumCircuitEnvironment environment(max_qubits);
+      NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
       environment.register_randomizer_params(qubits_cholesky_params,
                                              gates_weights);
       std::unique_ptr<BaseA3CAgent> agent = agent_boss->clone();
@@ -246,7 +247,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  QuantumCircuitEnvironment environment(max_qubits);
+  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
 
   torch::TensorOptions options =

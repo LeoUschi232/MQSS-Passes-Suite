@@ -54,6 +54,7 @@ enum class CircuitValidity : int {
 };
 
 class QuantumCircuitEnvironment {
+protected:
   /// Attributes for circuit
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
   fs::path circuit_path = "";
@@ -105,6 +106,10 @@ public:
 
   /// Getters
   unsigned int getMaxQubits() const;
+  fs::path getCircuitPath() const;
+  std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+            std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+  getRegisteredRandomizerParams() const;
 
   /// Short functions
   void clear(bool hard = true);
@@ -122,18 +127,6 @@ public:
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
-
-  /**
-   *
-   * @param cholesky_params
-   * @param gates_weights
-   * @param randomizer_options
-   * @return
-   */
-  bool custom_randomize_circuit(
-      const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
-      const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
-      const RandomizerOptions &randomizer_options);
 
   /**
    *

@@ -15,8 +15,7 @@ class NormalizeReward : public QuantumCircuitEnvironment {
 
 public:
   /// Constructor
-  explicit NormalizeReward(const QuantumCircuitEnvironment &environment)
-      : QuantumCircuitEnvironment(environment.getMaxQubits()) {}
+  explicit NormalizeReward(const QuantumCircuitEnvironment &environment);
 
   /// Destructor
   ~NormalizeReward() override = default;
