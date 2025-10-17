@@ -46,10 +46,12 @@ TORCH_MODULE(WeightNormConv1d);
  * @return The actual output tensor of the LSTM.
  */
 class FilterLSTMImpl final : public Module {
+  LSTM my_lstm{nullptr};
+
 public:
-  FilterLSTMImpl() = default;
-  Tensor
-  forward(const std::tuple<Tensor, std::tuple<Tensor, Tensor>> &lstm_output);
+  FilterLSTMImpl(unsigned int input_size, unsigned int hidden_size,
+                 bool bidirectional, unsigned int proj_size = 0);
+  Tensor forward(Tensor x);
 };
 TORCH_MODULE(FilterLSTM);
 

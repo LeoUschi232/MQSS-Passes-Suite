@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "a3c-mq130-tcnrelu"},
+      {"agent", "a3c-mq130-lstmhmpp"},
       {"dataset", "mqtbench"},
       {"circuit", ""},
       {"output", ""},
@@ -151,8 +151,8 @@ void load_default_params() {
       {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
       {"critic_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
       {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
-      {"actor_learning_rate", 1e-4},
-      {"critic_learning_rate", 5e-4},
+      {"actor_learning_rate", 1e-5},
+      {"critic_learning_rate", 5e-5},
       {"ppo_epsilon", 0.2},
       {"sac_alpha", 0.1},
       {"print_param_info", false},

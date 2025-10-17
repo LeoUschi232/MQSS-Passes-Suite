@@ -65,14 +65,9 @@ torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
   return torch::nn::Sequential(
-      H == P ? torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)))
-             : torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)
-                       .proj_size(P))),
-      torch::nn::FilterLSTM(),                // -> [N, 2*P]
+      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                            /*bidirectional=*/true,
+                            /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
@@ -87,14 +82,9 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
   return torch::nn::Sequential(
-      H == P ? torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)))
-             : torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)
-                       .proj_size(P))),
-      torch::nn::FilterLSTM(),                // -> [N, 2*P]
+      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                            /*bidirectional=*/true,
+                            /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
@@ -121,13 +111,9 @@ make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
                 TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
                                        kernel_size)), // -> [IRS, N]
       torch::nn::TransposeContiguous(0u, 1u),         // -> [N, IRS]
-      H == P ? torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)))
-             : torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)
-                       .proj_size(P))),
+      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                            /*bidirectional=*/true,
+                            /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::FilterLSTM(),                // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
@@ -156,13 +142,9 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
                 TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
                                        kernel_size)), // -> [IRS, N]
       torch::nn::TransposeContiguous(0u, 1u),         // -> [N, IRS]
-      H == P ? torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)))
-             : torch::nn::AnyModule(torch::nn::LSTM(
-                   torch::nn::LSTMOptions(/*input_size=*/IRS, /*hidden_size=*/H)
-                       .bidirectional(true)
-                       .proj_size(P))),
+      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                            /*bidirectional=*/true,
+                            /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::FilterLSTM(),                // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]

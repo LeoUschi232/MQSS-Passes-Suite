@@ -33,12 +33,12 @@ train(const std::string &agent_name, const std::string &dataset) {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
       } else if (attributes.extras == "tcnprelu") {
         agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmrelu") {
-        std::cerr << "A3C_LSTM_RELU not implemented yet: " << agent_name
-                  << std::endl;
-      } else if (attributes.extras == "lstmprelu") {
-        std::cerr << "A3C_LSTM_PRELU not implemented yet: " << agent_name
-                  << std::endl;
+      } else if (attributes.extras == "lstmhmpp") {
+        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
+      } else if (attributes.extras == "lstmbmnp") {
+        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
       } else {
         std::cerr << "No such A3C agent: " << agent_name << std::endl;
         return {};
