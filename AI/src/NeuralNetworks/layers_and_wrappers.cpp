@@ -50,12 +50,14 @@ Tensor WeightNormConv1dImpl::forward(const Tensor &input) {
 FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
                                unsigned int hidden_size, bool bidirectional,
                                unsigned int proj_size) {
-  if (proj_size <= 0) {
-    proj_size = hidden_size;
+  if (0u < proj_size && proj_size < hidden_size) {
+    this->my_lstm = LSTM(LSTMOptions(input_size, hidden_size)
+                             .bidirectional(bidirectional)
+                             .proj_size(proj_size));
+  } else {
+    this->my_lstm =
+        LSTM(LSTMOptions(input_size, hidden_size).bidirectional(bidirectional));
   }
-  this->my_lstm = LSTM(LSTMOptions(input_size, hidden_size)
-                           .bidirectional(bidirectional)
-                           .proj_size(proj_size));
   this->register_module("my_lstm", this->my_lstm);
 }
 
