@@ -338,7 +338,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
-InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
+InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
   if (this->latest_observation.has_value()) {
     return this->latest_observation.value();
   }
@@ -419,7 +419,7 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
 }
 
 torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
-    std::optional<torch::TensorOptions> tensor_options) const {
+    std::optional<torch::TensorOptions> tensor_options) {
   torch::TensorOptions options = tensor_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
   InstructionsTensor<float> observation = this->get_observation();

@@ -151,7 +151,7 @@ public:
    * @return Blob Tensor of 1-axis shape {N×IRS} containing the observation of
    * the current circuit.
    */
-  InstructionsTensor<float> get_observation() const;
+  InstructionsTensor<float> get_observation();
 
   /**
    * N = Nr of instructions in the quantum circuit
@@ -161,7 +161,7 @@ public:
    * the current circuit.
    */
   torch::Tensor get_observation_as_torch_tensor(
-      std::optional<torch::TensorOptions> tensor_options = std::nullopt) const;
+      std::optional<torch::TensorOptions> tensor_options = std::nullopt);
 
   /**
    *
