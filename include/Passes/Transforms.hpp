@@ -42,116 +42,118 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
-namespace mqss::opt {
-std::unique_ptr<mlir::Pass> createQuakeQMapPass(
-    Architecture &architecture, const Configuration &settings);
+using mlir::Pass;
 
-std::unique_ptr<mlir::Pass> createNormalizeArgAnglePass();
+namespace mqss::opt {
+std::unique_ptr<Pass> createQuakeQMapPass(Architecture &architecture,
+                                          const Configuration &settings);
+
+std::unique_ptr<Pass> createNormalizeArgAnglePass();
 
 /// 1
-std::unique_ptr<mlir::Pass> createCxRxToRxCxPass();
+std::unique_ptr<Pass> createCxRxToRxCxPass();
 
 /// 2
-std::unique_ptr<mlir::Pass> createCxXToXCxPass();
+std::unique_ptr<Pass> createCxXToXCxPass();
 
 /// 3
-std::unique_ptr<mlir::Pass> createCxZToZCxPass();
+std::unique_ptr<Pass> createCxZToZCxPass();
 
 /// 4
-std::unique_ptr<mlir::Pass> createRxCxToCxRxPass();
+std::unique_ptr<Pass> createRxCxToCxRxPass();
 
 /// 5
-std::unique_ptr<mlir::Pass> createXCxToCxXPass();
+std::unique_ptr<Pass> createXCxToCxXPass();
 
 /// 6
-std::unique_ptr<mlir::Pass> createZCxToCxZPass();
+std::unique_ptr<Pass> createZCxToCxZPass();
 
 /// 7
-std::unique_ptr<mlir::Pass> createCxCxCxToSwapPass();
+std::unique_ptr<Pass> createCxCxCxToSwapPass();
 
 /// 8
-std::unique_ptr<mlir::Pass> createHXHToZPass();
+std::unique_ptr<Pass> createHXHToZPass();
 
 /// 9
-std::unique_ptr<mlir::Pass> createHZHToXPass();
+std::unique_ptr<Pass> createHZHToXPass();
 
 /// 10
-std::unique_ptr<mlir::Pass> createSdgZToSPass();
+std::unique_ptr<Pass> createSdgZToSPass();
 
 /// 11
-std::unique_ptr<mlir::Pass> createZSdgToSPass();
+std::unique_ptr<Pass> createZSdgToSPass();
 
 /// 12
-std::unique_ptr<mlir::Pass> createSZToSdgPass();
+std::unique_ptr<Pass> createSZToSdgPass();
 
 /// 13
-std::unique_ptr<mlir::Pass> createZSToSdgPass();
+std::unique_ptr<Pass> createZSToSdgPass();
 
 /// 14
-std::unique_ptr<mlir::Pass> createHCxHToCzPass();
+std::unique_ptr<Pass> createHCxHToCzPass();
 
 /// 15
-std::unique_ptr<mlir::Pass> createHCzHToCxPass();
+std::unique_ptr<Pass> createHCzHToCxPass();
 
 /// 16
-std::unique_ptr<mlir::Pass> createHCrxHToCrzPass();
+std::unique_ptr<Pass> createHCrxHToCrzPass();
 
 /// 17
-std::unique_ptr<mlir::Pass> createHCrzHToCrxPass();
+std::unique_ptr<Pass> createHCrzHToCrxPass();
 
 /// 18
-std::unique_ptr<mlir::Pass> createHRxHToRzPass();
+std::unique_ptr<Pass> createHRxHToRzPass();
 
 /// 19
-std::unique_ptr<mlir::Pass> createHRzHToRxPass();
+std::unique_ptr<Pass> createHRzHToRxPass();
 
 /// 20
-std::unique_ptr<mlir::Pass> createSdgSdgSdgToSPass();
+std::unique_ptr<Pass> createSdgSdgSdgToSPass();
 
 /// 21
-std::unique_ptr<mlir::Pass> createSdgSdgToZPass();
+std::unique_ptr<Pass> createSdgSdgToZPass();
 
 /// 22
-std::unique_ptr<mlir::Pass> createSSSToSdgPass();
+std::unique_ptr<Pass> createSSSToSdgPass();
 
 /// 23
-std::unique_ptr<mlir::Pass> createSSToZPass();
+std::unique_ptr<Pass> createSSToZPass();
 
 /// 24
-std::unique_ptr<mlir::Pass> createTTToSPass();
+std::unique_ptr<Pass> createTTToSPass();
 
 /// 25
-std::unique_ptr<mlir::Pass> createRxRxToRxPass();
+std::unique_ptr<Pass> createRxRxToRxPass();
 
 /// 26
-std::unique_ptr<mlir::Pass> createRyRyToRyPass();
+std::unique_ptr<Pass> createRyRyToRyPass();
 
 /// 27
-std::unique_ptr<mlir::Pass> createRzRzToRzPass();
+std::unique_ptr<Pass> createRzRzToRzPass();
 
 /// 28
-std::unique_ptr<mlir::Pass> createHXToZHPass();
+std::unique_ptr<Pass> createHXToZHPass();
 
 /// 29
-std::unique_ptr<mlir::Pass> createHZToXHPass();
+std::unique_ptr<Pass> createHZToXHPass();
 
 /// 30
-std::unique_ptr<mlir::Pass> createXHToHZPass();
+std::unique_ptr<Pass> createXHToHZPass();
 
 /// 31
-std::unique_ptr<mlir::Pass> createZHToHXPass();
+std::unique_ptr<Pass> createZHToHXPass();
 
 /// 32
-std::unique_ptr<mlir::Pass> createHYToYHPass();
+std::unique_ptr<Pass> createHYToYHPass();
 
 /// 33
-std::unique_ptr<mlir::Pass> createYHToHYPass();
+std::unique_ptr<Pass> createYHToHYPass();
 
 /// 34
-std::unique_ptr<mlir::Pass> createXHZToHPass();
+std::unique_ptr<Pass> createXHZToHPass();
 
 /// 35
-std::unique_ptr<mlir::Pass> createZHXToHPass();
+std::unique_ptr<Pass> createZHXToHPass();
 
 } // namespace mqss::opt
 

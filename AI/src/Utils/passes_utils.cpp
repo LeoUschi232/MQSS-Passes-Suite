@@ -1,5 +1,16 @@
 #include "Utils/passes_utils.hpp"
 
+// Support includes
+#include "Support/mlir_utils.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+/// The usages of llvm functions must come before the QuakeOps header which
+/// expects them.
+using llvm::cast;
+using llvm::dyn_cast;
+using llvm::isa;
+////////////////////////////////////////////////////////////////////////////////
+
 // Environment includes
 #include "Environment/quantum_circuit_tensor.hpp"
 

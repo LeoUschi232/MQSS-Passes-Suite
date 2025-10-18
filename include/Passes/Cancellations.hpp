@@ -37,6 +37,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
+using mlir::Pass;
+
 namespace mqss::opt {
 
 /// 1
