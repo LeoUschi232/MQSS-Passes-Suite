@@ -1,7 +1,7 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Cancellations.hpp"
-#include "Support/mlir_utils.hpp"
 #include "Support/Transforms/CancellationOperations.hpp"
+#include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
@@ -22,7 +22,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class ZeroRxToId final : public BaseMQSSPass<ZeroRxToId> {
+class ZeroRxToId final : public BaseMQSSPass<ZeroRxToId>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRxToId)
 
@@ -33,12 +33,11 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto rxOp = dyn_cast_or_null<quake::RxOp>(*op);
-      if (!rxOp
-          || rxOp.getTargets().size() != 1
-          || !rxOp.getControls().empty()
-          || rxOp.getParameters().size() != 1) {
+      if (!rxOp || rxOp.getTargets().size() != 1 ||
+          !rxOp.getControls().empty() || rxOp.getParameters().size() != 1) {
         return;
       }
 
@@ -49,6 +48,7 @@ public:
       if (isMultipleOfTwoPi(params[0])) {
         IRRewriter rewriter(rxOp->getContext());
         rewriter.eraseOp(rxOp);
+        this->wasApplied = true;
       }
     });
   }

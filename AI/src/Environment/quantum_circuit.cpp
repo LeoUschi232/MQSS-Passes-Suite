@@ -130,6 +130,7 @@ bool QuantumCircuit::run_pass(unsigned int pass_index) {
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
+      std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
       return false;
     }

@@ -6,7 +6,6 @@
 #include "mlir/IR/Threading.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include <iostream>
 #include <mlir_utils.hpp>
 
 // Include auto-generated pass registration

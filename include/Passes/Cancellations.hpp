@@ -40,46 +40,46 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::opt {
 
 /// 1
-std::unique_ptr<mlir::Pass> createXXToIdPass();
+std::unique_ptr<Pass> createXXToIdPass();
 
 /// 2
-std::unique_ptr<mlir::Pass> createYYToIdPass();
+std::unique_ptr<Pass> createYYToIdPass();
 
 /// 3
-std::unique_ptr<mlir::Pass> createZZToIdPass();
+std::unique_ptr<Pass> createZZToIdPass();
 
 /// 4
-std::unique_ptr<mlir::Pass> createSSdgToIdPass();
+std::unique_ptr<Pass> createSSdgToIdPass();
 
 /// 5
-std::unique_ptr<mlir::Pass> createSdgSToIdPass();
+std::unique_ptr<Pass> createSdgSToIdPass();
 
 /// 6
-std::unique_ptr<mlir::Pass> createTTdgToIdPass();
+std::unique_ptr<Pass> createTTdgToIdPass();
 
 /// 7
-std::unique_ptr<mlir::Pass> createTdgTToIdPass();
+std::unique_ptr<Pass> createTdgTToIdPass();
 
 /// 8
-std::unique_ptr<mlir::Pass> createHHToIdPass();
+std::unique_ptr<Pass> createHHToIdPass();
 
 /// 9
-std::unique_ptr<mlir::Pass> createCxCxToIdPass();
+std::unique_ptr<Pass> createCxCxToIdPass();
 
 /// 10
-std::unique_ptr<mlir::Pass> createCyCyToIdPass();
+std::unique_ptr<Pass> createCyCyToIdPass();
 
 /// 11
-std::unique_ptr<mlir::Pass> createCzCzToIdPass();
+std::unique_ptr<Pass> createCzCzToIdPass();
 
 /// 12
-std::unique_ptr<mlir::Pass> createZeroRxToIdPass();
+std::unique_ptr<Pass> createZeroRxToIdPass();
 
 /// 13
-std::unique_ptr<mlir::Pass> createZeroRyToIdPass();
+std::unique_ptr<Pass> createZeroRyToIdPass();
 
 /// 14
-std::unique_ptr<mlir::Pass> createZeroRzToIdPass();
+std::unique_ptr<Pass> createZeroRzToIdPass();
 
 } // namespace mqss::opt
 

@@ -38,8 +38,7 @@ using namespace mlir;
 
 // Base class extending PassWrapper with a common method
 template <typename DerivedT>
-class BaseMQSSPass
-    : public PassWrapper<DerivedT, OperationPass<ModuleOp> > {
+class BaseMQSSPass : public PassWrapper<DerivedT, OperationPass<ModuleOp>> {
 public:
   virtual void operationsOnQuantumKernel(
       func::FuncOp kernel) = 0; // this has to be re-written by each pass
@@ -89,4 +88,14 @@ private:
       }
     });
   }
+};
+
+class AppliedCheckPass {
+protected:
+  bool wasApplied = false;
+
+public:
+  AppliedCheckPass() = default;
+  virtual ~AppliedCheckPass() = default;
+  virtual bool getWasApplied() const { return wasApplied; }
 };
