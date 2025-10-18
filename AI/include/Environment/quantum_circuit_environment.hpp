@@ -56,6 +56,7 @@ enum class CircuitValidity : int {
 class QuantumCircuitEnvironment {
 protected:
   /// Attributes for circuit
+  std::optional<InstructionsTensor<float>> latest_observation = std::nullopt;
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
   fs::path circuit_path = "";
   QuantumCircuit circuit{};

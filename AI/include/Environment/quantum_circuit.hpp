@@ -72,9 +72,9 @@ public:
   /**
    *
    * @param pass_index
-   * @return
+   * @return [Succeeded, Was Applied]
    */
-  bool run_pass(unsigned int pass_index);
+  std::pair<bool, bool> run_pass(unsigned int pass_index);
 
   /**
    *

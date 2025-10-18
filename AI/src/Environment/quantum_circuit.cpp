@@ -120,27 +120,32 @@ bool QuantumCircuit::recompute() {
   return this->validate();
 }
 
-bool QuantumCircuit::run_pass(unsigned int pass_index) {
+std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   if (pass_index >= NR_PASSES) {
-    return false;
+    return {false, false};
   }
   auto [passname, passptr] = getPassNameAndPointer(pass_index);
   try {
     MLIRContext &context = *this->context_ptr.get();
-    mlir::PassManager pass_manager(&context);
+    PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
-    if (mlir::failed(pass_manager.run(this->circuit_module))) {
+    if (failed(pass_manager.run(this->circuit_module))) {
       std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
-      return false;
+      return {false, true};
     }
   } catch (const std::runtime_error &error) {
     std::cerr << "Pass " << passname << " failed with " << error.what()
               << std::endl;
     this->recompute();
-    return false;
+    return {false, true};
   }
-  return this->recompute();
+  if (auto check_pass = dynamic_cast<AppliedCheckPass *>(passptr.get());
+      !check_pass->getWasApplied()) {
+    // Pass did not apply any changes.
+    return {this->validate(), false};
+  }
+  return {this->recompute(), true};
 }
 QuantumCircuit::operator mlir::func::FuncOp() const {
   return FuncOp(this->circuit_module);
