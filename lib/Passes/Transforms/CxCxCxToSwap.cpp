@@ -20,7 +20,8 @@ using namespace mqss::support::quakeDialect;
 
 namespace {
 
-class CxCxCxToSwap final : public BaseMQSSPass<CxCxCxToSwap> {
+class CxCxCxToSwap final : public BaseMQSSPass<CxCxCxToSwap>,
+                             AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxCxCxToSwap)
 
@@ -31,6 +32,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto cxOp3 = dyn_cast_or_null<quake::XOp>(*op);
       if (!cxOp3
@@ -83,6 +85,7 @@ public:
       rewriter.eraseOp(cxOp1);
       rewriter.eraseOp(cxOp2);
       rewriter.eraseOp(cxOp3);
+      this->wasApplied = true;
     });
   }
 };

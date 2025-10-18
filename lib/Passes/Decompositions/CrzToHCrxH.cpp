@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 
-class CrzToHCrxH final : public BaseMQSSPass<CrzToHCrxH> {
+class CrzToHCrxH final : public BaseMQSSPass<CrzToHCrxH>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CrzToHCrxH)
 
@@ -29,6 +29,7 @@ public:
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto crzOp = dyn_cast_or_null<quake::RzOp>(*op);
       if (!crzOp
@@ -49,6 +50,7 @@ public:
       rewriter.create<quake::RxOp>(loc, false, param, control, target);
       rewriter.create<quake::HOp>(loc, target);
       rewriter.eraseOp(crzOp);
+      this->wasApplied = true;
     });
   }
 };
