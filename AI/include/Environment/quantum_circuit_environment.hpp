@@ -115,6 +115,7 @@ public:
   void clear(bool hard = true);
   bool validate();
   void reset();
+  std::pair<unsigned int, unsigned int> size() const;
 
   /**
    *

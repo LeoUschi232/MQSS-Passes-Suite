@@ -65,8 +65,12 @@ fs::path QuantumCircuitEnvironment::getCircuitPath() const {
   return circuit_path;
 }
 
+std::pair<unsigned int, unsigned int> QuantumCircuitEnvironment::size() const {
+  return {this->circuit.getNrQubits(), this->circuit.getNrGates()};
+}
+
 std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
-           std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+          std::array<unsigned int, GATES_WEIGHTS_SIZE>>
 QuantumCircuitEnvironment::getRegisteredRandomizerParams() const {
   if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     return {qubits_cholesky_params.value(), gates_weights.value()};
@@ -252,12 +256,12 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
   if (ambiguous_measurement) {
     return CircuitValidity::AmbiguousMeasurement;
   }
-  if (nr_qubits != this->circuit.get_nr_qubits() ||
-      nr_gates != this->circuit.get_nr_gates()) {
+  if (nr_qubits != this->circuit.getNrQubits() ||
+      nr_gates != this->circuit.getNrGates()) {
     this->circuit.recompute();
   }
-  if (nr_qubits != this->circuit.get_nr_qubits() ||
-      nr_gates != this->circuit.get_nr_gates()) {
+  if (nr_qubits != this->circuit.getNrQubits() ||
+      nr_gates != this->circuit.getNrGates()) {
     throw std::runtime_error(
         "Mismatch in algorithms computing nr_circuits and nr_gates between "
         "QuantumCircuit and QuantumCircuitEnvironment.");
@@ -271,9 +275,9 @@ QuantumCircuitEnvironment::get_circuit_info() const {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  return {{"qubits", this->circuit.get_nr_qubits()},
-          {"gates", this->circuit.get_nr_gates()},
-          {"depth", this->circuit.get_depth()}};
+  return {{"qubits", this->circuit.getNrQubits()},
+          {"gates", this->circuit.getNrGates()},
+          {"depth", this->circuit.getDepth()}};
 }
 
 /// [Reward, Terminated, Truncated]
@@ -292,14 +296,14 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   if (action >= NR_PASSES) {
     throw std::runtime_error("Invalid action: " + std::to_string(action));
   }
-  float previous_nr_gates = this->circuit.get_nr_gates();
-  float previous_depth = this->circuit.get_depth();
+  float previous_nr_gates = this->circuit.getNrGates();
+  float previous_depth = this->circuit.getDepth();
   if (!this->circuit.run_pass(/*pass_index=*/action)) {
     std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
     return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
   }
-  float nr_gates_reduction = previous_nr_gates - this->circuit.get_nr_gates();
-  float depth_reduction = previous_depth - this->circuit.get_depth();
+  float nr_gates_reduction = previous_nr_gates - this->circuit.getNrGates();
+  float depth_reduction = previous_depth - this->circuit.getDepth();
   float reward = nr_gates_reduction + depth_reduction;
 
   if (reward > 0.0f) {
@@ -336,8 +340,8 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
     observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
     return observation;
   }
-  const unsigned int nr_gates = this->circuit.get_nr_gates();
-  const unsigned int nr_qubits = this->circuit.get_nr_qubits();
+  const unsigned int nr_gates = this->circuit.getNrGates();
+  const unsigned int nr_qubits = this->circuit.getNrQubits();
   if (nr_gates < GLOBAL_MIN_NR_GATES || nr_qubits < GLOBAL_MIN_NR_QUBITS) {
     // Any valid normal circuit should have at least 2 instructions.
     observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
@@ -419,7 +423,7 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
 }
 
 bool QuantumCircuitEnvironment::validate() {
-  if (this->circuit.get_nr_qubits() > this->max_qubits ||
+  if (this->circuit.getNrQubits() > this->max_qubits ||
       !this->circuit.validate()) {
     this->clear(/*hard=*/false);
     return false;

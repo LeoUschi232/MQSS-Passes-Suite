@@ -188,8 +188,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
                 std::max(global_max_reward, total_worker_reward);
             updateProgress(
                 global_async_step, a3c_max_async_steps,
-                " | Reward: " + std::to_string(total_worker_reward) +
-                    "Global Max: " + std::to_string(global_max_reward));
+                "Reward: " + std::to_string(total_worker_reward) +
+                    "| Global Max: " + std::to_string(global_max_reward));
           }
         }
       } catch (const std::exception &error) {
@@ -255,13 +255,16 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   int64_t T = max_steps_per_episode;
 
   std::cout << "Beginning training." << std::endl;
-  updateProgress(0, nr_episodes, "Beginning training");
+  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
       break;
     }
     try {
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/"Resetting enviornment.");
       double total_episode_reward = 0.0;
       environment.reset();
       std::vector<torch::Tensor> episode_log_probs_vector;
@@ -276,10 +279,14 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       bool add_bootstrap = false;
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
+        auto [nr_qubits, nr_gates] = environment.size();
         updateProgresses({{episode_idx, nr_episodes},
                           {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/" | Episode Reward: " +
-                             std::to_string(total_episode_reward));
+                         /*display_message=*/"Episode Reward: " +
+                             std::to_string(total_episode_reward) +
+                             " | Nr qubits: " + std::to_string(nr_qubits) +
+                             " | Nr gates: " + std::to_string(nr_gates) +
+                             " | Running step.");
 
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in A2C training."
@@ -313,10 +320,14 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       } else {
         episode_values_vector.push_back(torch::zeros({}, options));
       }
+      auto [nr_qubits, nr_gates] = environment.size();
+      std::string main_message =
+          "Episode Reward: " + std::to_string(total_episode_reward) +
+          " | Nr qubits: " + std::to_string(nr_qubits) +
+          " | Nr gates: " + std::to_string(nr_gates);
       updateProgresses({{episode_idx, nr_episodes},
                         {max_steps_per_episode, max_steps_per_episode}},
-                       /*display_message=*/" | Episode Reward: " +
-                           std::to_string(total_episode_reward));
+                       /*display_message=*/main_message + " | Computing loss.");
 
       auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
           /*rewards=*/torch::stack(episode_rewards_vector),
@@ -324,6 +335,10 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           /*state_values=*/torch::stack(episode_values_vector),
           /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
           gae_hyperparameter, entropy_coefficient);
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/main_message +
+                           " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()

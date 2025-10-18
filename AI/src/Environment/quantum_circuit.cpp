@@ -149,9 +149,9 @@ void QuantumCircuit::print(llvm::raw_string_ostream &string_stream) const {
   this->circuit_module->print(string_stream);
 }
 
-unsigned int QuantumCircuit::get_nr_qubits() const { return this->nr_qubits; }
-unsigned int QuantumCircuit::get_nr_gates() const { return this->nr_gates; }
-unsigned int QuantumCircuit::get_depth() const { return this->depth; }
+unsigned int QuantumCircuit::getNrQubits() const { return this->nr_qubits; }
+unsigned int QuantumCircuit::getNrGates() const { return this->nr_gates; }
+unsigned int QuantumCircuit::getDepth() const { return this->depth; }
 std::tuple<unsigned int, unsigned int, unsigned int>
 QuantumCircuit::get_attributes() const {
   return {this->nr_qubits, this->nr_gates, this->depth};
