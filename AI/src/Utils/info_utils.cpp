@@ -1,5 +1,10 @@
 #include "Utils/info_utils.hpp"
 
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+
 // Support includes
 #include "Support/mlir_utils.hpp"
 
@@ -10,14 +15,6 @@ using llvm::cast;
 using llvm::dyn_cast;
 using llvm::isa;
 ////////////////////////////////////////////////////////////////////////////////
-
-// Environment includes
-#include "Environment/quantum_circuit_tensor.hpp"
-
-// Neural-Networks includes
-#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
-#include "NeuralNetworks/Agents/agent_utils.hpp"
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"

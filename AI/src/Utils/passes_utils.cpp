@@ -1,8 +1,5 @@
 #include "Utils/passes_utils.hpp"
 
-// Environment includes
-#include "Environment/quantum_circuit_tensor.hpp"
-
 namespace ai_pass_selector {
 
 std::pair<std::string, std::unique_ptr<Pass>>

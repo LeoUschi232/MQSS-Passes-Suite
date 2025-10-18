@@ -28,6 +28,7 @@
 /// namespace, so every mlir type has to be included seperately.
 using mlir::ModuleOp;
 using mlir::Operation;
+using mlir::OperandRange;
 using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 

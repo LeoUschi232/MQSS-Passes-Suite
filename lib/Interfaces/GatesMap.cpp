@@ -32,7 +32,6 @@ control and target qubits.
 #include "cudaq/Support/Plugin.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
-using namespace mlir;
 using namespace mqss::support::quakeDialect;
 
 /*

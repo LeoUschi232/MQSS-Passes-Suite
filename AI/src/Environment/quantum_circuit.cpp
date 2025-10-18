@@ -137,9 +137,9 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   auto [passname, passptr] = getPassNameAndPointer(pass_index);
   try {
     MLIRContext &context = *this->context_ptr.get();
-    PassManager pass_manager(&context);
+    mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(passptr));
-    if (failed(pass_manager.run(this->circuit_module))) {
+    if (mlir::failed(pass_manager.run(this->circuit_module))) {
       std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
       return {false, true};
