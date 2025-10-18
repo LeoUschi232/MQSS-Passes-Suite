@@ -44,7 +44,14 @@ using llvm::isa;
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 
-using namespace mlir;
+////////////////////////////////////////////////////////////////////////////////
+/// Other libraries use a type ArrayRef. Is mlir is used fully, it creates an
+/// ambiguity which ArrayRef shall be used in the other modules.
+using mlir::OperationPass;
+using mlir::PassWrapper;
+using mlir::SmallVector;
+using mlir::WalkResult;
+////////////////////////////////////////////////////////////////////////////////
 
 // Base class extending PassWrapper with a common method
 template <typename DerivedT>

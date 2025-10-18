@@ -6,7 +6,7 @@ clear
 
 # Rebuild MQSS only. Assumes: AI/external/libtorch + tensorflow + _deps/cuda-quantum built.
 CURRENT_DIR="$(pwd)"
-NUM_JOBS="4"
+NUM_JOBS="1"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 
 # Optional arg parsing: -j/--jobs, --debug only

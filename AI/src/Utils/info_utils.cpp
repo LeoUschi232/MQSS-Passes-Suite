@@ -1,9 +1,7 @@
 #include "Utils/info_utils.hpp"
 
-// Utils includes
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+// Support includes
 #include "Support/mlir_utils.hpp"
-#include "Utils/progress_bar.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// The usages of llvm functions must come before the QuakeOps header which
@@ -19,9 +17,13 @@ using llvm::isa;
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 
 // Cudaq includes
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+
+// Utils includes
+#include "Utils/progress_bar.hpp"
 
 // Standard library includes
 #include <filesystem>
