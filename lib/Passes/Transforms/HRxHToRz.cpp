@@ -19,7 +19,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HRxHToRz final : public BaseMQSSPass<HRxHToRz> {
+class HRxHToRz final : public BaseMQSSPass<HRxHToRz>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HRxHToRz)
 
@@ -30,6 +30,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto hOp2 = dyn_cast_or_null<quake::HOp>(*op);
       if (!hOp2
@@ -70,6 +71,7 @@ public:
       rewriter.eraseOp(hOp1);
       rewriter.eraseOp(rxOp);
       rewriter.eraseOp(hOp2);
+      this->wasApplied = true;
     });
   }
 };

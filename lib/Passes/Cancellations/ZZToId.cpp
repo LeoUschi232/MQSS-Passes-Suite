@@ -17,7 +17,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class ZZToId final : public BaseMQSSPass<ZZToId> {
+class ZZToId final : public BaseMQSSPass<ZZToId>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZZToId)
 
@@ -28,6 +28,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto zOp2 = dyn_cast_or_null<quake::ZOp>(*op);
       if (!zOp2
@@ -49,6 +50,7 @@ public:
       IRRewriter rewriter(zOp2->getContext());
       rewriter.eraseOp(zOp2);
       rewriter.eraseOp(zOp1);
+      this->wasApplied = true;
     });
   }
 };

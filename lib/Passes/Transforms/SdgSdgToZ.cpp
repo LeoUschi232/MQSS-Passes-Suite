@@ -18,7 +18,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class SdgSdgToZ final : public BaseMQSSPass<SdgSdgToZ> {
+class SdgSdgToZ final : public BaseMQSSPass<SdgSdgToZ>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgSdgToZ)
 
@@ -29,6 +29,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
       if (!sOp2
@@ -56,6 +57,7 @@ public:
       rewriter.create<quake::ZOp>(loc, false, targets);
       rewriter.eraseOp(sOp1);
       rewriter.eraseOp(sOp2);
+      this->wasApplied = true;
     });
   }
 };
