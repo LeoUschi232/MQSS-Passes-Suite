@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class TTToS final : public BaseMQSSPass<TTToS> {
+class TTToS final : public BaseMQSSPass<TTToS>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(TTToS)
 
@@ -28,6 +28,7 @@ public:
   StringRef getDescription() const override { return "Replace T T by S"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto tOp2 = dyn_cast_or_null<quake::TOp>(*op);
       if (!tOp2
@@ -55,6 +56,7 @@ public:
       rewriter.create<quake::SOp>(loc, false, targets);
       rewriter.eraseOp(tOp1);
       rewriter.eraseOp(tOp2);
+      this->wasApplied = true;
     });
   }
 };

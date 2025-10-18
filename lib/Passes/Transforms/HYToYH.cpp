@@ -17,7 +17,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HYToYH final : public BaseMQSSPass<HYToYH> {
+class HYToYH final : public BaseMQSSPass<HYToYH>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HYToYH)
   StringRef getArgument() const override { return "HYToYH"; }
@@ -28,6 +28,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto yOp = dyn_cast_or_null<quake::YOp>(*op);
       if (!yOp
@@ -54,6 +55,7 @@ public:
       rewriter.create<quake::HOp>(loc, false, targets);
       rewriter.eraseOp(hOp);
       rewriter.eraseOp(yOp);
+      this->wasApplied = true;
     });
   }
 };

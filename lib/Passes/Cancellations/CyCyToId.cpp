@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class CyCyToId final : public BaseMQSSPass<CyCyToId> {
+class CyCyToId final : public BaseMQSSPass<CyCyToId>, AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CyCyToId)
 
@@ -30,6 +30,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied = false;
     kernel.walk([&](Operation *op) {
       auto cyOp2 = dyn_cast_or_null<quake::YOp>(*op);
       if (!cyOp2
@@ -58,6 +59,7 @@ public:
       IRRewriter rewriter(cyOp2->getContext());
       rewriter.eraseOp(cyOp2);
       rewriter.eraseOp(cyOp1);
+      this->wasApplied = true;
     });
   }
 };

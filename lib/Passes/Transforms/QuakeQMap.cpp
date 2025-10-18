@@ -30,6 +30,7 @@ correctly mapped to a given quantum device (Architecture) according to the
 mapping configurations.
 ******************************************************************************/
 
+#include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
 #include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
@@ -222,8 +223,8 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap final : public PassWrapper<
-      QuakeQMap, OperationPass<FuncOp> > {
+class QuakeQMap final
+    : public PassWrapper<QuakeQMap, OperationPass<FuncOp>>, AppliedCheckPass {
   Architecture &architecture;
   const Configuration &settings;
 
@@ -246,6 +247,7 @@ public:
   void runOnOperation()
 
   override {
+    this->wasApplied = false;
     // Getting the function
     auto circuit = getOperation();
     // Get the function name
@@ -253,6 +255,8 @@ public:
     if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION))
         == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
+
+    this->wasApplied = true;
 
     std::map<int, int> measurements; // key: qubit, value register index
     int numQubits = getNumberOfQubits(circuit);
