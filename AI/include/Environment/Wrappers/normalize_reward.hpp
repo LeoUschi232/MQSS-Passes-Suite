@@ -20,6 +20,9 @@ public:
   /// Destructor
   ~NormalizeReward() override = default;
 
+  /// Reset environment and reward normalization state
+  void reset();
+
   /// Copy and Move constructors and assignments
   NormalizeReward(const NormalizeReward &other) = delete;
   NormalizeReward &operator=(const NormalizeReward &other) = delete;
@@ -32,6 +35,9 @@ public:
    * @return
    */
   std::tuple<float, bool, bool> step(unsigned int action) override;
+
+private:
+  void reset_normalization_state();
 };
 } // namespace ai_pass_selector
 
