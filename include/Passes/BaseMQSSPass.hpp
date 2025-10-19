@@ -111,11 +111,10 @@ class AppliedCheckPass {
 protected:
   std::shared_ptr<std::atomic_bool> wasApplied =
       std::make_shared<std::atomic_bool>(false);
-
 public:
   virtual ~AppliedCheckPass() = default;
   bool getWasApplied() const { return wasApplied->load(); }
-  std::shared_ptr<std::atomic_bool> getAppliedFlag() const {
+  std::shared_ptr<std::atomic_bool> getAppliedPtr() const {
     return wasApplied;
   }
 };

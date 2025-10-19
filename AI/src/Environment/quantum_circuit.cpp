@@ -135,7 +135,15 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
     return {false, false};
   }
   auto [passname, pass_ptr] = getPassNameAndPointer(pass_index);
-  Pass *raw_pass_ptr = pass_ptr.get();
+  std::shared_ptr<std::atomic_bool> was_applied_ptr;
+  if (auto *applied_check_pass =
+          dynamic_cast<AppliedCheckPass *>(pass_ptr.get())) {
+    was_applied_ptr = applied_check_pass->getAppliedPtr();
+  } else {
+    std::cerr << "Pass " << passname
+              << " does not inherit from AppliedCheckPass." << std::endl;
+    return {false, false};
+  }
   try {
     MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
@@ -153,9 +161,7 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   }
 
   std::cout << "Block 1" << std::endl;
-  auto check_pass = dynamic_cast<AppliedCheckPass *>(raw_pass_ptr);
-  std::cout << "Block 2" << std::endl;
-  bool ppp = check_pass->getWasApplied();
+  const bool ppp = was_applied_ptr && was_applied_ptr->load();
   std::cout << "Block 3" << std::endl;
   if (!ppp) {
     // Pass did not apply any changes.
