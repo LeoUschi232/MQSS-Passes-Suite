@@ -224,7 +224,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 namespace {
 
 class QuakeQMap final
-    : public PassWrapper<QuakeQMap, OperationPass<FuncOp>>, AppliedCheckPass {
+    : public PassWrapper<QuakeQMap, OperationPass<FuncOp>>, public AppliedCheckPass {
   Architecture &architecture;
   const Configuration &settings;
 

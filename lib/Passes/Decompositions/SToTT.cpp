@@ -17,7 +17,7 @@ namespace mqss::opt {
 using namespace mlir;
 
 namespace {
-class SToTT final : public BaseMQSSPass<SToTT>, AppliedCheckPass {
+class SToTT final : public BaseMQSSPass<SToTT>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SToTT)
 

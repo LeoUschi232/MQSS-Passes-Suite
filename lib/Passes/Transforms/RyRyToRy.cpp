@@ -16,7 +16,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class RyRyToRy final : public BaseMQSSPass<RyRyToRy>, AppliedCheckPass {
+class RyRyToRy final : public BaseMQSSPass<RyRyToRy>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RyRyToRy)
 

@@ -21,7 +21,7 @@ using namespace mqss::support::transforms;
 
 
 namespace {
-class SSToZ final : public BaseMQSSPass<SSToZ>, AppliedCheckPass {
+class SSToZ final : public BaseMQSSPass<SSToZ>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSToZ)
 

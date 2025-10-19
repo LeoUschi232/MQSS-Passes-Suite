@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 
-class RxToHRzH final : public BaseMQSSPass<RxToHRzH>, AppliedCheckPass {
+class RxToHRzH final : public BaseMQSSPass<RxToHRzH>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RxToHRzH)
 

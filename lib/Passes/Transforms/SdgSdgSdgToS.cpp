@@ -1,10 +1,10 @@
 #include "Passes/BaseMQSSPass.hpp"
 #include "Passes/Transforms.hpp"
+#include "Support/Transforms/CommutateOperations.hpp"
 #include "Support/mlir_utils.hpp"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
-#include "Support/Transforms/CommutateOperations.hpp"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mqss::opt {
@@ -21,7 +21,7 @@ using namespace mqss::support::transforms;
 namespace {
 
 class SdgSdgSdgToS final : public BaseMQSSPass<SdgSdgSdgToS>,
-                             AppliedCheckPass {
+                           public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgSdgSdgToS)
 
@@ -35,34 +35,28 @@ public:
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto sOp3 = dyn_cast_or_null<quake::SOp>(*op);
-      if (!sOp3
-          || !sOp3.isAdj()
-          || sOp3.getTargets().size() != 1
-          || !sOp3.getControls().empty()) {
+      if (!sOp3 || !sOp3.isAdj() || sOp3.getTargets().size() != 1 ||
+          !sOp3.getControls().empty()) {
         return;
       }
-      auto optional_sOp2
-          = getPreviousOperationOnTarget(sOp3, sOp3.getTargets()[0]);
+      auto optional_sOp2 =
+          getPreviousOperationOnTarget(sOp3, sOp3.getTargets()[0]);
       if (!optional_sOp2) {
         return;
       }
       auto sOp2 = dyn_cast_or_null<quake::SOp>(*optional_sOp2);
-      if (!sOp2
-          || !sOp2.isAdj()
-          || sOp2.getTargets().size() != 1
-          || !sOp2.getControls().empty()) {
+      if (!sOp2 || !sOp2.isAdj() || sOp2.getTargets().size() != 1 ||
+          !sOp2.getControls().empty()) {
         return;
       }
-      auto optional_sOp1
-          = getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
+      auto optional_sOp1 =
+          getPreviousOperationOnTarget(sOp2, sOp2.getTargets()[0]);
       if (!optional_sOp1) {
         return;
       }
       auto sOp1 = dyn_cast_or_null<quake::SOp>(*optional_sOp1);
-      if (!sOp1
-          || !sOp1.isAdj()
-          || sOp1.getTargets().size() != 1
-          || !sOp1.getControls().empty()) {
+      if (!sOp1 || !sOp1.isAdj() || sOp1.getTargets().size() != 1 ||
+          !sOp1.getControls().empty()) {
         return;
       }
       IRRewriter rewriter(sOp3->getContext());

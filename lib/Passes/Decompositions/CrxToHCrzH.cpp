@@ -17,7 +17,7 @@ namespace mqss::opt {
 using namespace mlir;
 
 namespace {
-class CrxToHCrzH final : public BaseMQSSPass<CrxToHCrzH>, AppliedCheckPass {
+class CrxToHCrzH final : public BaseMQSSPass<CrxToHCrzH>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CrxToHCrzH)
 

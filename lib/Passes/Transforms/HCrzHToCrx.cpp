@@ -19,7 +19,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HCrzHToCrx final : public BaseMQSSPass<HCrzHToCrx>, AppliedCheckPass {
+class HCrzHToCrx final : public BaseMQSSPass<HCrzHToCrx>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HCrzHToCrx)
 

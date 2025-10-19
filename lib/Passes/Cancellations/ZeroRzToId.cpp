@@ -23,7 +23,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class ZeroRzToId final : public BaseMQSSPass<ZeroRzToId>, AppliedCheckPass {
+class ZeroRzToId final : public BaseMQSSPass<ZeroRzToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRzToId)
 

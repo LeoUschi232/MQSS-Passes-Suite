@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 class CzToLowerHCxH final : public BaseMQSSPass<CzToLowerHCxH>,
-                             AppliedCheckPass {
+                            public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CzToLowerHCxH)
 
@@ -32,9 +32,8 @@ public:
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto czOp = dyn_cast_or_null<quake::ZOp>(*op);
-      if (!czOp
-          || czOp.getControls().size() != 1
-          || czOp.getTargets().size() != 1) {
+      if (!czOp || czOp.getControls().size() != 1 ||
+          czOp.getTargets().size() != 1) {
         return;
       }
 

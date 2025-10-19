@@ -17,7 +17,7 @@ namespace mqss::opt {
 using namespace mlir;
 
 namespace {
-class SdgToSSS final : public BaseMQSSPass<SdgToSSS>, AppliedCheckPass {
+class SdgToSSS final : public BaseMQSSPass<SdgToSSS>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgToSSS)
 

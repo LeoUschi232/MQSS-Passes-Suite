@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class TTToS final : public BaseMQSSPass<TTToS>, AppliedCheckPass {
+class TTToS final : public BaseMQSSPass<TTToS>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(TTToS)
 

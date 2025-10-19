@@ -17,7 +17,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HYToYH final : public BaseMQSSPass<HYToYH>, AppliedCheckPass {
+class HYToYH final : public BaseMQSSPass<HYToYH>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HYToYH)
   StringRef getArgument() const override { return "HYToYH"; }

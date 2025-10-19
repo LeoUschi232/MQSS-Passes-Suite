@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 
-class ReverseCx final : public BaseMQSSPass<ReverseCx>, AppliedCheckPass {
+class ReverseCx final : public BaseMQSSPass<ReverseCx>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
 

@@ -19,7 +19,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class SdgSToId final : public BaseMQSSPass<SdgSToId>, AppliedCheckPass {
+class SdgSToId final : public BaseMQSSPass<SdgSToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdgSToId)
 

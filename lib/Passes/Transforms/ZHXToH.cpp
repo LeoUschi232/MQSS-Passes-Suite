@@ -18,7 +18,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class ZHXToH final : public BaseMQSSPass<ZHXToH>, AppliedCheckPass {
+class ZHXToH final : public BaseMQSSPass<ZHXToH>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZHXToH)
 

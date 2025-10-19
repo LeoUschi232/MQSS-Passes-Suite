@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 
 namespace {
-class ZCxToCxZ final : public BaseMQSSPass<ZCxToCxZ>, AppliedCheckPass {
+class ZCxToCxZ final : public BaseMQSSPass<ZCxToCxZ>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZCxToCxZ)
 

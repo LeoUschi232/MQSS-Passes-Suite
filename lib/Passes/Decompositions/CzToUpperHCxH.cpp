@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 class CzToUpperHCxH final : public BaseMQSSPass<CzToUpperHCxH>,
-                             AppliedCheckPass {
+                            public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CzToUpperHCxH)
 
@@ -28,13 +28,12 @@ public:
     return "Decomposition pass of Cz by H, Cx, and H";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto czOp = dyn_cast_or_null<quake::ZOp>(*op);
-      if (!czOp
-          || czOp.getControls().size() != 1
-          || czOp.getTargets().size() != 1) {
+      if (!czOp || czOp.getControls().size() != 1 ||
+          czOp.getTargets().size() != 1) {
         return;
       }
 

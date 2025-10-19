@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class CyCyToId final : public BaseMQSSPass<CyCyToId>, AppliedCheckPass {
+class CyCyToId final : public BaseMQSSPass<CyCyToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CyCyToId)
 

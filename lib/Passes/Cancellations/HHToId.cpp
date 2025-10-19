@@ -17,7 +17,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class HHToId final : public BaseMQSSPass<HHToId>, AppliedCheckPass {
+class HHToId final : public BaseMQSSPass<HHToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(HHToId)
 

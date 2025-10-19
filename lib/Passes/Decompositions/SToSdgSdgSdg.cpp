@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 class SToSdgSdgSdg final : public BaseMQSSPass<SToSdgSdgSdg>,
-                             AppliedCheckPass {
+                           public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SToSdgSdgSdg)
 
@@ -28,14 +28,12 @@ public:
     return "Decompoe S gate by Sdg Sdg Sdg";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto sOp = dyn_cast_or_null<quake::SOp>(*op);
-      if (!sOp
-          || sOp.isAdj()
-          || sOp.getTargets().size() != 1
-          || !sOp.getControls().empty()) {
+      if (!sOp || sOp.isAdj() || sOp.getTargets().size() != 1 ||
+          !sOp.getControls().empty()) {
         return;
       }
       IRRewriter rewriter(sOp->getContext());

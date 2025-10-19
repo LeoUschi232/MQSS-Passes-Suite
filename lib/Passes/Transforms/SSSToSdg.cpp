@@ -19,7 +19,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class SSSToSDG final : public BaseMQSSPass<SSSToSDG>, AppliedCheckPass {
+class SSSToSDG final : public BaseMQSSPass<SSSToSDG>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSSToSDG)
 
