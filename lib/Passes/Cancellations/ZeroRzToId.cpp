@@ -34,7 +34,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto rzOp = dyn_cast_or_null<quake::RzOp>(*op);
       if (!rzOp
@@ -51,7 +51,7 @@ public:
       if (isMultipleOfTwoPi(params[0])) {
         IRRewriter rewriter(rzOp->getContext());
         rewriter.eraseOp(rzOp);
-        this->wasApplied = true;
+        this->wasApplied->store(true);
       }
     });
   }

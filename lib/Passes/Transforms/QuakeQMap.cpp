@@ -247,7 +247,7 @@ public:
   void runOnOperation()
 
   override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     // Getting the function
     auto circuit = getOperation();
     // Get the function name
@@ -256,7 +256,7 @@ public:
         == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
 
-    this->wasApplied = true;
+    this->wasApplied->store(true);
 
     std::map<int, int> measurements; // key: qubit, value register index
     int numQubits = getNumberOfQubits(circuit);

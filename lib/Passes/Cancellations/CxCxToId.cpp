@@ -32,7 +32,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp2 = dyn_cast_or_null<quake::XOp>(*op);
       if (!cxOp2
@@ -61,7 +61,7 @@ public:
       IRRewriter rewriter(cxOp2->getContext());
       rewriter.eraseOp(cxOp2);
       rewriter.eraseOp(cxOp1);
-      this->wasApplied = true;
+      this->wasApplied->store(true);
     });
   }
 };

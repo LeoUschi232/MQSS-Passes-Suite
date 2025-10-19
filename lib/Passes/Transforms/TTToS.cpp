@@ -28,7 +28,7 @@ public:
   StringRef getDescription() const override { return "Replace T T by S"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto tOp2 = dyn_cast_or_null<quake::TOp>(*op);
       if (!tOp2
@@ -56,7 +56,7 @@ public:
       rewriter.create<quake::SOp>(loc, false, targets);
       rewriter.eraseOp(tOp1);
       rewriter.eraseOp(tOp2);
-      this->wasApplied = true;
+      this->wasApplied->store(true);
     });
   }
 };

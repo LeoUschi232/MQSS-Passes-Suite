@@ -27,7 +27,7 @@ public:
   StringRef getDescription() const override { return "Fold Z H X to H"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto xOp = dyn_cast_or_null<quake::XOp>(*op);
       if (!xOp
@@ -65,7 +65,7 @@ public:
       rewriter.eraseOp(zOp);
       rewriter.eraseOp(hOp);
       rewriter.eraseOp(xOp);
-      this->wasApplied = true;
+      this->wasApplied->store(true);
     });
   }
 };
