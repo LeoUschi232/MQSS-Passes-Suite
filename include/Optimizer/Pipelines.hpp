@@ -35,10 +35,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
-#include "mlir/Conversion/MathToFuncs/MathToFuncs.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Transforms/Passes.h"
 
 namespace mqss::opt {
 /**

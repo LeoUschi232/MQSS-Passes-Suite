@@ -17,7 +17,7 @@ namespace mqss::opt {
 using namespace mlir;
 
 namespace {
-class XToHZH final : public BaseMQSSPass<XToHZH> {
+class XToHZH final : public BaseMQSSPass<XToHZH>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(XToHZH)
 
@@ -28,6 +28,7 @@ public:
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto xOp = dyn_cast_or_null<quake::XOp>(*op);
       if (!xOp
@@ -43,6 +44,7 @@ public:
       rewriter.create<quake::ZOp>(loc, false, target);
       rewriter.create<quake::HOp>(loc, false, target);
       rewriter.eraseOp(xOp);
+      this->wasApplied->store(true);
     });
   }
 };

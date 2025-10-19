@@ -17,7 +17,8 @@ namespace mqss::opt {
 using namespace mlir;
 
 namespace {
-class SwapToLowerCxCxCx final : public BaseMQSSPass<SwapToLowerCxCxCx> {
+class SwapToLowerCxCxCx final : public BaseMQSSPass<SwapToLowerCxCxCx>,
+                                public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SwapToLowerCxCxCx)
 
@@ -27,12 +28,12 @@ public:
     return "Decompose SWAP by CX(1,0) CX(0,1) CX(1,0)";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto swapOp = dyn_cast_or_null<quake::SwapOp>(*op);
-      if (!swapOp
-          || swapOp.getTargets().size() != 2
-          || !swapOp.getControls().empty()) {
+      if (!swapOp || swapOp.getTargets().size() != 2 ||
+          !swapOp.getControls().empty()) {
         return;
       }
       IRRewriter rewriter(swapOp->getContext());
@@ -44,6 +45,7 @@ public:
       rewriter.create<quake::XOp>(loc, q0, q1);
       rewriter.create<quake::XOp>(loc, q1, q0);
       rewriter.eraseOp(swapOp);
+      this->wasApplied->store(true);
     });
   }
 };

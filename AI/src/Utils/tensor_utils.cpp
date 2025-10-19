@@ -64,10 +64,10 @@ Operation *findReturn(ModuleOp module) {
 }
 
 std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
-                                  const std::vector<double> &angles) {
+                                  const std::vector<float> &angles) {
   std::vector<Value> vals;
   vals.reserve(angles.size());
-  for (double angle : angles) {
+  for (float angle : angles) {
     vals.push_back(createFloatValue(builder, loc, angle));
   }
   return vals;
@@ -121,7 +121,7 @@ std::vector<Value> RebuildSetup::getRefs(const std::vector<int> &indexes) {
   return refsVector;
 }
 
-void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
+void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
                         ValueRange targets) {
   if (targets.empty()) {
     throw std::runtime_error("Measurement needs at least 1 target.");
@@ -129,29 +129,29 @@ void insertMeasurements(RebuildSetup &rebuildSetup, int gateIndex,
   llvm::SmallVector<Value> targetsVec(targets.begin(), targets.end());
   mlir::Type measureType =
       quake::MeasureType::get(rebuildSetup.builder.getContext());
-  switch (gateIndex) {
-  case MX:
+  switch (gate) {
+  case GateSymbol::MX:
     rebuildSetup.builder.create<quake::MxOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
-  case MY:
+  case GateSymbol::MY:
     rebuildSetup.builder.create<quake::MyOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
-  case MZ:
+  case GateSymbol::MZ:
     rebuildSetup.builder.create<quake::MzOp>(rebuildSetup.loc, measureType,
                                              targetsVec);
     break;
   default:
     throw std::runtime_error("Not a measurement: " +
-                             std::string(SUPPORTED_GATES[gateIndex]));
+                             std::string(SUPPORTED_GATES[to_gate_index(gate)]));
   }
 }
 
-void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
+void insertGate(RebuildSetup &rebuildSetup, GateSymbol gate,
                 const std::vector<int> &targetIndexes,
                 const std::vector<int> &controlIndexes,
-                const std::vector<double> &angles, bool isAdj) {
+                const std::vector<float> &angles, bool isAdj) {
   // HOLD the storage for the whole iteration.
   std::vector<Value> controlVals = rebuildSetup.getRefs(controlIndexes);
   std::vector<Value> targetVals = rebuildSetup.getRefs(targetIndexes);
@@ -160,70 +160,70 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
   ValueRange controls(controlVals);
   ValueRange targets(targetVals);
   std::vector<Value> paramsVector;
-  switch (gateIndex) {
-  case X:
+  switch (gate) {
+  case GateSymbol::X:
     rebuildSetup.builder.create<quake::XOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case Y:
+  case GateSymbol::Y:
     rebuildSetup.builder.create<quake::YOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case Z:
+  case GateSymbol::Z:
     rebuildSetup.builder.create<quake::ZOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case H:
+  case GateSymbol::H:
     rebuildSetup.builder.create<quake::HOp>(rebuildSetup.loc, false,
                                             ValueRange{}, controls, targets);
     break;
-  case S:
+  case GateSymbol::S:
     rebuildSetup.builder.create<quake::SOp>(rebuildSetup.loc, isAdj,
                                             ValueRange{}, controls, targets);
     break;
-  case T:
+  case GateSymbol::T:
     rebuildSetup.builder.create<quake::TOp>(rebuildSetup.loc, isAdj,
                                             ValueRange{}, controls, targets);
     break;
-  case RX:
+  case GateSymbol::RX:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RxOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case RY:
+  case GateSymbol::RY:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RyOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case RZ:
+  case GateSymbol::RZ:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::RzOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case SWAP:
+  case GateSymbol::SWAP:
     if (targets.size() != 2) {
       throw std::runtime_error("Swap requires exactly 2 targets.");
     }
     rebuildSetup.builder.create<quake::SwapOp>(rebuildSetup.loc, false,
                                                ValueRange{}, controls, targets);
     break;
-  case R1:
+  case GateSymbol::R1:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0])};
     rebuildSetup.builder.create<quake::R1Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case U2:
+  case GateSymbol::U2:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1])};
     rebuildSetup.builder.create<quake::U2Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case U3:
+  case GateSymbol::U3:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1]),
@@ -231,49 +231,49 @@ void insertGate(RebuildSetup &rebuildSetup, int gateIndex,
     rebuildSetup.builder.create<quake::U3Op>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case PHASED_RX:
+  case GateSymbol::PHASED_RX:
     paramsVector = {
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[0]),
         createFloatValue(rebuildSetup.builder, rebuildSetup.loc, angles[1])};
     rebuildSetup.builder.create<quake::PhasedRxOp>(
         rebuildSetup.loc, isAdj, ValueRange(paramsVector), controls, targets);
     break;
-  case MX:
+  case GateSymbol::MX:
     if (!controls.empty()) {
       throw std::runtime_error("Mx cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MX, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MX, targets);
     break;
-  case MY:
+  case GateSymbol::MY:
     if (!controls.empty()) {
       throw std::runtime_error("My cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MY, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MY, targets);
     break;
-  case MZ:
+  case GateSymbol::MZ:
     if (!controls.empty()) {
       throw std::runtime_error("Mz cannot have controls.");
     }
-    insertMeasurements(rebuildSetup, MZ, targets);
+    insertMeasurements(rebuildSetup, GateSymbol::MZ, targets);
     break;
   default:
     throw std::runtime_error("Unsupported gate index: " +
-                             std::to_string(gateIndex));
+                             std::to_string(to_gate_index(gate)));
   }
 }
 
-unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
+unsigned int nrUsedQubitsInTensor(const InstructionsTensor<float> &tensor) {
   const int nr_instructions = tensor.shape[0];
   const int instruction_features = tensor.shape[1];
   const int max_qubits = instruction_features - NR_GATES - MAX_GATE_PARAMS;
   unsigned int max_used_qubit_index = 0;
   for (unsigned int instr = 0; instr < nr_instructions; instr++) {
     for (unsigned int j = 0; j < max_qubits; j++) {
-      if (double value = tensor(instr, j); value == -1.0) {
+      if (float value = tensor(instr, j); value == -1.0f) {
         max_used_qubit_index = std::max(max_used_qubit_index, j);
-      } else if (value == 1.0) {
+      } else if (value == 1.0f) {
         max_used_qubit_index = std::max(max_used_qubit_index, j);
-      } else if (value != 0.0) {
+      } else if (value != 0.0f) {
         throw std::runtime_error("Control trigger: " + std::to_string(value));
       }
     }
@@ -282,14 +282,14 @@ unsigned int nrUsedQubitsInTensor(const InstructionsTensor<double> &tensor) {
 }
 
 QuantumCircuit
-recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
-  const unsigned int IRP = tensor.shape[1];
-  if (IRP < MIN_IRP) {
-    std::cerr << "Warning: tensor has IRP smaller than minimum IRP."
+recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
+  const unsigned int IRS = tensor.shape[1];
+  if (IRS < MIN_IRS) {
+    std::cerr << "Warning: tensor has IRS smaller than minimum IRS."
               << std::endl;
     return QuantumCircuit();
   }
-  const unsigned int max_qubits = IRP - NR_GATES - MAX_GATE_PARAMS;
+  const unsigned int max_qubits = IRS - NR_GATES - MAX_GATE_PARAMS;
   const unsigned int nr_qubits = nrUsedQubitsInTensor(tensor);
   const unsigned int nr_instructions = tensor.shape[0];
   unsigned int nr_gates = nr_instructions;
@@ -302,12 +302,12 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
     std::vector<int> controlIndexes, targetIndexes;
     unsigned int j = 0u;
     for (; j < nr_qubits; j++) {
-      if (double value = tensor(instr, j); value == -1.0) {
+      if (float value = tensor(instr, j); value == -1.0f) {
         controlIndexes.push_back(j);
-      } else if (value == 1.0) {
+      } else if (value == 1.0f) {
         targetIndexes.push_back(j);
-      } else if (value != 0.0) {
-        throw std::runtime_error("Control trigger: " + std::to_string(value));
+      } else if (value != 0.0f) {
+        throw std::runtime_error("Qubit trigger: " + std::to_string(value));
       }
     }
     // Skip unused qubits.
@@ -327,15 +327,15 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
     int gateIndex = -1;
     bool isAdj = false;
     for (; j < max_qubits + NR_GATES; j++) {
-      if (double value = tensor(instr, j); std::abs(value) == 1.0) {
+      if (float value = tensor(instr, j); std::abs(value) == 1.0f) {
         if (gateIndex >= 0) {
           throw std::runtime_error("Multiple gates triggered in one row.");
         }
         gateIndex = j - max_qubits;
-        if (value < 0.0) {
+        if (value < 0.0f) {
           isAdj = true;
         }
-      } else if (value != 0.0) {
+      } else if (value != 0.0f) {
         throw std::runtime_error("Gate trigger: " + std::to_string(value));
       }
     }
@@ -349,16 +349,16 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
       break;
     }
 
-    std::vector<double> angles;
-    for (; j < IRP; j++) {
+    std::vector<float> angles;
+    for (; j < IRS; j++) {
       angles.push_back(tensor(instr, j));
     }
     if (angles.size() != MAX_GATE_PARAMS) {
       throw std::runtime_error("Nr gate angles: " +
                                std::to_string(angles.size()));
     }
-    insertGate(rebuildSetup, gateIndex, targetIndexes, controlIndexes, angles,
-               isAdj);
+    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes,
+               controlIndexes, angles, isAdj);
 
     // Adjust the depths only if everything ran smoothly.
     std::vector<int> involvedQubits = targetIndexes;
@@ -374,6 +374,65 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<double> &tensor) {
   }
   return {rebuildSetup.module, std::move(rebuildSetup.ctxOwner), nr_qubits,
           nr_gates, get_max_depth(depths)};
+}
+
+void check_tensor(const InstructionsTensor<float> &tensor) {
+  const unsigned N = tensor.shape[0];
+  const unsigned IRS = tensor.shape[1];
+  if (IRS < MIN_IRS) {
+    std::cerr << "Warning: tensor has IRS smaller than minimum IRS."
+              << std::endl;
+    return;
+  }
+  const unsigned int max_qubits = IRS - NR_GATES - MAX_GATE_PARAMS;
+  const unsigned int nr_qubits = nrUsedQubitsInTensor(tensor);
+
+  for (unsigned int instr = 0u; instr < N; instr++) {
+    unsigned int j = 0u;
+    bool tagrets_empty = true;
+    for (; j < nr_qubits; j++) {
+      if (float value = tensor(instr, j);
+          std::abs(value) != 1.0f && value != 0.0f) {
+        std::cerr << "Qubit trigger: " << value << std::endl;
+      } else if (value == 1.0f) {
+        tagrets_empty = false;
+      }
+    }
+    j = max_qubits;
+    if (tagrets_empty) {
+      std::cerr << "Tensor without targets." << std::endl;
+    }
+
+    int gateIndex = -1;
+    for (; j < max_qubits + NR_GATES; j++) {
+      if (float value = tensor(instr, j);
+          std::abs(value) != 1.0f && value != 0.0f) {
+        std::cerr << "Gate trigger: " << value << std::endl;
+      } else if (std::abs(value) == 1.0f) {
+        if (gateIndex >= 0) {
+          std::cerr << "Multiple gates triggered in one row." << std::endl;
+        }
+        gateIndex = j - max_qubits;
+      }
+    }
+    if (gateIndex < 0) {
+      std::cerr << "Tensor without gate." << std::endl;
+    }
+
+    std::vector<float> angles;
+    for (; j < IRS; j++) {
+      if (float angle = tensor(instr, j); !std::isfinite(angle) ||
+                                          angle < -TWO_PI_FLOAT ||
+                                          angle > TWO_PI_FLOAT) {
+        std::cerr << "Gate angle: " << angle << std::endl;
+      } else {
+        angles.push_back(angle);
+      }
+    }
+    if (angles.size() != MAX_GATE_PARAMS) {
+      std::cerr << "Nr gate angles: " << angles.size() << std::endl;
+    }
+  }
 }
 
 } // namespace ai_pass_selector

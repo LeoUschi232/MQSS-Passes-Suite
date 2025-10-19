@@ -18,7 +18,7 @@ using namespace mlir;
 
 namespace {
 
-class ReverseCx final : public BaseMQSSPass<ReverseCx> {
+class ReverseCx final : public BaseMQSSPass<ReverseCx>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ReverseCx)
 
@@ -29,6 +29,7 @@ public:
   }
 
   void operationsOnQuantumKernel(func::FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp = dyn_cast_or_null<quake::XOp>(*op);
       if (!cxOp
@@ -48,6 +49,7 @@ public:
       rewriter.create<quake::HOp>(loc, target);
       rewriter.create<quake::HOp>(loc, control);
       rewriter.eraseOp(cxOp);
+      this->wasApplied->store(true);
     });
   }
 };

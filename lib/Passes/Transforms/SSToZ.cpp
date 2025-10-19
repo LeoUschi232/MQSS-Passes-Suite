@@ -21,7 +21,7 @@ using namespace mqss::support::transforms;
 
 
 namespace {
-class SSToZ final : public BaseMQSSPass<SSToZ> {
+class SSToZ final : public BaseMQSSPass<SSToZ>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SSToZ)
 
@@ -30,6 +30,7 @@ public:
   StringRef getDescription() const override { return "Replace S S by Z"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
       if (!sOp2
@@ -57,6 +58,7 @@ public:
       rewriter.create<quake::ZOp>(loc, false, targets);
       rewriter.eraseOp(sOp1);
       rewriter.eraseOp(sOp2);
+      this->wasApplied->store(true);
     });
   }
 };

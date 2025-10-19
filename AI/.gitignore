@@ -3,11 +3,6 @@
 cmake-build-mqss-dev
 cmake-build-debug
 
-# Local training and data files.
-#Datasets/*
-#Agents/*
-#Circuits/*
-
 # Test pdf compilation files.
 *.log
 *.aux
@@ -50,4 +45,3 @@ cmake-build-debug
 
 # Large files and large external dependencies
 external/*
-ResearchPapers/*

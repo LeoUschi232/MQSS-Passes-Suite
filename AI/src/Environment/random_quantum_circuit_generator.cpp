@@ -25,6 +25,8 @@ using llvm::isa;
 #include <filesystem>
 #include <iostream>
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <unordered_set>
 
 namespace fs = std::filesystem;
@@ -36,85 +38,85 @@ static GateSpec gateSpecFromIndex(unsigned int idx) {
   if (idx >= GATES_WEIGHTS_SIZE) {
     llvm::report_fatal_error("gateSpecFromIndex: out of range");
   }
-  switch (idx) {
-  case X_INDEX:
-    return {X, false, 0, 0, false, false};
-  case CX_INDEX:
-    return {X, false, 1, 0, false, false};
-  case CCX_INDEX:
-    return {X, false, 2, 0, false, false};
-  case C3plus_X_INDEX:
-    return {X, false, -1, 3, true, false};
-  case Y_INDEX:
-    return {Y, false, 0, 0, false, false};
-  case controlled_Y_INDEX:
-    return {Y, false, -1, 1, true, false};
-  case Z_INDEX:
-    return {Z, false, 0, 0, false, false};
-  case controlled_Z_INDEX:
-    return {Z, false, -1, 1, true, false};
-  case H_INDEX:
-    return {H, false, 0, 0, false, false};
-  case controlled_H_INDEX:
-    return {H, false, -1, 1, true, false};
-  case S_INDEX:
-    return {S, false, 0, 0, false, false};
-  case controlled_S_INDEX:
-    return {S, false, -1, 1, true, false};
-  case SDG_INDEX:
-    return {S, true, 0, 0, false, false};
-  case controlled_SDG_INDEX:
-    return {S, true, -1, 1, true, false};
-  case T_INDEX:
-    return {T, false, 0, 0, false, false};
-  case controlled_T_INDEX:
-    return {T, false, -1, 1, true, false};
-  case TDG_INDEX:
-    return {T, true, 0, 0, false, false};
-  case controlled_TDG_INDEX:
-    return {T, true, -1, 1, true, false};
-  case RX_INDEX:
-    return {RX, false, 0, 0, false, false};
-  case controlled_RX_INDEX:
-    return {RX, false, -1, 1, true, false};
-  case RY_INDEX:
-    return {RY, false, 0, 0, false, false};
-  case controlled_RY_INDEX:
-    return {RY, false, -1, 1, true, false};
-  case RZ_INDEX:
-    return {RZ, false, 0, 0, false, false};
-  case controlled_RZ_INDEX:
-    return {RZ, false, -1, 1, true, false};
-  case SWAP_INDEX:
-    return {SWAP, false, 0, 0, false, true};
-  case controlled_SWAP_INDEX:
-    return {SWAP, false, -1, 1, true, true};
-  case R1_INDEX:
-    return {R1, false, 0, 0, false, false};
-  case controlled_R1_INDEX:
-    return {R1, false, -1, 1, true, false};
-  case U2_INDEX:
-    return {U2, false, 0, 0, false, false};
-  case controlled_U2_INDEX:
-    return {U2, false, -1, 1, true, false};
-  case U3_INDEX:
-    return {U3, false, 0, 0, false, false};
-  case controlled_U3_INDEX:
-    return {U3, false, -1, 1, true, false};
-  case PHASED_RX_INDEX:
-    return {PHASED_RX, false, 0, 0, false, false};
-  case controlled_PHASED_RX_INDEX:
-    return {PHASED_RX, false, -1, 1, true, false};
-  case MX_INDEX:
-    return {MX, false, 0, 0, false, false};
-  case MY_INDEX:
-    return {MY, false, 0, 0, false, false};
-  case MZ_INDEX:
-    return {MZ, false, 0, 0, false, false};
+  switch (static_cast<GateWeightIndex>(idx)) {
+  case GateWeightIndex::X:
+    return {GateSymbol::X, false, 0, 0, false, false};
+  case GateWeightIndex::CX:
+    return {GateSymbol::X, false, 1, 0, false, false};
+  case GateWeightIndex::CCX:
+    return {GateSymbol::X, false, 2, 0, false, false};
+  case GateWeightIndex::C3PlusX:
+    return {GateSymbol::X, false, -1, 3, true, false};
+  case GateWeightIndex::Y:
+    return {GateSymbol::Y, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledY:
+    return {GateSymbol::Y, false, -1, 1, true, false};
+  case GateWeightIndex::Z:
+    return {GateSymbol::Z, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledZ:
+    return {GateSymbol::Z, false, -1, 1, true, false};
+  case GateWeightIndex::H:
+    return {GateSymbol::H, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledH:
+    return {GateSymbol::H, false, -1, 1, true, false};
+  case GateWeightIndex::S:
+    return {GateSymbol::S, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledS:
+    return {GateSymbol::S, false, -1, 1, true, false};
+  case GateWeightIndex::SDG:
+    return {GateSymbol::S, true, 0, 0, false, false};
+  case GateWeightIndex::ControlledSDG:
+    return {GateSymbol::S, true, -1, 1, true, false};
+  case GateWeightIndex::T:
+    return {GateSymbol::T, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledT:
+    return {GateSymbol::T, false, -1, 1, true, false};
+  case GateWeightIndex::TDG:
+    return {GateSymbol::T, true, 0, 0, false, false};
+  case GateWeightIndex::ControlledTDG:
+    return {GateSymbol::T, true, -1, 1, true, false};
+  case GateWeightIndex::RX:
+    return {GateSymbol::RX, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledRX:
+    return {GateSymbol::RX, false, -1, 1, true, false};
+  case GateWeightIndex::RY:
+    return {GateSymbol::RY, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledRY:
+    return {GateSymbol::RY, false, -1, 1, true, false};
+  case GateWeightIndex::RZ:
+    return {GateSymbol::RZ, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledRZ:
+    return {GateSymbol::RZ, false, -1, 1, true, false};
+  case GateWeightIndex::SWAP:
+    return {GateSymbol::SWAP, false, 0, 0, false, true};
+  case GateWeightIndex::ControlledSWAP:
+    return {GateSymbol::SWAP, false, -1, 1, true, true};
+  case GateWeightIndex::R1:
+    return {GateSymbol::R1, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledR1:
+    return {GateSymbol::R1, false, -1, 1, true, false};
+  case GateWeightIndex::U2:
+    return {GateSymbol::U2, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledU2:
+    return {GateSymbol::U2, false, -1, 1, true, false};
+  case GateWeightIndex::U3:
+    return {GateSymbol::U3, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledU3:
+    return {GateSymbol::U3, false, -1, 1, true, false};
+  case GateWeightIndex::PhasedRX:
+    return {GateSymbol::PHASED_RX, false, 0, 0, false, false};
+  case GateWeightIndex::ControlledPhasedRX:
+    return {GateSymbol::PHASED_RX, false, -1, 1, true, false};
+  case GateWeightIndex::MX:
+    return {GateSymbol::MX, false, 0, 0, false, false};
+  case GateWeightIndex::MY:
+    return {GateSymbol::MY, false, 0, 0, false, false};
+  case GateWeightIndex::MZ:
+    return {GateSymbol::MZ, false, 0, 0, false, false};
   default:
-    std::cerr << "gateSpecFromIndex: unknown index " << idx << std::endl;
+    throw std::logic_error("gateSpecFromIndex: unknown index " +
+                           std::to_string(idx));
   }
-  return {0, false, 0, 0, false, false};
 }
 
 std::pair<std::vector<int>, std::vector<int>>
@@ -162,18 +164,18 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
   return {targets, controls};
 }
 
-std::vector<double> makeAngles(int baseGate) {
+std::vector<float> makeAngles(GateSymbol baseGate) {
   switch (baseGate) {
-  case RX:
-  case RY:
-  case RZ:
-  case R1:
+  case GateSymbol::RX:
+  case GateSymbol::RY:
+  case GateSymbol::RZ:
+  case GateSymbol::R1:
     return {randomAngle()};
-  case U2:
+  case GateSymbol::U2:
     return {randomAngle(), randomAngle()};
-  case U3:
+  case GateSymbol::U3:
     return {randomAngle(), randomAngle(), randomAngle()};
-  case PHASED_RX:
+  case GateSymbol::PHASED_RX:
     return {randomAngle(), randomAngle()};
   default:
     return {};
@@ -350,10 +352,11 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
     try {
       auto [targets, controls] = sample_distinct_targets_and_controls(
           nr_targets, nr_controls, nr_qubits);
-      std::vector<double> angles = makeAngles(baseGate);
+      std::vector<float> angles = makeAngles(baseGate);
       insertGate(buildSetup, baseGate, targets, controls, angles, isAdj);
 
-      if (baseGate == MX || baseGate == MY || baseGate == MZ) {
+      if (baseGate == GateSymbol::MX || baseGate == GateSymbol::MY ||
+          baseGate == GateSymbol::MZ) {
         // Measurement by default do not have controls so there is no need to
         // consider controls as possibly involved qubits.
         for (int qubit : targets) {
@@ -374,7 +377,8 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
 
     } catch (const std::runtime_error &error) {
       std::cerr << "\n"
-                << error.what() << "\nGate: " << SUPPORTED_GATES[baseGate]
+                << error.what()
+                << "\nGate: " << SUPPORTED_GATES[static_cast<int>(baseGate)]
                 << std::endl;
     }
   }
@@ -383,12 +387,12 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
     std::vector targets{qubit_idx};
     if (const unsigned int idx =
             measurements_distribution(qc_rng()) + OPERATIONS_SUBSET_SIZE;
-        idx == MX_INDEX) {
-      insertGate(buildSetup, MX, targets);
-    } else if (idx == MY_INDEX) {
-      insertGate(buildSetup, MY, targets);
-    } else if (idx == MZ_INDEX) {
-      insertGate(buildSetup, MZ, targets);
+        static_cast<GateWeightIndex>(idx) == GateWeightIndex::MX) {
+      insertGate(buildSetup, GateSymbol::MX, targets);
+    } else if (static_cast<GateWeightIndex>(idx) == GateWeightIndex::MY) {
+      insertGate(buildSetup, GateSymbol::MY, targets);
+    } else if (static_cast<GateWeightIndex>(idx) == GateWeightIndex::MZ) {
+      insertGate(buildSetup, GateSymbol::MZ, targets);
     } else {
       throw std::runtime_error("Unknown measurement index " +
                                std::to_string(idx));
@@ -433,84 +437,105 @@ QuantumCircuit random_quantum_circuit_from_yaml_statistics(
   };
 
   std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params = {};
-  cholesky_params[MEAN_QUBITS_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeanQubits)] =
       get_double(yaml_qubits_cholesky_params, "mean_qubits");
-  cholesky_params[MEAN_GATES_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeanGates)] =
       get_double(yaml_qubits_cholesky_params, "mean_gates");
-  cholesky_params[MEAN_OPERATIONS_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeanOperations)] =
       get_double(yaml_qubits_cholesky_params, "mean_operations");
-  cholesky_params[MEAN_MEASUREMENTS_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeanMeasurements)] =
       get_double(yaml_qubits_cholesky_params, "mean_measurements");
-  cholesky_params[QUBITS_L11_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::QubitsL11)] =
       get_double(yaml_qubits_cholesky_params, "qubits_L11");
-  cholesky_params[GATES_L21_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::GatesL21)] =
       get_double(yaml_qubits_cholesky_params, "gates_L21");
-  cholesky_params[GATES_L22_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::GatesL22)] =
       get_double(yaml_qubits_cholesky_params, "gates_L22");
-  cholesky_params[OPERATIONS_L21_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] =
       get_double(yaml_qubits_cholesky_params, "operations_L21");
-  cholesky_params[OPERATIONS_L22_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] =
       get_double(yaml_qubits_cholesky_params, "operations_L22");
-  cholesky_params[MEASUREMENTS_L21_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] =
       get_double(yaml_qubits_cholesky_params, "measurements_L21");
-  cholesky_params[MEASUREMENTS_L22_INDEX] =
+  cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] =
       get_double(yaml_qubits_cholesky_params, "measurements_L22");
 
   std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights{};
 
-  gates_weights[X_INDEX] = get_unsigned(yaml_gates_weights, "X");
-  gates_weights[CX_INDEX] = get_unsigned(yaml_gates_weights, "CX");
-  gates_weights[CCX_INDEX] = get_unsigned(yaml_gates_weights, "CCX");
-  gates_weights[C3plus_X_INDEX] = get_unsigned(yaml_gates_weights, "C3plus_X");
-  gates_weights[Y_INDEX] = get_unsigned(yaml_gates_weights, "Y");
-  gates_weights[controlled_Y_INDEX] =
+  gates_weights[to_index(GateWeightIndex::X)] =
+      get_unsigned(yaml_gates_weights, "X");
+  gates_weights[to_index(GateWeightIndex::CX)] =
+      get_unsigned(yaml_gates_weights, "CX");
+  gates_weights[to_index(GateWeightIndex::CCX)] =
+      get_unsigned(yaml_gates_weights, "CCX");
+  gates_weights[to_index(GateWeightIndex::C3PlusX)] =
+      get_unsigned(yaml_gates_weights, "C3plus_X");
+  gates_weights[to_index(GateWeightIndex::Y)] =
+      get_unsigned(yaml_gates_weights, "Y");
+  gates_weights[to_index(GateWeightIndex::ControlledY)] =
       get_unsigned(yaml_gates_weights, "controlled_Y");
-  gates_weights[Z_INDEX] = get_unsigned(yaml_gates_weights, "Z");
-  gates_weights[controlled_Z_INDEX] =
+  gates_weights[to_index(GateWeightIndex::Z)] =
+      get_unsigned(yaml_gates_weights, "Z");
+  gates_weights[to_index(GateWeightIndex::ControlledZ)] =
       get_unsigned(yaml_gates_weights, "controlled_Z");
-  gates_weights[H_INDEX] = get_unsigned(yaml_gates_weights, "H");
-  gates_weights[controlled_H_INDEX] =
+  gates_weights[to_index(GateWeightIndex::H)] =
+      get_unsigned(yaml_gates_weights, "H");
+  gates_weights[to_index(GateWeightIndex::ControlledH)] =
       get_unsigned(yaml_gates_weights, "controlled_H");
-  gates_weights[S_INDEX] = get_unsigned(yaml_gates_weights, "S");
-  gates_weights[controlled_S_INDEX] =
+  gates_weights[to_index(GateWeightIndex::S)] =
+      get_unsigned(yaml_gates_weights, "S");
+  gates_weights[to_index(GateWeightIndex::ControlledS)] =
       get_unsigned(yaml_gates_weights, "controlled_S");
-  gates_weights[SDG_INDEX] = get_unsigned(yaml_gates_weights, "SDG");
-  gates_weights[controlled_SDG_INDEX] =
+  gates_weights[to_index(GateWeightIndex::SDG)] =
+      get_unsigned(yaml_gates_weights, "SDG");
+  gates_weights[to_index(GateWeightIndex::ControlledSDG)] =
       get_unsigned(yaml_gates_weights, "controlled_SDG");
-  gates_weights[T_INDEX] = get_unsigned(yaml_gates_weights, "T");
-  gates_weights[controlled_T_INDEX] =
+  gates_weights[to_index(GateWeightIndex::T)] =
+      get_unsigned(yaml_gates_weights, "T");
+  gates_weights[to_index(GateWeightIndex::ControlledT)] =
       get_unsigned(yaml_gates_weights, "controlled_T");
-  gates_weights[TDG_INDEX] = get_unsigned(yaml_gates_weights, "TDG");
-  gates_weights[controlled_TDG_INDEX] =
+  gates_weights[to_index(GateWeightIndex::TDG)] =
+      get_unsigned(yaml_gates_weights, "TDG");
+  gates_weights[to_index(GateWeightIndex::ControlledTDG)] =
       get_unsigned(yaml_gates_weights, "controlled_TDG");
-  gates_weights[RX_INDEX] = get_unsigned(yaml_gates_weights, "RX");
-  gates_weights[controlled_RX_INDEX] =
+  gates_weights[to_index(GateWeightIndex::RX)] =
+      get_unsigned(yaml_gates_weights, "RX");
+  gates_weights[to_index(GateWeightIndex::ControlledRX)] =
       get_unsigned(yaml_gates_weights, "controlled_RX");
-  gates_weights[RY_INDEX] = get_unsigned(yaml_gates_weights, "RY");
-  gates_weights[controlled_RY_INDEX] =
+  gates_weights[to_index(GateWeightIndex::RY)] =
+      get_unsigned(yaml_gates_weights, "RY");
+  gates_weights[to_index(GateWeightIndex::ControlledRY)] =
       get_unsigned(yaml_gates_weights, "controlled_RY");
-  gates_weights[RZ_INDEX] = get_unsigned(yaml_gates_weights, "RZ");
-  gates_weights[controlled_RZ_INDEX] =
+  gates_weights[to_index(GateWeightIndex::RZ)] =
+      get_unsigned(yaml_gates_weights, "RZ");
+  gates_weights[to_index(GateWeightIndex::ControlledRZ)] =
       get_unsigned(yaml_gates_weights, "controlled_RZ");
-  gates_weights[SWAP_INDEX] = get_unsigned(yaml_gates_weights, "SWAP");
-  gates_weights[controlled_SWAP_INDEX] =
+  gates_weights[to_index(GateWeightIndex::SWAP)] =
+      get_unsigned(yaml_gates_weights, "SWAP");
+  gates_weights[to_index(GateWeightIndex::ControlledSWAP)] =
       get_unsigned(yaml_gates_weights, "controlled_SWAP");
-  gates_weights[R1_INDEX] = get_unsigned(yaml_gates_weights, "R1");
-  gates_weights[controlled_R1_INDEX] =
+  gates_weights[to_index(GateWeightIndex::R1)] =
+      get_unsigned(yaml_gates_weights, "R1");
+  gates_weights[to_index(GateWeightIndex::ControlledR1)] =
       get_unsigned(yaml_gates_weights, "controlled_R1");
-  gates_weights[U2_INDEX] = get_unsigned(yaml_gates_weights, "U2");
-  gates_weights[controlled_U2_INDEX] =
+  gates_weights[to_index(GateWeightIndex::U2)] =
+      get_unsigned(yaml_gates_weights, "U2");
+  gates_weights[to_index(GateWeightIndex::ControlledU2)] =
       get_unsigned(yaml_gates_weights, "controlled_U2");
-  gates_weights[U3_INDEX] = get_unsigned(yaml_gates_weights, "U3");
-  gates_weights[controlled_U3_INDEX] =
+  gates_weights[to_index(GateWeightIndex::U3)] =
+      get_unsigned(yaml_gates_weights, "U3");
+  gates_weights[to_index(GateWeightIndex::ControlledU3)] =
       get_unsigned(yaml_gates_weights, "controlled_U3");
-  gates_weights[PHASED_RX_INDEX] =
+  gates_weights[to_index(GateWeightIndex::PhasedRX)] =
       get_unsigned(yaml_gates_weights, "PHASED_RX");
-  gates_weights[controlled_PHASED_RX_INDEX] =
+  gates_weights[to_index(GateWeightIndex::ControlledPhasedRX)] =
       get_unsigned(yaml_gates_weights, "controlled_PHASED_RX");
-  gates_weights[MX_INDEX] = get_unsigned(yaml_gates_weights, "MX");
-  gates_weights[MY_INDEX] = get_unsigned(yaml_gates_weights, "MY");
-  gates_weights[MZ_INDEX] = get_unsigned(yaml_gates_weights, "MZ");
+  gates_weights[to_index(GateWeightIndex::MX)] =
+      get_unsigned(yaml_gates_weights, "MX");
+  gates_weights[to_index(GateWeightIndex::MY)] =
+      get_unsigned(yaml_gates_weights, "MY");
+  gates_weights[to_index(GateWeightIndex::MZ)] =
+      get_unsigned(yaml_gates_weights, "MZ");
 
   return random_quantum_circuit_from_embedded_statistics(
       cholesky_params, gates_weights, randomizer_options);

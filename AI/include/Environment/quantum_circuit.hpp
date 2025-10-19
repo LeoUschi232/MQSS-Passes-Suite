@@ -54,9 +54,9 @@ public:
            unsigned int nr_qubits, unsigned int nr_gates, unsigned int depth);
 
   /// Getters
-  unsigned int get_nr_qubits() const;
-  unsigned int get_nr_gates() const;
-  unsigned int get_depth() const;
+  unsigned int getNrQubits() const;
+  unsigned int getNrGates() const;
+  unsigned int getDepth() const;
   std::tuple<unsigned int, unsigned int, unsigned int> get_attributes() const;
 
   /// Casting
@@ -72,9 +72,9 @@ public:
   /**
    *
    * @param pass_index
-   * @return
+   * @return [Succeeded, Was Applied]
    */
-  bool run_pass(unsigned int pass_index);
+  std::pair<bool, bool> run_pass(unsigned int pass_index);
 
   /**
    *

@@ -4,21 +4,24 @@
 #include "Environment/statistics_for_rqcg.hpp"
 
 // Torch includes
-#include "Agents/agent_utils.hpp"
-#include "Agents/training_and_run_manager.hpp"
+#include <torch/torch.h>
+
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Standard library includes
 #include <iostream>
 #include <string>
-#include <torch/torch.h>
-#include <unordered_map>
 #include <vector>
 
 using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 /// Default values for agent/environment/training parameters.
-std::unordered_map<std::string, std::string> load_default_params();
+/// ssh -Y ge78zic2@cool.hpc.lrz.de
+/// 7McMGcmhX_27McMGcmhX_2
+void load_default_params();
 
 void print_help() {
   std::cout
@@ -42,7 +45,7 @@ void print_help() {
 
 int main(int argc, char **argv) {
   bool info = false;
-  std::unordered_map<std::string, std::string> params = load_default_params();
+  load_default_params();
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
 
@@ -54,28 +57,28 @@ int main(int argc, char **argv) {
     }
     if (args[i] == "-a" || args[i] == "--agent") {
       if (++i < n) {
-        params["agent"] = args[i];
+        GLOBAL_PARAMS["agent"] = args[i];
       } else {
         std::cerr << "No agent provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-d" || args[i] == "--dataset") {
       if (++i < n) {
-        params["dataset"] = args[i];
+        GLOBAL_PARAMS["dataset"] = args[i];
       } else {
         std::cerr << "No dataset provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
-        params["circuit"] = args[i];
+        GLOBAL_PARAMS["circuit"] = args[i];
       } else {
         std::cerr << "No circuit provided." << std::endl;
         return 1;
       }
     } else if (args[i] == "-o" || args[i] == "--output") {
       if (++i < n) {
-        params["output"] = args[i];
+        GLOBAL_PARAMS["output"] = args[i];
       } else {
         std::cerr << "No output provided." << std::endl;
         return 1;
@@ -85,21 +88,21 @@ int main(int argc, char **argv) {
     } else {
       std::vector<std::string> key_value = split_string(args[i], '=');
       if (key_value.size() != 2) {
-        std::cerr << "Malformatted params: " << args[i] << std::endl;
+        std::cerr << "Malformatted GLOBAL_PARAMS: " << args[i] << std::endl;
       }
-      params[key_value[0]] = key_value[1];
+      GLOBAL_PARAMS[key_value[0]] = key_value[1];
     }
     i++;
   }
-  std::string agent = params["agent"];
-  std::string dataset = params["dataset"];
-  std::string circuit = params["circuit"];
-  std::string output = params["output"];
+  auto agent = std::string(GLOBAL_PARAMS["agent"]);
+  auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
+  auto circuit = std::string(GLOBAL_PARAMS["circuit"]);
+  auto output = std::string(GLOBAL_PARAMS["output"]);
 
   if (info) {
     std::cout << "Parameters:" << std::endl;
-    for (auto [key, value] : params) {
-      std::cout << "  " << key << ": " << value << std::endl;
+    for (auto [key, value] : GLOBAL_PARAMS) {
+      std::cout << "  " << key << ": " << value.to_string() << std::endl;
     }
     std::cout << std::endl;
     if (!circuit.empty()) {
@@ -121,35 +124,39 @@ int main(int argc, char **argv) {
     agent = select_best_agent(circuit);
   }
   if (!dataset.empty()) {
-    train(agent, dataset, params);
+    train(agent, dataset);
   }
   if (!circuit.empty()) {
-    run(agent, circuit, output, params);
+    run(agent, circuit, output);
   }
   return 0;
 }
 
-std::unordered_map<std::string, std::string> load_default_params() {
-  return {{"agent", "a2c-mq130-conv2"},
-          {"dataset", "mqtbench"},
-          {"circuit", ""},
-          {"output", ""},
-          {"nr_parallel_environments", "16"},
-          {"episodes", "100"} ,
-          {"max_steps_relative_to_qubits", "true"},
-          {"max_steps_per_episode", "10"},
-          {"max_steps_no_improvement", "1"},
-          {"max_steps_no_change", "0.2"},
-          {"max_steps_same_action", "0.05"},
-          {"discount_factor", "1.0"},
-          {"gae_hyperparameter", "0.96"},
-          {"entropy_coefficient", "0.01"},
-          {"device", torch::cuda::is_available() ? "cuda" : "cpu"},
-          {"critic_optimizer", "adam"},
-          {"actor_optimizer", "adam"},
-          {"critic_learning_rate", "0.005"},
-          {"actor_learning_rate", "0.001"},
-          {"print_param_info", "true"},
-          {"save_agent_at_end_of_training", "true"},
-          {"stop_training_on_error", "false"}};
+void load_default_params() {
+  GLOBAL_PARAMS = {
+      {"agent", "a3c-mq130-tcnrelu"},
+      {"dataset", "mqtbench"},
+      {"circuit", ""},
+      {"output", ""},
+      {"nr_asynchronous_agents", 1},
+      {"a3c_max_async_steps", 100000},
+      {"nr_episodes", 100},
+      {"max_steps_per_episode", 130},
+      {"max_steps_no_improvement", 13},
+      {"max_steps_no_change", 6},
+      {"max_steps_same_action", 3},
+      {"discount_factor", 0.995},
+      {"gae_hyperparameter", 0.96},
+      {"entropy_coefficient", 0.01},
+      {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
+      {"critic_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
+      {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
+      {"actor_learning_rate", 1e-6},
+      {"critic_learning_rate", 5e-6},
+      {"ppo_epsilon", 0.2},
+      {"sac_alpha", 0.1},
+      {"print_param_info", false},
+      {"save_agent_after_training", false},
+      {"stop_training_on_error", true},
+      {"print_diagnostics", false}};
 }
