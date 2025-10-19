@@ -160,14 +160,11 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
     return {false, true};
   }
 
-  std::cout << "Block 1" << std::endl;
-  const bool ppp = was_applied_ptr && was_applied_ptr->load();
-  std::cout << "Block 3" << std::endl;
-  if (!ppp) {
-    // Pass did not apply any changes.
-    return {this->validate(), false};
+  if (was_applied_ptr && /*pass_was_applied=*/was_applied_ptr->load()) {
+    return {this->recompute(), true};
   }
-  return {this->recompute(), true};
+  // Pass did not apply any changes.
+  return {this->validate(), false};
 }
 QuantumCircuit::operator mlir::func::FuncOp() const {
   return FuncOp(this->circuit_module);
