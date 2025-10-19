@@ -30,7 +30,7 @@ public:
   StringRef getDescription() const override { return "Replace S S by Z"; }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto sOp2 = dyn_cast_or_null<quake::SOp>(*op);
       if (!sOp2
@@ -58,7 +58,7 @@ public:
       rewriter.create<quake::ZOp>(loc, false, targets);
       rewriter.eraseOp(sOp1);
       rewriter.eraseOp(sOp2);
-      this->wasApplied = true;
+      this->wasApplied->store(true);
     });
   }
 };

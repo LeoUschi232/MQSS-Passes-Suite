@@ -96,11 +96,11 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
-    this->wasApplied = false;
+    this->wasApplied->store(false);
     OpBuilder builder(&kernel.getBody());
     kernel.walk([&](Operation *op) {
       if (normalizeAngleOfRotations(op, builder))
-        this->wasApplied = true;
+        this->wasApplied->store(true);
     });
   }
 };
