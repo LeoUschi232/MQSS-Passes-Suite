@@ -18,7 +18,8 @@ using namespace mlir;
 
 namespace {
 
-class SwapToUpperCxCxCx final : public BaseMQSSPass<SwapToUpperCxCxCx> {
+class SwapToUpperCxCxCx final : public BaseMQSSPass<SwapToUpperCxCxCx>,
+                                public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SwapToUpperCxCxCx)
 
@@ -28,12 +29,12 @@ public:
     return "Decompose SWAP by CX(0,1) CX(1,0) CX(0,1)";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto swapOp = dyn_cast_or_null<quake::SwapOp>(*op);
-      if (!swapOp
-          || swapOp.getTargets().size() != 2
-          || !swapOp.getControls().empty()) {
+      if (!swapOp || swapOp.getTargets().size() != 2 ||
+          !swapOp.getControls().empty()) {
         return;
       }
       IRRewriter rewriter(swapOp->getContext());
@@ -45,6 +46,7 @@ public:
       rewriter.create<quake::XOp>(loc, q1, q0);
       rewriter.create<quake::XOp>(loc, q0, q1);
       rewriter.eraseOp(swapOp);
+      this->wasApplied->store(true);
     });
   }
 };

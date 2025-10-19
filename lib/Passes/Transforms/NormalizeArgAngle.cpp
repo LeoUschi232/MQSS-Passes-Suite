@@ -45,45 +45,42 @@ using namespace mqss::support::quakeDialect;
 
 namespace {
 
-void normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
+bool normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
   if (!isa<quake::RxOp>(currentOp) && !isa<quake::RyOp>(currentOp) &&
       !isa<quake::RzOp>(currentOp))
-    return; // do nothing if it is not rotation
+    return false; // do nothing if it is not rotation
   auto gate = dyn_cast<quake::OperatorInterface>(currentOp);
   double pi = std::numbers::pi;
   std::vector<Value> nParameters = {};
   IRRewriter rewriter(gate->getContext());
   for (auto parameter : gate.getParameters()) {
-    auto optional_param_value
-        = extractDoubleArgumentValue(parameter.getDefiningOp());
+    auto optional_param_value =
+        extractDoubleArgumentValue(parameter.getDefiningOp());
     if (!optional_param_value.has_value()) {
-      return;
+      return false;
     }
     double param = optional_param_value.value();
-    param =
-        param - std::floor(param / (2 * pi)) * 2 * pi;
-    nParameters.push_back(
-        createFloatValue(builder, gate.getLoc(), param));
+    param = param - std::floor(param / (2 * pi)) * 2 * pi;
+    nParameters.push_back(createFloatValue(builder, gate.getLoc(), param));
   }
   ValueRange normParameters(nParameters);
   rewriter.setInsertionPointAfter(gate);
   if (isa<quake::RxOp>(gate)) {
-    rewriter.create<quake::RxOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RxOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   } else if (isa<quake::RyOp>(gate)) {
-    rewriter.create<quake::RyOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RyOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   } else if (isa<quake::RzOp>(gate)) {
-    rewriter.create<quake::RzOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RzOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   }
   rewriter.eraseOp(gate);
+  return true;
 }
 
-class NormalizeArgAngle final : public BaseMQSSPass<NormalizeArgAngle> {
+class NormalizeArgAngle final : public BaseMQSSPass<NormalizeArgAngle>,
+                                public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(NormalizeArgAngle)
 
@@ -94,8 +91,12 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     OpBuilder builder(&kernel.getBody());
-    kernel.walk([&](Operation *op) { normalizeAngleOfRotations(op, builder); });
+    kernel.walk([&](Operation *op) {
+      if (normalizeAngleOfRotations(op, builder))
+        this->wasApplied->store(true);
+    });
   }
 };
 } // namespace

@@ -20,7 +20,8 @@ using namespace mqss::support::quakeDialect;
 
 namespace {
 
-class CxCxCxToSwap final : public BaseMQSSPass<CxCxCxToSwap> {
+class CxCxCxToSwap final : public BaseMQSSPass<CxCxCxToSwap>,
+                           public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CxCxCxToSwap)
 
@@ -31,48 +32,43 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp3 = dyn_cast_or_null<quake::XOp>(*op);
-      if (!cxOp3
-          || cxOp3.getTargets().size() != 1
-          || cxOp3.getControls().size() != 1) {
+      if (!cxOp3 || cxOp3.getTargets().size() != 1 ||
+          cxOp3.getControls().size() != 1) {
         return;
       }
-      auto optional_cxOp2_onTarget
-          = getPreviousOperationOnTarget(cxOp3, cxOp3.getTargets()[0]);
-      auto optional_cxOp2_onControl
-          = getPreviousOperationOnTarget(cxOp3, cxOp3.getControls()[0]);
-      if (!optional_cxOp2_onTarget
-          || !optional_cxOp2_onControl
-          || optional_cxOp2_onTarget != optional_cxOp2_onControl) {
+      auto optional_cxOp2_onTarget =
+          getPreviousOperationOnTarget(cxOp3, cxOp3.getTargets()[0]);
+      auto optional_cxOp2_onControl =
+          getPreviousOperationOnTarget(cxOp3, cxOp3.getControls()[0]);
+      if (!optional_cxOp2_onTarget || !optional_cxOp2_onControl ||
+          optional_cxOp2_onTarget != optional_cxOp2_onControl) {
         return;
       }
-      auto cxOp2
-          = dyn_cast_or_null<quake::XOp>(*optional_cxOp2_onTarget);
-      if (!cxOp2
-          || cxOp2.getTargets().size() != 1
-          || cxOp2.getControls().size() != 1
-          || cxOp2.getControls()[0] != cxOp3.getTargets()[0]
-          || cxOp2.getTargets()[0] != cxOp3.getControls()[0]) {
+      auto cxOp2 = dyn_cast_or_null<quake::XOp>(*optional_cxOp2_onTarget);
+      if (!cxOp2 || cxOp2.getTargets().size() != 1 ||
+          cxOp2.getControls().size() != 1 ||
+          cxOp2.getControls()[0] != cxOp3.getTargets()[0] ||
+          cxOp2.getTargets()[0] != cxOp3.getControls()[0]) {
         return;
       }
-      auto optional_cxOp1_onTarget
-          = getPreviousOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
-      auto optional_cxOp1_onControl
-          = getPreviousOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
-      if (!optional_cxOp1_onTarget
-          || !optional_cxOp1_onControl
-          || optional_cxOp1_onTarget != optional_cxOp1_onControl) {
+      auto optional_cxOp1_onTarget =
+          getPreviousOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
+      auto optional_cxOp1_onControl =
+          getPreviousOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
+      if (!optional_cxOp1_onTarget || !optional_cxOp1_onControl ||
+          optional_cxOp1_onTarget != optional_cxOp1_onControl) {
         return;
       }
       auto cxOp1 = dyn_cast_or_null<quake::XOp>(*optional_cxOp1_onTarget);
-      if (!cxOp1
-          || cxOp1.getTargets().size() != 1
-          || cxOp1.getControls().size() != 1
-          || cxOp2.getControls()[0] != cxOp1.getTargets()[0]
-          || cxOp2.getTargets()[0] != cxOp1.getControls()[0]
-          || cxOp3.getControls()[0] != cxOp1.getControls()[0]
-          || cxOp3.getTargets()[0] != cxOp1.getTargets()[0]) {
+      if (!cxOp1 || cxOp1.getTargets().size() != 1 ||
+          cxOp1.getControls().size() != 1 ||
+          cxOp2.getControls()[0] != cxOp1.getTargets()[0] ||
+          cxOp2.getTargets()[0] != cxOp1.getControls()[0] ||
+          cxOp3.getControls()[0] != cxOp1.getControls()[0] ||
+          cxOp3.getTargets()[0] != cxOp1.getTargets()[0]) {
         return;
       }
       IRRewriter rewriter(cxOp3->getContext());
@@ -83,6 +79,7 @@ public:
       rewriter.eraseOp(cxOp1);
       rewriter.eraseOp(cxOp2);
       rewriter.eraseOp(cxOp3);
+      this->wasApplied->store(true);
     });
   }
 };

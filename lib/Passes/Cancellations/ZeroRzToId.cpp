@@ -23,7 +23,7 @@ using namespace mqss::support::transforms;
 
 namespace {
 
-class ZeroRzToId final : public BaseMQSSPass<ZeroRzToId> {
+class ZeroRzToId final : public BaseMQSSPass<ZeroRzToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZeroRzToId)
 
@@ -34,6 +34,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto rzOp = dyn_cast_or_null<quake::RzOp>(*op);
       if (!rzOp
@@ -50,6 +51,7 @@ public:
       if (isMultipleOfTwoPi(params[0])) {
         IRRewriter rewriter(rzOp->getContext());
         rewriter.eraseOp(rzOp);
+        this->wasApplied->store(true);
       }
     });
   }

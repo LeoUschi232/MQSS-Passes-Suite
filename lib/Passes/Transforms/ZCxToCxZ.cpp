@@ -19,7 +19,7 @@ using namespace mqss::support::transforms;
 
 
 namespace {
-class ZCxToCxZ final : public BaseMQSSPass<ZCxToCxZ> {
+class ZCxToCxZ final : public BaseMQSSPass<ZCxToCxZ>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ZCxToCxZ)
 
@@ -30,6 +30,7 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp = dyn_cast_or_null<quake::XOp>(*op);
       if (!cxOp
@@ -58,6 +59,7 @@ public:
       rewriter.create<quake::ZOp>(loc, false, controls);
       rewriter.eraseOp(zOp);
       rewriter.eraseOp(cxOp);
+      this->wasApplied->store(true);
     });
   }
 };

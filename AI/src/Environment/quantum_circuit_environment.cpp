@@ -28,6 +28,7 @@
 /// namespace, so every mlir type has to be included seperately.
 using mlir::ModuleOp;
 using mlir::Operation;
+using mlir::OperandRange;
 using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -36,19 +37,6 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
-
-QuantumCircuitEnvironment::QuantumCircuitEnvironment(
-    unsigned int max_qubits, unsigned int max_steps,
-    const fs::path &circuit_path)
-    : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)),
-      max_steps_per_episode(std::max(1u, max_steps)),
-      max_steps_no_improvement(max_steps_per_episode),
-      max_steps_no_change(max_steps_per_episode),
-      max_steps_same_action(max_steps_per_episode) {
-  if (!circuit_path.empty()) {
-    this->register_quantum_circuit(circuit_path);
-  }
-}
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
@@ -68,6 +56,27 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
   this->register_quantum_circuit(GLOBAL_PARAMS["circuit"].to_string());
+}
+
+unsigned int QuantumCircuitEnvironment::getMaxQubits() const {
+  return max_qubits;
+}
+
+fs::path QuantumCircuitEnvironment::getCircuitPath() const {
+  return circuit_path;
+}
+
+std::pair<unsigned int, unsigned int> QuantumCircuitEnvironment::size() const {
+  return {this->circuit.getNrQubits(), this->circuit.getNrGates()};
+}
+
+std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+          std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+QuantumCircuitEnvironment::getRegisteredRandomizerParams() const {
+  if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
+    return {qubits_cholesky_params.value(), gates_weights.value()};
+  }
+  return {};
 }
 
 void QuantumCircuitEnvironment::clear(bool hard) {
@@ -146,26 +155,6 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   return true;
 }
 
-bool QuantumCircuitEnvironment::custom_randomize_circuit(
-    const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
-    const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights,
-    const RandomizerOptions &randomizer_options) {
-  try {
-    randomizer_options.min_nr_qubits =
-        std::max(static_cast<int>(GLOBAL_MIN_NR_QUBITS),
-                 randomizer_options.min_nr_qubits);
-    // Cap nr of qubits but don't cap nr of gates.
-    randomizer_options.max_nr_qubits = std::min(
-        randomizer_options.max_nr_qubits, static_cast<int>(this->max_qubits));
-    this->circuit = random_quantum_circuit_from_embedded_statistics(
-        cholesky_params, gates_weights, randomizer_options);
-  } catch (const std::runtime_error &error) {
-    std::cerr << error.what() << std::endl;
-    return false;
-  }
-  return this->validate();
-}
-
 void QuantumCircuitEnvironment::register_randomizer_params(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
@@ -182,15 +171,15 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
   std::vector<unsigned int> depths;
   unsigned int nr_allocations = 0u;
   bool ambiguous_measurement = false;
-  FuncOp(this->circuit).walk([&](Operation *op) -> mlir::WalkResult {
+  FuncOp(this->circuit).walk([&](Operation *op) -> WalkResult {
     if (nr_allocations >= 2u || ambiguous_measurement ||
         nr_qubits > max_qubits) {
-      return mlir::WalkResult::interrupt();
+      return WalkResult::interrupt();
     }
     if (isa<quake::AllocaOp>(op)) {
       nr_allocations++;
       if (nr_allocations >= 2) {
-        return mlir::WalkResult::interrupt();
+        return WalkResult::interrupt();
       }
       if (auto allocOp = dyn_cast<quake::AllocaOp>(op);
           allocOp.getType().dyn_cast<quake::RefType>()) {
@@ -199,19 +188,19 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
         nr_qubits += qvecType.getSize();
       }
       if (nr_qubits > max_qubits) {
-        return mlir::WalkResult::interrupt();
+        return WalkResult::interrupt();
       }
       depths.resize(nr_qubits, 0);
-      return mlir::WalkResult::advance();
+      return WalkResult::advance();
     }
     if (!isGate(op)) {
-      return mlir::WalkResult::advance();
+      return WalkResult::advance();
     }
     if (isMeasurement(op)) {
-      mlir::OperandRange operands = op->getOperands();
+      OperandRange operands = op->getOperands();
       if (operands.size() != 1) {
         ambiguous_measurement = true;
-        return mlir::WalkResult::interrupt();
+        return WalkResult::interrupt();
       }
       Value operand = operands.front();
       if (operand.getType().isa<quake::RefType>()) {
@@ -221,26 +210,26 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
           // If the measurement doesn't have a valid qubit indexes, it's
           // ambiguous what the measurement is.
           ambiguous_measurement = true;
-          return mlir::WalkResult::interrupt();
+          return WalkResult::interrupt();
         }
         if (int qubitIndex = qubitIndexOpt.value();
             0 <= qubitIndex && qubitIndex < nr_qubits) {
           nr_gates++;
           depths[qubitIndex]++;
         }
-        return mlir::WalkResult::advance();
+        return WalkResult::advance();
       }
       if (operand.getType().isa<quake::VeqType>()) {
         for (int qubitIndex = 0; qubitIndex < nr_qubits; qubitIndex++) {
           depths[qubitIndex]++;
         }
         nr_gates += operand.getType().dyn_cast<quake::VeqType>().getSize();
-        return mlir::WalkResult::advance();
+        return WalkResult::advance();
       }
       // If the measurement is neither a RefType nor a VeqType, it's ambiguous
       // what the measurement is.
       ambiguous_measurement = true;
-      return mlir::WalkResult::interrupt();
+      return WalkResult::interrupt();
     }
     nr_gates++;
     auto gate = dyn_cast<quake::OperatorInterface>(op);
@@ -254,7 +243,7 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
     for (int qubit : targets) {
       depths[qubit] = max_depth + 1;
     }
-    return mlir::WalkResult::advance();
+    return WalkResult::advance();
   });
   if (nr_qubits < GLOBAL_MIN_NR_QUBITS || nr_qubits > max_qubits) {
     return CircuitValidity::InvalidNrQubits;
@@ -268,12 +257,12 @@ CircuitValidity QuantumCircuitEnvironment::get_advanced_circuit_validity() {
   if (ambiguous_measurement) {
     return CircuitValidity::AmbiguousMeasurement;
   }
-  if (nr_qubits != this->circuit.get_nr_qubits() ||
-      nr_gates != this->circuit.get_nr_gates()) {
+  if (nr_qubits != this->circuit.getNrQubits() ||
+      nr_gates != this->circuit.getNrGates()) {
     this->circuit.recompute();
   }
-  if (nr_qubits != this->circuit.get_nr_qubits() ||
-      nr_gates != this->circuit.get_nr_gates()) {
+  if (nr_qubits != this->circuit.getNrQubits() ||
+      nr_gates != this->circuit.getNrGates()) {
     throw std::runtime_error(
         "Mismatch in algorithms computing nr_circuits and nr_gates between "
         "QuantumCircuit and QuantumCircuitEnvironment.");
@@ -287,20 +276,20 @@ QuantumCircuitEnvironment::get_circuit_info() const {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  return {{"qubits", this->circuit.get_nr_qubits()},
-          {"gates", this->circuit.get_nr_gates()},
-          {"depth", this->circuit.get_depth()}};
+  return {{"qubits", this->circuit.getNrQubits()},
+          {"gates", this->circuit.getNrGates()},
+          {"depth", this->circuit.getDepth()}};
 }
 
 /// [Reward, Terminated, Truncated]
-std::tuple<double, bool, bool>
+std::tuple<float, bool, bool>
 QuantumCircuitEnvironment::step(unsigned int action) {
   if (this->terminated || this->truncated) {
-    return {0.0, this->terminated, this->truncated};
+    return {0.0f, this->terminated, this->truncated};
   }
   if (++this->step_per_episode > this->max_steps_per_episode) {
     this->truncated = true;
-    return {0.0, /*Terminated=*/false, /*Truncated=*/true};
+    return {0.0f, /*Terminated=*/false, /*Truncated=*/true};
   }
   if (!this->circuit.exists()) {
     throw std::runtime_error("No circuit registered in the environment.");
@@ -308,17 +297,24 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   if (action >= NR_PASSES) {
     throw std::runtime_error("Invalid action: " + std::to_string(action));
   }
-  double previous_nr_gates = this->circuit.get_nr_gates();
-  double previous_depth = this->circuit.get_depth();
-  if (!this->circuit.run_pass(/*pass_index=*/action)) {
+  float previous_nr_gates = this->circuit.getNrGates();
+  float previous_depth = this->circuit.getDepth();
+  auto [succeeded, wasApplied] = this->circuit.run_pass(action);
+  if (!succeeded) {
     std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
-    return {0.0, /*Terminated=*/false, /*Truncated=*/false};
+    return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
   }
-  double nr_gates_reduction = previous_nr_gates - this->circuit.get_nr_gates();
-  double depth_reduction = previous_depth - this->circuit.get_depth();
-  double reward = nr_gates_reduction + depth_reduction;
+  float nr_gates_reduction = 0.0f;
+  float depth_reduction = 0.0f;
+  float reward = 0.0f;
+  if (wasApplied) {
+    nr_gates_reduction = previous_nr_gates - this->circuit.getNrGates();
+    depth_reduction = previous_depth - this->circuit.getDepth();
+    reward = nr_gates_reduction + depth_reduction;
+    this->latest_observation = std::nullopt;
+  }
 
-  if (reward > 0.0) {
+  if (reward > 0.0f) {
     this->step_no_improvement = 0;
   } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
@@ -343,7 +339,11 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
-InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
+InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
+  if (this->latest_observation.has_value()) {
+    return this->latest_observation.value();
+  }
+
   InstructionsTensor<float> observation(this->max_qubits);
   observation.reserve(/*nr_instructions=*/GLOBAL_MIN_NR_GATES);
   if (!this->circuit.exists() || this->truncated) {
@@ -352,8 +352,8 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
     observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
     return observation;
   }
-  const unsigned int nr_gates = this->circuit.get_nr_gates();
-  const unsigned int nr_qubits = this->circuit.get_nr_qubits();
+  const unsigned int nr_gates = this->circuit.getNrGates();
+  const unsigned int nr_qubits = this->circuit.getNrQubits();
   if (nr_gates < GLOBAL_MIN_NR_GATES || nr_qubits < GLOBAL_MIN_NR_QUBITS) {
     // Any valid normal circuit should have at least 2 instructions.
     observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
@@ -415,11 +415,12 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() const {
     observation.append(features);
     instruction_index++;
   });
+  this->latest_observation = observation;
   return observation;
 }
 
 torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
-    std::optional<torch::TensorOptions> tensor_options) const {
+    std::optional<torch::TensorOptions> tensor_options) {
   torch::TensorOptions options = tensor_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
   InstructionsTensor<float> observation = this->get_observation();
@@ -435,7 +436,7 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
 }
 
 bool QuantumCircuitEnvironment::validate() {
-  if (this->circuit.get_nr_qubits() > this->max_qubits ||
+  if (this->circuit.getNrQubits() > this->max_qubits ||
       !this->circuit.validate()) {
     this->clear(/*hard=*/false);
     return false;

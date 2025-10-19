@@ -17,7 +17,7 @@ using namespace mlir;
 using namespace mqss::support::transforms;
 
 namespace {
-class XXToId final : public BaseMQSSPass<XXToId> {
+class XXToId final : public BaseMQSSPass<XXToId>, public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(XXToId)
 
@@ -28,27 +28,27 @@ public:
   }
 
   void operationsOnQuantumKernel(FuncOp kernel) override {
+    this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto xOp2 = dyn_cast_or_null<quake::XOp>(*op);
-      if (!xOp2
-          || xOp2.getTargets().size() != 1
-          || !xOp2.getControls().empty()) {
+      if (!xOp2 || xOp2.getTargets().size() != 1 ||
+          !xOp2.getControls().empty()) {
         return;
       }
-      auto optional_xOp1
-          = getPreviousOperationOnTarget(xOp2, xOp2.getTargets()[0]);
+      auto optional_xOp1 =
+          getPreviousOperationOnTarget(xOp2, xOp2.getTargets()[0]);
       if (!optional_xOp1) {
         return;
       }
       auto xOp1 = dyn_cast_or_null<quake::XOp>(*optional_xOp1);
-      if (!xOp1
-          || xOp1.getTargets().size() != 1
-          || !xOp1.getControls().empty()) {
+      if (!xOp1 || xOp1.getTargets().size() != 1 ||
+          !xOp1.getControls().empty()) {
         return;
       }
       IRRewriter rewriter(xOp2->getContext());
       rewriter.eraseOp(xOp2);
       rewriter.eraseOp(xOp1);
+      this->wasApplied->store(true);
     });
   }
 };

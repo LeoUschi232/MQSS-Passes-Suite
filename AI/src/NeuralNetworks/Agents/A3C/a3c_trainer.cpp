@@ -4,6 +4,7 @@
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Environment includes
+#include "Environment/Wrappers/normalize_reward.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
@@ -82,7 +83,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   std::signal(SIGINT, signal_handler);
   for (unsigned int i = 0u; i < nr_asynchronous_agents; i++) {
     futures.emplace_back(std::async(std::launch::async, [&] {
-      QuantumCircuitEnvironment environment(max_qubits);
+      NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
       environment.register_randomizer_params(qubits_cholesky_params,
                                              gates_weights);
       std::unique_ptr<BaseA3CAgent> agent = agent_boss->clone();
@@ -155,7 +156,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_values_vector.push_back(agent->get_value(
                 environment.get_observation_as_torch_tensor()));
           } else {
-            episode_values_vector.push_back(torch::zeros({1}, options));
+            episode_values_vector.push_back(torch::zeros({}, options));
           }
 
           auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
@@ -187,8 +188,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
                 std::max(global_max_reward, total_worker_reward);
             updateProgress(
                 global_async_step, a3c_max_async_steps,
-                " | Reward: " + std::to_string(total_worker_reward) +
-                    "Global Max: " + std::to_string(global_max_reward));
+                "Reward: " + std::to_string(total_worker_reward) +
+                    "| Global Max: " + std::to_string(global_max_reward));
           }
         }
       } catch (const std::exception &error) {
@@ -246,7 +247,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  QuantumCircuitEnvironment environment(max_qubits);
+  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
 
   torch::TensorOptions options =
@@ -254,13 +255,16 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   int64_t T = max_steps_per_episode;
 
   std::cout << "Beginning training." << std::endl;
-  updateProgress(0, nr_episodes, "Beginning training");
+  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
       break;
     }
     try {
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/"Resetting enviornment.");
       double total_episode_reward = 0.0;
       environment.reset();
       std::vector<torch::Tensor> episode_log_probs_vector;
@@ -275,6 +279,15 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       bool add_bootstrap = false;
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
+        auto [nr_qubits, nr_gates] = environment.size();
+        updateProgresses({{episode_idx, nr_episodes},
+                          {update_step + 1, max_steps_per_episode}},
+                         /*display_message=*/"Episode Reward: " +
+                             std::to_string(total_episode_reward) +
+                             " | Nr qubits: " + std::to_string(nr_qubits) +
+                             " | Nr gates: " + std::to_string(nr_gates) +
+                             " | Running step.");
+
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in A2C training."
                     << std::endl;
@@ -305,8 +318,16 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
         episode_values_vector.push_back(
             agent->get_value(environment.get_observation_as_torch_tensor()));
       } else {
-        episode_values_vector.push_back(torch::zeros({1}, options));
+        episode_values_vector.push_back(torch::zeros({}, options));
       }
+      auto [nr_qubits, nr_gates] = environment.size();
+      std::string main_message =
+          "Episode Reward: " + std::to_string(total_episode_reward) +
+          " | Nr qubits: " + std::to_string(nr_qubits) +
+          " | Nr gates: " + std::to_string(nr_gates);
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/main_message + " | Computing loss.");
 
       auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
           /*rewards=*/torch::stack(episode_rewards_vector),
@@ -314,13 +335,11 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           /*state_values=*/torch::stack(episode_values_vector),
           /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
           gae_hyperparameter, entropy_coefficient);
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, max_steps_per_episode}},
+                       /*display_message=*/main_message +
+                           " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
-      updateProgress(
-          /*current=*/episode_idx, /*total=*/nr_episodes,
-          /*display_message=*/" | Episode Reward: " +
-              std::to_string(total_episode_reward)
-
-      );
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;

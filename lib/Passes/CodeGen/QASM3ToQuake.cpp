@@ -46,13 +46,18 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <regex>
 #include <unordered_map>
 
-using namespace mlir;
 using namespace mqss::interfaces;
+using mlir::OperationPass;
+using mlir::Pass;
+using mlir::PassWrapper;
+using mlir::StringRef;
+using mlir::Type;
+using mlir::func::FuncOp;
+using mlir::func::ReturnOp;
 
 namespace {
-
 class QASM3ToQuake final
-    : public PassWrapper<QASM3ToQuake, OperationPass<func::FuncOp>> {
+    : public PassWrapper<QASM3ToQuake, OperationPass<FuncOp>> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QASM3ToQuake)
 
@@ -86,7 +91,7 @@ public:
     // then every new inserted operation will be before the "return" statement
     Operation *returnOp;
     circuit.walk([&](Operation *op) {
-      if (isa<func::ReturnOp>(op)) {
+      if (isa<ReturnOp>(op)) {
         // Check if it's a return op
         returnOp = op;
       }

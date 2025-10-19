@@ -122,7 +122,7 @@ std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
 /**
  *
  * @param rebuildSetup
- * @param gateIndex
+ * @param gate
  * @param targets
  */
 static void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
@@ -131,7 +131,7 @@ static void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
 /**
  *
  * @param rebuildSetup
- * @param gateIndex
+ * @param gate
  * @param targetIndexes
  * @param controlIndexes
  * @param angles
@@ -162,7 +162,6 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor);
  * @param tensor
  */
 void check_tensor(const InstructionsTensor<float> &tensor);
-
 } // namespace ai_pass_selector
 
 #endif // TENSOR_UTILS_HPP

@@ -40,8 +40,7 @@ AgentAttributes parseAgentName(const std::string &agent_name) {
 
 std::unique_ptr<torch::optim::Optimizer>
 makeOptimizer(OptimizerType optimizerType,
-              const torch::nn::Sequential &agentModel,
-              double learningRate) {
+              const torch::nn::Sequential &agentModel, double learningRate) {
   switch (optimizerType) {
   case OptimizerType::Adagrad:
     return std::make_unique<torch::optim::Adagrad>(

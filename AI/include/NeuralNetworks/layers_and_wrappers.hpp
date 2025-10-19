@@ -46,10 +46,12 @@ TORCH_MODULE(WeightNormConv1d);
  * @return The actual output tensor of the LSTM.
  */
 class FilterLSTMImpl final : public Module {
+  LSTM my_lstm{nullptr};
+
 public:
-  FilterLSTMImpl() = default;
-  Tensor
-  forward(const std::tuple<Tensor, std::tuple<Tensor, Tensor>> &lstm_output);
+  FilterLSTMImpl(unsigned int input_size, unsigned int hidden_size,
+                 bool bidirectional, unsigned int proj_size = 0);
+  Tensor forward(Tensor x);
 };
 TORCH_MODULE(FilterLSTM);
 
@@ -78,6 +80,13 @@ Functional TransposeContiguous(int32_t dim0, int32_t dim1);
 Functional Transpose(int32_t dim0, int32_t dim1);
 
 /**
+ *
+ * @param dim
+ * @return
+ */
+Functional Squeeze(int32_t dim);
+
+/**
  * Check for NaN and Inf values in the tensor.
  * If any are found, print the stage name, min and max values.
  * @param stage_name Name of the stage to identify where the values might be inf
@@ -92,5 +101,19 @@ Functional FiniteCheck(std::string stage_name);
  * @return
  */
 Functional ShapeProbe(std::string stage_name);
+
+/**
+ *
+ * @param tensor
+ * @param precision
+ * @return
+ */
+std::string tensor_to_string(const torch::Tensor &tensor, int precision = 6);
+
+/**
+ * @param precision Number of decimal places to print.
+ * @return
+ */
+Functional PrintTensor(unsigned int precision = 3);
 } // namespace torch::nn
 #endif // LAYERS_AND_WRAPPERS_HPP

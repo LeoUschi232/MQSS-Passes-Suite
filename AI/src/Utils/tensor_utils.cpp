@@ -357,8 +357,8 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
       throw std::runtime_error("Nr gate angles: " +
                                std::to_string(angles.size()));
     }
-    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes, controlIndexes, angles,
-               isAdj);
+    insertGate(rebuildSetup, static_cast<GateSymbol>(gateIndex), targetIndexes,
+               controlIndexes, angles, isAdj);
 
     // Adjust the depths only if everything ran smoothly.
     std::vector<int> involvedQubits = targetIndexes;
@@ -377,8 +377,6 @@ recreateQuantumCircuitFromTensor(const InstructionsTensor<float> &tensor) {
 }
 
 void check_tensor(const InstructionsTensor<float> &tensor) {
-  std::cout << "Called: check_tensor(const InstructionsTensor<float> &tensor)."
-            << std::endl;
   const unsigned N = tensor.shape[0];
   const unsigned IRS = tensor.shape[1];
   if (IRS < MIN_IRS) {

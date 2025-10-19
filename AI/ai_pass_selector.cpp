@@ -19,6 +19,8 @@ using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 /// Default values for agent/environment/training parameters.
+/// ssh -Y ge78zic2@cool.hpc.lrz.de
+/// 7McMGcmhX_27McMGcmhX_2
 void load_default_params();
 
 void print_help() {
@@ -139,22 +141,22 @@ void load_default_params() {
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
       {"nr_episodes", 100},
-      {"max_steps_per_episode", 1300},
-      {"max_steps_no_improvement", 130},
-      {"max_steps_no_change", 26},
-      {"max_steps_same_action", 6},
+      {"max_steps_per_episode", 130},
+      {"max_steps_no_improvement", 13},
+      {"max_steps_no_change", 6},
+      {"max_steps_same_action", 3},
       {"discount_factor", 0.995},
       {"gae_hyperparameter", 0.96},
       {"entropy_coefficient", 0.01},
       {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
-      {"critic_optimizer", "adam"},
-      {"actor_optimizer", "adam"},
-      {"actor_learning_rate", 0.001},
-      {"critic_learning_rate", 0.005},
+      {"critic_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
+      {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
+      {"actor_learning_rate", 1e-6},
+      {"critic_learning_rate", 5e-6},
       {"ppo_epsilon", 0.2},
       {"sac_alpha", 0.1},
       {"print_param_info", false},
       {"save_agent_after_training", false},
       {"stop_training_on_error", true},
-      {"print_diagnostics", true}};
+      {"print_diagnostics", false}};
 }

@@ -5,7 +5,9 @@
 #include "torch/torch.h"
 
 // Standard library includes
+#include "NeuralNetworks/layers_and_wrappers.hpp"
 #include "Utils/info_utils.hpp"
+#include "Utils/tensor_utils.hpp"
 
 #include <cmath>
 #include <memory>
@@ -16,15 +18,15 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
-: max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
+    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
   this->device = GLOBAL_PARAMS["device"].to_device_type();
   this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
   this->critic_learning_rate =
       GLOBAL_PARAMS["critic_learning_rate"].to_double();
-  this->actor_optimizer_type = static_cast<OptimizerType>(
-      GLOBAL_PARAMS["actor_optimizer_type"].to_int());
+  this->actor_optimizer_type =
+      static_cast<OptimizerType>(GLOBAL_PARAMS["actor_optimizer_idx"].to_int());
   this->critic_optimizer_type = static_cast<OptimizerType>(
-      GLOBAL_PARAMS["critic_optimizer_type"].to_int());
+      GLOBAL_PARAMS["critic_optimizer_idx"].to_int());
 }
 
 bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,
@@ -127,7 +129,6 @@ BaseActorCritic::get_losses(const torch::Tensor &rewards,          // Shape [T]
   // state.
   torch::Tensor A_gae = torch::zeros({}, options);
   for (int t = T - 1; t >= 0; t--) {
-
     // Temporal Difference Error of V(s) with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
     // Barto & Sutton Reinforcement Learning page 121, equation (6.5)

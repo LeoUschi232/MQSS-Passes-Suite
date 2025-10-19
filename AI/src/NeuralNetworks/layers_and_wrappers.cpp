@@ -1,6 +1,7 @@
 #include "NeuralNetworks/layers_and_wrappers.hpp"
 
 // Torch includes
+#include "Utils/tensor_utils.hpp"
 #include "torch/torch.h"
 
 namespace torch::nn {
@@ -46,9 +47,30 @@ Tensor WeightNormConv1dImpl::forward(const Tensor &input) {
                 this->stride, this->padding, this->dilation);
 }
 
-Tensor FilterLSTMImpl::forward(
-    const std::tuple<Tensor, std::tuple<Tensor, Tensor>> &lstm_output) {
-  return std::get<0>(lstm_output);
+FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
+                               unsigned int hidden_size, bool bidirectional,
+                               unsigned int proj_size) {
+  if (0u < proj_size && proj_size < hidden_size) {
+    this->my_lstm = LSTM(LSTMOptions(input_size, hidden_size)
+                             .bidirectional(bidirectional)
+                             .proj_size(proj_size));
+  } else {
+    this->my_lstm =
+        LSTM(LSTMOptions(input_size, hidden_size).bidirectional(bidirectional));
+  }
+  this->register_module("my_lstm", this->my_lstm);
+}
+
+Tensor FilterLSTMImpl::forward(Tensor x) {
+  if (x.dim() != 2 && x.dim() != 3) {
+    throw std::invalid_argument(
+        "FilterLSTMImpl expects input tensor of dimension 2 or 3.");
+  }
+  if (x.dim() == 2) {
+    x = x.unsqueeze(/*dim=*/1);
+  }
+  auto [y, _] = this->my_lstm->forward(x);
+  return y.squeeze(/*dim=*/1);
 }
 
 Functional TransposeContiguous(int32_t dim0, int32_t dim1) {
@@ -60,6 +82,9 @@ Functional TransposeContiguous(int32_t dim0, int32_t dim1) {
 Functional Transpose(int32_t dim0, int32_t dim1) {
   return Functional(
       [dim0, dim1](const Tensor &x) { return x.transpose(dim0, dim1); });
+}
+Functional Squeeze(int32_t dim) {
+  return Functional([dim](const Tensor &x) { return x.squeeze(dim); });
 }
 
 Functional FiniteCheck(std::string stage_name) {
@@ -88,6 +113,31 @@ Functional ShapeProbe(std::string stage_name) {
         << " max=" << x.amax().item<double>()
         << " finite=" << x.isfinite().all().item<bool>() << "\n";
     std::cerr << oss.str();
+    return x;
+  });
+}
+
+std::string tensor_to_string(const Tensor &tensor, int precision) {
+  Tensor cpu_tensor = tensor.detach().to(kCPU).contiguous().view(-1);
+  const float *data = cpu_tensor.data_ptr<float>();
+  const unsigned int size = cpu_tensor.numel();
+  std::ostringstream oss;
+  oss << "[";
+  oss.setf(std::ios::fixed);
+  oss.precision(precision);
+  for (unsigned int i = 0; i < size; i++) {
+    if (i) {
+      oss << ", ";
+    }
+    oss << data[i];
+  }
+  oss << "]";
+  return oss.str();
+}
+
+Functional PrintTensor(unsigned int precision) {
+  return Functional([precision](const Tensor &x) {
+    std::cout << tensor_to_string(x, precision) << std::endl;
     return x;
   });
 }

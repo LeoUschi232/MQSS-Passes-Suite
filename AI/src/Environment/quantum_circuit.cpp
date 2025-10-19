@@ -1,7 +1,17 @@
 #include "Environment/quantum_circuit.hpp"
 
-// Utils includes
+// Support includes
 #include "Support/mlir_utils.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+/// The usages of llvm functions must come before the QuakeOps header which
+/// expects them.
+using llvm::cast;
+using llvm::dyn_cast;
+using llvm::isa;
+////////////////////////////////////////////////////////////////////////////////
+
+// Utils includes
 #include "Utils/info_utils.hpp"
 #include "Utils/passes_utils.hpp"
 
@@ -120,26 +130,41 @@ bool QuantumCircuit::recompute() {
   return this->validate();
 }
 
-bool QuantumCircuit::run_pass(unsigned int pass_index) {
+std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   if (pass_index >= NR_PASSES) {
-    return false;
+    return {false, false};
   }
-  auto [passname, passptr] = getPassNameAndPointer(pass_index);
+  auto [passname, pass_ptr] = getPassNameAndPointer(pass_index);
+  std::shared_ptr<std::atomic_bool> was_applied_ptr;
+  if (auto *applied_check_pass =
+          dynamic_cast<AppliedCheckPass *>(pass_ptr.get())) {
+    was_applied_ptr = applied_check_pass->getAppliedPtr();
+  } else {
+    std::cerr << "Pass " << passname
+              << " does not inherit from AppliedCheckPass." << std::endl;
+    return {false, false};
+  }
   try {
     MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
-    pass_manager.addPass(std::move(passptr));
+    pass_manager.addPass(std::move(pass_ptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
+      std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
-      return false;
+      return {false, true};
     }
   } catch (const std::runtime_error &error) {
     std::cerr << "Pass " << passname << " failed with " << error.what()
               << std::endl;
     this->recompute();
-    return false;
+    return {false, true};
   }
-  return this->recompute();
+
+  if (was_applied_ptr && /*pass_was_applied=*/was_applied_ptr->load()) {
+    return {this->recompute(), true};
+  }
+  // Pass did not apply any changes.
+  return {this->validate(), false};
 }
 QuantumCircuit::operator mlir::func::FuncOp() const {
   return FuncOp(this->circuit_module);
@@ -149,9 +174,9 @@ void QuantumCircuit::print(llvm::raw_string_ostream &string_stream) const {
   this->circuit_module->print(string_stream);
 }
 
-unsigned int QuantumCircuit::get_nr_qubits() const { return this->nr_qubits; }
-unsigned int QuantumCircuit::get_nr_gates() const { return this->nr_gates; }
-unsigned int QuantumCircuit::get_depth() const { return this->depth; }
+unsigned int QuantumCircuit::getNrQubits() const { return this->nr_qubits; }
+unsigned int QuantumCircuit::getNrGates() const { return this->nr_gates; }
+unsigned int QuantumCircuit::getDepth() const { return this->depth; }
 std::tuple<unsigned int, unsigned int, unsigned int>
 QuantumCircuit::get_attributes() const {
   return {this->nr_qubits, this->nr_gates, this->depth};

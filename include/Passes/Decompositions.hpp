@@ -41,55 +41,57 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
+using mlir::Pass;
+
 namespace mqss::opt {
 
 /// 1
-std::unique_ptr<mlir::Pass> createReverseCxPass();
+std::unique_ptr<Pass> createReverseCxPass();
 
 /// 2
-std::unique_ptr<mlir::Pass> createCxToLowerHCzHPass();
+std::unique_ptr<Pass> createCxToLowerHCzHPass();
 
 /// 3
-std::unique_ptr<mlir::Pass> createCxToUpperHCzHPass();
+std::unique_ptr<Pass> createCxToUpperHCzHPass();
 
 /// 4
-std::unique_ptr<mlir::Pass> createCzToLowerHCxHPass();
+std::unique_ptr<Pass> createCzToLowerHCxHPass();
 
 /// 5
-std::unique_ptr<mlir::Pass> createCzToUpperHCxHPass();
+std::unique_ptr<Pass> createCzToUpperHCxHPass();
 
 /// 6
-std::unique_ptr<mlir::Pass> createRxToHRzHPass();
+std::unique_ptr<Pass> createRxToHRzHPass();
 
 /// 7
-std::unique_ptr<mlir::Pass> createRzToHRxHPass();
+std::unique_ptr<Pass> createRzToHRxHPass();
 
 /// 8
-std::unique_ptr<mlir::Pass> createCrxToHCrzHPass();
+std::unique_ptr<Pass> createCrxToHCrzHPass();
 
 /// 9
-std::unique_ptr<mlir::Pass> createCrzToHCrxHPass();
+std::unique_ptr<Pass> createCrzToHCrxHPass();
 
 /// 10
-std::unique_ptr<mlir::Pass> createSdgToSSSPass();
+std::unique_ptr<Pass> createSdgToSSSPass();
 
 /// 11
-std::unique_ptr<mlir::Pass> createSToSdgSdgSdgPass();
+std::unique_ptr<Pass> createSToSdgSdgSdgPass();
 
 /// 12
-std::unique_ptr<mlir::Pass> createSToTTPass();
+std::unique_ptr<Pass> createSToTTPass();
 
 /// 13
-std::unique_ptr<mlir::Pass> createXToHZHPass();
+std::unique_ptr<Pass> createXToHZHPass();
 
 /// 14
-std::unique_ptr<mlir::Pass> createZToHXHPass();
+std::unique_ptr<Pass> createZToHXHPass();
 
 /// 15
-std::unique_ptr<mlir::Pass> createSwapToLowerCxCxCxPass();
+std::unique_ptr<Pass> createSwapToLowerCxCxCxPass();
 
 /// 16
-std::unique_ptr<mlir::Pass> createSwapToUpperCxCxCxPass();
+std::unique_ptr<Pass> createSwapToUpperCxCxCxPass();
 
 } // namespace mqss::opt
 
