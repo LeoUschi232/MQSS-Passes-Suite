@@ -54,38 +54,33 @@ bool normalizeAngleOfRotations(Operation *currentOp, OpBuilder builder) {
   std::vector<Value> nParameters = {};
   IRRewriter rewriter(gate->getContext());
   for (auto parameter : gate.getParameters()) {
-    auto optional_param_value
-        = extractDoubleArgumentValue(parameter.getDefiningOp());
+    auto optional_param_value =
+        extractDoubleArgumentValue(parameter.getDefiningOp());
     if (!optional_param_value.has_value()) {
       return false;
     }
     double param = optional_param_value.value();
-    param =
-        param - std::floor(param / (2 * pi)) * 2 * pi;
-    nParameters.push_back(
-        createFloatValue(builder, gate.getLoc(), param));
+    param = param - std::floor(param / (2 * pi)) * 2 * pi;
+    nParameters.push_back(createFloatValue(builder, gate.getLoc(), param));
   }
   ValueRange normParameters(nParameters);
   rewriter.setInsertionPointAfter(gate);
   if (isa<quake::RxOp>(gate)) {
-    rewriter.create<quake::RxOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RxOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   } else if (isa<quake::RyOp>(gate)) {
-    rewriter.create<quake::RyOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RyOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   } else if (isa<quake::RzOp>(gate)) {
-    rewriter.create<quake::RzOp>(
-        gate.getLoc(), gate.isAdj(),
-        normParameters, gate.getControls(), gate.getTargets());
+    rewriter.create<quake::RzOp>(gate.getLoc(), gate.isAdj(), normParameters,
+                                 gate.getControls(), gate.getTargets());
   }
   rewriter.eraseOp(gate);
   return true;
 }
 
 class NormalizeArgAngle final : public BaseMQSSPass<NormalizeArgAngle>,
-                                AppliedCheckPass {
+                                public AppliedCheckPass {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(NormalizeArgAngle)
 

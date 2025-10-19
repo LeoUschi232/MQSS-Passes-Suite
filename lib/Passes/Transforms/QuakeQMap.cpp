@@ -49,16 +49,15 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
 
-    auto optional_angle = extractDoubleArgumentValue(
-        operand1.getDefiningOp());
+    auto optional_angle = extractDoubleArgumentValue(operand1.getDefiningOp());
     if (!optional_angle.has_value()) {
       llvm::errs() << "Error: Rotation angle is not a constant float.\n";
       return;
     }
     double angle = optional_angle.value();
     Value operand2 = op->getOperands()[1];
-    auto optional_qubit = extractIndexFromQuakeExtractRefOp(
-        operand2.getDefiningOp());
+    auto optional_qubit =
+        extractIndexFromQuakeExtractRefOp(operand2.getDefiningOp());
     if (!optional_qubit.has_value()) {
       llvm::errs() << "Error: Qubit index could not be extracted.\n";
       return;
@@ -69,7 +68,7 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     op->print(llvm::errs());
     llvm::errs() << "\n";
     llvm::errs() << "\tRotation with angle " << angle << " on qubit " << qubit
-        << "\n";
+                 << "\n";
 #endif
     assert(!(angle == -1.0 || qubit == -1) && "ill-formed rotation gate!");
     if (isa<quake::RxOp>(*op)) {
@@ -93,8 +92,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     if (op->getOperands().size() == 2) {
       Value operand1 = op->getOperands()[0];
       auto optional_qubit_ctrl =
-          extractIndexFromQuakeExtractRefOp(
-              operand1.getDefiningOp());
+          extractIndexFromQuakeExtractRefOp(operand1.getDefiningOp());
       if (!optional_qubit_ctrl.has_value()) {
         llvm::errs() << "Error: Control qubit index could not be extracted.\n";
         return;
@@ -103,8 +101,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
 
       Value operand2 = op->getOperands()[1];
       auto optional_qubit_target =
-          extractIndexFromQuakeExtractRefOp(
-              operand2.getDefiningOp());
+          extractIndexFromQuakeExtractRefOp(operand2.getDefiningOp());
       if (!optional_qubit_target.has_value()) {
         llvm::errs() << "Error: Target qubit index could not be extracted.\n";
         return;
@@ -116,10 +113,10 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
       op->print(llvm::errs());
       llvm::errs() << "\n";
       llvm::errs() << "\tqubit_ctrl " << qubit_ctrl << " qubit_target "
-          << qubit_target << "\n";
+                   << qubit_target << "\n";
 #endif
       assert(!(qubit_ctrl == -1 || qubit_target == -1) &&
-          "ill-formed controlled gate!");
+             "ill-formed controlled gate!");
       if (isa<quake::XOp>(*op))
         qc.cx(qubit_ctrl, qubit_target);
       if (isa<quake::YOp>(*op))
@@ -130,8 +127,8 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      auto optional_qubit = extractIndexFromQuakeExtractRefOp(
-          operand1.getDefiningOp());
+      auto optional_qubit =
+          extractIndexFromQuakeExtractRefOp(operand1.getDefiningOp());
       if (!optional_qubit.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
         return;
@@ -160,8 +157,8 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      auto optional_qubit = extractIndexFromQuakeExtractRefOp(
-          operand1.getDefiningOp());
+      auto optional_qubit =
+          extractIndexFromQuakeExtractRefOp(operand1.getDefiningOp());
       if (!optional_qubit.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
         return;
@@ -195,10 +192,9 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 #endif
     assert(op->getOperands().size() == 1 && "ill-formed measurement gate!");
     if (Value operand = op->getOperands()[0];
-      operand.getType().isa<quake::RefType>()) {
+        operand.getType().isa<quake::RefType>()) {
       auto optional_qubitIndex =
-          extractIndexFromQuakeExtractRefOp(
-              operand.getDefiningOp());
+          extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
       if (!optional_qubitIndex.has_value()) {
         llvm::errs() << "Error: Qubit index could not be extracted.\n";
         return;
@@ -223,8 +219,8 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap final
-    : public PassWrapper<QuakeQMap, OperationPass<FuncOp>>, public AppliedCheckPass {
+class QuakeQMap final : public PassWrapper<QuakeQMap, OperationPass<FuncOp>>,
+                        public AppliedCheckPass {
   Architecture &architecture;
   const Configuration &settings;
 
@@ -232,28 +228,24 @@ public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
 
   QuakeQMap(Architecture &architecture, const Configuration &settings)
-    : architecture(architecture), settings(settings) {
-  }
+      : architecture(architecture), settings(settings) {}
 
-  StringRef getArgument() const override {
-    return "quake-to-qmap-pass";
-  }
+  StringRef getArgument() const override { return "quake-to-qmap-pass"; }
 
   StringRef getDescription() const override {
     return "Pass that maps a given quake module respecting the constraints of "
-        "a given quantum device, using mqt-qmap tool";
+           "a given quantum device, using mqt-qmap tool";
   }
 
   void runOnOperation()
 
-  override {
+      override {
     this->wasApplied->store(false);
     // Getting the function
     auto circuit = getOperation();
     // Get the function name
     StringRef funcName = circuit.getName();
-    if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION))
-        == std::string::npos)
+    if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
       return; // do nothing if the function is not cudaq kernel
 
     this->wasApplied->store(true);
@@ -341,44 +333,44 @@ public:
       // NOLINTNEXTLINE
       switch (op->getType()) {
       case qc::X:
-        builder.create<quake::XOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::XOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::Y:
-        builder.create<quake::YOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::YOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::Z:
-        builder.create<quake::ZOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::ZOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::RX:
-        builder.create<quake::RxOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::RxOp>(loc, parameterValues, controlValues,
+                                    targetValues);
         break;
       case qc::RY:
-        builder.create<quake::RyOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::RyOp>(loc, parameterValues, controlValues,
+                                    targetValues);
         break;
       case qc::RZ:
-        builder.create<quake::RzOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::RzOp>(loc, parameterValues, controlValues,
+                                    targetValues);
         break;
       case qc::SWAP:
-        builder.create<quake::SwapOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::SwapOp>(loc, parameterValues, controlValues,
+                                      targetValues);
         break;
       case qc::H:
-        builder.create<quake::HOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::HOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::S:
-        builder.create<quake::SOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::SOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::T:
-        builder.create<quake::TOp>(
-            loc, parameterValues, controlValues, targetValues);
+        builder.create<quake::TOp>(loc, parameterValues, controlValues,
+                                   targetValues);
         break;
       case qc::Measure:
         Type measTy = quake::MeasureType::get(builder.getContext());
@@ -386,7 +378,7 @@ public:
         break;
       }
     }
-    builder.create<func::ReturnOp>(circuit.getLoc());
+    builder.create<ReturnOp>(circuit.getLoc());
 #ifdef DEBUG
     std::cout << "Dumping QC after mapping:\n";
     qcMapped.print(std::cout);
@@ -396,7 +388,7 @@ public:
 } // namespace
 
 std::unique_ptr<Pass>
-mqss::opt::createQuakeQMapPass(
-    Architecture &architecture, const Configuration &settings) {
+mqss::opt::createQuakeQMapPass(Architecture &architecture,
+                               const Configuration &settings) {
   return std::make_unique<QuakeQMap>(architecture, settings);
 }
