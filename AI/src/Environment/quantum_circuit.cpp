@@ -134,11 +134,12 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   if (pass_index >= NR_PASSES) {
     return {false, false};
   }
-  auto [passname, passptr] = getPassNameAndPointer(pass_index);
+  auto [passname, pass_ptr] = getPassNameAndPointer(pass_index);
+  Pass *raw_pass_ptr = pass_ptr.get();
   try {
     MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
-    pass_manager.addPass(std::move(passptr));
+    pass_manager.addPass(std::move(pass_ptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
       std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
@@ -150,8 +151,13 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
     this->recompute();
     return {false, true};
   }
-  if (auto check_pass = dynamic_cast<AppliedCheckPass *>(passptr.get());
-      !check_pass->getWasApplied()) {
+
+  std::cout << "Block 1" << std::endl;
+  auto check_pass = dynamic_cast<AppliedCheckPass *>(raw_pass_ptr);
+  std::cout << "Block 2" << std::endl;
+  bool ppp = check_pass->getWasApplied();
+  std::cout << "Block 3" << std::endl;
+  if (!ppp) {
     // Pass did not apply any changes.
     return {this->validate(), false};
   }
