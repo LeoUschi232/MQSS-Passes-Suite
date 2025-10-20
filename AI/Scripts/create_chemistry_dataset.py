@@ -103,3 +103,24 @@ def build_adapt_circuit(
     qc = ansatz.assign_parameters(dict(zip(ansatz.parameters, vals)))
     qc = transpile(qc, basis_gates=['u', 'cx'], optimization_level=0)
     return qc, qasm2.dumps(qc)
+
+
+from itertools import product
+from pyscf import ao2mo  # <-- needed by your build_adapt_circuit
+
+geoms = {
+    "H2O": [("O", (0.0, 0.0, 0.0)), ("H", (0.0, -0.757, 0.587)), ("H", (0.0, 0.757, 0.587))],
+    "NH3": [("N", (0.0, 0.0, 0.0)), ("H", (0.0, 0.9377, 0.3816)), ("H", (0.8121, -0.4688, 0.3816)),
+            ("H", (-0.8121, -0.4688, 0.3816))],
+}
+bases = ["sto3g", "6-31g"]
+mappers = ["JW", "BK"]
+
+i = 0
+for mol_name, geom in geoms.items():
+    for basis, mapper in product(bases, mappers):
+        qc, qasm = build_adapt_circuit(geom, basis, mapper, max_adapt_cycles=8, seed=i)
+        fn = f"{mol_name}_{basis}_{mapper}_adapt.qasm"
+        with open(fn, "w") as f: f.write(qasm)
+        print(f"{fn}: qubits={qc.num_qubits}, params={len(qc.parameters)}")
+        i += 1
