@@ -1,35 +1,56 @@
-#!/usr/bin/env python
+from qiskit_nature.units import DistanceUnit
+from qiskit_nature.second_q.drivers import PySCFDriver
 
-'''
-This example collects tricks that can be used in the pyscf input script.
-'''
+driver = PySCFDriver(
+    atom="H 0 0 0; H 0 0 0.735",
+    basis="sto3g",
+    charge=0,
+    spin=0,
+    unit=DistanceUnit.ANGSTROM,
+)
 
-import pyscf
+problem = driver.run()
+print(problem)
 
-from pyscf import __all__
+# after `problem = driver.run()`
+from qiskit_nature.second_q.mappers import JordanWignerMapper
+from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
-mol = pyscf.gto.M(atom='H 0 0 0; F 0 0 1.1', basis='6-311g')
-print(mol.HF())
-print(mol.KS().ddCOSMO())
-print(mol.TDHF())
-print(mol.MP2(frozen=2))
+mapper = JordanWignerMapper()
+ansatz = UCCSD(
+    problem.num_spatial_orbitals,
+    problem.num_particles,
+    mapper,
+    initial_state=HartreeFock(
+        problem.num_spatial_orbitals, problem.num_particles, mapper
+    ),
+)
 
-mol.RHF().run(conv_tol=1e-7).MP2(frozen=2).run(max_memory=100).Gradients().run()
+qc = ansatz.decompose()  # <-- QuantumCircuit you can benchmark
 
-mol.KS() \
-    .set(conv_tol=1e-6, xc='blyp') \
-    .density_fit() \
-    .apply(pyscf.scf.addons.remove_linear_dep_) \
-    .run() \
-    .TDA() \
-    .run(nstates=5)
+from qiskit import qasm2
 
-hf_scan = mol.RHF().as_scanner()
-hf_scan(mol)
-hf_scan('H 0 0 -1; F 0 0 1')
-hf_grad_scan = mol.RHF().nuc_grad_method().as_scanner()
-hf_grad_scan(mol)
+import numpy as np
+from qiskit import transpile
+from qiskit import qasm2
 
-de = mol.RHF().nuc_grad_method()
-geom_opt = mol.RHF().nuc_grad_method().optimizer()
-geom_opt.run()
+# optional: from qiskit.qasm3 import dumps as qasm3_dumps
+
+# 1) sample random angles in [-2π, 2π)
+rng = np.random.default_rng(123)  # set/omit seed as you like
+params = list(qc.parameters)
+theta = rng.uniform(-2 * np.pi, 2 * np.pi, len(params))
+
+# 2) bind them
+qc_filled = qc.assign_parameters(dict(zip(params, theta)), inplace=False)
+
+# 3) unroll/flatten to a defined basis (QASM2-friendly)
+#    For strict OpenQASM2, use ['u','cx']; for IBM native, use ['rz','sx','x','cx','id']
+all_basis_gates = set(
+    ['u1', 'u2', 'u3', 'cx', 'id', 'x', 'y', 'z', 'h', 's', 'sdg', 't', 'tdg', 'rx', 'ry', 'rz', 'r', 'u',
+     'cz', 'ccx', 'cy', 'ch', 'swap', 'cswap', 'crx', 'cry', 'crz', 'cu1', 'cu3', "cs", "csdg", "ct", "ctdg"])
+qc_flat = transpile(qc_filled, basis_gates=all_basis_gates, optimization_level=0)
+
+# 4) export
+print(qasm2.dumps(qc_flat))
+# print(qasm3_dumps(qc_flat))  # uncomment if you need QASM3
