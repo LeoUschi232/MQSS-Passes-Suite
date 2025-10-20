@@ -1,9 +1,9 @@
 #include "Utils/info_utils.hpp"
 
 // Neural-Networks includes
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 
 // Support includes
 #include "Support/mlir_utils.hpp"
@@ -115,13 +115,9 @@ std::vector<fs::path> get_dataset_files(const std::string &dataset_name) {
   if (dataset_name.empty()) {
     return {};
   }
-  std::string dataset_name_lower = dataset_name;
-  std::transform(dataset_name_lower.begin(), dataset_name_lower.end(),
-                 dataset_name_lower.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
   std::vector<fs::path> files;
   fs::path quake_dataset_dir;
-  if (dataset_name_lower == "all" || dataset_name == "*") {
+  if (dataset_name == "all" || dataset_name == "*") {
     quake_dataset_dir = fs::path(AI_DATASET_DIR) / "Quake";
   } else {
     quake_dataset_dir = fs::path(AI_DATASET_DIR) / "Quake" / dataset_name;
@@ -166,7 +162,7 @@ get_dataset_info(const std::string &dataset_name) {
 
   unsigned int progress = 0;
   for (auto entry_path : files) {
-    updateProgress(++progress, nr_files, "Retrieving info of:" + dataset_name);
+    updateProgress(++progress, nr_files, "Retrieving info of: " + dataset_name);
     std::string quake_module_text = readFileToString(entry_path.string());
     auto [circuit, context_ptr] = extractMLIRContext(quake_module_text);
     auto [nr_qubits, nr_gates, depth] =
@@ -231,12 +227,12 @@ void print_agent_info(const std::string &agent_name) {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
       } else if (attributes.extras == "tcnprelu") {
         agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmrelu") {
-        std::cerr << "A3C_LSTM_RELU not implemented yet: " << agent_name
-                  << std::endl;
-      } else if (attributes.extras == "lstmprelu") {
-        std::cerr << "A3C_LSTM_PRELU not implemented yet: " << agent_name
-                  << std::endl;
+      } else if (attributes.extras == "lstmhmpp") {
+        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
+      } else if (attributes.extras == "lstmbmnp") {
+        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
       } else {
         std::cerr << "No such A3C agent: " << agent_name << std::endl;
         return;
@@ -252,8 +248,8 @@ void print_agent_info(const std::string &agent_name) {
     std::cerr << "\n" << e.what() << std::endl;
     return;
   }
-  std::cout << "Agent name: " << agent_name << "\n"
-            << "Agent nr parameter: " << nr_parameters << std::endl;
+  std::cout << "\nAgent name: " << agent_name << "\n"
+            << "Agent nr trainable parameters: " << nr_parameters << std::endl;
 }
 
 } // namespace ai_pass_selector

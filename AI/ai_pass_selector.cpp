@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 void load_default_params() {
   GLOBAL_PARAMS = {
       {"agent", "a3c-mq130-tcnrelu"},
-      {"dataset", "mqtbench"},
+      {"dataset", "MQTBench"},
       {"circuit", ""},
       {"output", ""},
       {"nr_asynchronous_agents", 1},
