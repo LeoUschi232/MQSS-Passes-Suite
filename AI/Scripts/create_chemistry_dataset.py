@@ -237,6 +237,8 @@ def is_illegal_combination(geometry, basis):
 
 
 if __name__ == "__main__":
+    # This script takes very long to run,
+    # so better take a coffee break once you launch it.
     legal_combinations = []
     for (name, geometry, charge, spin), basis in product(molecules, bases):
         if is_illegal_combination(geometry, basis):
