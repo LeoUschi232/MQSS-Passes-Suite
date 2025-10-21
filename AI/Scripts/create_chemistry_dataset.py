@@ -5,7 +5,7 @@ from qiskit_nature.second_q.transformers import FreezeCoreTransformer
 from qiskit_nature.second_q.mappers import JordanWignerMapper, BravyiKitaevMapper, ParityMapper
 from qiskit_nature.second_q.circuit.library import HartreeFock, UCC
 
-# Qiskit
+# Qiskit imports
 from qiskit.circuit.library import get_standard_gate_name_mapping
 from qiskit import qasm2, transpile
 
@@ -17,7 +17,7 @@ from time import sleep
 from tqdm import tqdm
 
 # ------------ CONFIGURATION -------------
-SPEED_TIER_CONFIG = dict(num_orbs=4, excitations="s")
+SPEED_TIER_CONFIG = dict(nr_orbitals=4, excitations="s")
 OCCURED_EXCEPTIONS = []
 REPS = 1
 
@@ -116,7 +116,7 @@ def build_and_save(name, geometry, basis, charge, spin, mapper_name, mapper, out
     circuit = build_circuit_fast(
         problem=build_problem(geometry, basis, charge, spin),
         mapper=mapper,
-        k_target=SPEED_TIER_CONFIG["num_orbs"],
+        k_target=SPEED_TIER_CONFIG["nr_orbitals"],
         excitations=SPEED_TIER_CONFIG["excitations"],
         reps=REPS
     )
