@@ -156,7 +156,7 @@ void load_default_params() {
       {"ppo_epsilon", 0.2},
       {"sac_alpha", 0.1},
       {"print_param_info", false},
-      {"save_agent_after_training", false},
+      {"save_agent_after_training", true},
       {"stop_training_on_error", true},
       {"print_diagnostics", false}};
 }
