@@ -112,7 +112,7 @@ Functional ShapeProbe(std::string stage_name) {
     oss << "] min=" << x.amin().item<double>()
         << " max=" << x.amax().item<double>()
         << " finite=" << x.isfinite().all().item<bool>() << "\n";
-    std::cerr << oss.str();
+    std::cout << oss.str() << std::endl;
     return x;
   });
 }

@@ -39,7 +39,6 @@ A3C_TCN_PRELU::A3C_TCN_PRELU(unsigned int max_qubits, bool is_boss)
 
 A3C_LSTM_HMPP::A3C_LSTM_HMPP(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  // Nr trainable parameters: 5,111,487
   constexpr unsigned int hidden_size_multiplier = 8u;
   constexpr unsigned int projection_size_multiplier = 2u;
   this->BaseA3CAgent::initialize(
@@ -51,7 +50,6 @@ A3C_LSTM_HMPP::A3C_LSTM_HMPP(unsigned int max_qubits, bool is_boss)
 
 A3C_LSTM_BMNP::A3C_LSTM_BMNP(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  // Nr trainable parameters: 5,542,587
   constexpr unsigned int hidden_size_multiplier = 5u;
   constexpr unsigned int projection_size_multiplier = 5u;
   this->BaseA3CAgent::initialize(
