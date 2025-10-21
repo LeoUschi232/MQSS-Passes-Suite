@@ -119,6 +119,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
           double total_worker_reward = 0.0;
           unsigned int update_step;
+          unsigned int steps_taken = 0u;
           bool add_bootstrap = false;
           for (update_step = 0u; update_step < max_steps_per_episode;
                update_step++) {
@@ -134,6 +135,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             auto [reward, terminated, truncated] =
                 environment.step(action.item<int>());
             total_worker_reward += reward;
+            steps_taken++;
 
             episode_log_probs_vector.push_back(log_action_probs);
             episode_values_vector.push_back(state_values);
@@ -183,7 +185,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           agent_boss->update_parameters_assuming_gradients_are_loaded();
           {
             std::lock_guard lock(*global_mutex);
-            global_async_step += update_step;
+            global_async_step += steps_taken;
             global_max_reward =
                 std::max(global_max_reward, total_worker_reward);
             updateProgress(

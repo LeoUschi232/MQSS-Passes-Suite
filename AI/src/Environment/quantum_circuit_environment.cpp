@@ -85,6 +85,7 @@ void QuantumCircuitEnvironment::clear(bool hard) {
     this->qubits_cholesky_params = std::nullopt;
     this->gates_weights = std::nullopt;
   }
+  this->latest_observation = std::nullopt;
   this->circuit.clear();
   this->step_per_episode = 0u;
   this->step_no_improvement = 0u;
