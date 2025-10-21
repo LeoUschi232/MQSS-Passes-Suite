@@ -68,6 +68,8 @@ torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
+      torch::nn::LayerNorm(torch::nn::LayerNormOptions(
+          /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
@@ -85,6 +87,8 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
+      torch::nn::LayerNorm(torch::nn::LayerNormOptions(
+          /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
@@ -114,6 +118,8 @@ make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
+      torch::nn::LayerNorm(torch::nn::LayerNormOptions(
+          /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(
@@ -144,6 +150,8 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
+      torch::nn::LayerNorm(torch::nn::LayerNormOptions(
+          /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(

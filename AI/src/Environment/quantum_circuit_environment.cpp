@@ -27,8 +27,8 @@
 /// Libtorch c10::ArrayRef conflicts with llvm::ArrayRef included in the mlir
 /// namespace, so every mlir type has to be included seperately.
 using mlir::ModuleOp;
-using mlir::Operation;
 using mlir::OperandRange;
+using mlir::Operation;
 using mlir::func::FuncOp;
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -305,13 +305,10 @@ QuantumCircuitEnvironment::step(unsigned int action) {
     std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
     return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
   }
-  float nr_gates_reduction = 0.0f;
-  float depth_reduction = 0.0f;
   float reward = 0.0f;
   if (wasApplied) {
-    nr_gates_reduction = previous_nr_gates - this->circuit.getNrGates();
-    depth_reduction = previous_depth - this->circuit.getDepth();
-    reward = nr_gates_reduction + depth_reduction;
+    reward = previous_nr_gates - this->circuit.getNrGates() + previous_depth -
+             this->circuit.getDepth();
     this->latest_observation = std::nullopt;
   }
 
@@ -320,7 +317,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
     return {reward, /*Terminated=*/true, /*Truncated=*/false};
   }
-  if (!isclose(nr_gates_reduction, 0.0) && !isclose(depth_reduction, 0.0)) {
+  if (wasApplied) {
     // Executing the same action many times in a row is only a valid termination
     // criterion IFF that action does not change the circuit.
     this->step_no_change = 0;
