@@ -1,24 +1,24 @@
 module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__CH3CNacetonitrilesto3gBK = "_function"}} {
   func.func @__nvqpp__mlirgen__CH3CNacetonitrilesto3gBK() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %cst = arith.constant 0.10599606712378407 : f64
-    %cst_0 = arith.constant -0.3279815021293695 : f64
-    %cst_1 = arith.constant -0.10599606712378407 : f64
-    %cst_2 = arith.constant 0.3279815021293695 : f64
-    %cst_3 = arith.constant 0.60014374260412851 : f64
-    %cst_4 = arith.constant 0.60620124399012187 : f64
-    %cst_5 = arith.constant -2.5542542768767311 : f64
-    %cst_6 = arith.constant 2.9317341796302649 : f64
-    %cst_7 = arith.constant -1.3155365843216362 : f64
-    %cst_8 = arith.constant -2.1668753180405131 : f64
-    %cst_9 = arith.constant 5.6791683452487653 : f64
-    %cst_10 = arith.constant -5.6791683452487653 : f64
-    %cst_11 = arith.constant 2.9791977708083088 : f64
-    %cst_12 = arith.constant -3.6631294941614643 : f64
-    %cst_13 = arith.constant -0.98802001834683395 : f64
-    %cst_14 = arith.constant 5.4918583128110043 : f64
-    %cst_15 = arith.constant -0.59456381931877011 : f64
-    %cst_16 = arith.constant 3.3021859123913888 : f64
-    %cst_17 = arith.constant 3.8731471546094784 : f64
+    %cst = arith.constant -0.54130829790475676 : f64
+    %cst_0 = arith.constant 2.9922726559701407 : f64
+    %cst_1 = arith.constant 0.54130829790475676 : f64
+    %cst_2 = arith.constant -2.9922726559701407 : f64
+    %cst_3 = arith.constant 1.4162452532694125 : f64
+    %cst_4 = arith.constant 3.1516131319906187 : f64
+    %cst_5 = arith.constant -0.3868484094009732 : f64
+    %cst_6 = arith.constant -6.0136534584697392 : f64
+    %cst_7 = arith.constant -2.0824238187301507 : f64
+    %cst_8 = arith.constant 2.1785597691869132 : f64
+    %cst_9 = arith.constant -3.7016886150995543 : f64
+    %cst_10 = arith.constant 3.7016886150995543 : f64
+    %cst_11 = arith.constant -3.5938801566936585 : f64
+    %cst_12 = arith.constant 2.1645193704935171 : f64
+    %cst_13 = arith.constant -0.68224084579933475 : f64
+    %cst_14 = arith.constant 0.75142009531391274 : f64
+    %cst_15 = arith.constant -4.4646288863804777 : f64
+    %cst_16 = arith.constant -1.3376945643867577 : f64
+    %cst_17 = arith.constant -0.04831957932240627 : f64
     %cst_18 = arith.constant -1.5707963267948966 : f64
     %cst_19 = arith.constant 1.5707963267948966 : f64
     %0 = quake.alloca !quake.veq<18>
@@ -672,6 +672,24 @@ module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i6
     quake.rz (%cst) %17 : (f64, !quake.ref) -> ()
     quake.x [%18] %17 : (!quake.ref, !quake.ref) -> ()
     quake.rx (%cst_18) %17 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_20 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_21 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_22 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_23 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_24 = quake.mz %6 : (!quake.ref) -> !quake.measure
+    %measOut_25 = quake.mz %7 : (!quake.ref) -> !quake.measure
+    %measOut_26 = quake.mz %8 : (!quake.ref) -> !quake.measure
+    %measOut_27 = quake.mz %9 : (!quake.ref) -> !quake.measure
+    %measOut_28 = quake.mz %10 : (!quake.ref) -> !quake.measure
+    %measOut_29 = quake.mz %11 : (!quake.ref) -> !quake.measure
+    %measOut_30 = quake.mz %12 : (!quake.ref) -> !quake.measure
+    %measOut_31 = quake.mz %13 : (!quake.ref) -> !quake.measure
+    %measOut_32 = quake.mz %14 : (!quake.ref) -> !quake.measure
+    %measOut_33 = quake.mz %15 : (!quake.ref) -> !quake.measure
+    %measOut_34 = quake.mz %16 : (!quake.ref) -> !quake.measure
+    %measOut_35 = quake.mz %17 : (!quake.ref) -> !quake.measure
+    %measOut_36 = quake.mz %18 : (!quake.ref) -> !quake.measure
     return
   }
   func.func @_function(%arg0: !cc.ptr<i8>) {

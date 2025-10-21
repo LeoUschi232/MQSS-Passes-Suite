@@ -1,25 +1,25 @@
 module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__C2H2lin6311gparity = "_function"}} {
   func.func @__nvqpp__mlirgen__C2H2lin6311gparity() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %cst = arith.constant -4.9425837819102885 : f64
-    %cst_0 = arith.constant 4.9425837819102885 : f64
-    %cst_1 = arith.constant -0.17771348827618194 : f64
-    %cst_2 = arith.constant 0.17771348827618194 : f64
-    %cst_3 = arith.constant 1.3758179492992975 : f64
-    %cst_4 = arith.constant -1.3758179492992975 : f64
-    %cst_5 = arith.constant 3.234284937012653 : f64
-    %cst_6 = arith.constant -3.234284937012653 : f64
-    %cst_7 = arith.constant 5.0626248058636616 : f64
-    %cst_8 = arith.constant -5.0626248058636616 : f64
-    %cst_9 = arith.constant 0.87580386977381952 : f64
-    %cst_10 = arith.constant -0.87580386977381952 : f64
-    %cst_11 = arith.constant -3.3736047360388213 : f64
-    %cst_12 = arith.constant 3.3736047360388213 : f64
-    %cst_13 = arith.constant -1.0124460669468833 : f64
-    %cst_14 = arith.constant 1.0124460669468833 : f64
-    %cst_15 = arith.constant -3.5301118224928949 : f64
-    %cst_16 = arith.constant 3.5301118224928949 : f64
-    %cst_17 = arith.constant 4.9340425643409311 : f64
-    %cst_18 = arith.constant -4.9340425643409311 : f64
+    %cst = arith.constant 1.5378136595547014 : f64
+    %cst_0 = arith.constant -1.5378136595547014 : f64
+    %cst_1 = arith.constant 3.9514266257908948 : f64
+    %cst_2 = arith.constant -3.9514266257908948 : f64
+    %cst_3 = arith.constant 4.5668124269133843 : f64
+    %cst_4 = arith.constant -4.5668124269133843 : f64
+    %cst_5 = arith.constant 3.1348468545675683 : f64
+    %cst_6 = arith.constant -3.1348468545675683 : f64
+    %cst_7 = arith.constant -0.33503429343720992 : f64
+    %cst_8 = arith.constant 0.33503429343720992 : f64
+    %cst_9 = arith.constant -4.3370768304637899 : f64
+    %cst_10 = arith.constant 4.3370768304637899 : f64
+    %cst_11 = arith.constant 3.2333707197967612 : f64
+    %cst_12 = arith.constant -3.2333707197967612 : f64
+    %cst_13 = arith.constant 5.3212595003603571 : f64
+    %cst_14 = arith.constant -5.3212595003603571 : f64
+    %cst_15 = arith.constant 4.8476950404474044 : f64
+    %cst_16 = arith.constant -4.8476950404474044 : f64
+    %cst_17 = arith.constant -5.6647074431246018 : f64
+    %cst_18 = arith.constant 5.6647074431246018 : f64
     %cst_19 = arith.constant -1.5707963267948966 : f64
     %cst_20 = arith.constant 1.5707963267948966 : f64
     %0 = quake.alloca !quake.veq<12>
@@ -299,6 +299,18 @@ module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i6
     quake.rz (%cst) %11 : (f64, !quake.ref) -> ()
     quake.x [%12] %11 : (!quake.ref, !quake.ref) -> ()
     quake.rx (%cst_19) %11 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_21 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_22 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_23 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_24 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_25 = quake.mz %6 : (!quake.ref) -> !quake.measure
+    %measOut_26 = quake.mz %7 : (!quake.ref) -> !quake.measure
+    %measOut_27 = quake.mz %8 : (!quake.ref) -> !quake.measure
+    %measOut_28 = quake.mz %9 : (!quake.ref) -> !quake.measure
+    %measOut_29 = quake.mz %10 : (!quake.ref) -> !quake.measure
+    %measOut_30 = quake.mz %11 : (!quake.ref) -> !quake.measure
+    %measOut_31 = quake.mz %12 : (!quake.ref) -> !quake.measure
     return
   }
   func.func @_function(%arg0: !cc.ptr<i8>) {

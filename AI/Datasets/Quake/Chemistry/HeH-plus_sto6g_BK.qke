@@ -1,9 +1,9 @@
 module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__HeHplussto6gBK = "_function"}} {
   func.func @__nvqpp__mlirgen__HeHplussto6gBK() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %cst = arith.constant 5.0392733920883543 : f64
-    %cst_0 = arith.constant -5.0392733920883543 : f64
-    %cst_1 = arith.constant -5.1280327317154022 : f64
-    %cst_2 = arith.constant 5.1280327317154022 : f64
+    %cst = arith.constant 2.714673349136048 : f64
+    %cst_0 = arith.constant -2.714673349136048 : f64
+    %cst_1 = arith.constant 2.6609287118333129 : f64
+    %cst_2 = arith.constant -2.6609287118333129 : f64
     %cst_3 = arith.constant -1.5707963267948966 : f64
     %cst_4 = arith.constant 1.5707963267948966 : f64
     %0 = quake.alloca !quake.veq<4>
@@ -28,6 +28,10 @@ module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i6
     quake.x [%3] %2 : (!quake.ref, !quake.ref) -> ()
     quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
     quake.rx (%cst_3) %3 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_5 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_6 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_7 = quake.mz %4 : (!quake.ref) -> !quake.measure
     return
   }
   func.func @_function(%arg0: !cc.ptr<i8>) {

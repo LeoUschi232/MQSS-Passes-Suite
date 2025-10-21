@@ -1,24 +1,24 @@
 module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__CH3CNacetonitrile6311gBK = "_function"}} {
   func.func @__nvqpp__mlirgen__CH3CNacetonitrile6311gBK() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %cst = arith.constant -0.25029399502598615 : f64
-    %cst_0 = arith.constant -2.3522130280791202 : f64
-    %cst_1 = arith.constant 0.25029399502598615 : f64
-    %cst_2 = arith.constant 2.3522130280791202 : f64
-    %cst_3 = arith.constant 3.0303191903611957 : f64
-    %cst_4 = arith.constant 3.6472253380328397 : f64
-    %cst_5 = arith.constant 2.057520558181448 : f64
-    %cst_6 = arith.constant 0.47924475272179645 : f64
-    %cst_7 = arith.constant -0.27490096556314825 : f64
-    %cst_8 = arith.constant 5.7447818390602308 : f64
-    %cst_9 = arith.constant 0.47386193502265872 : f64
-    %cst_10 = arith.constant -0.47386193502265872 : f64
-    %cst_11 = arith.constant 3.2760070723381229 : f64
-    %cst_12 = arith.constant -1.2223906893037952 : f64
-    %cst_13 = arith.constant 1.0201468669202054 : f64
-    %cst_14 = arith.constant -0.95905159041538468 : f64
-    %cst_15 = arith.constant 4.6888104381881952 : f64
-    %cst_16 = arith.constant -0.018885410761685151 : f64
-    %cst_17 = arith.constant -0.23486215576110681 : f64
+    %cst = arith.constant -4.7312559993447056 : f64
+    %cst_0 = arith.constant 2.3404956937047494 : f64
+    %cst_1 = arith.constant 4.7312559993447056 : f64
+    %cst_2 = arith.constant -2.3404956937047494 : f64
+    %cst_3 = arith.constant -3.3973555061784904 : f64
+    %cst_4 = arith.constant 3.0025661737136105 : f64
+    %cst_5 = arith.constant 1.9476307824760042 : f64
+    %cst_6 = arith.constant 3.6810832596886893 : f64
+    %cst_7 = arith.constant 5.9476603564557351 : f64
+    %cst_8 = arith.constant -1.6544567502736589 : f64
+    %cst_9 = arith.constant 0.73722739536998194 : f64
+    %cst_10 = arith.constant -0.73722739536998194 : f64
+    %cst_11 = arith.constant -3.7216306731594684 : f64
+    %cst_12 = arith.constant -3.4309607588804081 : f64
+    %cst_13 = arith.constant -0.34999148804436864 : f64
+    %cst_14 = arith.constant 0.17816811353710715 : f64
+    %cst_15 = arith.constant -4.6689998824110921 : f64
+    %cst_16 = arith.constant 0.75408682544838701 : f64
+    %cst_17 = arith.constant -4.3735252866809375 : f64
     %cst_18 = arith.constant -1.5707963267948966 : f64
     %cst_19 = arith.constant 1.5707963267948966 : f64
     %0 = quake.alloca !quake.veq<18>
@@ -672,6 +672,24 @@ module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i6
     quake.rz (%cst) %17 : (f64, !quake.ref) -> ()
     quake.x [%18] %17 : (!quake.ref, !quake.ref) -> ()
     quake.rx (%cst_18) %17 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %1 : (!quake.ref) -> !quake.measure
+    %measOut_20 = quake.mz %2 : (!quake.ref) -> !quake.measure
+    %measOut_21 = quake.mz %3 : (!quake.ref) -> !quake.measure
+    %measOut_22 = quake.mz %4 : (!quake.ref) -> !quake.measure
+    %measOut_23 = quake.mz %5 : (!quake.ref) -> !quake.measure
+    %measOut_24 = quake.mz %6 : (!quake.ref) -> !quake.measure
+    %measOut_25 = quake.mz %7 : (!quake.ref) -> !quake.measure
+    %measOut_26 = quake.mz %8 : (!quake.ref) -> !quake.measure
+    %measOut_27 = quake.mz %9 : (!quake.ref) -> !quake.measure
+    %measOut_28 = quake.mz %10 : (!quake.ref) -> !quake.measure
+    %measOut_29 = quake.mz %11 : (!quake.ref) -> !quake.measure
+    %measOut_30 = quake.mz %12 : (!quake.ref) -> !quake.measure
+    %measOut_31 = quake.mz %13 : (!quake.ref) -> !quake.measure
+    %measOut_32 = quake.mz %14 : (!quake.ref) -> !quake.measure
+    %measOut_33 = quake.mz %15 : (!quake.ref) -> !quake.measure
+    %measOut_34 = quake.mz %16 : (!quake.ref) -> !quake.measure
+    %measOut_35 = quake.mz %17 : (!quake.ref) -> !quake.measure
+    %measOut_36 = quake.mz %18 : (!quake.ref) -> !quake.measure
     return
   }
   func.func @_function(%arg0: !cc.ptr<i8>) {
