@@ -87,14 +87,20 @@ def build_circuit_fast(problem, mapper, k_target, excitations, reps=1):
     if pick is None:
         raise RuntimeError(f"no feasible active space: n_so={n_so}, (na,nb)=({n_alpha},{n_beta}), k_target={k_target}")
     k, (na, nb) = pick
-    return fill_params(transpile(UCC(
+    circuit = UCC(
         num_spatial_orbitals=k,
         num_particles=(na, nb),
         qubit_mapper=mapper,
         excitations=excitations,
         reps=reps,
         initial_state=HartreeFock(k, (na, nb), mapper),
-    ), basis_gates=list(get_standard_gate_name_mapping().keys()), optimization_level=0))
+    )
+    circuit.measure_all()
+    return fill_params(transpile(
+        circuits=circuit,
+        basis_gates=list(get_standard_gate_name_mapping().keys()),
+        optimization_level=0
+    ))
 
 
 def sanitize_basis(basis: str) -> str:
