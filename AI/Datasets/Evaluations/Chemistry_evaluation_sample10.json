@@ -1,46 +1,46 @@
 {
+    "dataset_name": "Chemistry",
     "agent": "a3c-mq28-tcnrelu",
     "circuit_optimizations": {
-        "AlH3-planar_sto3g_JW": [
-            0,
-            0
-        ],
-        "C2H2-lin_sto3g_BK": [
-            7,
-            4294967293
-        ],
-        "CH3F_631g_parity": [
-            86,
-            4294967294
-        ],
-        "COCl2-skeleton_sto6g_JW": [
-            0,
-            0
-        ],
-        "H2O2-approx_sto6g_parity": [
-            122,
-            2
-        ],
-        "HCO-plus-lin_631gstar_BK": [
-            4,
-            4294967272
-        ],
-        "HF-eq_631g_BK": [
-            0,
-            4294967269
-        ],
-        "HF-eq_631g_parity": [
-            8,
-            1
-        ],
-        "LiCl-eq_ccpvdz_JW": [
-            12,
-            4294967290
-        ],
-        "N2O-lin_631gstar_BK": [
-            0,
-            0
-        ]
-    },
-    "dataset_name": "Chemistry"
+        "AlH3-planar_sto3g_JW": {
+            "depth_reduction": -2,
+            "nr_gates_reduction": 0
+        },
+        "C2H2-lin_sto3g_BK": {
+            "depth_reduction": -103,
+            "nr_gates_reduction": -137
+        },
+        "CH3F_631g_parity": {
+            "depth_reduction": -24,
+            "nr_gates_reduction": 0
+        },
+        "COCl2-skeleton_sto6g_JW": {
+            "depth_reduction": -12,
+            "nr_gates_reduction": 0
+        },
+        "H2O2-approx_sto6g_parity": {
+            "depth_reduction": 0,
+            "nr_gates_reduction": 120
+        },
+        "HCO-plus-lin_631gstar_BK": {
+            "depth_reduction": -23,
+            "nr_gates_reduction": 3
+        },
+        "HF-eq_631g_BK": {
+            "depth_reduction": -28,
+            "nr_gates_reduction": -50
+        },
+        "HF-eq_631g_parity": {
+            "depth_reduction": -12,
+            "nr_gates_reduction": 0
+        },
+        "LiCl-eq_ccpvdz_JW": {
+            "depth_reduction": -2,
+            "nr_gates_reduction": 0
+        },
+        "N2O-lin_631gstar_BK": {
+            "depth_reduction": -81,
+            "nr_gates_reduction": 16
+        }
+    }
 }

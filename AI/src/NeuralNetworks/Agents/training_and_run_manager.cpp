@@ -97,8 +97,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
             << std::endl;
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
   agent->load_model();
-  std::vector<std::tuple<std::string, unsigned int, unsigned int>>
-      circuit_optimization_results;
+  std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
   double avg_nr_gates_reduction = 0.0;
   double avg_depth_reduction = 0.0;
   unsigned int progress = 0u;
@@ -118,13 +117,14 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
   std::cout << std::endl;
   avg_nr_gates_reduction /= nr_files;
   avg_depth_reduction /= nr_files;
-  nlohmann::json json_file;
+  nlohmann::ordered_json json_file;
   json_file["dataset_name"] = dataset_name;
   json_file["agent"] = agent_name;
   nlohmann::json optimizations = nlohmann::json::object();
   for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
        circuit_optimization_results) {
-    optimizations[circuit_name] = {nr_gates_reduction, depth_reduction};
+    optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
+    optimizations[circuit_name]["depth_reduction"] = depth_reduction;
   }
   json_file["circuit_optimizations"] = optimizations;
   fs::path filepath =
