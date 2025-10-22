@@ -72,13 +72,9 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
       agent->run_on_circuit(circuit_path, pass_functions);
 
   if (int rc = write_to_file(&output_circuit, output_path); rc != 0) {
-    return {{"result", "failed"},
-            {"nr_gates_reduction", "0"},
-            {"depth_reduction", "0"}};
+    return {{"result", "failed"}};
   }
-  return {{"result", "success"},
-          {"nr_gates_reduction", std::to_string(nr_gates_reduction)},
-          {"depth_reduction", std::to_string(depth_reduction)}};
+  return {{"result", "success"}};
 }
 
 std::unordered_map<std::string, std::string>
@@ -117,7 +113,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     std::cerr << "Failed to construct agent " << agent_name << "." << std::endl;
     return {};
   }
-  std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
+  nlohmann::ordered_json optimizations = nlohmann::ordered_json::object();
   double avg_nr_gates_reduction = 0.0;
   double avg_depth_reduction = 0.0;
   unsigned int progress = 0u;
@@ -127,10 +123,11 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
                    "Evaluating " + agent_name + " on " + circuit_name);
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
         agent->select_for_circuit(circuit_path);
-    auto [_, nr_gates_reduction, depth_reduction] =
+    auto [quantum_circuit, nr_gates_reduction, depth_reduction] =
         agent->run_on_circuit(circuit_path, pass_functions);
-    circuit_optimization_results.emplace_back(circuit_name, nr_gates_reduction,
-                                              depth_reduction);
+    optimizations[circuit_name]["nr_qubits"] = quantum_circuit.getNrQubits();
+    optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
+    optimizations[circuit_name]["depth_reduction"] = depth_reduction;
     avg_nr_gates_reduction += nr_gates_reduction;
     avg_depth_reduction += depth_reduction;
   }
@@ -140,12 +137,6 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
   nlohmann::ordered_json json_file;
   json_file["dataset_name"] = dataset_name;
   json_file["agent"] = agent_name;
-  nlohmann::json optimizations = nlohmann::json::object();
-  for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
-       circuit_optimization_results) {
-    optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
-    optimizations[circuit_name]["depth_reduction"] = depth_reduction;
-  }
   json_file["circuit_optimizations"] = optimizations;
   fs::path filepath =
       fs::path(AI_DATASET_DIR) / "Evaluations" /

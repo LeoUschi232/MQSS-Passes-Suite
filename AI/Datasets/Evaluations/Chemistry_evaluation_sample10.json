@@ -2,45 +2,55 @@
     "dataset_name": "Chemistry",
     "agent": "a3c-mq28-tcnrelu",
     "circuit_optimizations": {
-        "AlH3-planar_sto3g_JW": {
-            "depth_reduction": -2,
-            "nr_gates_reduction": 0
+        "SiO-eq_6311g_JW": {
+            "nr_qubits": 12,
+            "nr_gates_reduction": 0,
+            "depth_reduction": -4
         },
-        "C2H2-lin_sto3g_BK": {
-            "depth_reduction": -103,
-            "nr_gates_reduction": -137
+        "CH4-tetra_6311g_JW": {
+            "nr_qubits": 10,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         },
-        "CH3F_631g_parity": {
-            "depth_reduction": -24,
-            "nr_gates_reduction": 0
+        "N2-eq_631gdstar_parity": {
+            "nr_qubits": 12,
+            "nr_gates_reduction": 30,
+            "depth_reduction": -17
         },
-        "COCl2-skeleton_sto6g_JW": {
-            "depth_reduction": -12,
-            "nr_gates_reduction": 0
+        "HOF-lin_631gstar_parity": {
+            "nr_qubits": 16,
+            "nr_gates_reduction": 148,
+            "depth_reduction": 51
         },
-        "H2O2-approx_sto6g_parity": {
-            "depth_reduction": 0,
-            "nr_gates_reduction": 120
+        "CH2O-min_6311g_JW": {
+            "nr_qubits": 14,
+            "nr_gates_reduction": 0,
+            "depth_reduction": -12
         },
-        "HCO-plus-lin_631gstar_BK": {
-            "depth_reduction": -23,
-            "nr_gates_reduction": 3
+        "CSO-chain_631gstar_parity": {
+            "nr_qubits": 18,
+            "nr_gates_reduction": -636,
+            "depth_reduction": -353
         },
-        "HF-eq_631g_BK": {
-            "depth_reduction": -28,
-            "nr_gates_reduction": -50
+        "BF3-planar_sto6g_JW": {
+            "nr_qubits": 26,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         },
-        "HF-eq_631g_parity": {
-            "depth_reduction": -12,
-            "nr_gates_reduction": 0
+        "SO3-planar_sto6g_parity": {
+            "nr_qubits": 26,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         },
-        "LiCl-eq_ccpvdz_JW": {
-            "depth_reduction": -2,
-            "nr_gates_reduction": 0
+        "AsH3-trigonal_sto6g_parity": {
+            "nr_qubits": 20,
+            "nr_gates_reduction": 224,
+            "depth_reduction": 0
         },
-        "N2O-lin_631gstar_BK": {
-            "depth_reduction": -81,
-            "nr_gates_reduction": 16
+        "SO3-planar_6311g_parity": {
+            "nr_qubits": 26,
+            "nr_gates_reduction": 440,
+            "depth_reduction": -44
         }
     }
 }
