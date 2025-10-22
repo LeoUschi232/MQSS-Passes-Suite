@@ -25,13 +25,14 @@ class AbstractAgent : public torch::nn::Module {
 protected:
   /// Attributes on configuration
   unsigned int max_qubits = 0u;
+  unsigned int nr_trainable_parmaeters = 0u;
 
   /// Mutex for thread safety
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
 
 public:
   /// Constructors
-  explicit AbstractAgent(unsigned int max_qubits) : max_qubits(max_qubits) {}
+  explicit AbstractAgent(unsigned int max_qubits);
 
   /// Destructor
   ~AbstractAgent() override = default;
@@ -47,6 +48,10 @@ public:
 
   /// Getters
   unsigned int getMaxQubits() const;
+
+  unsigned int getNrTrainableParameters() const;
+
+  static std::unique_ptr<AbstractAgent> getAgent(const std::string &agent_name);
 
   /**
    *

@@ -4,6 +4,7 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Neural-Networks includes
+#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Torch includes
@@ -19,7 +20,16 @@
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
+AbstractAgent::AbstractAgent(unsigned int max_qubits)
+    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
+  this->nr_trainable_parmaeters = count_nr_trainable_parameters(*this);
+}
+
 unsigned int AbstractAgent::getMaxQubits() const { return this->max_qubits; }
+
+unsigned int AbstractAgent::getNrTrainableParameters() const {
+  return this->nr_trainable_parmaeters;
+}
 
 std::tuple<QuantumCircuit, unsigned int, unsigned int>
 AbstractAgent::run_on_circuit(
@@ -46,4 +56,41 @@ AbstractAgent::run_on_circuit(
   return {std::move(circuit), initial_nr_gates - circuit.getNrGates(),
           initial_depth - circuit.getDepth()};
 }
+
+std::unique_ptr<AbstractAgent>
+AbstractAgent::getAgent(const std::string &agent_name) {
+  try {
+    switch (AgentAttributes attributes = parseAgentName(agent_name);
+            attributes.agent_class) {
+    case AgentClass::A3C: {
+      if (attributes.extras == "tcnrelu") {
+        return std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
+      }
+      if (attributes.extras == "tcnprelu") {
+        return std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmhmpp") {
+        return std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmbmnp") {
+        return std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "hybrid") {
+        return std::make_unique<A3C_HYBRID>(attributes.max_qubits);
+      }
+      {
+        std::cerr << "No such A3C agent: " << agent_name << std::endl;
+        return {};
+      }
+    }
+    default:
+      std::cerr << "No such agent yet: " << agent_name << std::endl;
+      return {};
+    }
+  } catch (const std::runtime_error &error) {
+    std::cerr << error.what() << std::endl;
+  }
+  return {};
+}
+
 } // namespace ai_pass_selector

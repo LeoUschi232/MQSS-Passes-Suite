@@ -20,7 +20,7 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
-    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
+    : AbstractAgent(max_qubits) {
   this->device = GLOBAL_PARAMS["device"].to_device_type();
   this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
   this->critic_learning_rate =
@@ -54,8 +54,6 @@ bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,
   }
   return true;
 }
-
-unsigned int BaseActorCritic::getMaxQubits() const { return this->max_qubits; }
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseActorCritic::forward(const torch::Tensor &observation) {

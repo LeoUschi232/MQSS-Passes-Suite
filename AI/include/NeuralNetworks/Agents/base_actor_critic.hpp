@@ -25,7 +25,6 @@ enum class OptimizerType : int;
 class BaseActorCritic : public AbstractAgent {
 protected:
   /// Attributes on configuration
-  unsigned int max_qubits = 0u;
   OptimizerType actor_optimizer_type{};
   OptimizerType critic_optimizer_type{};
   double actor_learning_rate = 0.0;

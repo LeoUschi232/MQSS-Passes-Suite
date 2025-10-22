@@ -88,41 +88,8 @@ std::string select_best_agent(const std::string &circuit) {
   throw std::runtime_error("No suitable agent found for circuit.");
 }
 
-std::tuple<std::vector<std::string>, std::vector<unsigned int>>
-getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
-                     unsigned int nr_passes, fs::path output_path) {
-  if (agent_name.empty()) {
-    std::cerr << "No agent specified for recommending passes." << std::endl;
-    return {};
-  }
-  auto found_circuit = search_circuit(circuit);
-  if (!found_circuit.has_value()) {
-    std::cerr << "Failed to get circuit: " << circuit << std::endl;
-    return {};
-  }
-  if (auto circuit_path = found_circuit.value(); circuit_path.empty()) {
-    return {};
-  }
-  std::vector<std::unique_ptr<mlir::Pass>> passes;
-  std::vector<std::string> pass_names;
-  std::vector<unsigned int> pass_indexes;
 
-  std::vector<std::string> agent_attributes = split_string(agent_name, '-');
-  if (AGENT_NAME_TO_CLASS.find(agent_attributes[0]) ==
-      AGENT_NAME_TO_CLASS.end()) {
-    std::cerr << "Unsupported agent: " << agent_attributes[0] << std::endl;
-    return {};
-  }
-  AgentClass agent_class = AGENT_NAME_TO_CLASS.at(agent_attributes[0]);
-  if (agent_attributes[1].rfind("mq", 0) != 0) {
-    throw std::invalid_argument("Missing 'mq' prefix");
-  }
-  unsigned int max_qubits =
-      static_cast<unsigned int>(std::stoul(agent_attributes[1].substr(2)));
-  return {};
-}
-
-unsigned int nr_trainable_parameters(const torch::nn::Module &network) {
+unsigned int count_nr_trainable_parameters(const torch::nn::Module &network) {
   unsigned int total = 0;
   for (const torch::Tensor &param : network.parameters(/*recurse=*/true)) {
     if (param.requires_grad()) {

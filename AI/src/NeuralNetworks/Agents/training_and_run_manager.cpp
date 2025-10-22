@@ -26,24 +26,16 @@ extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 std::unordered_map<std::string, std::string>
 train(const std::string &agent_name, const std::string &dataset) {
   std::unordered_map<std::string, std::string> training_results;
+  std::unique_ptr<AbstractAgent> abstract_agent =
+      AbstractAgent::getAgent(agent_name);
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case AgentClass::A3C: {
-      std::unique_ptr<BaseA3CAgent> agent;
-      if (attributes.extras == "tcnrelu") {
-        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
-      } else if (attributes.extras == "tcnprelu") {
-        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmhmpp") {
-        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmbmnp") {
-        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
-      } else if (attributes.extras == "hybrid") {
-        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
-      } else {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
+      std::unique_ptr<BaseA3CAgent> agent(
+          dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BaseA3CAgent");
       }
       agent->load_model();
       unsigned int nr_asynchronous_agents =
@@ -84,64 +76,42 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
   std::cout << "Evaluating agent " << agent_name << " on dataset "
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
-  std::unordered_map<std::string, std::string> evaluation_results;
-  try {
-    std::unique_ptr<AbstractAgent> agent;
-    switch (AgentAttributes attributes = parseAgentName(agent_name);
-            attributes.agent_class) {
-    case AgentClass::A3C: {
-      if (attributes.extras == "tcnrelu") {
-        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
-      } else if (attributes.extras == "tcnprelu") {
-        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmhmpp") {
-        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmbmnp") {
-        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
-      } else if (attributes.extras == "hybrid") {
-        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
-      } else {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
-      }
-      break;
-    }
-    default:
-      std::cerr << "No such agent yet: " << agent_name << std::endl;
-      return {};
-    }
-    agent->load_model();
-    std::vector<std::tuple<std::string, unsigned int, unsigned int>>
-        circuit_optimization_results;
-    unsigned int progress = 0u;
-    for (auto circuit_path : files) {
-      updateProgress(++progress, nr_files,
-                     "Extracting statistics from: " + dataset_name);
-      std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
-          agent->select_for_circuit(circuit_path);
-      auto [_, nr_gates_reduction, depth_reduction] =
-          agent->run_on_circuit(circuit_path, pass_functions);
-      circuit_optimization_results.emplace_back(
-          circuit_path.stem().string(), nr_gates_reduction, depth_reduction);
-    }
-    nlohmann::json json_file;
-    json_file["dataset_name"] = dataset_name;
-    nlohmann::json optimizations = nlohmann::json::object();
-    for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
-         circuit_optimization_results) {
-      optimizations[circuit_name] = {nr_gates_reduction, depth_reduction};
-    }
-    json_file["circuit_optimizations"] = optimizations;
-    fs::path filepath =
-        fs::path(AI_DATASET_DIR) / (dataset_name + "_evaluation.json");
-    std::ofstream output_stream(filepath);
-    output_stream << json_file.dump(/*ident=*/4);
-    output_stream.close();
-  } catch (const std::runtime_error &error) {
-    std::cerr << "\n" << error.what() << std::endl;
-    return {};
+  std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  agent->load_model();
+  std::vector<std::tuple<std::string, unsigned int, unsigned int>>
+      circuit_optimization_results;
+  double avg_nr_gates_reduction = 0.0;
+  double avg_depth_reduction = 0.0;
+  unsigned int progress = 0u;
+  for (auto circuit_path : files) {
+    updateProgress(++progress, nr_files,
+                   "Extracting statistics from: " + dataset_name);
+    std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
+        agent->select_for_circuit(circuit_path);
+    auto [_, nr_gates_reduction, depth_reduction] =
+        agent->run_on_circuit(circuit_path, pass_functions);
+    circuit_optimization_results.emplace_back(
+        circuit_path.stem().string(), nr_gates_reduction, depth_reduction);
+    avg_nr_gates_reduction += nr_gates_reduction;
+    avg_depth_reduction += depth_reduction;
   }
-  return evaluation_results;
+  avg_nr_gates_reduction /= nr_files;
+  avg_depth_reduction /= nr_files;
+  nlohmann::json json_file;
+  json_file["dataset_name"] = dataset_name;
+  nlohmann::json optimizations = nlohmann::json::object();
+  for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
+       circuit_optimization_results) {
+    optimizations[circuit_name] = {nr_gates_reduction, depth_reduction};
+  }
+  json_file["circuit_optimizations"] = optimizations;
+  fs::path filepath =
+      fs::path(AI_DATASET_DIR) / (dataset_name + "_evaluation.json");
+  std::ofstream output_stream(filepath);
+  output_stream << json_file.dump(/*ident=*/4);
+  output_stream.close();
+  return {{"avg_nr_gates_reduction", std::to_string(avg_nr_gates_reduction)},
+          {"avg_depth_reduction", std::to_string(avg_depth_reduction)}};
 }
 
 } // namespace ai_pass_selector
