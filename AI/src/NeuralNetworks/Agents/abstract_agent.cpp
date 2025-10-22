@@ -31,30 +31,32 @@ unsigned int AbstractAgent::getNrTrainableParameters() const {
   return this->nr_trainable_parmaeters;
 }
 
-std::tuple<QuantumCircuit, unsigned int, unsigned int>
-AbstractAgent::run_on_circuit(
+std::tuple<QuantumCircuit, int, int> AbstractAgent::run_on_circuit(
     const fs::path &circuit_path,
     const std::vector<std::function<std::unique_ptr<Pass>()>> &pass_functions) {
   QuantumCircuit circuit(circuit_path);
-  unsigned int initial_nr_gates = circuit.getNrGates();
-  unsigned int initial_depth = circuit.getDepth();
+  int initial_nr_gates = circuit.getNrGates();
+  int initial_depth = circuit.getDepth();
   for (const std::function<std::unique_ptr<Pass>()> &pass_function :
        pass_functions) {
     auto pass_ptr = pass_function();
     auto name = std::string(pass_ptr.get()->getArgument());
     auto [succeeded, wasApplied] = circuit.run_pass(pass_ptr);
-    if (!succeeded) {
-      std::cerr << "Pass " << name << " failed on circuit " << circuit_path
-                << "." << std::endl;
-      continue;
-    }
-    if (!wasApplied) {
-      std::cout << "Pass " << name << " was not applied on circuit "
-                << circuit_path << "." << std::endl;
+    if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
+      if (!succeeded) {
+        std::cerr << "Pass " << name << " failed on circuit " << circuit_path
+                  << "." << std::endl;
+        continue;
+      }
+      if (!wasApplied) {
+        std::cout << "Pass " << name << " was not applied on circuit "
+                  << circuit_path << "." << std::endl;
+      }
     }
   }
-  return {std::move(circuit), initial_nr_gates - circuit.getNrGates(),
-          initial_depth - circuit.getDepth()};
+  return {std::move(circuit),
+          initial_nr_gates - static_cast<int>(circuit.getNrGates()),
+          initial_depth - static_cast<int>(circuit.getDepth())};
 }
 
 std::unique_ptr<AbstractAgent>

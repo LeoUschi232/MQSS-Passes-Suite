@@ -1,6 +1,7 @@
 #ifndef TRAINING_AND_RUN_MANAGER_HPP
 #define TRAINING_AND_RUN_MANAGER_HPP
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -32,7 +33,8 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
  * @return
  */
 std::unordered_map<std::string, std::string>
-evaluate(const std::string &agent_name, const std::string &dataset_name);
+evaluate(const std::string &agent_name, const std::string &dataset_name,
+         std::optional<unsigned int> max_circuits = std::nullopt);
 
 } // namespace ai_pass_selector
 

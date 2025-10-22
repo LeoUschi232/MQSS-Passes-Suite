@@ -67,7 +67,7 @@ public:
    * @param pass_functions
    * @return [optimized_circuit, nr_gates_reduction, depth_reduction]
    */
-  std::tuple<QuantumCircuit, unsigned int, unsigned int>
+  std::tuple<QuantumCircuit, int, int>
   run_on_circuit(const fs::path &circuit_path,
                  const std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
                      &pass_functions);

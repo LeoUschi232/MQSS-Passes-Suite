@@ -32,6 +32,8 @@ void print_help() {
          "defaults to most appropriate for circuit.\n"
          "  -d, --dataset <name>          Dataset name, agent will train on "
          "this dataset if provided.\n"
+         "-e, --evaluate                  Evaluate the agent instead of "
+         "training it.\n"
          "  -c, --circuit <file>          Quake circuit file, agent will be "
          "used on this circuit.\n"
          "  -o, --output <file_path>      Circuit file path to output the "
@@ -69,6 +71,8 @@ int main(int argc, char **argv) {
         std::cerr << "No dataset provided." << std::endl;
         return 1;
       }
+    } else if (args[i] == "-e" || args[i] == "--evaluate") {
+      GLOBAL_PARAMS["evaluate"] = true;
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
         GLOBAL_PARAMS["circuit"] = args[i];
@@ -124,7 +128,21 @@ int main(int argc, char **argv) {
     agent = select_best_agent(circuit);
   }
   if (!dataset.empty()) {
-    train(agent, dataset);
+    if (GLOBAL_PARAMS["evaluate"].to_bool()) {
+      std::optional<unsigned int> max_circuits = std::nullopt;
+      if (GLOBAL_PARAMS.find("evaluation_sample") != GLOBAL_PARAMS.end() &&
+          GLOBAL_PARAMS["evaluation_sample"].to_int() > 0) {
+        max_circuits = GLOBAL_PARAMS["evaluation_sample"].to_int();
+      }
+
+      std::unordered_map<std::string, std::string> metrics =
+          evaluate(agent, dataset, max_circuits);
+      for (const auto &[key, value] : metrics) {
+        std::cout << key << ": " << value << std::endl;
+      }
+    } else {
+      train(agent, dataset);
+    }
   }
   if (!circuit.empty()) {
     run(agent, circuit, output);
@@ -136,6 +154,7 @@ void load_default_params() {
   GLOBAL_PARAMS = {
       {"agent", "a3c-mq28-tcnrelu"},
       {"dataset", "Chemistry"},
+      {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
       {"nr_asynchronous_agents", 1},
@@ -158,5 +177,6 @@ void load_default_params() {
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"stop_training_on_error", true},
-      {"print_diagnostics", false}};
+      {"print_diagnostics", false},
+      {"evaluation_sample", 10}};
 }

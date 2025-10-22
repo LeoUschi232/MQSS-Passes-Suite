@@ -4,7 +4,6 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
@@ -67,12 +66,32 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
 }
 
 std::unordered_map<std::string, std::string>
-evaluate(const std::string &agent_name, const std::string &dataset_name) {
+evaluate(const std::string &agent_name, const std::string &dataset_name,
+         std::optional<unsigned int> max_circuits) {
   std::vector<fs::path> files = get_dataset_files(dataset_name);
   if (files.empty()) {
     return {};
   }
   unsigned int nr_files = files.size();
+  bool sampled = max_circuits.has_value() && max_circuits.value() < nr_files;
+  if (sampled) {
+    unsigned int nr_sampled_files = max_circuits.value();
+    // TODO: Pick random nr_files files
+    std::discrete_distribution<unsigned int> distribution(0u, nr_files - 1);
+    std::unordered_set<unsigned int> sampled_indices;
+    std::vector<fs::path> sampled_files;
+    sampled_files.reserve(nr_sampled_files);
+    for (unsigned int i = 0u; i < nr_sampled_files; i++) {
+      unsigned int idx = distribution(qc_rng());
+      while (sampled_indices.find(idx) != sampled_indices.end()) {
+        idx = (idx + 1) % nr_files;
+      }
+      sampled_indices.insert(idx);
+      sampled_files.push_back(files[idx]);
+    }
+    nr_files = nr_sampled_files;
+    files = sampled_files;
+  }
   std::cout << "Evaluating agent " << agent_name << " on dataset "
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
@@ -84,17 +103,19 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
   double avg_depth_reduction = 0.0;
   unsigned int progress = 0u;
   for (auto circuit_path : files) {
+    std::string circuit_name = circuit_path.stem().string();
     updateProgress(++progress, nr_files,
-                   "Extracting statistics from: " + dataset_name);
+                   "Evaluating " + agent_name + " on " + circuit_name);
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
         agent->select_for_circuit(circuit_path);
     auto [_, nr_gates_reduction, depth_reduction] =
         agent->run_on_circuit(circuit_path, pass_functions);
-    circuit_optimization_results.emplace_back(
-        circuit_path.stem().string(), nr_gates_reduction, depth_reduction);
+    circuit_optimization_results.emplace_back(circuit_name, nr_gates_reduction,
+                                              depth_reduction);
     avg_nr_gates_reduction += nr_gates_reduction;
     avg_depth_reduction += depth_reduction;
   }
+  std::cout << std::endl;
   avg_nr_gates_reduction /= nr_files;
   avg_depth_reduction /= nr_files;
   nlohmann::json json_file;
@@ -107,7 +128,9 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
   }
   json_file["circuit_optimizations"] = optimizations;
   fs::path filepath =
-      fs::path(AI_DATASET_DIR) / (dataset_name + "_evaluation.json");
+      fs::path(AI_DATASET_DIR) / "Evaluations" /
+      (dataset_name + "_evaluation_" +
+       (sampled ? "sample" + std::to_string(nr_files) : "full") + ".json");
   std::ofstream output_stream(filepath);
   output_stream << json_file.dump(/*ident=*/4);
   output_stream.close();
