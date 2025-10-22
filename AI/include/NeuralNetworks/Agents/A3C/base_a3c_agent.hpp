@@ -78,7 +78,7 @@ public:
    * @return
    */
   std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
-  select_for_circuit(const fs::path &circuit_path) override;
+  select_passes_for_circuit(const fs::path &circuit_path) override;
 
   /// Saving and Loading
   void save_model() const override;

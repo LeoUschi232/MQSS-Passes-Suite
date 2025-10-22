@@ -206,24 +206,16 @@ std::vector<std::string> split_string(const std::string &str, char delimiter);
 /**
  * Given a circuit name or its full filepath, search for the circuit and
  * returns its folder, name and extension.
- * @param circuit Name or full filepath of the circuit to search for.
+ * @param circuit_path Name or full filepath of the circuit to search for.
  * @return
  */
-std::optional<fs::path> search_circuit(const std::string &circuit);
+std::optional<fs::path> search_circuit(const fs::path &circuit_path);
 
 /**
  *
- * @param circuit
- * @return
+ * @param circuit_path
  */
-std::optional<std::tuple<fs::path, unsigned int, unsigned int, unsigned int>>
-get_circuit_info(const std::string &circuit);
-
-/**
- *
- * @param circuit_file
- */
-void print_circuit_info(const std::string &circuit_file);
+void print_circuit_info(fs::path circuit_path);
 
 /**
  *

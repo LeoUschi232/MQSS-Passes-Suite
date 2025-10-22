@@ -43,8 +43,7 @@ std::vector<std::string> split_string(const std::string &str, char delimiter) {
   return parts;
 }
 
-std::optional<fs::path> search_circuit(const std::string &circuit) {
-  auto circuit_path = fs::path(circuit);
+std::optional<fs::path> search_circuit(const fs::path &circuit_path) {
   std::string circuit_name = circuit_path.stem().string();
 
   // First assume the provided circuit is a full filepath to the .qke file.
@@ -74,7 +73,7 @@ std::optional<fs::path> search_circuit(const std::string &circuit) {
   if (!found_path.empty()) {
     return found_path;
   }
-  // Try to find the circuit in circuit directory
+  // Try to find the circuit in AI/Circuits directory
   found_path = search_dir(fs::path(AI_CIRCUITS_DIR));
   if (!found_path.empty()) {
     return found_path;
@@ -82,33 +81,20 @@ std::optional<fs::path> search_circuit(const std::string &circuit) {
   return std::nullopt;
 }
 
-std::optional<std::tuple<fs::path, unsigned int, unsigned int, unsigned int>>
-get_circuit_info(const std::string &circuit) {
-  auto found_circuit = search_circuit(circuit);
-  if (!found_circuit.has_value()) {
-    return std::nullopt;
-  }
-  fs::path circuit_path = found_circuit.value();
-  std::string quake_module_text = readFileToString(circuit_path.string());
-  auto [mlir_module, context_ptr] = extractMLIRContext(quake_module_text);
-  auto [nrQubits, nrGates, depth] =
-      getQubitsInstructionsDepth(FuncOp(mlir_module));
-  return std::make_tuple(circuit_path, nrQubits, nrGates, depth);
-}
-
-void print_circuit_info(const std::string &circuit_file) {
-  auto circuit_info = get_circuit_info(circuit_file);
-  if (!circuit_info.has_value()) {
-    std::cerr << "Circuit " + circuit_file + " not found." << std::endl;
+void print_circuit_info(fs::path circuit_path) {
+  circuit_path = search_circuit(circuit_path).value_or(fs::path());
+  if (circuit_path.empty()) {
+    std::cerr << "Circuit " + circuit_path.string() + " not found."
+              << std::endl;
     return;
   }
-  auto [circuit_path, nr_qubits, nr_gates, depth] = circuit_info.value();
+  QuantumCircuit circuit(circuit_path);
   std::string circuit_name = circuit_path.stem().string();
   std::cout << "Circuit " + circuit_name + ":" << std::endl;
   std::cout << "   Circuit path: " << circuit_path << "\n"
-            << "   Number of qubits: " << nr_qubits << "\n"
-            << "   Number of gates: " << nr_gates << "\n"
-            << "   Depth: " << depth << std::endl;
+            << "   Number of qubits: " << circuit.getNrQubits() << "\n"
+            << "   Number of gates: " << circuit.getNrGates() << "\n"
+            << "   Depth: " << circuit.getDepth() << std::endl;
 }
 
 std::vector<fs::path> get_dataset_files(const std::string &dataset_name) {

@@ -127,7 +127,11 @@ int main(int argc, char **argv) {
     }
     agent = select_best_agent(circuit);
   }
-  if (!dataset.empty()) {
+
+  // If a circuit is provided, it is assumes the user only wants to run the
+  // passes selection on the circuit and not train the agent so by default do
+  // not train if an input circuit is provided.
+  if (!dataset.empty() && circuit.empty()) {
     if (GLOBAL_PARAMS["evaluate"].to_bool()) {
       std::optional<unsigned int> max_circuits = std::nullopt;
       if (GLOBAL_PARAMS.find("evaluation_sample") != GLOBAL_PARAMS.end() &&

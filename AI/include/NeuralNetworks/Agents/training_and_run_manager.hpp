@@ -25,9 +25,8 @@ train(const std::string &agent_name, const std::string &dataset);
  * @param output_path
  * @return
  */
-std::unordered_map<std::string, std::string> run(const std::string &agent_name,
-                                                 const fs::path &circuit_path,
-                                                 const fs::path &output_path);
+std::unordered_map<std::string, std::string>
+run(const std::string &agent_name, fs::path circuit_path, fs::path output_path);
 
 /**
  *

@@ -62,15 +62,22 @@ train(const std::string &agent_name, const std::string &dataset) {
 }
 
 std::unordered_map<std::string, std::string> run(const std::string &agent_name,
-                                                 const fs::path &circuit_path,
-                                                 const fs::path &output_path) {
+                                                 fs::path circuit_path,
+                                                 fs::path output_path) {
+  circuit_path = search_circuit(circuit_path).value_or(fs::path());
+  if (circuit_path.empty()) {
+    return {{"result", "circuit_not_found"}};
+  }
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
   std::string circuit_name = circuit_path.stem().string();
   std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
-      agent->select_for_circuit(circuit_path);
+      agent->select_passes_for_circuit(circuit_path);
   auto [output_circuit, nr_gates_reduction, depth_reduction] =
       agent->run_on_circuit(circuit_path, pass_functions);
-
+  if (output_path.empty()) {
+    output_path =
+        circuit_path.parent_path() / (circuit_name + "_optimized.qke");
+  }
   if (int rc = write_to_file(&output_circuit, output_path); rc != 0) {
     return {{"result", "failed"}};
   }
@@ -122,7 +129,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     updateProgress(++progress, nr_files,
                    "Evaluating " + agent_name + " on " + circuit_name);
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
-        agent->select_for_circuit(circuit_path);
+        agent->select_passes_for_circuit(circuit_path);
     auto [quantum_circuit, nr_gates_reduction, depth_reduction] =
         agent->run_on_circuit(circuit_path, pass_functions);
     optimizations[circuit_name]["nr_qubits"] = quantum_circuit.getNrQubits();

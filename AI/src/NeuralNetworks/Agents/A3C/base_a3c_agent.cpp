@@ -261,7 +261,7 @@ void BaseA3CAgent::save_model() const {
 }
 
 std::vector<std::function<std::unique_ptr<Pass>()>>
-BaseA3CAgent::select_for_circuit(const fs::path &circuit_path) {
+BaseA3CAgent::select_passes_for_circuit(const fs::path &circuit_path) {
   QuantumCircuitEnvironment environment(this->max_qubits);
   if (!environment.register_quantum_circuit(circuit_path)) {
     std::cerr << "Failed to register quantum circuit: " << circuit_path

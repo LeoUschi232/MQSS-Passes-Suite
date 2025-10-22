@@ -119,7 +119,7 @@ void QuantumCircuitEnvironment::reset() {
 
 bool QuantumCircuitEnvironment::register_quantum_circuit(
     const fs::path &circuit_path) {
-  if (circuit_path.empty()) {
+  if (circuit_path.empty() || !fs::exists(circuit_path)) {
     // Assume construction of environment for later circuit registration.
     return false;
   }

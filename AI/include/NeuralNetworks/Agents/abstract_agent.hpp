@@ -59,7 +59,7 @@ public:
    * @return
    */
   virtual std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
-  select_for_circuit(const fs::path &circuit_path) = 0;
+  select_passes_for_circuit(const fs::path &circuit_path) = 0;
 
   /**
    *
