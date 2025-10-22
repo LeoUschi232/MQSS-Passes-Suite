@@ -247,6 +247,10 @@ get_nr_qubits_gates_operations_measurements(
     }
     // Whatever the randomizer options, the nr of qubits must be at least 2.
     nr_qubits = std::max(GLOBAL_MIN_NR_QUBITS, nr_qubits);
+    if (randomizer_options.probability_max_qubits > 0.0 &&
+        random01() < randomizer_options.probability_max_qubits) {
+      nr_qubits = randomizer_options.max_nr_qubits;
+    }
     if (randomizer_options.min_nr_gates >=
             static_cast<int>(GLOBAL_MIN_NR_GATES) &&
         randomizer_options.min_nr_gates > static_cast<int>(nr_gates)) {

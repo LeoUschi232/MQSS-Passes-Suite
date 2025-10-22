@@ -109,7 +109,9 @@ void QuantumCircuitEnvironment::reset() {
         qubits_cholesky_params.value(), gates_weights.value(),
         {.max_nr_qubits = static_cast<int>(this->max_qubits),
          .weight_min_multiplier_for_unoccurring_gates = 0.1,
-         .probability_additionals_controls = 0.01});
+         .probability_additionals_controls = 0.01,
+         .probability_max_qubits =
+             GLOBAL_PARAMS["probability_max_qubits"].to_double()});
     this->validate();
     return;
   }

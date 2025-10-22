@@ -182,5 +182,6 @@ void load_default_params() {
       {"save_agent_after_training", true},
       {"stop_training_on_error", true},
       {"print_diagnostics", false},
+      {"probability_max_qubits", 0.4},
       {"evaluation_sample", 10}};
 }

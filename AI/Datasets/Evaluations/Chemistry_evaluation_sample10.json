@@ -2,55 +2,55 @@
     "dataset_name": "Chemistry",
     "agent": "a3c-mq28-tcnrelu",
     "circuit_optimizations": {
-        "Cl2-eq_sto6g_parity": {
+        "F2-eq_631gstar_parity": {
             "nr_qubits": 16,
-            "nr_gates_reduction": 122,
-            "depth_reduction": 2
+            "nr_gates_reduction": 120,
+            "depth_reduction": 0
         },
-        "BH3-planar_sto6g_BK": {
+        "C3H4-allene-like_sto6g_parity": {
+            "nr_qubits": 18,
+            "nr_gates_reduction": 40,
+            "depth_reduction": -67
+        },
+        "NaH-eq_631g_BK": {
             "nr_qubits": 8,
             "nr_gates_reduction": 0,
             "depth_reduction": 0
         },
-        "HF-eq_631gstar_parity": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 28,
-            "depth_reduction": -8
-        },
-        "HCO-plus-lin_631gstar_parity": {
-            "nr_qubits": 12,
-            "nr_gates_reduction": 48,
+        "HOF-bent_631gstar_JW": {
+            "nr_qubits": 16,
+            "nr_gates_reduction": 0,
             "depth_reduction": 0
         },
-        "H2N-like_sto6g_BK": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 66,
-            "depth_reduction": -1
-        },
-        "LiF-eq_321g_BK": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 20,
+        "CH3OH-compact_631gdstar_parity": {
+            "nr_qubits": 14,
+            "nr_gates_reduction": 2,
             "depth_reduction": 2
         },
-        "NH3-pyramidal_sto6g_BK": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 30,
-            "depth_reduction": 2
+        "SiO-eq_631gdstar_JW": {
+            "nr_qubits": 12,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         },
-        "HCl-eq_631gstar_JW": {
+        "C2H4-planar_631gstar_parity": {
+            "nr_qubits": 14,
+            "nr_gates_reduction": 82,
+            "depth_reduction": 1
+        },
+        "CH4-tetra_6311g_JW": {
             "nr_qubits": 10,
             "nr_gates_reduction": 0,
             "depth_reduction": 0
         },
-        "C2H6-approx_321g_BK": {
-            "nr_qubits": 16,
-            "nr_gates_reduction": 4,
-            "depth_reduction": 2
+        "CS-eq_6311g_BK": {
+            "nr_qubits": 12,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         },
-        "SiH3-approx_631g_BK": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 14,
-            "depth_reduction": -8
+        "BeH2-lin_321g_JW": {
+            "nr_qubits": 8,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
         }
     }
 }

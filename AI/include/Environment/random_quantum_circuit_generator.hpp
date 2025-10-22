@@ -57,6 +57,9 @@ struct RandomizerOptions {
   // If >0.0 will add additional controls to a controlled gate with this
   // probability
   mutable double probability_additionals_controls = 0.0;
+  // If >0.0 will make the circuit have exactly max_qubits with this probability
+  // to give a probability of triggering all possible qubits.
+  mutable double probability_max_qubits = 0.0;
 };
 
 /**
