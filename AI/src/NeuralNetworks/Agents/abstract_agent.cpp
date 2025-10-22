@@ -33,12 +33,13 @@ unsigned int AbstractAgent::getNrTrainableParameters() const {
 
 std::tuple<QuantumCircuit, int, int> AbstractAgent::run_on_circuit(
     const fs::path &circuit_path,
-    const std::vector<std::function<std::unique_ptr<Pass>()>> &pass_functions) {
+    const std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
+        &pass_functions) {
   QuantumCircuit circuit(circuit_path);
   int initial_nr_gates = circuit.getNrGates();
   int initial_depth = circuit.getDepth();
-  for (const std::function<std::unique_ptr<Pass>()> &pass_function :
-       pass_functions) {
+  for (const std::function<std::unique_ptr<mlir::Pass>()> &pass_function :
+        pass_functions) {
     auto pass_ptr = pass_function();
     auto name = std::string(pass_ptr.get()->getArgument());
     auto [succeeded, wasApplied] = circuit.run_pass(pass_ptr);

@@ -260,7 +260,7 @@ void BaseA3CAgent::save_model() const {
   torch::save(this->actor, actor_path.string());
 }
 
-std::vector<std::function<std::unique_ptr<Pass>()>>
+std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
 BaseA3CAgent::select_for_circuit(const fs::path &circuit_path) {
   QuantumCircuitEnvironment environment(this->max_qubits);
   if (!environment.register_quantum_circuit(circuit_path)) {
@@ -268,7 +268,7 @@ BaseA3CAgent::select_for_circuit(const fs::path &circuit_path) {
               << std::endl;
     return {};
   }
-  std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
+  std::vector<std::function<std::unique_ptr<mlir::Pass>()>> selected_passes;
   bool keep_going = true;
   while (keep_going) {
     auto [action, _1, _2, _3] =

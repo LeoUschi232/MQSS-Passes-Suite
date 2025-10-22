@@ -14,8 +14,11 @@
 
 // Stdandard library includes
 #include <nlohmann/json.hpp>
+#include <random>
 #include <string>
+#include <system_error>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -27,6 +30,10 @@ train(const std::string &agent_name, const std::string &dataset) {
   std::unordered_map<std::string, std::string> training_results;
   std::unique_ptr<AbstractAgent> abstract_agent =
       AbstractAgent::getAgent(agent_name);
+  if (!abstract_agent) {
+    std::cerr << "No agent available for name: " << agent_name << std::endl;
+    return {};
+  }
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
@@ -70,14 +77,22 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
          std::optional<unsigned int> max_circuits) {
   std::vector<fs::path> files = get_dataset_files(dataset_name);
   if (files.empty()) {
+    std::cerr << "Dataset " << dataset_name
+              << " is empty or could not be resolved." << std::endl;
     return {};
   }
   unsigned int nr_files = files.size();
   bool sampled = max_circuits.has_value() && max_circuits.value() < nr_files;
   if (sampled) {
     unsigned int nr_sampled_files = max_circuits.value();
+    if (nr_sampled_files == 0u) {
+      std::cerr << "Requested evaluation on zero circuits from dataset "
+                << dataset_name << "." << std::endl;
+      return {};
+    }
     // TODO: Pick random nr_files files
-    std::discrete_distribution<unsigned int> distribution(0u, nr_files - 1);
+    std::uniform_int_distribution<unsigned int> distribution(0u,
+                                                             nr_files - 1);
     std::unordered_set<unsigned int> sampled_indices;
     std::vector<fs::path> sampled_files;
     sampled_files.reserve(nr_sampled_files);
@@ -96,6 +111,11 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  if (!agent) {
+    std::cerr << "Failed to instantiate agent " << agent_name
+              << " for evaluation." << std::endl;
+    return {};
+  }
   agent->load_model();
   std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
   double avg_nr_gates_reduction = 0.0;
@@ -105,7 +125,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     std::string circuit_name = circuit_path.stem().string();
     updateProgress(++progress, nr_files,
                    "Evaluating " + agent_name + " on " + circuit_name);
-    std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
+    std::vector<std::function<std::unique_ptr<mlir::Pass>()>> pass_functions =
         agent->select_for_circuit(circuit_path);
     auto [_, nr_gates_reduction, depth_reduction] =
         agent->run_on_circuit(circuit_path, pass_functions);
@@ -131,6 +151,14 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
       fs::path(AI_DATASET_DIR) / "Evaluations" /
       (dataset_name + "_evaluation_" +
        (sampled ? "sample" + std::to_string(nr_files) : "full") + ".json");
+  std::error_code ec;
+  fs::create_directories(filepath.parent_path(), ec);
+  if (ec) {
+    std::cerr << "Failed to create evaluation directory: "
+              << filepath.parent_path() << " (" << ec.message() << ")"
+              << std::endl;
+    return {};
+  }
   std::ofstream output_stream(filepath);
   output_stream << json_file.dump(/*ident=*/4);
   output_stream.close();
