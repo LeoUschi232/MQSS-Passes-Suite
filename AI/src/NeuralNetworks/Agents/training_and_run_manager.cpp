@@ -72,4 +72,49 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
   throw std::runtime_error("Not implemented yet");
 }
 
+std::unordered_map<std::string, std::string>
+evaluate(const std::string &agent_name, const std::string &dataset_name) {
+  std::vector<fs::path> files = get_dataset_files(dataset_name);
+  if (files.empty()) {
+    return {};
+  }
+  unsigned int nr_files = files.size();
+  std::cout << "Evaluating agent " << agent_name << " on dataset "
+            << dataset_name << " with " << nr_files << " circuits."
+            << std::endl;
+  std::unordered_map<std::string, std::string> evaluation_results;
+  try {
+    switch (AgentAttributes attributes = parseAgentName(agent_name);
+            attributes.agent_class) {
+    case AgentClass::A3C: {
+      std::unique_ptr<BaseA3CAgent> agent;
+      if (attributes.extras == "tcnrelu") {
+        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
+      } else if (attributes.extras == "tcnprelu") {
+        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
+      } else if (attributes.extras == "lstmhmpp") {
+        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
+      } else if (attributes.extras == "lstmbmnp") {
+        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
+      } else {
+        std::cerr << "No such A3C agent: " << agent_name << std::endl;
+        return {};
+      }
+      agent->load_model();
+
+      break;
+    }
+    default:
+      std::cerr << "No such agent yet: " << agent_name << std::endl;
+      return {};
+    }
+  } catch (const std::runtime_error &e) {
+    std::cerr << "\n" << e.what() << std::endl;
+    return {};
+  }
+  return evaluation_results;
+}
+
 } // namespace ai_pass_selector

@@ -1,14 +1,16 @@
 #include "NeuralNetworks/Agents/base_actor_critic.hpp"
 
-// Torch includes
+// Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
+
+// Torch includes
 #include "torch/torch.h"
 
-// Standard library includes
-#include "NeuralNetworks/layers_and_wrappers.hpp"
+// Utils includes
 #include "Utils/info_utils.hpp"
 #include "Utils/tensor_utils.hpp"
 
+// Standard library includes
 #include <cmath>
 #include <memory>
 #include <tuple>
@@ -70,16 +72,16 @@ torch::Tensor BaseActorCritic::get_value(const torch::Tensor &observation) {
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseActorCritic::select_action(const torch::Tensor &observation) {
-  auto [action_probs, state_values] = this->forward(observation);
+  auto [action_probs, state_value] = this->forward(observation);
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.
   // action_probs ~ [NR_PASSES]
   // X.multinomial(num_samples=1) ~ [1]
-  // X.squeeze(dim=-1) ~ 1
+  // X.squeeze(dim=-1) ~ []
   const torch::Tensor action_indexes_unsqueezed =
       action_probs.multinomial(/*num_samples=*/1);
-  const torch::Tensor action_indexes = action_indexes_unsqueezed.squeeze(-1);
+  const torch::Tensor action_index = action_indexes_unsqueezed.squeeze(-1);
 
   // For advantage compute log π(a_t|s_t) for the sampled actions.
   // Gather extracts the values at specified indexes along the specified axis.
@@ -87,7 +89,7 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   // each has 2 axes.
   // log_action_probs ~ [NR_PASSES]
   // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [1]
-  // X.squeeze(dim=-1) ~ 1
+  // X.squeeze(dim=-1) ~ []
   const torch::Tensor log_action_probs = action_probs.log();
   const torch::Tensor squeezed_log_action_probs =
       log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_indexes_unsqueezed)
@@ -99,9 +101,9 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   const torch::Tensor entropy =
       -(action_probs * log_action_probs).sum(/*dim=*/-1);
   return {
-      action_indexes,            // Shape [1]
-      squeezed_log_action_probs, // Shape [1]
-      state_values,              // Shape [1]
+      action_index,              // Shape []
+      squeezed_log_action_probs, // Shape []
+      state_value,               // Shape []
       entropy                    // Shape [1]
   };
 }

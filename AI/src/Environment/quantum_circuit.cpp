@@ -130,18 +130,13 @@ bool QuantumCircuit::recompute() {
   return this->validate();
 }
 
-std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
-  if (pass_index >= NR_PASSES) {
-    return {false, false};
-  }
-  auto [passname, pass_ptr] = getPassNameAndPointer(pass_index);
+std::pair<bool, bool>
+QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
   std::shared_ptr<std::atomic_bool> was_applied_ptr;
   if (auto *applied_check_pass =
           dynamic_cast<AppliedCheckPass *>(pass_ptr.get())) {
     was_applied_ptr = applied_check_pass->getAppliedPtr();
   } else {
-    std::cerr << "Pass " << passname
-              << " does not inherit from AppliedCheckPass." << std::endl;
     return {false, false};
   }
   try {
@@ -149,13 +144,10 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(pass_ptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
-      std::cerr << "Pass " << passname << " failed silently." << std::endl;
       this->recompute();
       return {false, true};
     }
-  } catch (const std::runtime_error &error) {
-    std::cerr << "Pass " << passname << " failed with " << error.what()
-              << std::endl;
+  } catch ([[maybe_unused]] const std::runtime_error &error) {
     this->recompute();
     return {false, true};
   }
@@ -166,6 +158,19 @@ std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
   // Pass did not apply any changes.
   return {this->validate(), false};
 }
+
+std::pair<bool, bool> QuantumCircuit::run_pass(unsigned int pass_index) {
+  if (pass_index >= NR_PASSES) {
+    return {false, false};
+  }
+  auto [passname, pass_ptr] = getPassNameAndPointer(pass_index);
+  auto [succeeded, was_applied] = this->run_pass(pass_ptr);
+  if (!succeeded) {
+    std::cerr << "Pass " << passname << " failed." << std::endl;
+  }
+  return {succeeded, was_applied};
+}
+
 QuantumCircuit::operator mlir::func::FuncOp() const {
   return FuncOp(this->circuit_module);
 }

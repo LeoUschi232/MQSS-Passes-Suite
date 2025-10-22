@@ -195,7 +195,6 @@ inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
  */
 bool isclose(double a, double b, double atol = 1e-12);
 
-
 /**
  *
  * @param str
