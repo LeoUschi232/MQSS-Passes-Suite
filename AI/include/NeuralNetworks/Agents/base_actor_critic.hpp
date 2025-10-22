@@ -1,6 +1,9 @@
 #ifndef BASE_ACTOR_CRITIC_HPP
 #define BASE_ACTOR_CRITIC_HPP
 
+// Agents includes
+#include "NeuralNetworks/Agents/abstract_agent.hpp"
+
 // Torch includes
 #include "torch/torch.h"
 
@@ -19,10 +22,9 @@ namespace ai_pass_selector {
 
 enum class OptimizerType : int;
 
-class BaseActorCritic : public torch::nn::Module {
+class BaseActorCritic : public AbstractAgent {
 protected:
   /// Attributes on configuration
-  unsigned int max_qubits = 0u;
   OptimizerType actor_optimizer_type{};
   OptimizerType critic_optimizer_type{};
   double actor_learning_rate = 0.0;
@@ -49,7 +51,7 @@ public:
    * @return
    */
   virtual bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic);
+                          const torch::nn::Sequential &critic);
 
   /// Destructor
   ~BaseActorCritic() override = default;
@@ -61,10 +63,7 @@ public:
 
   BaseActorCritic &operator=(const BaseActorCritic &other) noexcept = delete;
 
-  BaseActorCritic &operator=(BaseActorCritic &&other) noexcept = delete;
-
-  /// Getters
-  unsigned int getMaxQubits() const;
+  BaseActorCritic &operator=(BaseActorCritic &&other) noexcept = default;
 
   /// Diagnostics
   void check_params(double tiny = 1e-12, double big = 1e6) const;
@@ -84,7 +83,7 @@ public:
   /**
    *
    * @param observation
-   * @return
+   * @return [action, log_action_prob, state_value, entropy]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   select_action(const torch::Tensor &observation);
@@ -99,7 +98,7 @@ public:
    * @param discount_factor
    * @param gae_hyperparameter
    * @param entropy_coefficient
-   * @return
+   * @return [actor_loss, critic_loss]
    */
   static std::pair<torch::Tensor, torch::Tensor>
   get_losses(const torch::Tensor &rewards,
@@ -114,12 +113,11 @@ public:
    * @param critic_loss
    */
   virtual void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const;
+                                 const torch::Tensor &critic_loss) const;
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
   virtual void save_model() const;
-  void load_model();
-  virtual std::string agentName() const = 0;
+  void load_model() override;
 };
 } // namespace ai_pass_selector
 

@@ -9,10 +9,10 @@ getPassNameAndPointer(unsigned int index) {
               << " nr passes." << std::endl;
     return {"", nullptr};
   }
-  std::unique_ptr<Pass> pass = PASS_FUNCTIONS[index]();
+  std::unique_ptr<Pass> pass_ptr = PASS_FUNCTIONS[index]();
   // Just to be safe extract the name before moving the unique_ptr.
-  auto name = std::string(pass.get()->getArgument());
-  return {name, std::move(pass)};
+  auto name = std::string(pass_ptr.get()->getArgument());
+  return {name, std::move(pass_ptr)};
 }
 
 } // namespace ai_pass_selector

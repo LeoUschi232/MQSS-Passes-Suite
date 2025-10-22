@@ -118,11 +118,10 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           episode_entropies_vector.reserve(T);
 
           double total_worker_reward = 0.0;
-          unsigned int update_step;
           unsigned int steps_taken = 0u;
           bool add_bootstrap = false;
-          for (update_step = 0u; update_step < max_steps_per_episode;
-               update_step++) {
+          for (unsigned int update_step = 0u;
+               update_step < max_steps_per_episode; update_step++) {
             if (interrupted) {
               std::cout << "Caught Ctrl+C Interruption in A3C training."
                         << std::endl;

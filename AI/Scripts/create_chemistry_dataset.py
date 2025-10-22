@@ -19,6 +19,7 @@ from tqdm import tqdm
 # ------------ CONFIGURATION -------------
 SPEED_TIER_CONFIG = dict(nr_orbitals=4, excitations="s")
 OCCURED_EXCEPTIONS = []
+GLOBAL_SEED = 0
 REPS = 1
 
 # Reduce oversubscription
@@ -26,6 +27,7 @@ environ.setdefault("OMP_NUM_THREADS", "1")
 environ.setdefault("MKL_NUM_THREADS", "1")
 environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 mappers = {"JW": JordanWignerMapper(), "BK": BravyiKitaevMapper(), "parity": ParityMapper()}
+random.seed(GLOBAL_SEED)
 
 
 def choose_k_and_particles(n_so, n_alpha, n_beta, k_target):
@@ -71,9 +73,9 @@ def choose_k_and_particles(n_so, n_alpha, n_beta, k_target):
     return k, (na, nb)
 
 
-def fill_params(circuit, seed=None):
+def fill_params(circuit):
     if len(circuit.parameters):
-        rng = random.default_rng(seed)
+        rng = random.default_rng(GLOBAL_SEED)
         return circuit.assign_parameters(
             parameters={param: rng.uniform(-2 * pi, 2 * pi) for param in circuit.parameters},
             inplace=False)
@@ -99,7 +101,8 @@ def build_circuit_fast(problem, mapper, k_target, excitations, reps=1):
     return fill_params(transpile(
         circuits=circuit,
         basis_gates=list(get_standard_gate_name_mapping().keys()),
-        optimization_level=0
+        optimization_level=0,
+        seed_transpiler=GLOBAL_SEED
     ))
 
 

@@ -247,6 +247,12 @@ get_nr_qubits_gates_operations_measurements(
     }
     // Whatever the randomizer options, the nr of qubits must be at least 2.
     nr_qubits = std::max(GLOBAL_MIN_NR_QUBITS, nr_qubits);
+    if (randomizer_options.probability_max_qubits > 0.0 &&
+        random01() < randomizer_options.probability_max_qubits &&
+        randomizer_options.max_nr_qubits >=
+            static_cast<int>(GLOBAL_MIN_NR_QUBITS)) {
+      nr_qubits = randomizer_options.max_nr_qubits;
+    }
     if (randomizer_options.min_nr_gates >=
             static_cast<int>(GLOBAL_MIN_NR_GATES) &&
         randomizer_options.min_nr_gates > static_cast<int>(nr_gates)) {
@@ -280,7 +286,7 @@ get_nr_qubits_gates_operations_measurements(
 
 void adjust_gates_weights(
     double multiplier, unsigned int subset_size,
-    std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights) {
+    std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   if (multiplier > 0.0) {
     unsigned int minimum_weight = std::numeric_limits<unsigned int>::max();
     for (unsigned int i = 0; i < subset_size; i++) {

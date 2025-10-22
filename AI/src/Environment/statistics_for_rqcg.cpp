@@ -527,8 +527,12 @@ get_precomputed_dataset_statistics(const std::string &dataset_name) {
                           MQT_BENCH_GATES_WEIGHTS);
   }
   if (dataset_name_lower == "pyscf" || dataset_name_lower == "chemistry") {
-    return std::make_pair(MQT_BENCH_QUBITS_CHOLSEKY_PARAMS,
+    return std::make_pair(CHEMISTRY_QUBITS_CHOLSEKY_PARAMS,
                           CHEMISTRY_GATES_WEIGHTS);
+  }
+  if (dataset_name_lower == "random" || dataset_name_lower == "randomtest") {
+    return std::make_pair(RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS,
+                          RANDOMTEST_PREEMPTIVE_GATES_WEIGHTS);
   }
   std::cerr << "No embedded dataset statistics for dataset: " << dataset_name
             << std::endl;

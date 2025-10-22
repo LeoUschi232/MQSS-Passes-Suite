@@ -14,6 +14,7 @@ protected:
   torch::nn::WeightNormConv1d weight_norm_conv2{nullptr};
   torch::nn::Conv1d downsample{nullptr};
   torch::nn::Sequential convolutional_block{nullptr};
+  torch::nn::Sequential layer_norm_block{nullptr};
 
 public:
   TCNResidualBlock(unsigned int in_channels, unsigned int out_channels,

@@ -10,6 +10,9 @@
 #include "Utils/info_utils.hpp"
 
 // Standard library includes
+#include "Environment/quantum_circuit_environment.hpp"
+#include "Utils/passes_utils.hpp"
+
 #include <memory>
 #include <utility>
 
@@ -255,6 +258,27 @@ void BaseA3CAgent::save_model() const {
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
   torch::save(this->critic, critic_path.string());
   torch::save(this->actor, actor_path.string());
+}
+
+std::vector<std::function<std::unique_ptr<Pass>()>>
+BaseA3CAgent::select_passes_for_circuit(const fs::path &circuit_path) {
+  QuantumCircuitEnvironment environment(this->max_qubits);
+  if (!environment.register_quantum_circuit(circuit_path)) {
+    std::cerr << "Failed to register quantum circuit: " << circuit_path
+              << std::endl;
+    return {};
+  }
+  std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
+  bool keep_going = true;
+  while (keep_going) {
+    auto [action, _1, _2, _3] =
+        this->select_action(environment.get_observation_as_torch_tensor());
+    int action_index = action.item<int>();
+    auto [_4, terminated, truncated] = environment.step(action_index);
+    selected_passes.push_back(PASS_FUNCTIONS[action_index]);
+    keep_going = !terminated && !truncated;
+  }
+  return selected_passes;
 }
 
 } // namespace ai_pass_selector

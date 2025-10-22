@@ -72,6 +72,14 @@ public:
   void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////
 
+  /**
+   *
+   * @param circuit_path
+   * @return
+   */
+  std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
+  select_passes_for_circuit(const fs::path &circuit_path) override;
+
   /// Saving and Loading
   void save_model() const override;
 };

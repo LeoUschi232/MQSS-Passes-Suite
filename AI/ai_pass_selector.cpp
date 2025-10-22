@@ -32,6 +32,8 @@ void print_help() {
          "defaults to most appropriate for circuit.\n"
          "  -d, --dataset <name>          Dataset name, agent will train on "
          "this dataset if provided.\n"
+         "-e, --evaluate                  Evaluate the agent instead of "
+         "training it.\n"
          "  -c, --circuit <file>          Quake circuit file, agent will be "
          "used on this circuit.\n"
          "  -o, --output <file_path>      Circuit file path to output the "
@@ -69,6 +71,8 @@ int main(int argc, char **argv) {
         std::cerr << "No dataset provided." << std::endl;
         return 1;
       }
+    } else if (args[i] == "-e" || args[i] == "--evaluate") {
+      GLOBAL_PARAMS["evaluate"] = true;
     } else if (args[i] == "-c" || args[i] == "--circuit") {
       if (++i < n) {
         GLOBAL_PARAMS["circuit"] = args[i];
@@ -123,8 +127,26 @@ int main(int argc, char **argv) {
     }
     agent = select_best_agent(circuit);
   }
-  if (!dataset.empty()) {
-    train(agent, dataset);
+
+  // If a circuit is provided, it is assumes the user only wants to run the
+  // passes selection on the circuit and not train the agent so by default do
+  // not train if an input circuit is provided.
+  if (!dataset.empty() && circuit.empty()) {
+    if (GLOBAL_PARAMS["evaluate"].to_bool()) {
+      std::optional<unsigned int> max_circuits = std::nullopt;
+      if (GLOBAL_PARAMS.find("evaluation_sample") != GLOBAL_PARAMS.end() &&
+          GLOBAL_PARAMS["evaluation_sample"].to_int() > 0) {
+        max_circuits = GLOBAL_PARAMS["evaluation_sample"].to_int();
+      }
+
+      std::unordered_map<std::string, std::string> metrics =
+          evaluate(agent, dataset, max_circuits);
+      for (const auto &[key, value] : metrics) {
+        std::cout << key << ": " << value << std::endl;
+      }
+    } else {
+      train(agent, dataset);
+    }
   }
   if (!circuit.empty()) {
     run(agent, circuit, output);
@@ -134,29 +156,33 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "a3c-mq130-tcnrelu"},
-      {"dataset", "MQTBench"},
+      {"agent", "a3c-mq28-tcnrelu"},
+      {"dataset", "Chemistry"},
+      {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
       {"nr_episodes", 100},
       {"max_steps_per_episode", 130},
-      {"max_steps_no_improvement", 13},
-      {"max_steps_no_change", 6},
-      {"max_steps_same_action", 3},
+      {"max_steps_no_improvement", 26},
+      {"max_steps_no_change", 13},
+      {"max_steps_same_action", 6},
       {"discount_factor", 0.995},
       {"gae_hyperparameter", 0.96},
       {"entropy_coefficient", 0.01},
       {"device", torch::cuda::is_available() ? torch::kCUDA : torch::kCPU},
       {"critic_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
       {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
-      {"actor_learning_rate", 1e-6},
-      {"critic_learning_rate", 5e-6},
+      {"actor_learning_rate", 1e-3},
+      {"critic_learning_rate", 5e-3},
       {"ppo_epsilon", 0.2},
       {"sac_alpha", 0.1},
       {"print_param_info", false},
-      {"save_agent_after_training", false},
+      {"save_agent_after_training", true},
       {"stop_training_on_error", true},
-      {"print_diagnostics", false}};
+      {"print_diagnostics", false},
+      {"probability_max_qubits", 0.4},
+      {"nr_gates_reduction_weight", 0.15},
+      {"evaluation_sample", 10}};
 }

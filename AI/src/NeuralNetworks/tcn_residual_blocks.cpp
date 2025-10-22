@@ -1,8 +1,5 @@
 #include "NeuralNetworks/tcn_residual_blocks.hpp"
 
-// Agents includes
-#include "NeuralNetworks/agent_architectures.hpp"
-
 // Torch includes
 #include "torch/torch.h"
 
@@ -18,7 +15,13 @@ TCNResidualBlock::TCNResidualBlock(unsigned int in_channels,
       downsample(in_channels != out_channels
                      ? torch::nn::Conv1d(torch::nn::Conv1dOptions(
                            in_channels, out_channels, 1))
-                     : nullptr) {
+                     : nullptr),
+      layer_norm_block(torch::nn::Sequential(   // Input shape: [C_out, N]
+          torch::nn::TransposeContiguous(0, 1), // -> [N, C_out]
+          torch::nn::LayerNorm(torch::nn::LayerNormOptions(
+              /*normalized_shape=*/{out_channels})), // -> [N, C_out]
+          torch::nn::TransposeContiguous(0, 1)       // -> [C_out, N]
+          )) {
   if (kernel_size % 2 == 0) {
     throw std::invalid_argument("Kernel size in TCNResidualBlock must be odd.");
   }
@@ -29,6 +32,7 @@ TCNResidualBlock::TCNResidualBlock(unsigned int in_channels,
     torch::NoGradGuard _;
     (void)this->downsample->weight.normal_(0, 0.01);
   }
+  this->register_module("layer_norm_block", layer_norm_block);
 }
 TCNResidualBlockWithReLU::TCNResidualBlockWithReLU(unsigned int in_channels,
                                                    unsigned int out_channels,
@@ -57,9 +61,9 @@ TCNResidualBlockWithReLU::TCNResidualBlockWithReLU(unsigned int in_channels,
   this->register_module("final_relu", final_relu);
 }
 torch::Tensor TCNResidualBlockWithReLU::forward(const torch::Tensor &x) {
-  return final_relu->forward(
+  return final_relu->forward(this->layer_norm_block->forward(
       this->convolutional_block->forward(x) +
-      (this->downsample ? this->downsample->forward(x) : x));
+      (this->downsample ? this->downsample->forward(x) : x)));
 }
 
 TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
@@ -92,9 +96,9 @@ TCNResidualBlockWithPReLU::TCNResidualBlockWithPReLU(unsigned int in_channels,
   this->register_module("final_prelu", final_prelu);
 }
 torch::Tensor TCNResidualBlockWithPReLU::forward(const torch::Tensor &x) {
-  return final_prelu->forward(
+  return this->final_prelu->forward(this->layer_norm_block->forward(
       this->convolutional_block->forward(x) +
-      (this->downsample ? this->downsample->forward(x) : x));
+      (this->downsample ? this->downsample->forward(x) : x)));
 }
 
 } // namespace ai_pass_selector

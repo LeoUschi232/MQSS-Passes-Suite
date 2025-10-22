@@ -13,6 +13,20 @@
   };
 
 namespace ai_pass_selector {
+// For TCN/Hybrid architectures the depth, and with it the maximum receptive
+// field, should be dependant on the maximum number of qubits in the circuits.
+// The authors of the paper on TCN recommended depths between 8 and 12.
+// It makes sense make the size of the receptive field scale linearly with the
+// number of qubits.
+// Arbitrarily choosing a depth of 12 for pure TCN architectures for the
+// MQTBench case of max_qubits=130, we have to find an 'x' such that:
+// log2(x*130)=12 => x=31.5.
+constexpr double TCN_QUBIT_MAGIC = 31.5;
+// Arbitrarily choosing a depth of 9 for pure Hybrid architectures for the
+// MQTBench case of max_qubits=130, we have to find an 'x' such that:
+// log2(x*130)=9 => x=3.94.
+constexpr double HYBRID_QUBIT_MAGIC = 3.93;
+
 /// A2C = Advantage Actor-Critic
 /// A3C = Asynchronous Advantage Actor-Critic
 /// TCN = Temporal Convolutional Network

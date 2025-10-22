@@ -30,14 +30,12 @@ enum class OptimizerType : int {
   Adagrad = 1,
   Adam = 2,
   AdamW = 3,
-  LBFGS = 4,
-  RMSProp = 5,
-  SGD = 6
+  RMSProp = 4,
+  SGD = 5
 };
 
 struct EnumClassHash {
-  template <typename T>
-  std::size_t operator()(T value) const noexcept {
+  template <typename T> std::size_t operator()(T value) const noexcept {
     return static_cast<std::size_t>(value);
   }
 };
@@ -49,29 +47,28 @@ struct AgentAttributes {
 };
 
 const std::unordered_map<std::string, AgentClass> AGENT_NAME_TO_CLASS = {
-    {"a3c", AgentClass::A3C},   {"sac", AgentClass::SAC},
+    {"a3c", AgentClass::A3C},     {"sac", AgentClass::SAC},
     {"acktr", AgentClass::ACKTR}, {"acer", AgentClass::ACER},
-    {"ppo", AgentClass::PPO},   {"crossq", AgentClass::CROSSQ}};
+    {"ppo", AgentClass::PPO},     {"crossq", AgentClass::CROSSQ}};
 
 const std::unordered_map<AgentClass, std::string, EnumClassHash>
-    AGENT_CLASS_TO_NAME = {{AgentClass::A3C, "a3c"},
-                           {AgentClass::SAC, "sac"},
-                           {AgentClass::ACKTR, "acktr"},
-                           {AgentClass::ACER, "acer"},
-                           {AgentClass::PPO, "ppo"},
-                           {AgentClass::CROSSQ, "crossq"}};
+    AGENT_CLASS_TO_NAME = {
+        {AgentClass::A3C, "a3c"},     {AgentClass::SAC, "sac"},
+        {AgentClass::ACKTR, "acktr"}, {AgentClass::ACER, "acer"},
+        {AgentClass::PPO, "ppo"},     {AgentClass::CROSSQ, "crossq"}};
 
 /// Optimizers
 const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
-    {"adagrad", OptimizerType::Adagrad}, {"adam", OptimizerType::Adam},
-    {"adamw", OptimizerType::AdamW},     {"lbfgs", OptimizerType::LBFGS},
-    {"rmsprop", OptimizerType::RMSProp}, {"sgd", OptimizerType::SGD}};
+    {"adagrad", OptimizerType::Adagrad},
+    {"adam", OptimizerType::Adam},
+    {"adamw", OptimizerType::AdamW},
+    {"rmsprop", OptimizerType::RMSProp},
+    {"sgd", OptimizerType::SGD}};
 
 const std::unordered_map<OptimizerType, std::string, EnumClassHash>
     OPTIMIZER_TYPE_TO_NAME = {{OptimizerType::Adagrad, "adagrad"},
                               {OptimizerType::Adam, "adam"},
                               {OptimizerType::AdamW, "adamw"},
-                              {OptimizerType::LBFGS, "lbfgs"},
                               {OptimizerType::RMSProp, "rmsprop"},
                               {OptimizerType::SGD, "sgd"}};
 
@@ -102,22 +99,10 @@ std::string select_best_agent(const std::string &circuit);
 
 /**
  *
- * @param agent_name
- * @param circuit
- * @param nr_passes
- * @param output_path
- * @return
- */
-std::tuple<std::vector<std::string>, std::vector<unsigned int>>
-getRecommendedPasses(const std::string &agent_name, const std::string &circuit,
-                     unsigned int nr_passes, fs::path output_path = fs::path());
-
-/**
- *
  * @param network
  * @return
  */
-unsigned int nr_trainable_parameters(const torch::nn::Module &network);
+unsigned int count_nr_trainable_parameters(const torch::nn::Module &network);
 } // namespace ai_pass_selector
 
 #endif // AGENT_UTILS_HPP

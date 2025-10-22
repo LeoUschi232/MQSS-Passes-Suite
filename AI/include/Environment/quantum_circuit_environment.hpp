@@ -60,6 +60,7 @@ protected:
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
   fs::path circuit_path = "";
   QuantumCircuit circuit{};
+  double nr_gates_reduction_weight = 1.0;
 
   /// Attributes for episode
   unsigned int max_steps_per_episode = MIN_NR_STEPS;
@@ -108,14 +109,13 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
   fs::path getCircuitPath() const;
-  std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
-            std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+  std::optional<std::pair<std::array<double, 11>, std::array<unsigned, 37>>>
   getRegisteredRandomizerParams() const;
 
   /// Short functions
   void clear(bool hard = true);
   bool validate();
-  void reset();
+  virtual void reset();
   std::pair<unsigned int, unsigned int> size() const;
 
   /**

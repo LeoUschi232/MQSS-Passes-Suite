@@ -57,6 +57,9 @@ struct RandomizerOptions {
   // If >0.0 will add additional controls to a controlled gate with this
   // probability
   mutable double probability_additionals_controls = 0.0;
+  // If >0.0 will make the circuit have exactly max_qubits with this probability
+  // to give a probability of triggering all possible qubits.
+  mutable double probability_max_qubits = 0.0;
 };
 
 /**
@@ -111,9 +114,9 @@ get_nr_qubits_gates_operations_measurements(
  * @param subset_size
  * @param gates_weights
  */
-void addjust_gates_weights(
+void adjust_gates_weights(
     double multiplier, unsigned int subset_size,
-    std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights);
+    std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
 /**
  *

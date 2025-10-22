@@ -6,7 +6,6 @@ This list is unordered regarding priority.
 
  Task                                            | Description                                                                                                                                                                                        
 -------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Create instant-validation of agent on a dataset | After training an agent enable running a process that uses the agent on a dataset, selects and applies the passes for each circuit and prints the depth and instruction count reductions achieved. 
  Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
  Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                        
  Implement ACKTR                                 | Implement the Actor-Critic using Kronecker-Factored Trust Region (ACKTR) algorithm using convolutional and/or LSTM designs.                                                                        

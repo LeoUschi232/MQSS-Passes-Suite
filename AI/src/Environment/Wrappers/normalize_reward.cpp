@@ -4,14 +4,17 @@ namespace ai_pass_selector {
 NormalizeReward::NormalizeReward(const QuantumCircuitEnvironment &environment)
     : QuantumCircuitEnvironment(environment.getMaxQubits()) {
   this->circuit_path = environment.getCircuitPath();
-  std::tie(this->qubits_cholesky_params, this->gates_weights) =
-      environment.getRegisteredRandomizerParams();
-  this->reset_normalization_state();
+  if (auto optional_randomizer_params =
+          environment.getRegisteredRandomizerParams();
+      optional_randomizer_params.has_value()) {
+    std::tie(this->qubits_cholesky_params, this->gates_weights) =
+        optional_randomizer_params.value();
+  }
 }
 
 void NormalizeReward::reset() {
   QuantumCircuitEnvironment::reset();
-  this->reset_normalization_state();
+  this->discounted_reward = 0.0;
 }
 
 std::tuple<float, bool, bool> NormalizeReward::step(unsigned int action) {
@@ -36,13 +39,6 @@ std::tuple<float, bool, bool> NormalizeReward::step(unsigned int action) {
   return {
       static_cast<float>(reward / std::sqrt(this->variance + this->epsilon)),
       terminated, truncated};
-}
-
-void NormalizeReward::reset_normalization_state() {
-  this->discounted_reward = 0.0;
-  this->count = 0u;
-  this->mean = 0.0;
-  this->variance = 1.0;
 }
 
 } // namespace ai_pass_selector
