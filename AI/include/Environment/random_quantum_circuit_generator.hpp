@@ -111,9 +111,9 @@ get_nr_qubits_gates_operations_measurements(
  * @param subset_size
  * @param gates_weights
  */
-void addjust_gates_weights(
+void adjust_gates_weights(
     double multiplier, unsigned int subset_size,
-    std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights);
+    std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
 /**
  *
