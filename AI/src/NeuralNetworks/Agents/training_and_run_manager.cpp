@@ -9,10 +9,12 @@
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
+#include "Utils/dataset_conversion.hpp"
 #include "Utils/passes_utils.hpp"
 #include "Utils/progress_bar.hpp"
 
 // Stdandard library includes
+#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
@@ -60,9 +62,23 @@ train(const std::string &agent_name, const std::string &dataset) {
 }
 
 std::unordered_map<std::string, std::string> run(const std::string &agent_name,
-                                                 const std::string &circuit,
-                                                 const std::string &output) {
-  throw std::runtime_error("Not implemented yet");
+                                                 const fs::path &circuit_path,
+                                                 const fs::path &output_path) {
+  std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  std::string circuit_name = circuit_path.stem().string();
+  std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
+      agent->select_for_circuit(circuit_path);
+  auto [output_circuit, nr_gates_reduction, depth_reduction] =
+      agent->run_on_circuit(circuit_path, pass_functions);
+
+  if (int rc = write_to_file(output_circuit, output_path); rc != 0) {
+    return {{"result", "failed"},
+            {"nr_gates_reduction", "0"},
+            {"depth_reduction", "0"}};
+  }
+  return {{"result", "success"},
+          {"nr_gates_reduction", std::to_string(nr_gates_reduction)},
+          {"depth_reduction", std::to_string(depth_reduction)}};
 }
 
 std::unordered_map<std::string, std::string>
@@ -96,7 +112,6 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
-  agent->load_model();
   std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
   double avg_nr_gates_reduction = 0.0;
   double avg_depth_reduction = 0.0;
