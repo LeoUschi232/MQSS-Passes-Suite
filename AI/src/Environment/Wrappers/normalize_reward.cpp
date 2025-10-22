@@ -4,8 +4,12 @@ namespace ai_pass_selector {
 NormalizeReward::NormalizeReward(const QuantumCircuitEnvironment &environment)
     : QuantumCircuitEnvironment(environment.getMaxQubits()) {
   this->circuit_path = environment.getCircuitPath();
-  std::tie(this->qubits_cholesky_params, this->gates_weights) =
-      environment.getRegisteredRandomizerParams();
+  if (auto optional_randomizer_params =
+          environment.getRegisteredRandomizerParams();
+      optional_randomizer_params.has_value()) {
+    std::tie(this->qubits_cholesky_params, this->gates_weights) =
+        optional_randomizer_params.value();
+  }
 }
 
 void NormalizeReward::reset() {

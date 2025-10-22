@@ -74,13 +74,14 @@ std::pair<unsigned int, unsigned int> QuantumCircuitEnvironment::size() const {
   return {this->circuit.getNrQubits(), this->circuit.getNrGates()};
 }
 
-std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
-          std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+                        std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
 QuantumCircuitEnvironment::getRegisteredRandomizerParams() const {
   if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
-    return {qubits_cholesky_params.value(), gates_weights.value()};
+    return std::make_pair(qubits_cholesky_params.value(),
+                          gates_weights.value());
   }
-  return {};
+  return std::nullopt;
 }
 
 void QuantumCircuitEnvironment::clear(bool hard) {

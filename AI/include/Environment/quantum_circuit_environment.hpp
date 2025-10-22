@@ -109,8 +109,7 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
   fs::path getCircuitPath() const;
-  std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
-            std::array<unsigned int, GATES_WEIGHTS_SIZE>>
+  std::optional<std::pair<std::array<double, 11>, std::array<unsigned, 37>>>
   getRegisteredRandomizerParams() const;
 
   /// Short functions

@@ -1,6 +1,5 @@
 #ifndef AGENT_UTILS_HPP
 #define AGENT_UTILS_HPP
-#include "NeuralNetworks/Agents/abstract_agent.hpp"
 
 // Passes includes
 #include "Cancellations.hpp"
