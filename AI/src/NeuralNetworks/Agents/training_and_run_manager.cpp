@@ -70,17 +70,28 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
   }
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
   std::string circuit_name = circuit_path.stem().string();
+  std::cout << "Running selection of passes on circuit: " << circuit_name
+            << "\nUsing agent: " << agent_name << std::endl;
   std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
       agent->select_passes_for_circuit(circuit_path);
-  auto [output_circuit, nr_gates_reduction, depth_reduction] =
+  auto [output_circuit, nr_gates_reduction, depth_reduction, pass_names] =
       agent->run_on_circuit(circuit_path, pass_functions);
+  std::cout << "Recommended passes:" << std::endl;
+  for (const auto &pass_name : pass_names) {
+    std::cout << "  " << pass_name << std::endl;
+  }
+  std::cout << "Gates reduction: " << nr_gates_reduction
+            << "\nDepth reduction: " << depth_reduction << std::endl;
   if (output_path.empty()) {
     output_path =
         circuit_path.parent_path() / (circuit_name + "_optimized.qke");
   }
   if (int rc = write_to_file(&output_circuit, output_path); rc != 0) {
+    std::cout << "Failed to write optimized circuit to file: " << output_path
+              << std::endl;
     return {{"result", "failed"}};
   }
+  std::cout << "Optimized circuit written to: " << output_path << std::endl;
   return {{"result", "success"}};
 }
 
@@ -96,7 +107,6 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
                  max_circuits.value() < nr_files;
   if (sampled) {
     unsigned int nr_sampled_files = max_circuits.value();
-    // TODO: Pick random nr_files files
     std::uniform_int_distribution distribution(0u, nr_files - 1);
     std::unordered_set<unsigned int> sampled_indices;
     std::vector<fs::path> sampled_files;
@@ -130,7 +140,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
                    "Evaluating " + agent_name + " on " + circuit_name);
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
         agent->select_passes_for_circuit(circuit_path);
-    auto [quantum_circuit, nr_gates_reduction, depth_reduction] =
+    auto [quantum_circuit, nr_gates_reduction, depth_reduction, _] =
         agent->run_on_circuit(circuit_path, pass_functions);
     optimizations[circuit_name]["nr_qubits"] = quantum_circuit.getNrQubits();
     optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
