@@ -71,7 +71,7 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
   auto [output_circuit, nr_gates_reduction, depth_reduction] =
       agent->run_on_circuit(circuit_path, pass_functions);
 
-  if (int rc = write_to_file(output_circuit, output_path); rc != 0) {
+  if (int rc = write_to_file(&output_circuit, output_path); rc != 0) {
     return {{"result", "failed"},
             {"nr_gates_reduction", "0"},
             {"depth_reduction", "0"}};
