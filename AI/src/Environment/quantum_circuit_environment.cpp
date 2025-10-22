@@ -308,12 +308,8 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   float previous_nr_gates = this->circuit.getNrGates();
   float previous_depth = this->circuit.getDepth();
   auto [succeeded, wasApplied] = this->circuit.run_pass(action);
-  if (!succeeded) {
-    std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
-    return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
-  }
   float reward = 0.0f;
-  if (wasApplied) {
+  if (succeeded && wasApplied) {
     reward = previous_depth - this->circuit.getDepth() +
              this->nr_gates_reduction_weight *
                  (previous_nr_gates - this->circuit.getNrGates());
@@ -342,6 +338,16 @@ QuantumCircuitEnvironment::step(unsigned int action) {
 
   this->last_action = static_cast<int>(action);
   assert(!this->terminated || !this->truncated);
+  // Theoretically the succeeded check could be performed eariler for an early
+  // exit, however, none of step_no_change, step_no_improvement, or
+  // step_same_action would get updated.
+  // An agent can spam failing action forever and only be stopped by
+  // max_steps_per_episode truncation, effectively bypassing the
+  // no-change/no-improvement/same-action termination logic.
+  if (!succeeded) {
+    std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
+    return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
+  }
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
