@@ -53,6 +53,10 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   this->max_steps_same_action = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int()),
       MIN_NR_STEPS);
+  if (double weight = GLOBAL_PARAMS["nr_gates_reduction_weight"].to_double();
+      0.0 <= weight && weight <= 1.0) {
+    this->nr_gates_reduction_weight = weight;
+  }
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
   this->register_quantum_circuit(GLOBAL_PARAMS["circuit"].to_string());
@@ -309,8 +313,9 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   }
   float reward = 0.0f;
   if (wasApplied) {
-    reward = previous_nr_gates - this->circuit.getNrGates() + previous_depth -
-             this->circuit.getDepth();
+    reward = previous_depth - this->circuit.getDepth() +
+             this->nr_gates_reduction_weight *
+                 (previous_nr_gates - this->circuit.getNrGates());
     this->latest_observation = std::nullopt;
   }
 

@@ -183,5 +183,6 @@ void load_default_params() {
       {"stop_training_on_error", true},
       {"print_diagnostics", false},
       {"probability_max_qubits", 0.4},
+      {"nr_gates_reduction_weight", 0.15},
       {"evaluation_sample", 10}};
 }

@@ -60,6 +60,7 @@ protected:
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
   fs::path circuit_path = "";
   QuantumCircuit circuit{};
+  double nr_gates_reduction_weight = 1.0;
 
   /// Attributes for episode
   unsigned int max_steps_per_episode = MIN_NR_STEPS;
