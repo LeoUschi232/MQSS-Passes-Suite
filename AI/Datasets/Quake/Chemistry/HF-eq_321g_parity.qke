@@ -1,21 +1,21 @@
 module attributes {llvm.data_layout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128", llvm.triple = "x86_64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__HFeq321gparity = "_function"}} {
   func.func @__nvqpp__mlirgen__HFeq321gparity() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
-    %cst = arith.constant -5.3704064517776509 : f64
-    %cst_0 = arith.constant 5.3704064517776509 : f64
-    %cst_1 = arith.constant 4.2058099690306712 : f64
-    %cst_2 = arith.constant -4.2058099690306712 : f64
-    %cst_3 = arith.constant -6.0425201380734475 : f64
-    %cst_4 = arith.constant 6.0425201380734475 : f64
-    %cst_5 = arith.constant 6.2062993828550619 : f64
-    %cst_6 = arith.constant -6.2062993828550619 : f64
-    %cst_7 = arith.constant 5.4369787409680281 : f64
-    %cst_8 = arith.constant -5.4369787409680281 : f64
-    %cst_9 = arith.constant 1.4546470526011319 : f64
-    %cst_10 = arith.constant -1.4546470526011319 : f64
-    %cst_11 = arith.constant 4.2496456009684485 : f64
-    %cst_12 = arith.constant -4.2496456009684485 : f64
-    %cst_13 = arith.constant 3.8131537135836795 : f64
-    %cst_14 = arith.constant -3.8131537135836795 : f64
+    %cst = arith.constant -2.8839388400458059 : f64
+    %cst_0 = arith.constant 2.8839388400458059 : f64
+    %cst_1 = arith.constant -1.3400246790400834 : f64
+    %cst_2 = arith.constant 1.3400246790400834 : f64
+    %cst_3 = arith.constant -5.1868395572156185 : f64
+    %cst_4 = arith.constant 5.1868395572156185 : f64
+    %cst_5 = arith.constant -3.9366699282395725 : f64
+    %cst_6 = arith.constant 3.9366699282395725 : f64
+    %cst_7 = arith.constant 6.0754929137490397 : f64
+    %cst_8 = arith.constant -6.0754929137490397 : f64
+    %cst_9 = arith.constant 5.7682968200210469 : f64
+    %cst_10 = arith.constant -5.7682968200210469 : f64
+    %cst_11 = arith.constant 2.8929454751927572 : f64
+    %cst_12 = arith.constant -2.8929454751927572 : f64
+    %cst_13 = arith.constant -1.7211113228493726 : f64
+    %cst_14 = arith.constant 1.7211113228493726 : f64
     %cst_15 = arith.constant -1.5707963267948966 : f64
     %cst_16 = arith.constant 1.5707963267948966 : f64
     %0 = quake.alloca !quake.veq<10>
