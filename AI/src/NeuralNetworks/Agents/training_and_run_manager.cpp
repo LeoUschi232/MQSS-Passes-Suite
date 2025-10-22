@@ -14,8 +14,10 @@
 
 // Stdandard library includes
 #include <nlohmann/json.hpp>
+#include <random>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -72,12 +74,16 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
   if (files.empty()) {
     return {};
   }
-  unsigned int nr_files = files.size();
+  unsigned int nr_files = static_cast<unsigned int>(files.size());
   bool sampled = max_circuits.has_value() && max_circuits.value() < nr_files;
   if (sampled) {
     unsigned int nr_sampled_files = max_circuits.value();
+    if (nr_sampled_files == 0u) {
+      std::cerr << "Cannot evaluate on zero circuits." << std::endl;
+      return {};
+    }
     // TODO: Pick random nr_files files
-    std::discrete_distribution<unsigned int> distribution(0u, nr_files - 1);
+    std::uniform_int_distribution<unsigned int> distribution(0u, nr_files - 1);
     std::unordered_set<unsigned int> sampled_indices;
     std::vector<fs::path> sampled_files;
     sampled_files.reserve(nr_sampled_files);
@@ -96,6 +102,11 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  if (!agent) {
+    std::cerr << "Failed to create agent '" << agent_name
+              << "' for evaluation." << std::endl;
+    return {};
+  }
   agent->load_model();
   std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
   double avg_nr_gates_reduction = 0.0;
@@ -115,8 +126,10 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     avg_depth_reduction += depth_reduction;
   }
   std::cout << std::endl;
-  avg_nr_gates_reduction /= nr_files;
-  avg_depth_reduction /= nr_files;
+  if (nr_files > 0u) {
+    avg_nr_gates_reduction /= nr_files;
+    avg_depth_reduction /= nr_files;
+  }
   nlohmann::ordered_json json_file;
   json_file["dataset_name"] = dataset_name;
   json_file["agent"] = agent_name;

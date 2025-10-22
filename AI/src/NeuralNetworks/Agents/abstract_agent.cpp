@@ -21,14 +21,12 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 AbstractAgent::AbstractAgent(unsigned int max_qubits)
-    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {
-  this->nr_trainable_parmaeters = count_nr_trainable_parameters(*this);
-}
+    : max_qubits(std::max(max_qubits, GLOBAL_MIN_NR_QUBITS)) {}
 
 unsigned int AbstractAgent::getMaxQubits() const { return this->max_qubits; }
 
 unsigned int AbstractAgent::getNrTrainableParameters() const {
-  return this->nr_trainable_parmaeters;
+  return count_nr_trainable_parameters(*this);
 }
 
 std::tuple<QuantumCircuit, int, int> AbstractAgent::run_on_circuit(

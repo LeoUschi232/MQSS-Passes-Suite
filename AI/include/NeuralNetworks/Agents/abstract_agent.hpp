@@ -25,7 +25,6 @@ class AbstractAgent : public torch::nn::Module {
 protected:
   /// Attributes on configuration
   unsigned int max_qubits = 0u;
-  unsigned int nr_trainable_parmaeters = 0u;
 
   /// Mutex for thread safety
   std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
