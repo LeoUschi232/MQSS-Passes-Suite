@@ -99,6 +99,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
   avg_depth_reduction /= nr_files;
   nlohmann::json json_file;
   json_file["dataset_name"] = dataset_name;
+  json_file["agent"] = agent_name;
   nlohmann::json optimizations = nlohmann::json::object();
   for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
        circuit_optimization_results) {
