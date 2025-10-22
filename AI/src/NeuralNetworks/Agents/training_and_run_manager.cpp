@@ -89,11 +89,12 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     return {};
   }
   unsigned int nr_files = files.size();
-  bool sampled = max_circuits.has_value() && max_circuits.value() < nr_files;
+  bool sampled = max_circuits.has_value() && 0u < max_circuits.value() &&
+                 max_circuits.value() < nr_files;
   if (sampled) {
     unsigned int nr_sampled_files = max_circuits.value();
     // TODO: Pick random nr_files files
-    std::discrete_distribution<unsigned int> distribution(0u, nr_files - 1);
+    std::uniform_int_distribution distribution(0u, nr_files - 1);
     std::unordered_set<unsigned int> sampled_indices;
     std::vector<fs::path> sampled_files;
     sampled_files.reserve(nr_sampled_files);
@@ -112,6 +113,10 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
             << dataset_name << " with " << nr_files << " circuits."
             << std::endl;
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  if (!agent) {
+    std::cerr << "Failed to construct agent " << agent_name << "." << std::endl;
+    return {};
+  }
   std::vector<std::tuple<std::string, int, int>> circuit_optimization_results;
   double avg_nr_gates_reduction = 0.0;
   double avg_depth_reduction = 0.0;
