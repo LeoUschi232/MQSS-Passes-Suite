@@ -100,13 +100,12 @@ public:
    * @param entropy_coefficient
    * @return [actor_loss, critic_loss]
    */
-  static std::pair<torch::Tensor, torch::Tensor>
+  virtual std::pair<torch::Tensor, torch::Tensor>
   get_losses(const torch::Tensor &rewards,
              const torch::Tensor &log_action_probs,
              const torch::Tensor &state_values, const torch::Tensor &entropy,
              double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient);
-
+             double entropy_coefficient) = 0;
   /**
    *
    * @param actor_loss
