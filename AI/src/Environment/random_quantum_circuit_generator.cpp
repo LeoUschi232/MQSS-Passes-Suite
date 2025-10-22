@@ -280,7 +280,7 @@ get_nr_qubits_gates_operations_measurements(
 
 void adjust_gates_weights(
     double multiplier, unsigned int subset_size,
-    std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights) {
+    std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights) {
   if (multiplier > 0.0) {
     unsigned int minimum_weight = std::numeric_limits<unsigned int>::max();
     for (unsigned int i = 0; i < subset_size; i++) {
