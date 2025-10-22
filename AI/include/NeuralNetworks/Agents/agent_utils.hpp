@@ -2,7 +2,6 @@
 #define AGENT_UTILS_HPP
 #include "NeuralNetworks/Agents/abstract_agent.hpp"
 
-
 // Passes includes
 #include "Cancellations.hpp"
 
@@ -32,9 +31,8 @@ enum class OptimizerType : int {
   Adagrad = 1,
   Adam = 2,
   AdamW = 3,
-  LBFGS = 4,
-  RMSProp = 5,
-  SGD = 6
+  RMSProp = 4,
+  SGD = 5
 };
 
 struct EnumClassHash {
@@ -62,15 +60,18 @@ const std::unordered_map<AgentClass, std::string, EnumClassHash>
 
 /// Optimizers
 const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
-    {"adagrad", OptimizerType::Adagrad}, {"adam", OptimizerType::Adam},
-    {"adamw", OptimizerType::AdamW},     {"lbfgs", OptimizerType::LBFGS},
-    {"rmsprop", OptimizerType::RMSProp}, {"sgd", OptimizerType::SGD}};
+    {"adagrad", OptimizerType::Adagrad},
+    {"adam", OptimizerType::Adam},
+    {"adamw", OptimizerType::AdamW},
+    {"rmsprop", OptimizerType::RMSProp},
+    {"sgd", OptimizerType::SGD}};
 
 const std::unordered_map<OptimizerType, std::string, EnumClassHash>
-    OPTIMIZER_TYPE_TO_NAME = {
-        {OptimizerType::Adagrad, "adagrad"}, {OptimizerType::Adam, "adam"},
-        {OptimizerType::AdamW, "adamw"},     {OptimizerType::LBFGS, "lbfgs"},
-        {OptimizerType::RMSProp, "rmsprop"}, {OptimizerType::SGD, "sgd"}};
+    OPTIMIZER_TYPE_TO_NAME = {{OptimizerType::Adagrad, "adagrad"},
+                              {OptimizerType::Adam, "adam"},
+                              {OptimizerType::AdamW, "adamw"},
+                              {OptimizerType::RMSProp, "rmsprop"},
+                              {OptimizerType::SGD, "sgd"}};
 
 /**
  *

@@ -69,6 +69,9 @@ std::unordered_map<std::string, std::string> run(const std::string &agent_name,
     return {{"result", "circuit_not_found"}};
   }
   std::unique_ptr<AbstractAgent> agent = AbstractAgent::getAgent(agent_name);
+  if (!agent) {
+    return {{"result", "agent_not_found"}};
+  }
   std::string circuit_name = circuit_path.stem().string();
   std::cout << "Running selection of passes on circuit: " << circuit_name
             << "\nUsing agent: " << agent_name << std::endl;

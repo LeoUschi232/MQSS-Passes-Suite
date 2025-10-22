@@ -132,12 +132,13 @@ bool QuantumCircuit::recompute() {
 
 std::pair<bool, bool>
 QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
-  std::shared_ptr<std::atomic_bool> was_applied_ptr;
+  // In cases where the pass is not a AppliedCheckPass, assume by default that
+  // the pass was applied if it completes, as we have no way of checking if it
+  // was without recomputing the circuit metrics anyway.
+  std::shared_ptr<std::atomic_bool> was_applied_ptr = nullptr;
   if (auto *applied_check_pass =
           dynamic_cast<AppliedCheckPass *>(pass_ptr.get())) {
     was_applied_ptr = applied_check_pass->getAppliedPtr();
-  } else {
-    return {false, false};
   }
   try {
     MLIRContext &context = *this->context_ptr.get();
@@ -145,14 +146,14 @@ QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
     pass_manager.addPass(std::move(pass_ptr));
     if (mlir::failed(pass_manager.run(this->circuit_module))) {
       this->recompute();
-      return {false, true};
+      return {false, false};
     }
   } catch ([[maybe_unused]] const std::runtime_error &error) {
     this->recompute();
     return {false, true};
   }
 
-  if (was_applied_ptr && /*pass_was_applied=*/was_applied_ptr->load()) {
+  if (!was_applied_ptr || /*pass_was_applied=*/was_applied_ptr->load()) {
     return {this->recompute(), true};
   }
   // Pass did not apply any changes.

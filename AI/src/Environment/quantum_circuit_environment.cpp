@@ -351,7 +351,7 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
 
   InstructionsTensor<float> observation(this->max_qubits);
   observation.reserve(/*nr_instructions=*/GLOBAL_MIN_NR_GATES);
-  if (!this->circuit.exists() || this->truncated) {
+  if (!this->circuit.exists() || this->terminated) {
     // Changed to exclude this->truncated so that for truncated episodes, we
     // return the actual observation for bootstrapping.
     observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
