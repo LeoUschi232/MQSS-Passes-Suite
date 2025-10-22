@@ -47,7 +47,6 @@ public:
 
   /// Getters
   unsigned int getMaxQubits() const;
-  virtual std::string agentName() const = 0;
 
   /**
    *
@@ -67,6 +66,10 @@ public:
   run_on_circuit(const fs::path &circuit_path,
                  const std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
                      &pass_functions);
+
+  /// Other
+  virtual void load_model() = 0;
+  virtual std::string agentName() const = 0;
 };
 } // namespace ai_pass_selector
 

@@ -3,7 +3,7 @@
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"
 
-// Torch includes
+// Agents includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
@@ -11,8 +11,10 @@
 
 // Utils includes
 #include "Utils/passes_utils.hpp"
+#include "Utils/progress_bar.hpp"
 
 // Stdandard library includes
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -84,10 +86,10 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
             << std::endl;
   std::unordered_map<std::string, std::string> evaluation_results;
   try {
+    std::unique_ptr<AbstractAgent> agent;
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case AgentClass::A3C: {
-      std::unique_ptr<BaseA3CAgent> agent;
       if (attributes.extras == "tcnrelu") {
         agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
       } else if (attributes.extras == "tcnprelu") {
@@ -102,16 +104,41 @@ evaluate(const std::string &agent_name, const std::string &dataset_name) {
         std::cerr << "No such A3C agent: " << agent_name << std::endl;
         return {};
       }
-      agent->load_model();
-
       break;
     }
     default:
       std::cerr << "No such agent yet: " << agent_name << std::endl;
       return {};
     }
-  } catch (const std::runtime_error &e) {
-    std::cerr << "\n" << e.what() << std::endl;
+    agent->load_model();
+    std::vector<std::tuple<std::string, unsigned int, unsigned int>>
+        circuit_optimization_results;
+    unsigned int progress = 0u;
+    for (auto circuit_path : files) {
+      updateProgress(++progress, nr_files,
+                     "Extracting statistics from: " + dataset_name);
+      std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
+          agent->select_for_circuit(circuit_path);
+      auto [_, nr_gates_reduction, depth_reduction] =
+          agent->run_on_circuit(circuit_path, pass_functions);
+      circuit_optimization_results.emplace_back(
+          circuit_path.stem().string(), nr_gates_reduction, depth_reduction);
+    }
+    nlohmann::json json_file;
+    json_file["dataset_name"] = dataset_name;
+    nlohmann::json optimizations = nlohmann::json::object();
+    for (const auto &[circuit_name, nr_gates_reduction, depth_reduction] :
+         circuit_optimization_results) {
+      optimizations[circuit_name] = {nr_gates_reduction, depth_reduction};
+    }
+    json_file["circuit_optimizations"] = optimizations;
+    fs::path filepath =
+        fs::path(AI_DATASET_DIR) / (dataset_name + "_evaluation.json");
+    std::ofstream output_stream(filepath);
+    output_stream << json_file.dump(/*ident=*/4);
+    output_stream.close();
+  } catch (const std::runtime_error &error) {
+    std::cerr << "\n" << error.what() << std::endl;
     return {};
   }
   return evaluation_results;

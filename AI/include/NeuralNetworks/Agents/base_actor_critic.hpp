@@ -118,7 +118,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
   virtual void save_model() const;
-  void load_model();
+  void load_model() override;
 };
 } // namespace ai_pass_selector
 
