@@ -57,21 +57,15 @@ public:
                          const torch::Tensor &critic_loss) const override;
 
   /**
-   * @param rewards
+   * @param advantages
    * @param log_action_probs
-   * @param state_values
    * @param entropy
-   * @param discount_factor
-   * @param gae_hyperparameter
-   * @param entropy_coefficient
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &rewards,
+  get_losses(const torch::Tensor &advantages,
              const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &entropy,
-             double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient) override;
+             const torch::Tensor &entropy);
 
   /**
    * Necessary to create worker agents for asynchronous training.

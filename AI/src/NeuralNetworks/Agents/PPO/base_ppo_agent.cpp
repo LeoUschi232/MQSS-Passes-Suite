@@ -1,18 +1,16 @@
 #include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
 
-// Neural-Networks includes
-#include "NeuralNetworks/Agents/agent_utils.hpp"
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Torch includes
 #include "torch/torch.h"
 
 // Utils includes
 #include "Utils/info_utils.hpp"
-
-// Standard library includes
-#include "Environment/quantum_circuit_environment.hpp"
 #include "Utils/passes_utils.hpp"
 
+// Standard library includes
 #include <memory>
 #include <utility>
 
@@ -24,32 +22,31 @@ BasePPOAgent::BasePPOAgent(unsigned int max_qubits)
   this->ppo_epsilon = GLOBAL_PARAMS["ppo_epsilon"].to_double();
 }
 
-void BasePPOAgent::set_rollout_data(const torch::Tensor &observations,
-                                    const torch::Tensor &actions) {
-  this->rollout_observations = observations.to(this->device);
-  this->rollout_actions = actions.to(this->device);
+std::pair<std::vector<torch::Tensor>, torch::Tensor>
+BasePPOAgent::compute_rollout_data(const torch::Tensor &observations,
+                                   const torch::Tensor &actions) {
+  throw std::runtime_error(
+      "BasePPOAgent::compute_rollout_data not implemented.");
 }
 
-std::pair<torch::Tensor, torch::Tensor> BasePPOAgent::get_losses(
-    const torch::Tensor &rewards, const torch::Tensor &log_action_probs,
-    const torch::Tensor &state_values, const torch::Tensor &entropy,
-    double discount_factor, double gae_hyperparameter,
-    double entropy_coefficient) {
+std::pair<torch::Tensor, torch::Tensor>
+BasePPOAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
+                         const torch::Tensor &log_action_probs, // Shape [T]
+                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &entropy           // Shape [T]
+) {
+  // See BaseA3CAgent::get_losses for explanations.
   int T = rewards.size(0);
   torch::TensorOptions options = rewards.options();
-  torch::Tensor advantages = torch::zeros({T}, options);
-  torch::Tensor A_gae = torch::zeros({}, options);
-  for (int t = T - 1; t >= 0; --t) {
-    torch::Tensor delta_t =
-        rewards[t] + discount_factor * state_values[t + 1] - state_values[t];
-    A_gae = delta_t + discount_factor * gae_hyperparameter * A_gae;
-    advantages[t] = A_gae;
-  }
-  torch::Tensor episode_obs = this->rollout_observations.slice(0, 0, T);
-  torch::Tensor current_values = this->critic->forward(episode_obs);
+
+
+  torch::Tensor episode_observations =
+      this->rollout_observations.slice(/*dim=*/0, /*start=*/0, /*end=*/T);
+  torch::Tensor current_values = this->critic->forward(episode_observations);
   torch::Tensor targets = state_values.slice(0, 0, T) + advantages;
   torch::Tensor critic_loss = (current_values - targets.detach()).pow(2).mean();
-  torch::Tensor current_action_probs = this->actor->forward(episode_obs);
+  torch::Tensor current_action_probs =
+      this->actor->forward(episode_observations);
   torch::Tensor current_log = current_action_probs.log();
   torch::Tensor current_log_action_probs =
       current_log.gather(-1, this->rollout_actions.unsqueeze(-1)).squeeze(-1);

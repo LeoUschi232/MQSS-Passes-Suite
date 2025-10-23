@@ -30,6 +30,9 @@ protected:
   double actor_learning_rate = 0.0;
   double critic_learning_rate = 0.0;
   torch::Device device = torch::kCPU;
+  double discount_factor = 0.0;
+  double gae_hyperparameter = 0.0;
+  double entropy_coefficient = 0.0;
 
   /// Global Attributes
   torch::nn::Sequential actor = nullptr;
@@ -89,23 +92,21 @@ public:
   select_action(const torch::Tensor &observation);
 
   /**
-   * No termination masks because the tensors will not be betched and will
-   * therefore only ever have the T-axis.
-   * @param rewards
-   * @param log_action_probs
-   * @param state_values
-   * @param entropy
-   * @param discount_factor
-   * @param gae_hyperparameter
-   * @param entropy_coefficient
-   * @return [actor_loss, critic_loss]
+   *
+   * @param observation
+   * @return
    */
-  virtual std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &rewards,
-             const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &entropy,
-             double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient) = 0;
+  unsigned int select_greedy_action(const torch::Tensor &observation);
+
+  /**
+   *
+   * @param rewards
+   * @param state_values
+   * @return
+   */
+  torch::Tensor compute_advatnages(const torch::Tensor &rewards,
+                                   const torch::Tensor &state_values);
+
   /**
    *
    * @param actor_loss

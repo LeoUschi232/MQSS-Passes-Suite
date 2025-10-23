@@ -1,5 +1,8 @@
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
@@ -8,11 +11,9 @@
 
 // Utils includes
 #include "Utils/info_utils.hpp"
-
-// Standard library includes
-#include "Environment/quantum_circuit_environment.hpp"
 #include "Utils/passes_utils.hpp"
 
+// Standard library includes
 #include <memory>
 #include <utility>
 
@@ -32,10 +33,10 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     if (this->is_boss) {
       this->load_model();
     }
-    this->register_module("critic", this->critic);
     this->register_module("actor", this->actor);
-    this->critic->to(this->device);
+    this->register_module("critic", this->critic);
     this->actor->to(this->device);
+    this->critic->to(this->device);
     if (this->is_boss) {
       // Worker agents do not need optimizers.
       // Only boss agent needs optimizers.
@@ -63,50 +64,13 @@ void BaseA3CAgent::zero_grad() {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::get_losses(const torch::Tensor &rewards,          // Shape [T]
+BaseA3CAgent::get_losses(const torch::Tensor &advantages,       // Shape [T]
                          const torch::Tensor &log_action_probs, // Shape [T]
-                         const torch::Tensor &state_values,     // Shape [T+1]
-                         const torch::Tensor &entropy,          // Shape [T]
-                         const double discount_factor,
-                         const double gae_hyperparameter,
-                         const double entropy_coefficient) {
-  // Let T = final timestep of an episode.
-  // An episode generates T+1 states from S_0 to S_T.
-  // An episode generates T actions from A_1 to A_T.
-  // An episode generates T rewards from R_1 to R_T.
-  int T = rewards.size(0);
-  const torch::TensorOptions options = rewards.options();
-  torch::Tensor advantages = torch::zeros({T}, options);
-
-  // Compute the advantages using Generalized Advantage Estimation.
-  // Temporal Difference is a method used in Reinforcement Learning to estimate
-  // the value function of a state based on the difference between the immediate
-  // reward obtained from a current state and the estimated value of the next
-  // state.
-  torch::Tensor A_gae = torch::zeros({}, options);
-  for (int t = T - 1; t >= 0; t--) {
-    // Temporal Difference Error of V(s) with discount gamma is:
-    // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
-    // Barto & Sutton Reinforcement Learning page 121, equation (6.5)
-    torch::Tensor delta_t =
-        rewards[t] - state_values[t] + discount_factor * state_values[t + 1];
-
-    // The generalized advantage estimation defined by Schulman et al is:
-    // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
-    A_gae = discount_factor * gae_hyperparameter * A_gae + delta_t;
-    advantages[t] = A_gae;
-  }
-
-  // Give a bonus for higher entropy to encourage exploration.
-  // The equation for the policy performance measure is:
-  // J(θ) = (1/N) * sum_{t=0}^{N-1} (ln π_θ(a_t|s_t) * A(s_t, a_t))
-  auto actor_loss = -(log_action_probs * advantages.detach()).mean() -
-                    entropy_coefficient * entropy.mean();
-
-  // The equation for the Value function performance measure is:
-  // J(w) = (1/N) * sum_{t=0}^{N-1} (A(s_t, a_t)^2)
-  auto critic_loss = advantages.pow(2).mean();
-  return {actor_loss, critic_loss};
+                         const torch::Tensor &entropy           // Shape [T]
+) {
+  return {/*actor_loss=*/-(log_action_probs * advantages.detach()).mean() -
+              this->entropy_coefficient * entropy.mean(),
+          /*critic_loss=*/advantages.pow(2).mean()};
 }
 
 void BaseA3CAgent::load_weights(BaseA3CAgent &other) {
@@ -318,10 +282,9 @@ BaseA3CAgent::select_passes_for_circuit(const fs::path &circuit_path) {
   std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
   bool keep_going = true;
   while (keep_going) {
-    auto [action, _1, _2, _3] =
-        this->select_action(environment.get_observation_as_torch_tensor());
-    int action_index = action.item<int>();
-    auto [_4, terminated, truncated] = environment.step(action_index);
+    unsigned int action_index = this->select_greedy_action(
+        environment.get_observation_as_torch_tensor());
+    auto [_, terminated, truncated] = environment.step(action_index);
     selected_passes.push_back(PASS_FUNCTIONS[action_index]);
     keep_going = !terminated && !truncated;
   }

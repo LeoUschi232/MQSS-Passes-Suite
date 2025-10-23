@@ -19,8 +19,6 @@ class BasePPOAgent : public BaseActorCritic {
 protected:
   /// PPO specific attributes
   double ppo_epsilon = 0.2;
-  torch::Tensor rollout_observations;
-  torch::Tensor rollout_actions;
 
 public:
   /// Constructors
@@ -42,29 +40,24 @@ public:
   /// PPO standard methods
   ///
   /**
-   * @param observations
-   * @param actions
+   * @param initial_observations
    */
-  void set_rollout_data(const torch::Tensor &observations,
-                        const torch::Tensor &actions);
+  std::pair<std::vector<torch::Tensor>, torch::Tensor>
+  compute_rollout_data(const torch::Tensor &initial_observations);
 
   /**
    *
-   * @param rewards
+   * @param rollout_observations
+   * @param rollout_actions
+   * @param advantages
    * @param log_action_probs
    * @param state_values
-   * @param entropy
-   * @param discount_factor
-   * @param gae_hyperparameter
-   * @param entropy_coefficient
    * @return
    */
-  std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &rewards,
-             const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &entropy,
-             double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient) override;
+  std::pair<torch::Tensor, torch::Tensor> get_losses(
+      const std::vector<torch::Tensor> &rollout_observations,
+      const torch::Tensor &rollout_actions, const torch::Tensor &advantages,
+      const torch::Tensor &log_action_probs, const torch::Tensor &state_values);
   //////////////////////////////////////////////////////////////////////////////
 
   /**

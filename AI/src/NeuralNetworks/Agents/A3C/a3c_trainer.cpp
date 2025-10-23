@@ -51,9 +51,6 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       GLOBAL_PARAMS["a3c_max_async_steps"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
-  double discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
-  double gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
-  double entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
@@ -160,12 +157,13 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_values_vector.push_back(torch::zeros({}, options));
           }
 
-          auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
+          torch::Tensor advantages = agent->compute_advatnages(
               /*rewards=*/torch::stack(episode_rewards_vector),
+              /*state_values=*/torch::stack(episode_values_vector));
+          auto [actor_loss, critic_loss] = agent->get_losses(
+              /*advantages=*/advantages,
               /*log_action_probs=*/torch::stack(episode_log_probs_vector),
-              /*state_values=*/torch::stack(episode_values_vector),
-              /*entropy=*/torch::stack(episode_entropies_vector),
-              discount_factor, gae_hyperparameter, entropy_coefficient);
+              /*entropy=*/torch::stack(episode_entropies_vector));
 
           // In synchronous A2C one would now call agent->update_parameters().
           // However, in A3C we manually compute the gradients, keep them
@@ -232,9 +230,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
-  double discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
-  double gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
-  double entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
@@ -330,12 +325,13 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                         {max_steps_per_episode, max_steps_per_episode}},
                        /*display_message=*/main_message + " | Computing loss.");
 
-      auto [actor_loss, critic_loss] = BaseA3CAgent::get_losses(
+      torch::Tensor advantages = agent->compute_advatnages(
           /*rewards=*/torch::stack(episode_rewards_vector),
+          /*state_values=*/torch::stack(episode_values_vector));
+      auto [actor_loss, critic_loss] = agent->get_losses(
+          /*advantages=*/advantages,
           /*log_action_probs=*/torch::stack(episode_log_probs_vector),
-          /*state_values=*/torch::stack(episode_values_vector),
-          /*entropy=*/torch::stack(episode_entropies_vector), discount_factor,
-          gae_hyperparameter, entropy_coefficient);
+          /*entropy=*/torch::stack(episode_entropies_vector));
       updateProgresses({{episode_idx, nr_episodes},
                         {max_steps_per_episode, max_steps_per_episode}},
                        /*display_message=*/main_message +

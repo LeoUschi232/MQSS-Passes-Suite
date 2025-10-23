@@ -29,6 +29,9 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
       static_cast<OptimizerType>(GLOBAL_PARAMS["actor_optimizer_idx"].to_int());
   this->critic_optimizer_type = static_cast<OptimizerType>(
       GLOBAL_PARAMS["critic_optimizer_idx"].to_int());
+  this->discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
+  this->gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
+  this->entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
 }
 
 bool BaseActorCritic::initialize(const torch::nn::Sequential &actor,
@@ -104,6 +107,46 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
       state_value,               // Shape []
       entropy                    // Shape [1]
   };
+}
+
+unsigned int
+BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
+  auto [action_probs, _] = this->forward(observation);
+  const torch::Tensor action_index =
+      action_probs.argmax(/*dim=*/-1).to(torch::kInt32);
+  return action_index.detach().item<int>();
+}
+
+torch::Tensor BaseActorCritic::compute_advatnages(
+    const torch::Tensor &rewards,     // Shape [T]
+    const torch::Tensor &state_values // Shape [T+1]
+) {
+  // Let T = final timestep of an episode.
+  // An episode generates T rewards from R_1 to R_T.
+  // An episode generates T+1 states from S_0 to S_T.
+  int T = rewards.size(0);
+  const torch::TensorOptions options = rewards.options();
+  torch::Tensor advantages = torch::zeros({T}, options);
+
+  // Compute the advantages using Generalized Advantage Estimation.
+  // Temporal Difference is a method used in Reinforcement Learning to estimate
+  // the value function of a state based on the difference between the immediate
+  // reward obtained from a current state and the estimated value of the next
+  // state.
+  torch::Tensor A_gae = torch::zeros({}, options);
+  for (int t = T - 1; t >= 0; t--) {
+    // Temporal Difference Error of V(s) with discount gamma is:
+    // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
+    // Barto & Sutton Reinforcement Learning page 121, equation (6.5)
+    torch::Tensor delta_t = rewards[t] - state_values[t] +
+                            this->discount_factor * state_values[t + 1];
+
+    // The generalized advantage estimation defined by Schulman et al is:
+    // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
+    A_gae = this->discount_factor * this->gae_hyperparameter * A_gae + delta_t;
+    advantages[t] = A_gae;
+  }
+  return advantages;
 }
 
 void BaseActorCritic::update_parameters(
