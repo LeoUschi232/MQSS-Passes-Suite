@@ -80,9 +80,9 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   // action_probs ~ [NR_PASSES]
   // X.multinomial(num_samples=1) ~ [1]
   // X.squeeze(dim=-1) ~ []
-  const torch::Tensor action_indexes_unsqueezed =
+  const torch::Tensor action_index_unsqueezed =
       action_probs.multinomial(/*num_samples=*/1);
-  const torch::Tensor action_index = action_indexes_unsqueezed.squeeze(-1);
+  const torch::Tensor action_index = action_index_unsqueezed.squeeze(-1);
 
   // For advantage compute log π(a_t|s_t) for the sampled actions.
   // Gather extracts the values at specified indexes along the specified axis.
@@ -93,31 +93,30 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   // X.squeeze(dim=-1) ~ []
   const torch::Tensor log_action_probs = action_probs.log();
   const torch::Tensor squeezed_log_action_probs =
-      log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_indexes_unsqueezed)
+      log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_index_unsqueezed)
           .squeeze(-1);
 
   // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
   // action_probs * log_action_probs ~ [NR_PASSES]
   // -X.sum(dim=-1) ~ [1]
+  // X.squeeze(dim=-1) ~ []
   const torch::Tensor entropy =
-      -(action_probs * log_action_probs).sum(/*dim=*/-1);
+      -(action_probs * log_action_probs).sum(/*dim=*/-1).squeeze(-1);
   return {
       action_index,              // Shape []
       squeezed_log_action_probs, // Shape []
       state_value,               // Shape []
-      entropy                    // Shape [1]
+      entropy                    // Shape []
   };
 }
 
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
   auto [action_probs, _] = this->forward(observation);
-  const torch::Tensor action_index =
-      action_probs.argmax(/*dim=*/-1).to(torch::kInt32);
-  return action_index.detach().item<int>();
+  return action_probs.argmax(/*dim=*/-1).to(torch::kInt32).detach().item<int>();
 }
 
-torch::Tensor BaseActorCritic::compute_advatnages(
+torch::Tensor BaseActorCritic::compute_advantages(
     const torch::Tensor &rewards,     // Shape [T]
     const torch::Tensor &state_values // Shape [T+1]
 ) {

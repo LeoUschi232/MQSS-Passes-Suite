@@ -11,6 +11,7 @@
 #include "NeuralNetworks/Agents/training_and_run_manager.hpp"
 
 // Standard library includes
+#include <csignal>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,9 +20,15 @@ using namespace ai_pass_selector;
 namespace fs = std::filesystem;
 
 /// Default values for agent/environment/training parameters.
-/// ssh -Y ge78zic2@cool.hpc.lrz.de
-/// 7McMGcmhX_27McMGcmhX_2
 void load_default_params();
+
+/// Global flag for SIGINT Ctrl+C interruptions.
+volatile sig_atomic_t interrupted = 0;
+void signal_handler(int signal) {
+  if (signal == SIGINT) {
+    interrupted = 1;
+  }
+}
 
 void print_help() {
   std::cout
@@ -164,10 +171,10 @@ void load_default_params() {
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
       {"nr_episodes", 100},
-      {"max_steps_per_episode", 130},
-      {"max_steps_no_improvement", 26},
-      {"max_steps_no_change", 13},
-      {"max_steps_same_action", 6},
+      {"max_steps_per_episode", 128},
+      {"max_steps_no_improvement", 32},
+      {"max_steps_no_change", 8},
+      {"max_steps_same_action", 4},
       {"discount_factor", 0.995},
       {"gae_hyperparameter", 0.96},
       {"entropy_coefficient", 0.01},
@@ -177,6 +184,7 @@ void load_default_params() {
       {"actor_learning_rate", 1e-3},
       {"critic_learning_rate", 5e-3},
       {"ppo_epsilon", 0.2},
+      {"ppo_value_loss_coefficient", 1.0},
       {"sac_alpha", 0.1},
       {"print_param_info", false},
       {"save_agent_after_training", true},

@@ -21,13 +21,8 @@
 using namespace mqss::support::quakeDialect;
 namespace fs = std::filesystem;
 
-// Global flag for SIGINT Ctrl+C interruptions.
-volatile sig_atomic_t interrupted = 0;
-void signal_handler(int signal) {
-  if (signal == SIGINT) {
-    interrupted = 1;
-  }
-}
+extern sig_atomic_t interrupted;
+extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
@@ -36,13 +31,6 @@ std::unordered_map<std::string, std::string>
 train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           const std::string &dataset) {
   unsigned int max_qubits = agent_boss->getMaxQubits();
-  if (GLOBAL_PARAMS["print_param_info"].to_bool()) {
-    std::cout << "Training A3C agent with parameters:" << std::endl;
-    std::cout << "  max_qubits: " << max_qubits << std::endl;
-    for (auto [key, value] : GLOBAL_PARAMS) {
-      std::cout << "  " << key << ": " << value.to_string() << std::endl;
-    }
-  }
 
   // Default values
   unsigned int nr_asynchronous_agents =
@@ -67,7 +55,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
   torch::TensorOptions options =
       torch::TensorOptions().device(device).dtype(torch::kFloat32);
-  double global_max_reward = -std::numeric_limits<double>::max();
+  float global_max_reward = -std::numeric_limits<float>::max();
   int64_t T = max_steps_per_episode;
 
   auto global_mutex = std::make_unique<std::mutex>();
@@ -114,7 +102,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           episode_rewards_vector.reserve(T);
           episode_entropies_vector.reserve(T);
 
-          double total_worker_reward = 0.0;
+          float total_worker_reward = 0.0;
           unsigned int steps_taken = 0u;
           bool add_bootstrap = false;
           for (unsigned int update_step = 0u;
@@ -157,7 +145,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_values_vector.push_back(torch::zeros({}, options));
           }
 
-          torch::Tensor advantages = agent->compute_advatnages(
+          torch::Tensor advantages = agent->compute_advantages(
               /*rewards=*/torch::stack(episode_rewards_vector),
               /*state_values=*/torch::stack(episode_values_vector));
           auto [actor_loss, critic_loss] = agent->get_losses(
@@ -214,19 +202,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 std::unordered_map<std::string, std::string>
 train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           const std::string &dataset) {
-  unsigned int max_qubits = agent->getMaxQubits();
-  if (GLOBAL_PARAMS["print_param_info"].to_bool()) {
-    std::cout << "Training A2C agent with parameters:" << std::endl;
-    std::cout << "  max_qubits: " << max_qubits << std::endl;
-    for (auto [key, value] : GLOBAL_PARAMS) {
-      std::cout << "  " << key << ": " << value.to_string() << std::endl;
-    }
-  }
-  if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
-    agent->check_params();
-  }
-
   // Default values
+  unsigned int max_qubits = agent->getMaxQubits();
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
@@ -245,7 +222,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-
   torch::TensorOptions options =
       torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
@@ -325,7 +301,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                         {max_steps_per_episode, max_steps_per_episode}},
                        /*display_message=*/main_message + " | Computing loss.");
 
-      torch::Tensor advantages = agent->compute_advatnages(
+      torch::Tensor advantages = agent->compute_advantages(
           /*rewards=*/torch::stack(episode_rewards_vector),
           /*state_values=*/torch::stack(episode_values_vector));
       auto [actor_loss, critic_loss] = agent->get_losses(

@@ -7,9 +7,6 @@
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/base_actor_critic.hpp"
 
-// Standard library includes
-#include <memory>
-
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
@@ -18,7 +15,8 @@ enum class OptimizerType : int;
 class BasePPOAgent : public BaseActorCritic {
 protected:
   /// PPO specific attributes
-  double ppo_epsilon = 0.2;
+  double ppo_epsilon = 0;
+  double ppo_value_loss_coefficient = 0;
 
 public:
   /// Constructors
@@ -38,35 +36,40 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// PPO standard methods
-  ///
+
   /**
-   * @param initial_observations
+   * @param observation
+   * @param action_index_unsqueezed
+   * @return [new_log_action_prob, new_state_value, entropy]
    */
-  std::pair<std::vector<torch::Tensor>, torch::Tensor>
-  compute_rollout_data(const torch::Tensor &initial_observations);
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  force_select_action(const torch::Tensor &observation,
+                      const torch::Tensor &action_index_unsqueezed);
 
   /**
    *
-   * @param rollout_observations
-   * @param rollout_actions
    * @param advantages
-   * @param log_action_probs
-   * @param state_values
-   * @return
+   * @param old_log_action_probs
+   * @param old_state_values
+   * @param new_log_action_probs
+   * @param new_state_values
+   * @param entropy
+   * @return total_loss
    */
-  std::pair<torch::Tensor, torch::Tensor> get_losses(
-      const std::vector<torch::Tensor> &rollout_observations,
-      const torch::Tensor &rollout_actions, const torch::Tensor &advantages,
-      const torch::Tensor &log_action_probs, const torch::Tensor &state_values);
+  torch::Tensor get_losses(const torch::Tensor &advantages,
+                           const torch::Tensor &old_log_action_probs,
+                           const torch::Tensor &old_state_values,
+                           const torch::Tensor &new_log_action_probs,
+                           const torch::Tensor &new_state_values,
+                           const torch::Tensor &entropy);
+
+  /**
+   *
+   * @param total_loss
+   */
+  void update_parameters(const torch::Tensor &total_loss) const;
   //////////////////////////////////////////////////////////////////////////////
 
-  /**
-   *
-   * @param circuit_path
-   * @return
-   */
-  std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
-  select_passes_for_circuit(const fs::path &circuit_path) override;
   /// Saving and Loading
   void save_model() const override;
 };

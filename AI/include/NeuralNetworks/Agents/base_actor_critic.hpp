@@ -73,20 +73,25 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// Standard Actor-Critic methods
+
+  /**
+   * @param observation
+   * @return [action_probs, state_value]
+   */
   std::pair<torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &observation);
 
   /**
    * Critic-only pass for bootstrapping.
    * @param observation
-   * @return
+   * @return state_value
    */
   torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
    * @param observation
-   * @return [action, log_action_prob, state_value, entropy]
+   * @return [action, log_action_probs, state_value, entropy]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   select_action(const torch::Tensor &observation);
@@ -99,12 +104,12 @@ public:
   unsigned int select_greedy_action(const torch::Tensor &observation);
 
   /**
-   *
+   * Computes advantages using Generalized Advantage Estimation.
    * @param rewards
    * @param state_values
    * @return
    */
-  torch::Tensor compute_advatnages(const torch::Tensor &rewards,
+  torch::Tensor compute_advantages(const torch::Tensor &rewards,
                                    const torch::Tensor &state_values);
 
   /**
