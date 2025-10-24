@@ -7,7 +7,7 @@
 namespace ai_pass_selector {
 
 struct EpisodeRollout {
-  std::vector<torch::Tensor> observations; // [N_t, IRS], length T
+  std::vector<torch::Tensor> observations; // [N_t, IRS], length T+1
   torch::Tensor actions;                   // [T]
   torch::Tensor log_action_probs;          // [T]
   torch::Tensor state_values;              // [T+1]

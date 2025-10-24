@@ -103,8 +103,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       rollout_new.observations.push_back(observation);
       if (add_bootstrap || update_step >= max_steps_per_episode) {
         torch::NoGradGuard _;
-        torch::Tensor bootstrap_value =
-            agent->get_value(environment.get_observation_as_torch_tensor());
+        torch::Tensor bootstrap_value = agent->get_value(observation);
         values_vector.push_back(bootstrap_value);
       } else {
         values_vector.push_back(torch::zeros({}, options));
@@ -117,7 +116,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout A
       unsigned int steps_in_episode = rollout_old.observations.size();
-      if (steps_in_episode <= 0) {
+      // Observations is length T+1.
+      // Must reduce to T to match actions, rewards, log_action_probs.
+      if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
         continue;
@@ -141,8 +142,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       torch::Tensor advantages = agent->compute_advantages(
           /*rewards=*/rollout_old.rewards.to(device),
           /*state_values=*/rollout_old.state_values.to(device));
-      torch::Tensor total_loss = agent->get_losses(
-          /*advantages=*/advantages,
+
+      torch::Tensor total_loss = agent->get_total_loss(
+          /*advantages=*/advantages.detach(),
           /*old_log_action_probs=*/
           rollout_old.log_action_probs.detach().to(device),
           /*old_state_values=*/rollout_old.state_values.detach().to(device),
