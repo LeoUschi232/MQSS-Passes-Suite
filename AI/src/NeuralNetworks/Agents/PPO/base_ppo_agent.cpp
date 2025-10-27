@@ -36,7 +36,6 @@ BasePPOAgent::force_select_action(
 std::pair<torch::Tensor, torch::Tensor>
 BasePPOAgent::get_losses(const torch::Tensor &old_advantages,       // [T]
                          const torch::Tensor &old_log_action_probs, // [T]
-                         const torch::Tensor &old_state_values,     // [T+1]
                          const torch::Tensor &new_log_action_probs, // [T]
                          const torch::Tensor &new_state_values,     // [T+1]
                          const torch::Tensor &rewards,              // [T]
