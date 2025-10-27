@@ -62,14 +62,8 @@ public:
              const torch::Tensor &old_log_action_probs,
              const torch::Tensor &new_log_action_probs,
              const torch::Tensor &new_state_values,
-             const torch::Tensor &rewards,
-             const torch::Tensor &entropy);
+             const torch::Tensor &rewards, const torch::Tensor &entropy);
 
-  /**
-   *
-   * @param total_loss
-   */
-  void update_parameters(const torch::Tensor &total_loss) const;
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading
