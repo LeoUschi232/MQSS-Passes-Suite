@@ -64,6 +64,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       /// Inner loop 1: Rollout A
       double total_episode_reward = 0.0;
       environment.reset();
+        auto [nr_qubits, nr_gates] = environment.size();
 
       EpisodeRollout rollout_new;
       std::vector<torch::Tensor> actions_vector;
@@ -80,6 +81,18 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
+        updateProgresses({{episode_idx, nr_episodes},
+                          {update_step + 1, max_steps_per_episode}},
+                         /*display_message=*/"Rollout A | Episode Reward: " +
+                             std::to_string(total_episode_reward) +
+                             " | Nr qubits: " + std::to_string(nr_qubits) +
+                             " | Nr gates: " + std::to_string(nr_gates));
+        if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in PPO training."
+                    << std::endl;
+          break;
+        }
+
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         auto [action, log_action_prob, state_value, _] =
@@ -128,6 +141,20 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       state_values_vector.clear();
       std::vector<torch::Tensor> entropies_vector;
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
+        updateProgresses({{episode_idx, nr_episodes},
+                          {update_step + 1, max_steps_per_episode}},
+                         /*display_message=*/"Rollout A | Episode Reward: " +
+                             std::to_string(total_episode_reward) +
+                             " | Nr qubits: " + std::to_string(nr_qubits) +
+                             " | Nr gates: " + std::to_string(nr_gates));
+        if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in PPO training."
+                    << std::endl;
+          break;
+        }
+
+
+
         auto [log_action_probs, state_value, entropy] =
             agent->force_select_action(
                 /*observation=*/rollout_old.observations[update_step],

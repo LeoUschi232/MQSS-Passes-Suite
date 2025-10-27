@@ -236,6 +236,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                        /*display_message=*/"Resetting enviornment.");
       double total_episode_reward = 0.0;
       environment.reset();
+      auto [nr_qubits, nr_gates] = environment.size();
       std::vector<torch::Tensor> episode_log_probs_vector;
       std::vector<torch::Tensor> episode_values_vector;
       std::vector<torch::Tensor> episode_rewards_vector;
@@ -248,7 +249,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       bool add_bootstrap = false;
       for (unsigned int update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
-        auto [nr_qubits, nr_gates] = environment.size();
         updateProgresses({{episode_idx, nr_episodes},
                           {update_step + 1, max_steps_per_episode}},
                          /*display_message=*/"Episode Reward: " +
@@ -289,7 +289,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       } else {
         episode_values_vector.push_back(torch::zeros({}, options));
       }
-      auto [nr_qubits, nr_gates] = environment.size();
       std::string main_message =
           "Episode Reward: " + std::to_string(total_episode_reward) +
           " | Nr qubits: " + std::to_string(nr_qubits) +
