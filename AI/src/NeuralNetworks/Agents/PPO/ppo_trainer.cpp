@@ -114,9 +114,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
-      unsigned int steps_in_episode = rollout_old.observations.size();
       // Observations is length T+1.
-      // Must reduce to T to match actions, rewards, log_action_probs.
+      unsigned int steps_in_episode = rollout_old.observations.size();
+      // Must reduce to T to match actions, log_action_probs, and rewards.
       if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
@@ -126,13 +126,13 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       state_values_vector.clear();
       std::vector<torch::Tensor> entropies_vector;
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
-        auto [new_log_action_prob, new_state_value, entropy] =
+        auto [log_action_probs, state_value, entropy] =
             agent->force_select_action(
                 /*observation=*/rollout_old.observations[update_step],
                 /*action_index_unsqueezed=*/rollout_old.actions[update_step]
                     .unsqueeze(-1));
-        log_action_probs_vector.push_back(new_log_action_prob);
-        state_values_vector.push_back(new_state_value);
+        log_action_probs_vector.push_back(log_action_probs);
+        state_values_vector.push_back(state_value);
         entropies_vector.push_back(entropy);
       }
       state_values_vector.push_back(
