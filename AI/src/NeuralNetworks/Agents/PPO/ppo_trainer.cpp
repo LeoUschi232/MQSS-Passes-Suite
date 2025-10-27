@@ -138,10 +138,6 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       state_values_vector.push_back(
           agent->get_value(rollout_old.observations.back()));
 
-      torch::Tensor advantages = agent->compute_advantages(
-          /*rewards=*/rollout_old.rewards.to(device),
-          /*state_values=*/rollout_old.state_values.to(device));
-
       auto [actor_loss, critic_loss] = agent->get_losses(
           /*advantages=*/advantages.detach(),
           /*old_log_action_probs=*/

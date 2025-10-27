@@ -43,8 +43,7 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
 ) {
   torch::Tensor ratio = torch::exp(new_log_action_probs - old_log_action_probs);
   torch::Tensor old_advantages =
-      this->compute_advantages(/*rewards=*/rewards,
-                               /*state_values=*/old_state_values);
+      this->compute_advantages(rewards, old_state_values).detach();
   torch::Tensor surrogate1 = ratio * old_advantages;
   torch::Tensor surrogate2 =
       torch::clamp(ratio, this->min_ratio, this->max_ratio) * old_advantages;
@@ -52,9 +51,7 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
   if (this->ppo_critic_loss_on_advantages) {
     // Standard A3C GAE-based critic loss
     // Critic error: V(s_t) - A_t
-    critic_error = this->compute_advantages(
-        /*rewards=*/rewards,
-        /*state_values=*/new_state_values);
+    critic_error = this->compute_advantages(rewards, new_state_values);
   } else {
     // Critic loss as suggested by:
     // https://spinningup.openai.com/en/latest/algorithms/ppo.html
