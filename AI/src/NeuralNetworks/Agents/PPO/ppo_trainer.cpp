@@ -139,9 +139,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           agent->get_value(rollout_old.observations.back()));
 
       auto [actor_loss, critic_loss] = agent->get_losses(
-          /*advantages=*/advantages.detach(),
+          /*advantages=*/rollout_old.log_action_probs.detach().to(device),
           /*old_log_action_probs=*/
-          rollout_old.log_action_probs.detach().to(device),
+          rollout_old.state_values.detach().to(device),
           /*new_log_action_probs=*/
           torch::stack(log_action_probs_vector).to(device),
           /*new_state_values=*/
@@ -152,7 +152,6 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       /// Update parameters
       agent->update_parameters(actor_loss, critic_loss);
       rollout_old = std::move(rollout_new);
-
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
