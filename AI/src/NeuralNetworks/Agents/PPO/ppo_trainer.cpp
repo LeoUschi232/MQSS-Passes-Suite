@@ -51,6 +51,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   EpisodeRollout rollout_old;
   bool add_bootstrap_old = false;
+  double previous_episode_reward = 0.0;
+  unsigned int previous_nr_qubits = 0u;
+  unsigned int previous_nr_gates = 0u;
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
@@ -64,7 +67,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       /// Inner loop 1: Rollout A
       double total_episode_reward = 0.0;
       environment.reset();
-        auto [nr_qubits, nr_gates] = environment.size();
+      auto [nr_qubits, nr_gates] = environment.size();
 
       EpisodeRollout rollout_new;
       std::vector<torch::Tensor> actions_vector;
@@ -141,20 +144,17 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       state_values_vector.clear();
       std::vector<torch::Tensor> entropies_vector;
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
-        updateProgresses({{episode_idx, nr_episodes},
-                          {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Rollout A | Episode Reward: " +
-                             std::to_string(total_episode_reward) +
-                             " | Nr qubits: " + std::to_string(nr_qubits) +
-                             " | Nr gates: " + std::to_string(nr_gates));
+        updateProgresses(
+            {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
+            /*display_message=*/"Rollout B | Episode Reward: " +
+                std::to_string(previous_episode_reward) +
+                " | Nr qubits: " + std::to_string(previous_nr_qubits) +
+                " | Nr gates: " + std::to_string(previous_nr_gates));
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in PPO training."
                     << std::endl;
           break;
         }
-
-
-
         auto [log_action_probs, state_value, entropy] =
             agent->force_select_action(
                 /*observation=*/rollout_old.observations[update_step],
@@ -170,6 +170,16 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       } else {
         state_values_vector.push_back(torch::zeros({}, options));
       }
+
+      //////////////////////////////////////////////////////////////////////////
+      /// Compute Losses
+      std::string main_message =
+          "Episode Reward: " + std::to_string(total_episode_reward) +
+          " | Nr qubits: " + std::to_string(nr_qubits) +
+          " | Nr gates: " + std::to_string(nr_gates);
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, steps_in_episode}},
+                       /*display_message=*/main_message + " | Computing loss.");
       auto [actor_loss, critic_loss] = agent->get_losses(
           /*old_log_action_probs=*/rollout_old.log_action_probs.detach().to(
               device),
@@ -181,11 +191,19 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           torch::stack(state_values_vector).to(device),
           /*rewards=*/rollout_old.rewards.to(device),
           /*entropy=*/torch::stack(entropies_vector).to(device));
+
       //////////////////////////////////////////////////////////////////////////
-      /// Update parameters
+      /// Update Parameters
+      updateProgresses({{episode_idx, nr_episodes},
+                        {max_steps_per_episode, steps_in_episode}},
+                       /*display_message=*/main_message +
+                           " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
       rollout_old = std::move(rollout_new);
       add_bootstrap_old = add_bootstrap_new;
+      previous_episode_reward = total_episode_reward;
+      previous_nr_qubits = nr_qubits;
+      previous_nr_gates = nr_gates;
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
