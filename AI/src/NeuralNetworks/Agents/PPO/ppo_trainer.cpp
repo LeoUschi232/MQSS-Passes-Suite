@@ -142,15 +142,15 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           /*rewards=*/rollout_old.rewards.to(device),
           /*state_values=*/rollout_old.state_values.to(device));
 
-      torch::Tensor total_loss = agent->get_losses(
+      auto [actor_loss, critic_loss] = agent->get_losses(
           /*advantages=*/advantages.detach(),
           /*old_log_action_probs=*/
           rollout_old.log_action_probs.detach().to(device),
-          /*old_state_values=*/rollout_old.state_values.detach().to(device),
           /*new_log_action_probs=*/
           torch::stack(log_action_probs_vector).to(device),
           /*new_state_values=*/
           torch::stack(state_values_vector).to(device),
+          /*rwards=*/rollout_old.rewards.to(device),
           /*entropy=*/torch::stack(entropies_vector).to(device));
       //////////////////////////////////////////////////////////////////////////
       /// Update parameters
