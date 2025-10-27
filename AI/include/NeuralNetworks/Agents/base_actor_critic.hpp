@@ -110,7 +110,15 @@ public:
    * @return
    */
   torch::Tensor compute_advantages(const torch::Tensor &rewards,
-                                   const torch::Tensor &state_values);
+  const torch::Tensor &state_values);
+
+  /**
+   * Computes rewards-to-go:
+   * G_t = gamma^(-t) * sum_{t'=t}^{T} gamma^(t') * R_{t'}
+   * @param rewards
+   * @return
+   */
+  torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
 
   /**
    *

@@ -104,10 +104,10 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   const torch::Tensor entropy =
       -(action_probs * unsqueezed_log_action_probs).sum(/*dim=*/-1).squeeze(-1);
   return {
-      action_index,     // Shape []
+      action_index,    // Shape []
       log_action_prob, // Shape []
-      state_value,      // Shape []
-      entropy           // Shape []
+      state_value,     // Shape []
+      entropy          // Shape []
   };
 }
 
@@ -147,6 +147,23 @@ torch::Tensor BaseActorCritic::compute_advantages(
     advantages[t] = A_gae;
   }
   return advantages;
+}
+torch::Tensor
+BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
+  // Let T = final timestep of an episode.
+  // An episode generates T rewards from R_1 to R_T.
+  int T = rewards.size(0);
+  if (T <= 0) {
+    return torch::tensor({}, rewards.options());
+  }
+  const torch::TensorOptions options = rewards.options();
+  torch::Tensor rewards_to_go = torch::zeros({T}, options);
+  rewards_to_go[T - 1] = rewards[T - 1];
+  for (int t = T - 2; t >= 0; t--) {
+    rewards_to_go[t] =
+        rewards[t] + this->discount_factor * rewards_to_go[t + 1];
+  }
+  return rewards_to_go;
 }
 
 void BaseActorCritic::update_parameters(

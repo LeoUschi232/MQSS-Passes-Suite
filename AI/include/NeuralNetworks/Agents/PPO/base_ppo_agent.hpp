@@ -15,9 +15,9 @@ enum class OptimizerType : int;
 class BasePPOAgent : public BaseActorCritic {
 protected:
   /// PPO specific attributes
-  double ppo_value_loss_coefficient = 0;
   double min_ratio = 0.0;
   double max_ratio = 0.0;
+  bool ppo_critic_loss_on_advantages = false;
 
 public:
   /// Constructors
@@ -49,7 +49,7 @@ public:
 
   /**
    *
-   * @param advantages
+   * @param old_advantages
    * @param old_log_action_probs
    * @param old_state_values
    * @param new_log_action_probs
@@ -58,7 +58,7 @@ public:
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &advantages,
+  get_losses(const torch::Tensor &old_advantages,
              const torch::Tensor &old_log_action_probs,
              const torch::Tensor &old_state_values,
              const torch::Tensor &new_log_action_probs,

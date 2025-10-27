@@ -14,10 +14,10 @@ extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 BasePPOAgent::BasePPOAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   double ppo_epsilon = GLOBAL_PARAMS["ppo_epsilon"].to_double();
-  this->ppo_value_loss_coefficient =
-      GLOBAL_PARAMS["ppo_value_loss_coefficient"].to_double();
   this->min_ratio = 1.0 - ppo_epsilon;
   this->max_ratio = 1.0 + ppo_epsilon;
+  this->ppo_critic_loss_on_advantages =
+      GLOBAL_PARAMS["ppo_critic_loss_on_advantages"].to_bool();
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
@@ -34,29 +34,34 @@ BasePPOAgent::force_select_action(
   return {squeezed_log_action_probs, state_value, entropy};
 }
 std::pair<torch::Tensor, torch::Tensor>
-BasePPOAgent::get_losses(const torch::Tensor &advantages,
+BasePPOAgent::get_losses(const torch::Tensor &old_advantages,       // [T]
                          const torch::Tensor &old_log_action_probs, // [T]
                          const torch::Tensor &old_state_values,     // [T+1]
                          const torch::Tensor &new_log_action_probs, // [T]
                          const torch::Tensor &new_state_values,     // [T+1]
+                         const torch::Tensor &rewards,              // [T]
                          const torch::Tensor &entropy               // [T]
 ) {
   torch::Tensor ratio = torch::exp(new_log_action_probs - old_log_action_probs);
-  torch::Tensor surrogate1 = ratio * advantages;
+  torch::Tensor surrogate1 = ratio * old_advantages;
   torch::Tensor surrogate2 =
-      torch::clamp(ratio, this->min_ratio, this->max_ratio) * advantages;
-  torch::Tensor policy_loss = -torch::min(surrogate1, surrogate2).mean();
-  int64_t T = advantages.size(0);
-  torch::Tensor returns =
-      advantages + old_state_values.narrow(/*dim=*/0, /*start=*/0,
-                                           /*length=*/T);
-  torch::Tensor value_loss = new_state_values.narrow(
-      /*dim=*/0, /*start=*/0, /*length=*/T);
-  value_loss -= returns;
-  value_loss = value_loss.pow(2).mean();
-  torch::Tensor entropy_loss = entropy.mean();
-  return policy_loss + this->ppo_value_loss_coefficient * value_loss -
-         this->entropy_coefficient * entropy_loss;
+      torch::clamp(ratio, this->min_ratio, this->max_ratio) * old_advantages;
+  torch::Tensor critic_error;
+  if (this->ppo_critic_loss_on_advantages) {
+    // Standard A3C GAE-based critic loss
+    // Critic error: V(s_t) - A_t
+    critic_error = this->compute_advantages(
+        /*rewards=*/rewards,
+        /*state_values=*/new_state_values);
+  } else {
+    // Critic loss as suggested by:
+    // https://spinningup.openai.com/en/latest/algorithms/ppo.html
+    // Critic error: V(s_t) - G_t
+    critic_error = new_state_values - this->compute_rewards_to_go(rewards);
+  }
+  return {/*actor_loss=*/-torch::min(surrogate1, surrogate2).mean() +
+              this->entropy_coefficient * entropy,
+          /*critic_loss=*/critic_error.pow(2).mean()};
 }
 
 void BasePPOAgent::update_parameters(const torch::Tensor &total_loss) const {
