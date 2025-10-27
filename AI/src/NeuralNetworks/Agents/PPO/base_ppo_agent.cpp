@@ -60,8 +60,8 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
                                            /*length=*/rewards.size(0)) -
                    this->compute_rewards_to_go(rewards);
   }
-  return {/*actor_loss=*/-torch::min(surrogate1, surrogate2).mean() +
-              this->entropy_coefficient * entropy,
+  return {/*actor_loss=*/-torch::min(surrogate1, surrogate2).mean() -
+              this->entropy_coefficient * entropy.mean(),
           /*critic_loss=*/critic_error.pow(2).mean()};
 }
 

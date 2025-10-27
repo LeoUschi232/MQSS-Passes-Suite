@@ -50,6 +50,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
 
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   EpisodeRollout rollout_old;
+  bool add_bootstrap_old = false;
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
@@ -75,7 +76,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       state_values_vector.reserve(T + 1);
       rewards_vector.reserve(T);
 
-      bool add_bootstrap = false;
+      bool add_bootstrap_new = false;
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
@@ -92,7 +93,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         rewards_vector.push_back(torch::tensor(reward, options));
         total_episode_reward += reward;
         if (truncated) {
-          add_bootstrap = true;
+          add_bootstrap_new = true;
           break;
         }
         if (terminated) {
@@ -101,7 +102,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       }
       torch::Tensor observation = environment.get_observation_as_torch_tensor();
       rollout_new.observations.push_back(observation);
-      if (add_bootstrap || update_step >= max_steps_per_episode) {
+      if (add_bootstrap_new || update_step >= max_steps_per_episode) {
         torch::NoGradGuard _;
         state_values_vector.push_back(agent->get_value(observation));
       } else {
@@ -120,6 +121,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
+        add_bootstrap_old = add_bootstrap_new;
         continue;
       }
       log_action_probs_vector.clear();
@@ -135,12 +137,17 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         state_values_vector.push_back(state_value);
         entropies_vector.push_back(entropy);
       }
-      state_values_vector.push_back(
-          agent->get_value(rollout_old.observations.back()));
+      if (add_bootstrap_old) {
+        state_values_vector.push_back(
+            agent->get_value(rollout_old.observations.back()));
+      } else {
+        state_values_vector.push_back(torch::zeros({}, options));
+      }
 
       auto [actor_loss, critic_loss] = agent->get_losses(
-          /*advantages=*/rollout_old.log_action_probs.detach().to(device),
-          /*old_log_action_probs=*/
+          /*old_log_action_probs=*/rollout_old.log_action_probs.detach().to(
+              device),
+          /*old_state_values=*/
           rollout_old.state_values.detach().to(device),
           /*new_log_action_probs=*/
           torch::stack(log_action_probs_vector).to(device),
@@ -152,6 +159,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       /// Update parameters
       agent->update_parameters(actor_loss, critic_loss);
       rollout_old = std::move(rollout_new);
+      add_bootstrap_old = add_bootstrap_new;
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
