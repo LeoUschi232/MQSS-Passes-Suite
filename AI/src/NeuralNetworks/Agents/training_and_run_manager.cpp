@@ -31,8 +31,26 @@ train(const std::string &agent_name, const std::string &dataset) {
       AbstractAgent::getAgent(agent_name);
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
-            attributes.agent_class) {
+    attributes.agent_class) {
     case AgentClass::A3C: {
+      std::unique_ptr<BaseA3CAgent> agent(
+          dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BaseA3CAgent");
+      }
+      agent->load_model();
+      unsigned int nr_asynchronous_agents =
+          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
+      if (nr_asynchronous_agents <= 1u) {
+        std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
+                  << std::endl;
+        training_results = train_a2c(agent, dataset);
+      } else {
+        training_results = train_a3c(agent, dataset);
+      }
+      break;
+    }
+    case AgentClass::PPO: {
       std::unique_ptr<BaseA3CAgent> agent(
           dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
       if (!agent) {
