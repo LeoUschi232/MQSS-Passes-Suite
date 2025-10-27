@@ -16,8 +16,6 @@ BasePPOAgent::BasePPOAgent(unsigned int max_qubits)
   double ppo_epsilon = GLOBAL_PARAMS["ppo_epsilon"].to_double();
   this->min_ratio = 1.0 - ppo_epsilon;
   this->max_ratio = 1.0 + ppo_epsilon;
-  this->ppo_critic_loss_on_advantages =
-      GLOBAL_PARAMS["ppo_critic_loss_on_advantages"].to_bool();
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
@@ -44,25 +42,19 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
   torch::Tensor ratio = torch::exp(new_log_action_probs - old_log_action_probs);
   torch::Tensor old_advantages =
       this->compute_advantages(rewards, old_state_values).detach();
-  torch::Tensor surrogate1 = ratio * old_advantages;
-  torch::Tensor surrogate2 =
-      torch::clamp(ratio, this->min_ratio, this->max_ratio) * old_advantages;
-  torch::Tensor critic_error;
-  if (this->ppo_critic_loss_on_advantages) {
-    // Standard A3C GAE-based critic loss
-    // Critic error: V(s_t) - A_t
-    critic_error = this->compute_advantages(rewards, new_state_values);
-  } else {
-    // Critic loss as suggested by:
-    // https://spinningup.openai.com/en/latest/algorithms/ppo.html
-    // Critic error: V(s_t) - G_t
-    critic_error = new_state_values.narrow(/*dim=*/0, /*start=*/0,
-                                           /*length=*/rewards.size(0)) -
-                   this->compute_rewards_to_go(rewards);
-  }
-  return {/*actor_loss=*/-torch::min(surrogate1, surrogate2).mean() -
+  int64_t T = rewards.size(0);
+  return {/*actor_loss=*/-torch::min(
+              ratio * old_advantages,
+              torch::clamp(ratio, this->min_ratio, this->max_ratio) *
+                  old_advantages)
+                  .mean() -
               this->entropy_coefficient * entropy.mean(),
-          /*critic_loss=*/critic_error.pow(2).mean()};
+          /*critic_loss=*/(
+              new_state_values.narrow(/*dim=*/0, /*start=*/0, /*length=*/T) -
+              old_advantages -
+              old_state_values.narrow(/*dim=*/0, /*start=*/0, /*length=*/T))
+              .pow(2)
+              .mean()};
 }
 
 void BasePPOAgent::save_model() const { BaseActorCritic::save_model(); }

@@ -17,7 +17,6 @@ protected:
   /// PPO specific attributes
   double min_ratio = 0.0;
   double max_ratio = 0.0;
-  bool ppo_critic_loss_on_advantages = false;
 
 public:
   /// Constructors

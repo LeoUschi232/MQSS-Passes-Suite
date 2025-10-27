@@ -185,7 +185,6 @@ void load_default_params() {
       {"critic_learning_rate", 5e-3},
       {"ppo_epsilon", 0.2},
       {"ppo_value_loss_coefficient", 1.0},
-      {"ppo_critic_loss_on_advantages", false},
       {"sac_alpha", 0.1},
       {"print_param_info", false},
       {"save_agent_after_training", true},
