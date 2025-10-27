@@ -57,14 +57,15 @@ public:
                          const torch::Tensor &critic_loss) const override;
 
   /**
-   * @param advantages
    * @param log_action_probs
+   * @param state_values
+   * @param rewards
    * @param entropy
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &advantages,
-             const torch::Tensor &log_action_probs,
+  get_losses(const torch::Tensor &log_action_probs,
+             const torch::Tensor &state_values, const torch::Tensor &rewards,
              const torch::Tensor &entropy);
 
   /**

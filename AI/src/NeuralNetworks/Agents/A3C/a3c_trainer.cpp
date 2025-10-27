@@ -144,13 +144,10 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           } else {
             episode_values_vector.push_back(torch::zeros({}, options));
           }
-
-          torch::Tensor advantages = agent->compute_advantages(
-              /*rewards=*/torch::stack(episode_rewards_vector),
-              /*state_values=*/torch::stack(episode_values_vector));
           auto [actor_loss, critic_loss] = agent->get_losses(
-              /*advantages=*/advantages,
               /*log_action_probs=*/torch::stack(episode_log_probs_vector),
+              /*state_values=*/torch::stack(episode_values_vector),
+              /*rewards=*/torch::stack(episode_rewards_vector),
               /*entropy=*/torch::stack(episode_entropies_vector));
 
           // In synchronous A2C one would now call agent->update_parameters().
@@ -300,13 +297,10 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       updateProgresses({{episode_idx, nr_episodes},
                         {max_steps_per_episode, max_steps_per_episode}},
                        /*display_message=*/main_message + " | Computing loss.");
-
-      torch::Tensor advantages = agent->compute_advantages(
-          /*rewards=*/torch::stack(episode_rewards_vector),
-          /*state_values=*/torch::stack(episode_values_vector));
       auto [actor_loss, critic_loss] = agent->get_losses(
-          /*advantages=*/advantages,
           /*log_action_probs=*/torch::stack(episode_log_probs_vector),
+          /*state_values=*/torch::stack(episode_values_vector),
+          /*rewards=*/torch::stack(episode_rewards_vector),
           /*entropy=*/torch::stack(episode_entropies_vector));
       updateProgresses({{episode_idx, nr_episodes},
                         {max_steps_per_episode, max_steps_per_episode}},
