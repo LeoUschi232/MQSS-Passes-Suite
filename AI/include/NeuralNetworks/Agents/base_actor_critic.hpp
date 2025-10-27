@@ -7,9 +7,6 @@
 // Torch includes
 #include "torch/torch.h"
 
-// Utils includes
-#include "Utils/info_utils.hpp"
-
 // Standard library includes
 #include <memory>
 #include <mutex>

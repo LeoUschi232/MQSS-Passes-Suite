@@ -56,7 +56,7 @@ train(const std::string &agent_name, const std::string &dataset) {
       std::unique_ptr<BasePPOAgent> agent(
           dynamic_cast<BasePPOAgent *>(abstract_agent.release()));
       if (!agent) {
-        throw std::runtime_error("Failed to cast to BaseA3CAgent");
+        throw std::runtime_error("Failed to cast to BasePPOAgent");
       }
       agent->load_model();
       training_results = train_ppo(agent, dataset);
@@ -67,7 +67,7 @@ train(const std::string &agent_name, const std::string &dataset) {
       return {};
     }
   } catch (const std::runtime_error &e) {
-    std::cerr << "\n" << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
     return {};
   }
   return training_results;
