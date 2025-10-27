@@ -39,6 +39,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       GLOBAL_PARAMS["a3c_max_async_steps"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  unsigned int save_agent_every_ith_episode =
+      GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
@@ -60,6 +62,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
 
   auto global_mutex = std::make_unique<std::mutex>();
   unsigned int global_async_step = 0u;
+  unsigned int global_episode = 0u;
   std::cout << "Beginning training." << std::endl;
   updateProgress(0u, a3c_max_async_steps, "Beginning training");
 
@@ -80,6 +83,10 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         while (true) {
           {
             std::lock_guard lock(*global_mutex);
+            if (global_episode >= save_agent_every_ith_episode) {
+              agent_boss->save_model();
+              global_episode -= save_agent_every_ith_episode;
+            }
             if (global_async_step >= a3c_max_async_steps) {
               break;
             }
@@ -167,6 +174,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           agent_boss->update_parameters_assuming_gradients_are_loaded();
           {
             std::lock_guard lock(*global_mutex);
+            global_episode++;
             global_async_step += steps_taken;
             global_max_reward =
                 std::max(global_max_reward, total_worker_reward);
@@ -204,6 +212,8 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  unsigned int save_agent_every_ith_episode =
+      GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
@@ -230,10 +240,14 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     if (interrupted) {
       break;
     }
+    if (episode_idx % save_agent_every_ith_episode == 0) {
+      agent->save_model();
+      updateProgress(episode_idx, nr_episodes,
+                     /*display_message=*/"Saving Agent.");
+    }
+    updateProgress(episode_idx, nr_episodes,
+                   /*display_message=*/"Resetting Enviornment.");
     try {
-      updateProgresses({{episode_idx, nr_episodes},
-                        {max_steps_per_episode, max_steps_per_episode}},
-                       /*display_message=*/"Resetting enviornment.");
       double total_episode_reward = 0.0;
       environment.reset();
       auto [nr_qubits, nr_gates] = environment.size();
@@ -256,7 +270,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates) +
                              " | Running step.");
-
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in A2C training."
                     << std::endl;
