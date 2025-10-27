@@ -60,19 +60,19 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
                      /*display_message=*/"Resetting enviornment.");
     try {
       //////////////////////////////////////////////////////////////////////////
-      /// Inner loop 1: Rollout B
+      /// Inner loop 1: Rollout A
       double total_episode_reward = 0.0;
       environment.reset();
 
       EpisodeRollout rollout_new;
       std::vector<torch::Tensor> actions_vector;
       std::vector<torch::Tensor> log_action_probs_vector;
-      std::vector<torch::Tensor> values_vector;
+      std::vector<torch::Tensor> state_values_vector;
       std::vector<torch::Tensor> rewards_vector;
       rollout_new.observations.reserve(T + 1);
       actions_vector.reserve(T);
       log_action_probs_vector.reserve(T);
-      values_vector.reserve(T + 1);
+      state_values_vector.reserve(T + 1);
       rewards_vector.reserve(T);
 
       bool add_bootstrap = false;
@@ -81,12 +81,12 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
            update_step++) {
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        auto [action, log_action_probs, state_values, _] =
+        auto [action, log_action_prob, state_value, _] =
             agent->select_action(observation);
         rollout_new.observations.push_back(observation);
         actions_vector.push_back(action);
-        log_action_probs_vector.push_back(log_action_probs);
-        values_vector.push_back(state_values);
+        log_action_probs_vector.push_back(log_action_prob);
+        state_values_vector.push_back(state_value);
         auto [reward, terminated, truncated] =
             environment.step(action.item<int>());
         rewards_vector.push_back(torch::tensor(reward, options));
@@ -103,18 +103,17 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       rollout_new.observations.push_back(observation);
       if (add_bootstrap || update_step >= max_steps_per_episode) {
         torch::NoGradGuard _;
-        torch::Tensor bootstrap_value = agent->get_value(observation);
-        values_vector.push_back(bootstrap_value);
+        state_values_vector.push_back(agent->get_value(observation));
       } else {
-        values_vector.push_back(torch::zeros({}, options));
+        state_values_vector.push_back(torch::zeros({}, options));
       }
       rollout_new.actions = torch::stack(actions_vector).to(device);
       rollout_new.log_action_probs =
           torch::stack(log_action_probs_vector).to(device);
-      rollout_new.state_values = torch::stack(values_vector).to(device);
+      rollout_new.state_values = torch::stack(state_values_vector).to(device);
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
       //////////////////////////////////////////////////////////////////////////
-      /// Inner loop 2: Rollout A
+      /// Inner loop 2: Rollout B
       unsigned int steps_in_episode = rollout_old.observations.size();
       // Observations is length T+1.
       // Must reduce to T to match actions, rewards, log_action_probs.
@@ -124,7 +123,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         continue;
       }
       log_action_probs_vector.clear();
-      values_vector.clear();
+      state_values_vector.clear();
       std::vector<torch::Tensor> entropies_vector;
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         auto [new_log_action_prob, new_state_value, entropy] =
@@ -133,17 +132,17 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
                 /*action_index_unsqueezed=*/rollout_old.actions[update_step]
                     .unsqueeze(-1));
         log_action_probs_vector.push_back(new_log_action_prob);
-        values_vector.push_back(new_state_value);
+        state_values_vector.push_back(new_state_value);
         entropies_vector.push_back(entropy);
       }
-      values_vector.push_back(
+      state_values_vector.push_back(
           agent->get_value(rollout_old.observations.back()));
 
       torch::Tensor advantages = agent->compute_advantages(
           /*rewards=*/rollout_old.rewards.to(device),
           /*state_values=*/rollout_old.state_values.to(device));
 
-      torch::Tensor total_loss = agent->get_total_loss(
+      torch::Tensor total_loss = agent->get_losses(
           /*advantages=*/advantages.detach(),
           /*old_log_action_probs=*/
           rollout_old.log_action_probs.detach().to(device),
@@ -151,7 +150,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           /*new_log_action_probs=*/
           torch::stack(log_action_probs_vector).to(device),
           /*new_state_values=*/
-          torch::stack(values_vector).to(device),
+          torch::stack(state_values_vector).to(device),
           /*entropy=*/torch::stack(entropies_vector).to(device));
       //////////////////////////////////////////////////////////////////////////
       /// Update parameters

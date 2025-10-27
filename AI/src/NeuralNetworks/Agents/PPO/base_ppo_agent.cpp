@@ -33,28 +33,27 @@ BasePPOAgent::force_select_action(
       -(action_probs * log_action_probs).sum(/*dim=*/-1).squeeze(-1);
   return {squeezed_log_action_probs, state_value, entropy};
 }
-torch::Tensor
-BasePPOAgent::get_total_loss(const torch::Tensor &advantages,
-                             const torch::Tensor &old_log_action_probs, // [T]
-                             const torch::Tensor &old_state_values,     // [T+1]
-                             const torch::Tensor &new_log_action_probs, // [T]
-                             const torch::Tensor &new_state_values,     // [T+1]
-                             const torch::Tensor &entropy               // [T]
+std::pair<torch::Tensor, torch::Tensor>
+BasePPOAgent::get_losses(const torch::Tensor &advantages,
+                         const torch::Tensor &old_log_action_probs, // [T]
+                         const torch::Tensor &old_state_values,     // [T+1]
+                         const torch::Tensor &new_log_action_probs, // [T]
+                         const torch::Tensor &new_state_values,     // [T+1]
+                         const torch::Tensor &entropy               // [T]
 ) {
   torch::Tensor ratio = torch::exp(new_log_action_probs - old_log_action_probs);
   torch::Tensor surrogate1 = ratio * advantages;
   torch::Tensor surrogate2 =
       torch::clamp(ratio, this->min_ratio, this->max_ratio) * advantages;
   torch::Tensor policy_loss = -torch::min(surrogate1, surrogate2).mean();
-  auto T = advantages.size(0);
+  int64_t T = advantages.size(0);
   torch::Tensor returns =
       advantages + old_state_values.narrow(/*dim=*/0, /*start=*/0,
                                            /*length=*/T);
-  torch::Tensor value_loss = (new_state_values.narrow(/*dim=*/0, /*start=*/0,
-                                                      /*length=*/T) -
-                              returns)
-                                 .pow(2)
-                                 .mean();
+  torch::Tensor value_loss = new_state_values.narrow(
+      /*dim=*/0, /*start=*/0, /*length=*/T);
+  value_loss -= returns;
+  value_loss = value_loss.pow(2).mean();
   torch::Tensor entropy_loss = entropy.mean();
   return policy_loss + this->ppo_value_loss_coefficient * value_loss -
          this->entropy_coefficient * entropy_loss;

@@ -55,14 +55,15 @@ public:
    * @param new_log_action_probs
    * @param new_state_values
    * @param entropy
-   * @return total_loss
+   * @return [actor_loss, critic_loss]
    */
-  torch::Tensor get_total_loss(const torch::Tensor &advantages,
-                               const torch::Tensor &old_log_action_probs,
-                               const torch::Tensor &old_state_values,
-                               const torch::Tensor &new_log_action_probs,
-                               const torch::Tensor &new_state_values,
-                               const torch::Tensor &entropy);
+  std::pair<torch::Tensor, torch::Tensor>
+  get_losses(const torch::Tensor &advantages,
+             const torch::Tensor &old_log_action_probs,
+             const torch::Tensor &old_state_values,
+             const torch::Tensor &new_log_action_probs,
+             const torch::Tensor &new_state_values,
+             const torch::Tensor &entropy);
 
   /**
    *

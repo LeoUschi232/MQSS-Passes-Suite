@@ -88,12 +88,13 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   // Gather extracts the values at specified indexes along the specified axis.
   // Parameter indexes must have the same nr of axes as the input tensor, here
   // each has 2 axes.
-  // log_action_probs ~ [NR_PASSES]
+  // unsqueezed_log_action_probs ~ [NR_PASSES]
   // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [1]
   // X.squeeze(dim=-1) ~ []
-  const torch::Tensor log_action_probs = action_probs.log();
-  const torch::Tensor squeezed_log_action_probs =
-      log_action_probs.gather(/*dim=*/-1, /*indexes=*/action_index_unsqueezed)
+  const torch::Tensor unsqueezed_log_action_probs = action_probs.log();
+  const torch::Tensor log_action_prob =
+      unsqueezed_log_action_probs
+          .gather(/*dim=*/-1, /*indexes=*/action_index_unsqueezed)
           .squeeze(-1);
 
   // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
@@ -101,12 +102,12 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
   // -X.sum(dim=-1) ~ [1]
   // X.squeeze(dim=-1) ~ []
   const torch::Tensor entropy =
-      -(action_probs * log_action_probs).sum(/*dim=*/-1).squeeze(-1);
+      -(action_probs * unsqueezed_log_action_probs).sum(/*dim=*/-1).squeeze(-1);
   return {
-      action_index,              // Shape []
-      squeezed_log_action_probs, // Shape []
-      state_value,               // Shape []
-      entropy                    // Shape []
+      action_index,     // Shape []
+      log_action_prob, // Shape []
+      state_value,      // Shape []
+      entropy           // Shape []
   };
 }
 
