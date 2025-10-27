@@ -6,6 +6,8 @@
 // Agents includes
 #include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
+#include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
@@ -31,7 +33,7 @@ train(const std::string &agent_name, const std::string &dataset) {
       AbstractAgent::getAgent(agent_name);
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
-    attributes.agent_class) {
+            attributes.agent_class) {
     case AgentClass::A3C: {
       std::unique_ptr<BaseA3CAgent> agent(
           dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
@@ -51,21 +53,13 @@ train(const std::string &agent_name, const std::string &dataset) {
       break;
     }
     case AgentClass::PPO: {
-      std::unique_ptr<BaseA3CAgent> agent(
-          dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
+      std::unique_ptr<BasePPOAgent> agent(
+          dynamic_cast<BasePPOAgent *>(abstract_agent.release()));
       if (!agent) {
         throw std::runtime_error("Failed to cast to BaseA3CAgent");
       }
       agent->load_model();
-      unsigned int nr_asynchronous_agents =
-          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
-      if (nr_asynchronous_agents <= 1u) {
-        std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
-                  << std::endl;
-        training_results = train_a2c(agent, dataset);
-      } else {
-        training_results = train_a3c(agent, dataset);
-      }
+      training_results = train_ppo(agent, dataset);
       break;
     }
     default:
