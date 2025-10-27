@@ -51,18 +51,18 @@ public:
    *
    * @param old_advantages
    * @param old_log_action_probs
-   * @param old_state_values
    * @param new_log_action_probs
    * @param new_state_values
+   * @param rewards
    * @param entropy
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
   get_losses(const torch::Tensor &old_advantages,
              const torch::Tensor &old_log_action_probs,
-             const torch::Tensor &old_state_values,
              const torch::Tensor &new_log_action_probs,
              const torch::Tensor &new_state_values,
+             const torch::Tensor &rewards,
              const torch::Tensor &entropy);
 
   /**
