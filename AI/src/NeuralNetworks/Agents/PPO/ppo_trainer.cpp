@@ -154,7 +154,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           /*entropy=*/torch::stack(entropies_vector).to(device));
       //////////////////////////////////////////////////////////////////////////
       /// Update parameters
-      agent->update_parameters(total_loss);
+      agent->update_parameters(actor_loss, critic_loss);
       rollout_old = std::move(rollout_new);
 
     } catch (const std::exception &error) {
