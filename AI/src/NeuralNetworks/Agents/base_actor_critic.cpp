@@ -184,10 +184,10 @@ void BaseActorCritic::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  torch::save(this->critic, critic_path.string());
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   torch::save(this->actor, actor_path.string());
+  torch::save(this->critic, critic_path.string());
 }
 
 void BaseActorCritic::load_model() {
@@ -196,13 +196,13 @@ void BaseActorCritic::load_model() {
   if (name.empty()) {
     return;
   }
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
-  torch::load(this->critic, critic_path.string(), this->device);
   torch::load(this->actor, actor_path.string(), this->device);
+  torch::load(this->critic, critic_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
 }
 
