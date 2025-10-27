@@ -245,4 +245,24 @@ void BaseActorCritic::check_params(double tiny, double big) const {
   }
 }
 
+std::vector<std::function<std::unique_ptr<Pass>()>>
+BaseActorCritic::select_passes_for_circuit(const fs::path &circuit_path) {
+  QuantumCircuitEnvironment environment(this->max_qubits);
+  if (!environment.register_quantum_circuit(circuit_path)) {
+    std::cerr << "Failed to register quantum circuit: " << circuit_path
+              << std::endl;
+    return {};
+  }
+  std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
+  bool keep_going = true;
+  while (keep_going) {
+    unsigned int action_index = this->select_greedy_action(
+        environment.get_observation_as_torch_tensor());
+    auto [_, terminated, truncated] = environment.step(action_index);
+    selected_passes.push_back(PASS_FUNCTIONS[action_index]);
+    keep_going = !terminated && !truncated;
+  }
+  return selected_passes;
+}
+
 } // namespace ai_pass_selector
