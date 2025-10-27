@@ -6,6 +6,8 @@
 // Agents includes
 #include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
+#include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
@@ -50,12 +52,22 @@ train(const std::string &agent_name, const std::string &dataset) {
       }
       break;
     }
+    case AgentClass::PPO: {
+      std::unique_ptr<BasePPOAgent> agent(
+          dynamic_cast<BasePPOAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BasePPOAgent");
+      }
+      agent->load_model();
+      training_results = train_ppo(agent, dataset);
+      break;
+    }
     default:
       std::cerr << "No such agent yet: " << agent_name << std::endl;
       return {};
     }
   } catch (const std::runtime_error &e) {
-    std::cerr << "\n" << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
     return {};
   }
   return training_results;

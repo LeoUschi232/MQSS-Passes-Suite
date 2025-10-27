@@ -1,5 +1,8 @@
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
@@ -8,11 +11,9 @@
 
 // Utils includes
 #include "Utils/info_utils.hpp"
-
-// Standard library includes
-#include "Environment/quantum_circuit_environment.hpp"
 #include "Utils/passes_utils.hpp"
 
+// Standard library includes
 #include <memory>
 #include <utility>
 
@@ -32,10 +33,10 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     if (this->is_boss) {
       this->load_model();
     }
-    this->register_module("critic", this->critic);
     this->register_module("actor", this->actor);
-    this->critic->to(this->device);
+    this->register_module("critic", this->critic);
     this->actor->to(this->device);
+    this->critic->to(this->device);
     if (this->is_boss) {
       // Worker agents do not need optimizers.
       // Only boss agent needs optimizers.
@@ -60,6 +61,18 @@ void BaseA3CAgent::zero_grad() {
     }
   }
   this->gradients_zero = true;
+}
+
+std::pair<torch::Tensor, torch::Tensor>
+BaseA3CAgent::get_losses(const torch::Tensor &log_action_probs, // Shape [T]
+                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &rewards,          // Shape [T]
+                         const torch::Tensor &entropy           // Shape [T]
+) {
+  torch::Tensor advantages = this->compute_advantages(rewards, state_values);
+  return {/*actor_loss=*/-(log_action_probs * advantages.detach()).mean() -
+              this->entropy_coefficient * entropy.mean(),
+          /*critic_loss=*/advantages.pow(2).mean()};
 }
 
 void BaseA3CAgent::load_weights(BaseA3CAgent &other) {
@@ -258,27 +271,6 @@ void BaseA3CAgent::save_model() const {
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
   torch::save(this->critic, critic_path.string());
   torch::save(this->actor, actor_path.string());
-}
-
-std::vector<std::function<std::unique_ptr<Pass>()>>
-BaseA3CAgent::select_passes_for_circuit(const fs::path &circuit_path) {
-  QuantumCircuitEnvironment environment(this->max_qubits);
-  if (!environment.register_quantum_circuit(circuit_path)) {
-    std::cerr << "Failed to register quantum circuit: " << circuit_path
-              << std::endl;
-    return {};
-  }
-  std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
-  bool keep_going = true;
-  while (keep_going) {
-    auto [action, _1, _2, _3] =
-        this->select_action(environment.get_observation_as_torch_tensor());
-    int action_index = action.item<int>();
-    auto [_4, terminated, truncated] = environment.step(action_index);
-    selected_passes.push_back(PASS_FUNCTIONS[action_index]);
-    keep_going = !terminated && !truncated;
-  }
-  return selected_passes;
 }
 
 } // namespace ai_pass_selector

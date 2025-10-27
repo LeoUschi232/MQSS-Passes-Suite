@@ -7,9 +7,6 @@
 // Torch includes
 #include "torch/torch.h"
 
-// Utils includes
-#include "Utils/info_utils.hpp"
-
 // Standard library includes
 #include <memory>
 #include <mutex>
@@ -30,6 +27,9 @@ protected:
   double actor_learning_rate = 0.0;
   double critic_learning_rate = 0.0;
   torch::Device device = torch::kCPU;
+  double discount_factor = 0.0;
+  double gae_hyperparameter = 0.0;
+  double entropy_coefficient = 0.0;
 
   /// Global Attributes
   torch::nn::Sequential actor = nullptr;
@@ -70,42 +70,52 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// Standard Actor-Critic methods
+
+  /**
+   * @param observation
+   * @return [action_probs, state_value]
+   */
   std::pair<torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &observation);
 
   /**
    * Critic-only pass for bootstrapping.
    * @param observation
-   * @return
+   * @return state_value
    */
   torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
    * @param observation
-   * @return [action, log_action_prob, state_value, entropy]
+   * @return [action, log_action_probs, state_value, entropy]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   select_action(const torch::Tensor &observation);
 
   /**
-   * No termination masks because the tensors will not be betched and will
-   * therefore only ever have the T-axis.
-   * @param rewards
-   * @param log_action_probs
-   * @param state_values
-   * @param entropy
-   * @param discount_factor
-   * @param gae_hyperparameter
-   * @param entropy_coefficient
-   * @return [actor_loss, critic_loss]
+   *
+   * @param observation
+   * @return
    */
-  static std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &rewards,
-             const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &entropy,
-             double discount_factor, double gae_hyperparameter,
-             double entropy_coefficient);
+  unsigned int select_greedy_action(const torch::Tensor &observation);
+
+  /**
+   * Computes advantages using Generalized Advantage Estimation.
+   * @param rewards
+   * @param state_values
+   * @return
+   */
+  torch::Tensor compute_advantages(const torch::Tensor &rewards,
+                                   const torch::Tensor &state_values);
+
+  /**
+   * Computes rewards-to-go:
+   * G_t = gamma^(-t) * sum_{t'=t}^{T} gamma^(t') * R_{t'}
+   * @param rewards
+   * @return
+   */
+  torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
 
   /**
    *
@@ -115,6 +125,14 @@ public:
   virtual void update_parameters(const torch::Tensor &actor_loss,
                                  const torch::Tensor &critic_loss) const;
   //////////////////////////////////////////////////////////////////////////////
+  /**
+   *
+   * @param circuit_path
+   * @return
+   */
+  std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
+  select_passes_for_circuit(const fs::path &circuit_path) override;
+
   /// Saving and Loading
   virtual void save_model() const;
   void load_model() override;

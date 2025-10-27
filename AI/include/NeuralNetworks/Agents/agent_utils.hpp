@@ -17,14 +17,7 @@ namespace fs = std::filesystem;
 using namespace mqss::opt;
 
 namespace ai_pass_selector {
-enum class AgentClass : int {
-  A3C = 1,
-  SAC = 2,
-  ACKTR = 3,
-  ACER = 4,
-  PPO = 5,
-  CROSSQ = 6
-};
+enum class AgentClass : int { A3C = 1, PPO = 2, ACER = 3, SAC = 4, CROSSQ = 5 };
 
 enum class OptimizerType : int {
   Adagrad = 1,
@@ -47,15 +40,18 @@ struct AgentAttributes {
 };
 
 const std::unordered_map<std::string, AgentClass> AGENT_NAME_TO_CLASS = {
-    {"a3c", AgentClass::A3C},     {"sac", AgentClass::SAC},
-    {"acktr", AgentClass::ACKTR}, {"acer", AgentClass::ACER},
-    {"ppo", AgentClass::PPO},     {"crossq", AgentClass::CROSSQ}};
+    {"a3c", AgentClass::A3C},
+    {"ppo", AgentClass::PPO},
+    {"acer", AgentClass::ACER},
+    {"sac", AgentClass::SAC},
+    {"crossq", AgentClass::CROSSQ}};
 
 const std::unordered_map<AgentClass, std::string, EnumClassHash>
-    AGENT_CLASS_TO_NAME = {
-        {AgentClass::A3C, "a3c"},     {AgentClass::SAC, "sac"},
-        {AgentClass::ACKTR, "acktr"}, {AgentClass::ACER, "acer"},
-        {AgentClass::PPO, "ppo"},     {AgentClass::CROSSQ, "crossq"}};
+    AGENT_CLASS_TO_NAME = {{AgentClass::A3C, "a3c"},
+                           {AgentClass::PPO, "ppo"},
+                           {AgentClass::ACER, "acer"},
+                           {AgentClass::SAC, "sac"},
+                           {AgentClass::CROSSQ, "crossq"}};
 
 /// Optimizers
 const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
