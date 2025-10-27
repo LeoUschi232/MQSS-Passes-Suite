@@ -29,6 +29,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  unsigned int save_agent_every_ith_episode =
+      GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -59,9 +61,13 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
     if (interrupted) {
       break;
     }
-    updateProgresses({{episode_idx, nr_episodes},
-                      {max_steps_per_episode, max_steps_per_episode}},
-                     /*display_message=*/"Resetting enviornment.");
+    if (episode_idx % save_agent_every_ith_episode == 0) {
+      agent->save_model();
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Saving Agent.");
+    }
+    updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                   /*display_message=*/"Resetting Enviornment.");
     try {
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 1: Rollout A
@@ -177,9 +183,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           "Episode Reward: " + std::to_string(total_episode_reward) +
           " | Nr qubits: " + std::to_string(nr_qubits) +
           " | Nr gates: " + std::to_string(nr_gates);
-      updateProgresses({{episode_idx, nr_episodes},
-                        {max_steps_per_episode, steps_in_episode}},
-                       /*display_message=*/main_message + " | Computing loss.");
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/main_message + " | Computing loss.");
       auto [actor_loss, critic_loss] = agent->get_losses(
           /*old_log_action_probs=*/rollout_old.log_action_probs.detach().to(
               device),
@@ -194,10 +199,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
 
       //////////////////////////////////////////////////////////////////////////
       /// Update Parameters
-      updateProgresses({{episode_idx, nr_episodes},
-                        {max_steps_per_episode, steps_in_episode}},
-                       /*display_message=*/main_message +
-                           " | Updating params.");
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/main_message + " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
       rollout_old = std::move(rollout_new);
       add_bootstrap_old = add_bootstrap_new;
