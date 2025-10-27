@@ -64,10 +64,12 @@ void BaseA3CAgent::zero_grad() {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseA3CAgent::get_losses(const torch::Tensor &advantages,       // Shape [T]
-                         const torch::Tensor &log_action_probs, // Shape [T]
+BaseA3CAgent::get_losses(const torch::Tensor &log_action_probs, // Shape [T]
+                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &rewards,          // Shape [T]
                          const torch::Tensor &entropy           // Shape [T]
 ) {
+  torch::Tensor advantages = this->compute_advantages(rewards, state_values);
   return {/*actor_loss=*/-(log_action_probs * advantages.detach()).mean() -
               this->entropy_coefficient * entropy.mean(),
           /*critic_loss=*/advantages.pow(2).mean()};
