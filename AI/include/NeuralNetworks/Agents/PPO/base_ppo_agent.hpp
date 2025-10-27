@@ -63,7 +63,6 @@ public:
              const torch::Tensor &new_log_action_probs,
              const torch::Tensor &new_state_values,
              const torch::Tensor &rewards, const torch::Tensor &entropy);
-
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading
