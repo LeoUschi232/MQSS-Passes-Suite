@@ -1,5 +1,8 @@
 #include "NeuralNetworks/Agents/base_actor_critic.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
@@ -8,6 +11,7 @@
 
 // Utils includes
 #include "Utils/info_utils.hpp"
+#include "Utils/passes_utils.hpp"
 #include "Utils/tensor_utils.hpp"
 
 // Standard library includes

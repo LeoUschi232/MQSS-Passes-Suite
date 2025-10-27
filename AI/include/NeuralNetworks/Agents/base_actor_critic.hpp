@@ -107,7 +107,7 @@ public:
    * @return
    */
   torch::Tensor compute_advantages(const torch::Tensor &rewards,
-  const torch::Tensor &state_values);
+                                   const torch::Tensor &state_values);
 
   /**
    * Computes rewards-to-go:
@@ -125,6 +125,14 @@ public:
   virtual void update_parameters(const torch::Tensor &actor_loss,
                                  const torch::Tensor &critic_loss) const;
   //////////////////////////////////////////////////////////////////////////////
+  /**
+   *
+   * @param circuit_path
+   * @return
+   */
+  std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
+  select_passes_for_circuit(const fs::path &circuit_path) override;
+
   /// Saving and Loading
   virtual void save_model() const;
   void load_model() override;
