@@ -186,6 +186,8 @@ void load_default_params() {
       {"ppo_epsilon", 0.2},
       {"sac_temperature_alpha", 0.1},
       {"sac_smoothing_tau", 0.005},
+      {"sac_penalty_beta", 0.5},
+      {"sac_clip_c", 0.5},
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},

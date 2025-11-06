@@ -158,4 +158,23 @@ BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
   };
 }
 
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+           torch::Tensor, torch::Tensor>
+BaseSDSACAgent::force_select_action(
+    const torch::Tensor &observation,
+    const torch::Tensor &action_index_unsqueezed) {
+  auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
+      this->sdsac_forward(observation);
+  return {
+      action_probs, // Shape []
+      -(action_probs * action_probs.log())
+           .sum(/*dim=*/-1)
+           .squeeze(-1), // Shape []
+      Q1_main,           // Shape []
+      Q2_main,           // Shape []
+      Q1_avg,            // Shape []
+      Q2_avg             // Shape []
+
+  };
+
 } // namespace ai_pass_selector
