@@ -5,7 +5,7 @@
 #include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
 namespace ai_pass_selector {
-struct EpisodeRollout {
+struct SDSAC_EpisodeRollout {
   std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
   torch::Tensor actions;                   // [T]
   torch::Tensor rewards;                   // [T]

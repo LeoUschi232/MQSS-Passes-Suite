@@ -6,7 +6,7 @@
 
 namespace ai_pass_selector {
 
-struct EpisodeRollout {
+struct PPO_EpisodeRollout {
   std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
   torch::Tensor actions;                   // [T]
   torch::Tensor log_action_probs;          // [T]
