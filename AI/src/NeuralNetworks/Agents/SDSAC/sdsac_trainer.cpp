@@ -1,8 +1,7 @@
 #include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
 
-// Standard library includes
+// Utils includes
 #include "Utils/info_utils.hpp"
-#include <unordered_map>
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam>
