@@ -55,10 +55,12 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
 BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->sdsac_temperature_alpha =
-      GLOBAL_PARAMS["sac_temperature_alpha"].to_double();
+      GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double();
   this->sdsac_shared_learning_rate =
-      GLOBAL_PARAMS["sac_shared_learning_rate"].to_double();
-  this->sdsac_smoothing_tau = GLOBAL_PARAMS["sac_smoothing_tau"].to_double();
+      GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
+  this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
+  this->sdsac_penalty_beta = GLOBAL_PARAMS["sdsac_penalty_beta"].to_double();
+  this->sdsac_clip_c = GLOBAL_PARAMS["sdsac_clip_c"].to_double();
   if (this->sdsac_temperature_alpha <= 0.0) {
     this->sdsac_temperature_alpha = std::nullopt;
   }
