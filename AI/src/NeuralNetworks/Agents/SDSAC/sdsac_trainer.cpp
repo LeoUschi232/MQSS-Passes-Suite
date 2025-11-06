@@ -100,11 +100,10 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         // TODO: do loop A
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        auto [action, entropy, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->sdsac_select_action(observation);
+        auto [action, entropy] = agent->sdsac_select_action(observation);
         rollout_new.observations.push_back(observation);
         actions_vector.push_back(action);
-        entropies_vector.push_back(_);
+        entropies_vector.push_back(entropy);
       }
 
       //////////////////////////////////////////////////////////////////////////
