@@ -86,10 +86,10 @@ public:
   /**
    *
    * @param observation
-   * @return [policy, Q1_main, Q2_main, Q1_avg, Q2_avg]
+   * @return [policy, entropy, Q1_main, Q2_main, Q1_avg, Q2_avg]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
-             torch::Tensor>
+             torch::Tensor, torch::Tensor>
   sdsac_forward(const torch::Tensor &observation);
 
   /**
