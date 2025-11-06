@@ -96,10 +96,8 @@ public:
    *
    * @param observation
    * @return [action_index, entropy]
-  */
+   */
   std::tuple<torch::Tensor, torch::Tensor>
-  sdsac_select_action(const torch::Tensor &observation);
-  torch::Tensor
   sdsac_select_action(const torch::Tensor &observation);
 
   /**

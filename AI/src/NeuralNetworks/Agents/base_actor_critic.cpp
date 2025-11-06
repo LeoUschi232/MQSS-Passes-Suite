@@ -117,8 +117,11 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
 
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
-  auto [action_probs, _] = this->forward(observation);
-  return action_probs.argmax(/*dim=*/-1).to(torch::kInt32).detach().item<int>();
+  return this->actor->forward(observation)
+      .argmax(/*dim=*/-1)
+      .to(torch::kInt32)
+      .detach()
+      .item<int>();
 }
 
 torch::Tensor BaseActorCritic::compute_advantages(

@@ -147,8 +147,7 @@ BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
           this->critic_Q2_avg->forward(x)};
 }
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
-           torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor>
 BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
   torch::Tensor action_probs = this->actor->forward(observation);
   return {
