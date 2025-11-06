@@ -52,13 +52,13 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
 
 BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
-  this->sac_temperature_alpha =
+  this->sdsac_temperature_alpha =
       GLOBAL_PARAMS["sac_temperature_alpha"].to_double();
-  this->sac_shared_learning_rate =
+  this->sdsac_shared_learning_rate =
       GLOBAL_PARAMS["sac_shared_learning_rate"].to_double();
-  this->sac_smoothing_tau = GLOBAL_PARAMS["sac_smoothing_tau"].to_double();
-  if (this->sac_temperature_alpha <= 0.0) {
-    this->sac_temperature_alpha = std::nullopt;
+  this->sdsac_smoothing_tau = GLOBAL_PARAMS["sac_smoothing_tau"].to_double();
+  if (this->sdsac_temperature_alpha <= 0.0) {
+    this->sdsac_temperature_alpha = std::nullopt;
   }
 }
 
@@ -89,13 +89,13 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
     this->critic_Q2_avg->to(this->device);
     this->actor_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->actor_optimizer_type, this->actor,
-                                this->sac_shared_learning_rate)));
+                                this->sdsac_shared_learning_rate)));
     this->critic_Q1_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->critic_optimizer_type, this->critic,
-                                this->sac_shared_learning_rate)));
+                                this->sdsac_shared_learning_rate)));
     this->critic_Q2_optimizer = std::shared_ptr(std::move(
         makeOptimizer(this->critic_optimizer_type, this->critic_Q2_main,
-                      this->sac_shared_learning_rate)));
+                      this->sdsac_shared_learning_rate)));
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
