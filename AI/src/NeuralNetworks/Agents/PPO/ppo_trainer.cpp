@@ -51,7 +51,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
   std::cout << "Beginning training." << std::endl;
 
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
-  EpisodeRollout rollout_old;
+  PPO_EpisodeRollout rollout_old;
   bool add_bootstrap_old = false;
   double previous_episode_reward = 0.0;
   unsigned int previous_nr_qubits = 0u;
@@ -75,7 +75,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       environment.reset();
       auto [nr_qubits, nr_gates] = environment.size();
 
-      EpisodeRollout rollout_new;
+      PPO_EpisodeRollout rollout_new;
       std::vector<torch::Tensor> actions_vector;
       std::vector<torch::Tensor> log_action_probs_vector;
       std::vector<torch::Tensor> state_values_vector;
