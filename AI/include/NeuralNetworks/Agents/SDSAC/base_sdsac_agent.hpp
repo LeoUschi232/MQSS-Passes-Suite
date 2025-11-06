@@ -102,8 +102,11 @@ public:
   std::pair<torch::Tensor, torch::Tensor>
   sdsac_select_action(const torch::Tensor &observation);
 
-  // std::pair<torch::Tensor, torch::Tensor>
-  // get_losses(
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, std::optional<torch::Tensor>>
+  get_loss(torch::Tensor new_action_probs, torch::Tensor old_entropy,
+           torch::Tensor new_entropy, torch::Tensor rewards,
+           torch::Tensor Q1_main, torch::Tensor Q2_main, torch::Tensor Q1_avg,
+           torch::Tensor Q2_avg);
   //////////////////////////////////////////////////////////////////////////////
 };
 

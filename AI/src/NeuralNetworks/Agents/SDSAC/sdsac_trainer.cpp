@@ -127,34 +127,46 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         rollout_old = std::move(rollout_new);
         continue;
       }
-      entropies_vector.clear();
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
             /*display_message=*/"Rollout B | Reward: " +
                 std::to_string(previous_episode_reward) +
                 " | Nr qubits: " + std::to_string(previous_nr_qubits) +
-                " | Nr gates: " + std::to_string(previous_nr_gates));
+                " | Nr gates: " + std::to_string(previous_nr_gates) +
+                " | Recomputing.");
         if (interrupted) {
           std::cout << "Caught Ctrl+C Interruption in PPO training."
                     << std::endl;
           break;
         }
-        auto [action_probs, entropy, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->force_select_action(
-                /*observation=*/rollout_old.observations[update_step],
-                /*action_index_unsqueezed=*/rollout_old.actions[update_step]
-                    .unsqueeze(-1));
-        log_action_probs_vector.push_back(log_action_probs);
-        state_values_vector.push_back(state_value);
-        entropies_vector.push_back(entropy);
+        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
+            agent->sdsac_forward(
+                /*observation=*/rollout_old.observations[update_step]);
+        auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
+              optional_temperature_alpha_loss] =
+            agent->get_loss(
+                /*new_action_probs=*/action_probs,
+                /*old_entropy=*/rollout_old.entropies[update_step],
+                /*new_entropy=*/
+                -(action_probs * action_probs.log())
+                    .sum(/*dim=*/-1)
+                    .squeeze(-1),
+                /*rewards=*/rollout_old.rewards[update_step],
+                /*Q1_main=*/Q1_main,
+                /*Q2_main=*/Q2_main,
+                /*Q1_avg=*/Q1_avg,
+                /*Q2_avg=*/Q2_avg);
+        updateProgresses(
+            {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
+            /*display_message=*/"Rollout B | Reward: " +
+                std::to_string(previous_episode_reward) +
+                " | Nr qubits: " + std::to_string(previous_nr_qubits) +
+                " | Nr gates: " + std::to_string(previous_nr_gates) +
+                " | Updating params.");
+      agent->update_parameters(actor_loss, critic_loss);
       }
-      if (add_bootstrap_old) {
-        state_values_vector.push_back(
-            agent->get_value(rollout_old.observations.back()));
-      } else {
-        state_values_vector.push_back(torch::zeros({}, options));
-      }
+
 
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
