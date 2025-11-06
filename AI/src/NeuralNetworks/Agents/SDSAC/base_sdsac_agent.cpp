@@ -106,9 +106,31 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
   }
   return true;
 }
-void BaseSDSACAgent::update_parameters(
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+           torch::Tensor>
+BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  return {this->actor->forward(x), this->critic->forward(x),
+          this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
+          this->critic_Q2_avg->forward(x)};
+}
+
+std::pair<torch::Tensor, torch::Tensor>
+BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
+  torch::Tensor action_probs = this->actor->forward(observation);
+  return {
+      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
+      -(action_probs * action_probs.log())
+           .sum(/*dim=*/-1)
+           .squeeze(-1) // Shape []
+  };
+}
+
+void BaseSDSACAgent::sdsac_update_parameters(
     const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
-    const torch::Tensor &critic_Q2_loss) const {
+    const torch::Tensor &critic_Q2_loss,
+    const std::optional<torch::Tensor> &temperature_alpha_loss) const {
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->zero_grad();
   actor_loss.backward();
@@ -139,32 +161,5 @@ void BaseSDSACAgent::update_parameters(
       param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
   }
-}
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
-           torch::Tensor>
-BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
-  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  return {this->actor->forward(x), this->critic->forward(x),
-          this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
-          this->critic_Q2_avg->forward(x)};
-}
-
-std::pair<torch::Tensor, torch::Tensor>
-BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
-  torch::Tensor action_probs = this->actor->forward(observation);
-  return {
-      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
-      -(action_probs * action_probs.log())
-           .sum(/*dim=*/-1)
-           .squeeze(-1) // Shape []
-  };
-}
-
-
-void BaseSDSACAgent::sdsac_update_parameters(
-    const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
-    const torch::Tensor &critic_Q2_loss,
-    const std::optional<torch::Tensor> &temperature_alpha_loss) const {
-
 }
 } // namespace ai_pass_selector

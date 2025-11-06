@@ -75,15 +75,6 @@ public:
                   const torch::nn::Sequential &critic_Q2_main,
                   const torch::nn::Sequential &critic_Q1_avg,
                   const torch::nn::Sequential &critic_Q2_avg);
-  /**
-   *
-   * @param actor_loss
-   * @param critic_Q1_loss
-   * @param critic_Q2_loss
-   */
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_Q1_loss,
-                         const torch::Tensor &critic_Q2_loss) const;
 
   /**
    *
@@ -122,6 +113,13 @@ public:
            torch::Tensor Q1_main, torch::Tensor Q2_main, torch::Tensor Q1_avg,
            torch::Tensor Q2_avg);
 
+  /**
+   *
+   * @param actor_loss
+   * @param critic_Q1_loss
+   * @param critic_Q2_loss
+   * @param temperature_alpha_loss
+   */
   void sdsac_update_parameters(
       const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
       const torch::Tensor &critic_Q2_loss,
