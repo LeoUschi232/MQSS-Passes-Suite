@@ -65,6 +65,88 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
     }
     updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                    /*display_message=*/"Resetting Enviornment.");
+
+    try {
+      //////////////////////////////////////////////////////////////////////////
+      /// Inner loop 1: Rollout A
+      double total_episode_reward = 0.0;
+      environment.reset();
+      auto [nr_qubits, nr_gates] = environment.size();
+
+      SDSAC_EpisodeRollout rollout_new;
+      bool add_bootstrap_new = false;
+      unsigned int update_step;
+      for (update_step = 0u; update_step < max_steps_per_episode;
+           update_step++) {
+        updateProgresses({{episode_idx, nr_episodes},
+                          {update_step + 1, max_steps_per_episode}},
+                         /*display_message=*/"Rollout A | Reward: " +
+                             std::to_string(total_episode_reward) +
+                             " | Nr qubits: " + std::to_string(nr_qubits) +
+                             " | Nr gates: " + std::to_string(nr_gates));
+        if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in PPO training."
+                    << std::endl;
+          break;
+        }
+        // TODO: do loop A
+      }
+
+
+      //////////////////////////////////////////////////////////////////////////
+      /// Inner loop 2: Rollout B
+      // Observations is length T+1.
+      unsigned int steps_in_episode = rollout_old.observations.size();
+      // Must reduce to T to match actions, log_action_probs, and rewards.
+      if (steps_in_episode-- <= 1u) {
+        // Empty rollout, probably first episode, skip update.
+        rollout_old = std::move(rollout_new);
+        add_bootstrap_old = add_bootstrap_new;
+        continue;
+      }
+
+
+
+      for (update_step = 0u; update_step < steps_in_episode; update_step++) {
+        updateProgresses(
+            {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
+            /*display_message=*/"Rollout B | Reward: " +
+                std::to_string(previous_episode_reward) +
+                " | Nr qubits: " + std::to_string(previous_nr_qubits) +
+                " | Nr gates: " + std::to_string(previous_nr_gates));
+        if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in PPO training."
+                    << std::endl;
+          break;
+        }
+        auto [log_action_probs, state_value, entropy] =
+            agent->force_select_action(
+                /*observation=*/rollout_old.observations[update_step],
+                /*action_index_unsqueezed=*/rollout_old.actions[update_step]
+                    .unsqueeze(-1));
+        log_action_probs_vector.push_back(log_action_probs);
+        state_values_vector.push_back(state_value);
+        entropies_vector.push_back(entropy);
+      }
+      if (add_bootstrap_old) {
+        state_values_vector.push_back(
+            agent->get_value(rollout_old.observations.back()));
+      } else {
+        state_values_vector.push_back(torch::zeros({}, options));
+      }
+
+
+
+
+
+    } catch (const std::exception &error) {
+      std::cerr << "Episode " << episode_idx << ": " << error.what()
+                << std::endl;
+      if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
+        interrupted = 1;
+        break;
+      }
+    }
   }
 
   return {};
