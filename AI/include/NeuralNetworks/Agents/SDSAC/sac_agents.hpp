@@ -12,7 +12,7 @@
   };
 
 namespace ai_pass_selector {
-/// SDSAC = Soft Actor-Critic
+/// SDSAC = Stable Discrete Soft Actor-Critic
 /// TCN = Temporal Convolutional Network
 /// RELU = Activation Functions are set to ReLU
 /// PRELU = Activation Functions are set to PReLU
