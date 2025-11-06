@@ -122,8 +122,8 @@ void BaseSDSACAgent::update_parameters(
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
           this->critic_Q1_avg->named_parameters(/*recurse=*/true)[name];
-      param_avg.mul_(1.0 - this->sac_smoothing_tau);
-      param_avg.add_(this->sac_smoothing_tau * param_main);
+      param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
+      param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
     for (const auto &pair :
          this->critic_Q2_main->named_parameters(/*recurse=*/true)) {
@@ -131,8 +131,8 @@ void BaseSDSACAgent::update_parameters(
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
           this->critic_Q2_avg->named_parameters(/*recurse=*/true)[name];
-      param_avg.mul_(1.0 - this->sac_smoothing_tau);
-      param_avg.add_(this->sac_smoothing_tau * param_main);
+      param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
+      param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
   }
 }
