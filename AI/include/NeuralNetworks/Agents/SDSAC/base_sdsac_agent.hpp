@@ -102,11 +102,30 @@ public:
   std::pair<torch::Tensor, torch::Tensor>
   sdsac_select_action(const torch::Tensor &observation);
 
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, std::optional<torch::Tensor>>
+  /**
+   *
+   * @param new_action_probs
+   * @param old_entropy
+   * @param new_entropy
+   * @param rewards
+   * @param Q1_main
+   * @param Q2_main
+   * @param Q1_avg
+   * @param Q2_avg
+   * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
+   * optional_temperature_alpha_loss]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor,
+             std::optional<torch::Tensor>>
   get_loss(torch::Tensor new_action_probs, torch::Tensor old_entropy,
            torch::Tensor new_entropy, torch::Tensor rewards,
            torch::Tensor Q1_main, torch::Tensor Q2_main, torch::Tensor Q1_avg,
            torch::Tensor Q2_avg);
+
+  void sdsac_update_parameters(
+      const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
+      const torch::Tensor &critic_Q2_loss,
+      const std::optional<torch::Tensor> &temperature_alpha_loss) const;
   //////////////////////////////////////////////////////////////////////////////
 };
 

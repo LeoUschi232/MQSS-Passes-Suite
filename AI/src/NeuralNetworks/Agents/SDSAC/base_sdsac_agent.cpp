@@ -159,4 +159,12 @@ BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
            .squeeze(-1) // Shape []
   };
 }
+
+
+void BaseSDSACAgent::sdsac_update_parameters(
+    const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
+    const torch::Tensor &critic_Q2_loss,
+    const std::optional<torch::Tensor> &temperature_alpha_loss) const {
+
+}
 } // namespace ai_pass_selector
