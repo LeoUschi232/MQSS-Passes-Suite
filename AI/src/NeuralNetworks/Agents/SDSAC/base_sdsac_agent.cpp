@@ -151,14 +151,17 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor, torch::Tensor>
 BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
   auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-    this->sdsac_forward(observation);
-  const torch::Tensor action_index_unsqueezed =
-      action_probs.multinomial(/*num_samples=*/1);
-  const torch::Tensor action_index = action_index_unsqueezed.squeeze(-1);
-
-
-
-
+      this->sdsac_forward(observation);
+  return {
+      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
+      -(action_probs * action_probs.log())
+           .sum(/*dim=*/-1)
+           .squeeze(-1), // Shape []
+      Q1_main,           // Shape [NR_PASSES]
+      Q2_main,           // Shape [NR_PASSES]
+      Q1_avg,            // Shape [NR_PASSES]
+      Q2_avg             // Shape [NR_PASSES]
+  };
 }
 
 } // namespace ai_pass_selector
