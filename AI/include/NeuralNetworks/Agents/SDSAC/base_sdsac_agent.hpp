@@ -17,11 +17,12 @@ enum class OptimizerType : int;
 class BaseSDSACAgent : public BaseActorCritic {
 protected:
   /// SDSAC specific attributes
-  std::optional<double> sdsac_temperature_alpha = std::nullopt;
+  double sdsac_temperature_alpha = 0.0;
   double sdsac_shared_learning_rate = 0.0;
   double sdsac_smoothing_tau = 0.0;
   double sdsac_penalty_beta = 0.0;
   double sdsac_clip_c = 0.0;
+  torch::Tensor sdsac_temperature_alpha_tensor = torch::tensor(0.0);
 
   /// SDSAC Additional Critics
   torch::nn::Sequential critic_Q2_main{nullptr};
