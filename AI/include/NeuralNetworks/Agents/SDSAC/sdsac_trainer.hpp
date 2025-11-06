@@ -4,7 +4,8 @@
 // Agents includes
 #include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
-// Torch
+// Torch includes
+#include "torch/torch.h"
 
 namespace ai_pass_selector {
 struct SDSAC_EpisodeRollout {
