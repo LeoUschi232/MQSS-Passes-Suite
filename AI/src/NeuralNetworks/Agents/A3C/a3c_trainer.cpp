@@ -41,6 +41,10 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
   unsigned int save_agent_every_ith_episode =
       GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool stop_training_on_error =
+      GLOBAL_PARAMS["stop_training_on_error"].to_bool();
+  bool save_agent_after_training =
+      GLOBAL_PARAMS["save_agent_after_training"].to_bool();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
@@ -115,8 +119,6 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
           for (unsigned int update_step = 0u;
                update_step < max_steps_per_episode; update_step++) {
             if (interrupted) {
-              std::cout << "Caught Ctrl+C Interruption in A3C training."
-                        << std::endl;
               break;
             }
 
@@ -141,6 +143,11 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             if (terminated) {
               break;
             }
+          }
+          if (interrupted) {
+            std::cout << "\nCaught Ctrl+C Interruption in A3C training."
+                      << std::endl;
+            break;
           }
 
           // Bootstrap value
@@ -179,8 +186,9 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             global_max_reward =
                 std::max(global_max_reward, total_worker_reward);
             updateProgress(
-                global_async_step, a3c_max_async_steps,
-                "Reward: " + std::to_string(total_worker_reward) +
+                /*current=*/global_async_step, /*total=*/a3c_max_async_steps,
+                /*display_message=*/"Reward: " +
+                    std::to_string(total_worker_reward) +
                     "| Global Max: " + std::to_string(global_max_reward));
           }
         }
@@ -189,7 +197,7 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
         // accessed for rough diagnostics, it doesn't have to be exact.
         std::cerr << "Step: " << global_async_step << ": " << error.what()
                   << std::endl;
-        if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
+        if (stop_training_on_error) {
           interrupted = 1;
         }
       }
@@ -200,6 +208,10 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   }
   if (!interrupted) {
     std::cout << "\nTraining finished." << std::endl;
+  }
+  if (save_agent_after_training) {
+    agent_boss->save_model();
+    std::cout << "Saved: " << agent_boss->agentName() << std::endl;
   }
   return {{"global_max_reward", std::to_string(global_max_reward)}};
 }
@@ -214,6 +226,10 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
   unsigned int save_agent_every_ith_episode =
       GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool stop_training_on_error =
+      GLOBAL_PARAMS["stop_training_on_error"].to_bool();
+  bool save_agent_after_training =
+      GLOBAL_PARAMS["save_agent_after_training_"].to_bool();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
@@ -238,8 +254,10 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
+      std::cout << "\nCaught Ctrl+C Interruption in A2C training." << std::endl;
       break;
     }
+
     if (episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
       updateProgress(episode_idx, nr_episodes,
@@ -265,14 +283,12 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
            update_step++) {
         updateProgresses({{episode_idx, nr_episodes},
                           {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Episode Reward: " +
+                         /*display_message=*/"Reward: " +
                              std::to_string(total_episode_reward) +
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates) +
                              " | Running step.");
         if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in A2C training."
-                    << std::endl;
           break;
         }
 
@@ -294,6 +310,11 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
           break;
         }
       }
+      if (interrupted) {
+        std::cout << "\nCaught Ctrl+C Interruption in A2C training."
+                  << std::endl;
+        break;
+      }
       // Bootstrap value
       if (add_bootstrap) {
         torch::NoGradGuard _;
@@ -303,7 +324,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
         episode_values_vector.push_back(torch::zeros({}, options));
       }
       std::string main_message =
-          "Episode Reward: " + std::to_string(total_episode_reward) +
+          "Reward: " + std::to_string(total_episode_reward) +
           " | Nr qubits: " + std::to_string(nr_qubits) +
           " | Nr gates: " + std::to_string(nr_gates);
       updateProgresses({{episode_idx, nr_episodes},
@@ -322,7 +343,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;
-      if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
+      if (stop_training_on_error) {
         interrupted = 1;
         break;
       }
@@ -331,8 +352,7 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   if (!interrupted) {
     std::cout << "\nTraining finished." << std::endl;
   }
-
-  if (GLOBAL_PARAMS["save_agent_after_training"].to_bool()) {
+  if (save_agent_after_training) {
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }

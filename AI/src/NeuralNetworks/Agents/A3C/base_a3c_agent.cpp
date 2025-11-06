@@ -247,11 +247,11 @@ void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() {
     return;
   }
   this->actor_optimizer->step();
+  this->actor_optimizer->zero_grad();
   this->critic_optimizer->step();
   // Better not call this->zero_grad() because it would attempt to lock again.
   // Must zero out gradients here because other functions will not do it to
   // allow races on gradient updates.
-  this->actor_optimizer->zero_grad();
   this->critic_optimizer->zero_grad();
   this->gradients_zero = true;
 }

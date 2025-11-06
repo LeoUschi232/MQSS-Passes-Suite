@@ -92,7 +92,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
            update_step++) {
         updateProgresses({{episode_idx, nr_episodes},
                           {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Rollout A | Episode Reward: " +
+                         /*display_message=*/"Rollout A | Reward: " +
                              std::to_string(total_episode_reward) +
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates));
@@ -152,7 +152,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
-            /*display_message=*/"Rollout B | Episode Reward: " +
+            /*display_message=*/"Rollout B | Reward: " +
                 std::to_string(previous_episode_reward) +
                 " | Nr qubits: " + std::to_string(previous_nr_qubits) +
                 " | Nr gates: " + std::to_string(previous_nr_gates));
@@ -180,7 +180,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       //////////////////////////////////////////////////////////////////////////
       /// Compute Losses
       std::string main_message =
-          "Episode Reward: " + std::to_string(total_episode_reward) +
+          "Reward: " + std::to_string(total_episode_reward) +
           " | Nr qubits: " + std::to_string(nr_qubits) +
           " | Nr gates: " + std::to_string(nr_gates);
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,

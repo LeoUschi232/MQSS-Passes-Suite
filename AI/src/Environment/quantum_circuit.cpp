@@ -144,11 +144,13 @@ QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
     MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(pass_ptr));
-    if (mlir::failed(pass_manager.run(this->circuit_module))) {
+    if (mlir::failed(/*result=*/pass_manager.run(this->circuit_module))) {
+      std::cerr << "Pass failed internally." << std::endl;
       this->recompute();
       return {false, false};
     }
   } catch ([[maybe_unused]] const std::runtime_error &error) {
+    std::cerr << "Pass threw: " << error.what() << std::endl;
     this->recompute();
     return {false, true};
   }

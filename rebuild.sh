@@ -25,6 +25,9 @@ INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
 BUILD_DIR="${CURRENT_DIR}/build"
 CUDAQ_DIR="${BUILD_DIR}/_deps/cuda-quantum"
 
+# Torch dir
+LIBTORCH_DIR=${CURRENT_DIR}"/AI/external/libtorch"
+
 # Detect CUDA (same logic)
 CUDA_ENABLED=0
 CUDA_CMAKE_ARGS=()
@@ -36,7 +39,7 @@ if module use /opt/nvidia/hpc_sdk/modulefiles && module load nvhpc/25.5 && comma
     CUDA_HOME="$(ls -d ${HPC_BASE}/* 2>/dev/null | grep -E '/[0-9]+\.[0-9]+$' | sort -V | tail -1)"
   fi
   if [[ -n "${CUDA_HOME:-}" && -d "${CUDA_HOME}/targets/x86_64-linux/include" ]]; then
-    export CAFFE2_NVRTC_LIBRARY="$(HPC_BASE)/12.9/targets/x86_64-linux/lib/stubs/libnvrtc.so"
+    export CAFFE2_NVRTC_LIBRARY="${HPC_BASE}/12.9/targets/x86_64-linux/lib/stubs/libnvrtc.so"
     CUDA_ENABLED=1
     NVCC="/opt/nvidia/hpc_sdk/Linux_x86_64/25.5/compilers/bin/nvcc"
     CUDA_INCLUDE_DIRS="${CUDA_HOME}/targets/x86_64-linux/include"
@@ -49,6 +52,7 @@ if module use /opt/nvidia/hpc_sdk/modulefiles && module load nvhpc/25.5 && comma
       "-DCMAKE_CUDA_COMPILER=${NVCC}"
       "-DCUDA_NVCC_EXECUTABLE=${NVCC}"
       "-DCMAKE_POLICY_VERSION_MINIMUM=3.10"
+      "-DCUDA_NVRTC_LIBRARY=${CUDA_HOME}/targets/x86_64-linux/lib/libnvrtc.so"
     )
     echo "[CUDA] enabled via HPC-SDK at ${CUDA_HOME}"
   else
@@ -62,14 +66,30 @@ mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 
 echo "Reconfiguring MQSS (rebuild)..."
-cmake .. \
-  -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-  -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
-  -DMLIR_DIR="${MLIR_DIR}" \
-  -DLLVM_DIR="${LLVM_DIR}" \
-  -DBUILD_MLIR_PASSES_AI=ON \
-  -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
-  "${CUDA_CMAKE_ARGS[@]}"
+CMAKE_ARGS=(
+  -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+  -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}"
+  -DMLIR_DIR="${MLIR_DIR}"
+  -DLLVM_DIR="${LLVM_DIR}"
+  -DBUILD_MLIR_PASSES_AI=ON
+  -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}"
+  -DCMAKE_BUILD_RPATH="${HOME}/.local/lib;${HOME}/.local/lib64"
+  -DCMAKE_INSTALL_RPATH="${HOME}/.local/lib;${HOME}/.local/lib64"
+  -DTorch_DIR="${LIBTORCH_DIR}"
+  -U CMAKE_CUDA_ARCHITECTURES
+  -DTORCH_CUDA_ARCH_LIST="8.0"
+  -DCMAKE_MESSAGE_LOG_LEVEL=ERROR
+)
+
+if [[ $CUDA_ENABLED -eq 1 ]]; then
+  CMAKE_ARGS+=(
+    -DCUDA_NVRTC_LIBRARY="${CUDA_HOME}/targets/x86_64-linux/lib/libnvrtc.so"
+    -DCUDA_NVRTC_INCLUDE_DIR="${CUDA_HOME}/targets/x86_64-linux/include"
+    "${CUDA_CMAKE_ARGS[@]}"
+  )
+fi
+
+cmake .. "${CMAKE_ARGS[@]}"
 
 echo "Building with ${NUM_JOBS} jobs..."
 make -j"${NUM_JOBS}"

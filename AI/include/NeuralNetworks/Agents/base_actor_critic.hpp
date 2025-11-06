@@ -75,7 +75,7 @@ public:
    * @param observation
    * @return [action_probs, state_value]
    */
-  std::pair<torch::Tensor, torch::Tensor>
+  virtual std::pair<torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &observation);
 
   /**
@@ -83,14 +83,14 @@ public:
    * @param observation
    * @return state_value
    */
-  torch::Tensor get_value(const torch::Tensor &observation);
+  virtual torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
    * @param observation
    * @return [action, log_action_probs, state_value, entropy]
    */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  virtual std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   select_action(const torch::Tensor &observation);
 
   /**

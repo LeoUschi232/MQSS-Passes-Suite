@@ -44,9 +44,6 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   this->max_steps_per_episode = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_per_episode"].to_int()),
       MIN_NR_STEPS);
-  this->max_steps_no_improvement = std::max(
-      static_cast<unsigned>(GLOBAL_PARAMS["max_steps_no_improvement"].to_int()),
-      MIN_NR_STEPS);
   this->max_steps_no_change = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_no_change"].to_int()),
       MIN_NR_STEPS);
@@ -57,6 +54,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
       0.0 <= weight && weight <= 1.0) {
     this->nr_gates_reduction_weight = weight;
   }
+  probability_max_qubits = GLOBAL_PARAMS["probability_max_qubits"].to_double();
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
   this->register_quantum_circuit(GLOBAL_PARAMS["circuit"].to_string());
@@ -93,7 +91,6 @@ void QuantumCircuitEnvironment::clear(bool hard) {
   this->latest_observation = std::nullopt;
   this->circuit.clear();
   this->step_per_episode = 0u;
-  this->step_no_improvement = 0u;
   this->step_no_change = 0u;
   this->step_same_action = 0u;
   this->last_action = -1;
@@ -111,12 +108,13 @@ void QuantumCircuitEnvironment::reset() {
     // The QuantumCircuit object validates itself on construction, so no need
     // for extra validation.
     this->circuit = random_quantum_circuit_from_embedded_statistics(
-        qubits_cholesky_params.value(), gates_weights.value(),
+        /*cholesky_params=*/qubits_cholesky_params.value(),
+        /*gates_weights=*/gates_weights.value(),
+        /*randomizer_options=*/
         {.max_nr_qubits = static_cast<int>(this->max_qubits),
          .weight_min_multiplier_for_unoccurring_gates = 0.1,
          .probability_additionals_controls = 0.01,
-         .probability_max_qubits =
-             GLOBAL_PARAMS["probability_max_qubits"].to_double()});
+         .probability_max_qubits = this->probability_max_qubits});
     this->validate();
     return;
   }
@@ -316,11 +314,6 @@ QuantumCircuitEnvironment::step(unsigned int action) {
     this->latest_observation = std::nullopt;
   }
 
-  if (reward > 0.0f) {
-    this->step_no_improvement = 0;
-  } else if (++this->step_no_improvement > this->max_steps_no_improvement) {
-    return {reward, /*Terminated=*/true, /*Truncated=*/false};
-  }
   if (wasApplied) {
     // Executing the same action many times in a row is only a valid termination
     // criterion IFF that action does not change the circuit.
@@ -345,13 +338,19 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   // max_steps_per_episode truncation, effectively bypassing the
   // no-change/no-improvement/same-action termination logic.
   if (!succeeded) {
-    std::cerr << "Action " << std::to_string(action) << " failed." << std::endl;
+    std::cerr << "Action " << std::to_string(action)
+              << " failed with circuit metrics:\n"
+              << "Nr qubits: " << this->circuit.getNrQubits() << "\n"
+              << "Nr gates: " << this->circuit.getNrGates() << "\n"
+              << "Depth: " << this->circuit.getDepth() << std::endl;
     return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
   }
   return {reward, /*Terminated=*/false, /*Truncated=*/false};
 }
 
 InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
+  // Caching observations if pass failed or wasn't applied massively speeds up
+  // computation time.
   if (this->latest_observation.has_value()) {
     return this->latest_observation.value();
   }
@@ -432,9 +431,12 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
 }
 
 torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
-    std::optional<torch::TensorOptions> tensor_options) {
-  torch::TensorOptions options = tensor_options.value_or(
+    std::optional<torch::TensorOptions> main_options) {
+  torch::TensorOptions cpu_options =
+      torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
+  torch::TensorOptions final_options = main_options.value_or(
       torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
+
   InstructionsTensor<float> observation = this->get_observation();
   if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
     check_tensor(observation);
@@ -442,9 +444,13 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
   unsigned int N = observation.shape[0];
   unsigned int IRS = observation.shape[1];
   if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
-    return torch::zeros({GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)}, options);
+    return torch::zeros({GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)},
+                        final_options);
   }
-  return torch::from_blob(observation.raw(), {N, IRS}, options).clone();
+  torch::Tensor tensor = torch::from_blob(
+      /*data=*/observation.raw(), /*sizes=*/{N, IRS}, /*options=*/cpu_options);
+  return tensor.to(final_options.device(), /*type_meta=*/final_options.dtype(),
+                   /*non_blocking=*/false, /*copy=*/true);
 }
 
 bool QuantumCircuitEnvironment::validate() {

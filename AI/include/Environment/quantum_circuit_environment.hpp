@@ -64,11 +64,9 @@ protected:
 
   /// Attributes for episode
   unsigned int max_steps_per_episode = MIN_NR_STEPS;
-  unsigned int max_steps_no_improvement = MIN_NR_STEPS;
   unsigned int max_steps_no_change = MIN_NR_STEPS;
   unsigned int max_steps_same_action = MIN_NR_STEPS;
   unsigned int step_per_episode = 0u;
-  unsigned int step_no_improvement = 0u;
   unsigned int step_no_change = 0u;
   unsigned int step_same_action = 0u;
   int last_action = -1;
@@ -80,6 +78,7 @@ protected:
       qubits_cholesky_params = std::nullopt;
   std::optional<std::array<unsigned int, GATES_WEIGHTS_SIZE>> gates_weights =
       std::nullopt;
+  double probability_max_qubits = 0.0;
 
   /// Other attributes
   torch::Device device = torch::kCPU;
@@ -156,12 +155,12 @@ public:
   /**
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * @param tensor_options
+   * @param main_options
    * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
    * the current circuit.
    */
   torch::Tensor get_observation_as_torch_tensor(
-      std::optional<torch::TensorOptions> tensor_options = std::nullopt);
+      std::optional<torch::TensorOptions> main_options = std::nullopt);
 
   /**
    *

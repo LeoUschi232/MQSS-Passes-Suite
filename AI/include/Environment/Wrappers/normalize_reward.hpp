@@ -6,12 +6,17 @@
 
 namespace ai_pass_selector {
 class NormalizeReward : public QuantumCircuitEnvironment {
-  double discount = 0.99;
-  double epsilon = 1e-8;
-  double discounted_reward = 0.0;
-  unsigned int count = 0u;
-  double mean = 0.0;
-  double variance = 1.0;
+  /// Attributes
+  float discount_factor = 0.995f;
+  float discounted_reward = 0.0f;
+  float mean = 0.0f;
+  float variance = 1.0f;
+  // Set the count to 1 at the beginning to fake having had an episode with
+  // reward 0.0, to make all episodes compute their variance against that.
+  // If this isn't done, the first episode will have a variance of about 0.0f
+  // and will blow up the reward.
+  float count = 1.0f;
+  float epsilon = 1e-8f;
 
 public:
   /// Constructor
