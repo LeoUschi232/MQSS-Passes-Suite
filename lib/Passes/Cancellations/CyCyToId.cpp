@@ -33,26 +33,23 @@ public:
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cyOp2 = dyn_cast_or_null<quake::YOp>(*op);
-      if (!cyOp2
-          || cyOp2.getTargets().size() != 1
-          || cyOp2.getControls().size() != 1) {
+      if (!cyOp2 || cyOp2.getTargets().size() != 1 ||
+          cyOp2.getControls().size() != 1) {
         return;
       }
-      auto optional_cyOp1_onTarget
-          = getPreviousOperationOnTarget(cyOp2, cyOp2.getTargets()[0]);
-      auto optional_cyOp1_onControl
-          = getPreviousOperationOnTarget(cyOp2, cyOp2.getControls()[0]);
-      if (!optional_cyOp1_onTarget
-          || !optional_cyOp1_onControl
-          || optional_cyOp1_onTarget != optional_cyOp1_onControl) {
+      auto optional_cyOp1_onTarget =
+          getPreviousOperationOnTarget(cyOp2, cyOp2.getTargets()[0]);
+      auto optional_cyOp1_onControl =
+          getPreviousOperationOnTarget(cyOp2, cyOp2.getControls()[0]);
+      if (!optional_cyOp1_onTarget || !optional_cyOp1_onControl ||
+          optional_cyOp1_onTarget != optional_cyOp1_onControl) {
         return;
       }
-      auto cyOp1
-          = dyn_cast_or_null<quake::YOp>(*optional_cyOp1_onTarget);
-      if (!cyOp1
-          || cyOp1.getTargets().size() != 1
-          || cyOp1.getControls().size() != 1
-          || cyOp1.getControls()[0] != cyOp2.getControls()[0]) {
+      auto cyOp1 = dyn_cast_or_null<quake::YOp>(*optional_cyOp1_onTarget);
+      if (!cyOp1 || cyOp1.getTargets().size() != 1 ||
+          cyOp1.getControls().size() != 1 ||
+          cyOp1.getTargets()[0] != cyOp2.getTargets()[0] ||
+          cyOp1.getControls()[0] != cyOp2.getControls()[0]) {
         return;
       }
 

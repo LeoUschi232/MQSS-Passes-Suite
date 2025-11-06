@@ -5,8 +5,8 @@
 #include "Support/mlir_utils.hpp"
 
 // Standard library includes
-#include <filesystem>
 #include <cstddef>
+#include <filesystem>
 
 namespace fs = std::filesystem;
 
@@ -160,28 +160,28 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> MQT_BENCH_GATES_WEIGHTS =
 
 constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
     CHEMISTRY_QUBITS_CHOLSEKY_PARAMS = {
-        /* mean_qubits */ 2.0,
-        /* mean_gates */ 4.0,
-        /* mean_operations */ 2.0,
-        /* mean_measurements */ 2.0,
-        /* qubits_L11 */ 0.0,
-        /* gates_L21 */ 0.0,
-        /* gates_L22 */ 0.0,
-        /* operations_L21 */ 0.0,
-        /* operations_L22 */ 0.0,
-        /* measurements_L21 */ 0.0,
+        /* mean_qubits */ 13.907,
+        /* mean_gates */ 387.052,
+        /* mean_operations */ 373.145,
+        /* mean_measurements */ 13.907,
+        /* qubits_L11 */ 5.00308,
+        /* gates_L21 */ 269.676,
+        /* gates_L22 */ 127.196,
+        /* operations_L21 */ 264.672,
+        /* operations_L22 */ 127.196,
+        /* measurements_L21 */ 5.00308,
         /* measurements_L22 */ 0.0};
 
 constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
-    {/* X */ 0u,
-     /* CX */ 0u,
+    {/* X */ 13792u,
+     /* CX */ 297196u,
      /* CCX */ 0u,
      /* C3plus_X */ 0u,
      /* Y */ 0u,
      /* controlled_Y */ 0u,
      /* Z */ 0u,
      /* controlled_Z */ 0u,
-     /* H */ 0u,
+     /* H */ 139496u,
      /* controlled_H */ 0u,
      /* S */ 0u,
      /* controlled_S */ 0u,
@@ -191,11 +191,11 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
      /* controlled_T */ 0u,
      /* TDG */ 0u,
      /* controlled_TDG */ 0u,
-     /* RX */ 0u,
+     /* RX */ 88744u,
      /* controlled_RX */ 0u,
-     /* RY */ 0u,
+     /* RY */ 776u,
      /* controlled_RY */ 0u,
-     /* RZ */ 0u,
+     /* RZ */ 37624u,
      /* controlled_RZ */ 0u,
      /* SWAP */ 0u,
      /* controlled_SWAP */ 0u,
@@ -209,19 +209,8 @@ constexpr std::array<unsigned int, GATES_WEIGHTS_SIZE> CHEMISTRY_GATES_WEIGHTS =
      /* controlled_PHASED_RX */ 0u,
      /* MX */ 0u,
      /* MY */ 0u,
-     /* MZ */ 0u};
+     /* MZ */ 21528u};
 
-// mean_qubits: 4.95
-// mean_gates: 21.1
-// mean_operations: 16.15
-// mean_measurements: 4.95
-// qubits_L11: 0.686333
-// gates_L21: 3.10575
-// gates_L22: 5.96363
-// operations_L21: 2.41942
-// operations_L22: 5.96363
-// measurements_L21: 0.686333
-// measurements_L22: 0.1
 constexpr std::array<double, CHOLESKY_PARAMS_SIZE>
     RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS = {
         /* mean_qubits */ 4.95,

@@ -2,6 +2,12 @@
 # IDE files
 cmake-build-mqss-dev
 cmake-build-debug
+.idea
+.venv
+
+# Python cache files
+__pycache__/
+*.pyc
 
 # Test pdf compilation files.
 *.log
@@ -44,4 +50,5 @@ cmake-build-debug
 *.DS_Store
 
 # Large files and large external dependencies
+Scripts/pyscf_examples
 external/*

@@ -179,6 +179,10 @@ getQubitsInstructionsDepth(FuncOp circuit) {
       depths[qubit] = max_depth + 1;
     }
   });
+  if (depths.empty()) {
+    // If a malformed kernel skips allocation entirely, we assume zero depth.
+    return {nr_qubits, nr_gates, 0};
+  }
   return {nr_qubits, nr_gates, *std::ranges::max_element(depths)};
 }
 

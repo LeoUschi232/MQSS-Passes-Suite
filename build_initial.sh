@@ -71,6 +71,7 @@ if module use /opt/nvidia/hpc_sdk/modulefiles && module load nvhpc/25.5 && comma
       "-DCMAKE_CUDA_COMPILER=${NVCC}"
       "-DCUDA_NVCC_EXECUTABLE=${NVCC}"
       "-DCMAKE_POLICY_VERSION_MINIMUM=3.10"
+      "-DCUDA_NVRTC_LIBRARY=${CUDA_HOME}/targets/x86_64-linux/lib/libnvrtc.so"
     )
     echo "[CUDA] enabled via HPC-SDK at ${CUDA_HOME}"
   else
@@ -88,12 +89,13 @@ LIBTORCH_DIR=${AI_EXTERNAL_DIR}"/libtorch"
 mkdir -p "${AI_EXTERNAL_DIR}"
 if [[ ! -d "${LIBTORCH_DIR}" ]]; then
   pushd "${AI_EXTERNAL_DIR}" >/dev/null
+  echo "After pushd."
   LIBTORCH_ZIP="libtorch-shared-with-deps-latest.zip"
   LIBTORCH_URL="https://download.pytorch.org/libtorch/${CUDA_URL_SUFFIX}/${LIBTORCH_ZIP}"
   echo "[LibTorch] fetching ${LIBTORCH_URL}"
   wget -O "${LIBTORCH_ZIP}" "${LIBTORCH_URL}"
-  unzip -q "${LIBTORCH_ZIP}"
-  rm -f "${LIBTORCH_ZIP}"
+  unzip "${LIBTORCH_ZIP}"
+  rm -rfv "${LIBTORCH_ZIP}"
   popd >/dev/null
 else
   echo "[LibTorch] exists at ${LIBTORCH_DIR}"
@@ -128,12 +130,33 @@ cd "${CUDAQ_DIR}" || { echo "Failed to navigate to ${CUDAQ_DIR}."; exit 1; }
 # Create a build directory
 mkdir -p build && cd build || { echo "Failed to create or navigate to build directory."; exit 1; }
 
+'
+rm -rf build/_deps/cuda-quantum/build &&
+cmake -S build/_deps/cuda-quantum -B build/_deps/cuda-quantum/build -G Ninja \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+  -DMLIR_DIR=/usr/local/llvm/lib/cmake/mlir \
+  -DClang_DIR=/usr/local/llvm/lib/cmake/clang \
+  -DLLVM_DIR=/usr/local/llvm/lib/cmake/llvm \
+  -DCMAKE_CXX_FLAGS="-Wno-error=unused-but-set-variable" \
+  -DBUILD_TESTING=OFF -DCUDAQ_BUILD_TESTS=OFF -DOPENSSL_FOUND=ON &&
+ninja -C build/_deps/cuda-quantum/build -j1 cudaq-mlir-runtime
+'
+
 # Configure CUDA Quantum using CMake
 echo "Configuring CUDA Quantum with CMake."
 cmake -G Ninja \
+  -DCMAKE_C_COMPILER=gcc \
+  -DCMAKE_CXX_COMPILER=g++ \
   -DMLIR_DIR="${MLIR_DIR}" \
   -DClang_DIR="${CLANG_DIR}" \
   -DLLVM_DIR="${LLVM_DIR}" \
+	-DCUDAQ_BUILD_TESTS=OFF \
+  -DCUDAQ_ENABLE_REST=ON \
+  -DOPENSSL_ROOT_DIR=/usr \
+  -DOPENSSL_INCLUDE_DIR=/usr/include \
+  -DOPENSSL_SSL_LIBRARY=/lib64/libssl.so \
+  -DOPENSSL_CRYPTO_LIBRARY=/lib64/libcrypto.so \
+  -DCMAKE_COMPILE_WARNING_AS_ERROR=OFF \
   ..
 
 if [ $? -ne 0 ]; then
@@ -168,6 +191,12 @@ cmake .. \
   -DBUILD_MLIR_PASSES_AI="${BUILD_AI}" \
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+  -DCMAKE_BUILD_RPATH="${HOME}/.local/lib;${HOME}/.local/lib64" \
+  -DCMAKE_INSTALL_RPATH="${HOME}/.local/lib;${HOME}/.local/lib64" \
+  -DTorch_DIR="${LIBTORCH_DIR}" \
+  -U CMAKE_CUDA_ARCHITECTURES \
+  -DTORCH_CUDA_ARCH_LIST="8.0" \
+  -DCUDA_NVRTC_LIBRARY="${CUDA_HOME}/targets/x86_64-linux/lib/libnvrtc.so" \
   "${CUDA_CMAKE_ARGS[@]}"
 
 echo "Building MQSS Repository Passes with ${NUM_JOBS} jobs."

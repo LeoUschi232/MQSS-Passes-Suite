@@ -1,5 +1,8 @@
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
@@ -8,6 +11,7 @@
 
 // Utils includes
 #include "Utils/info_utils.hpp"
+#include "Utils/passes_utils.hpp"
 
 // Standard library includes
 #include <memory>
@@ -29,10 +33,10 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
     if (this->is_boss) {
       this->load_model();
     }
-    this->register_module("critic", this->critic);
     this->register_module("actor", this->actor);
-    this->critic->to(this->device);
+    this->register_module("critic", this->critic);
     this->actor->to(this->device);
+    this->critic->to(this->device);
     if (this->is_boss) {
       // Worker agents do not need optimizers.
       // Only boss agent needs optimizers.
@@ -57,6 +61,18 @@ void BaseA3CAgent::zero_grad() {
     }
   }
   this->gradients_zero = true;
+}
+
+std::pair<torch::Tensor, torch::Tensor>
+BaseA3CAgent::get_losses(const torch::Tensor &log_action_probs, // Shape [T]
+                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &rewards,          // Shape [T]
+                         const torch::Tensor &entropy           // Shape [T]
+) {
+  torch::Tensor advantages = this->compute_advantages(rewards, state_values);
+  return {/*actor_loss=*/-(log_action_probs * advantages.detach()).mean() -
+              this->entropy_coefficient * entropy.mean(),
+          /*critic_loss=*/advantages.pow(2).mean()};
 }
 
 void BaseA3CAgent::load_weights(BaseA3CAgent &other) {
@@ -231,11 +247,11 @@ void BaseA3CAgent::update_parameters_assuming_gradients_are_loaded() {
     return;
   }
   this->actor_optimizer->step();
+  this->actor_optimizer->zero_grad();
   this->critic_optimizer->step();
   // Better not call this->zero_grad() because it would attempt to lock again.
   // Must zero out gradients here because other functions will not do it to
   // allow races on gradient updates.
-  this->actor_optimizer->zero_grad();
   this->critic_optimizer->zero_grad();
   this->gradients_zero = true;
 }

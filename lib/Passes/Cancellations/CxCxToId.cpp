@@ -35,26 +35,23 @@ public:
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp2 = dyn_cast_or_null<quake::XOp>(*op);
-      if (!cxOp2
-          || cxOp2.getTargets().size() != 1
-          || cxOp2.getControls().size() != 1) {
+      if (!cxOp2 || cxOp2.getTargets().size() != 1 ||
+          cxOp2.getControls().size() != 1) {
         return;
       }
-      auto optional_cxOp1_onTarget
-          = getPreviousOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
-      auto optional_cxOp1_onControl
-          = getPreviousOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
-      if (!optional_cxOp1_onTarget
-          || !optional_cxOp1_onControl
-          || optional_cxOp1_onTarget != optional_cxOp1_onControl) {
+      auto optional_cxOp1_onTarget =
+          getPreviousOperationOnTarget(cxOp2, cxOp2.getTargets()[0]);
+      auto optional_cxOp1_onControl =
+          getPreviousOperationOnTarget(cxOp2, cxOp2.getControls()[0]);
+      if (!optional_cxOp1_onTarget || !optional_cxOp1_onControl ||
+          optional_cxOp1_onTarget != optional_cxOp1_onControl) {
         return;
       }
-      auto cxOp1
-          = dyn_cast_or_null<quake::XOp>(*optional_cxOp1_onTarget);
-      if (!cxOp1
-          || cxOp1.getTargets().size() != 1
-          || cxOp1.getControls().size() != 1
-          || cxOp1.getControls()[0] != cxOp2.getControls()[0]) {
+      auto cxOp1 = dyn_cast_or_null<quake::XOp>(*optional_cxOp1_onTarget);
+      if (!cxOp1 || cxOp1.getTargets().size() != 1 ||
+          cxOp1.getControls().size() != 1 ||
+          cxOp1.getTargets()[0] != cxOp2.getTargets()[0] ||
+          cxOp1.getControls()[0] != cxOp2.getControls()[0]) {
         return;
       }
 

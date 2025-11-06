@@ -1,26 +1,26 @@
 dataset_name: "Chemistry"
-qubits_cholesky_params:
-  mean_qubits: 2.0
-  mean_gates: 4.0
-  mean_operations: 2.0
-  mean_measurements: 2.0
-  qubits_L11: 0.0
-  gates_L21: 0.0
-  gates_L22: 0.0
-  operations_L21: 0.0
-  operations_L22: 0.0
-  measurements_L21: 0.0
-  measurements_L22: 0.0
+cholesky_params:
+  mean_qubits: 13.907
+  mean_gates: 387.052
+  mean_operations: 373.145
+  mean_measurements: 13.907
+  qubits_L11: 5.00308
+  gates_L21: 269.676
+  gates_L22: 127.196
+  operations_L21: 264.672
+  operations_L22: 127.196
+  measurements_L21: 5.00308
+  measurements_L22: 0
 gates_weights:
-  X: 0
-  CX: 0
+  X: 13792
+  CX: 297196
   CCX: 0
   C3plus_X: 0
   Y: 0
   controlled_Y: 0
   Z: 0
   controlled_Z: 0
-  H: 0
+  H: 139496
   controlled_H: 0
   S: 0
   controlled_S: 0
@@ -30,11 +30,11 @@ gates_weights:
   controlled_T: 0
   TDG: 0
   controlled_TDG: 0
-  RX: 0
+  RX: 88744
   controlled_RX: 0
-  RY: 0
+  RY: 776
   controlled_RY: 0
-  RZ: 0
+  RZ: 37624
   controlled_RZ: 0
   SWAP: 0
   controlled_SWAP: 0
@@ -48,4 +48,4 @@ gates_weights:
   controlled_PHASED_RX: 0
   MX: 0
   MY: 0
-  MZ: 0
+  MZ: 21528

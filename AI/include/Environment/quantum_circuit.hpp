@@ -4,6 +4,7 @@
 // MLIR includes
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Pass/Pass.h"
 
 // Standard library includes
 #include <filesystem>
@@ -75,6 +76,14 @@ public:
    * @return [Succeeded, Was Applied]
    */
   std::pair<bool, bool> run_pass(unsigned int pass_index);
+
+  /**
+   *
+   * @param pass_ptr
+   * @return [Succeeded, Was Applied]
+   */
+  std::pair<bool, bool>
+  run_pass(std::unique_ptr<mlir::Pass> &pass_ptr);
 
   /**
    *
