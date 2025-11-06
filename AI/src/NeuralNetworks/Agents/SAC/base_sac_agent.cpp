@@ -63,13 +63,13 @@ BaseSACAgent::BaseSACAgent(unsigned int max_qubits)
 }
 
 bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
-                              const torch::nn::Sequential &critic,
+                              const torch::nn::Sequential &critic_Q1_main,
                               const torch::nn::Sequential &critic_Q2_main,
                               const torch::nn::Sequential &critic_Q1_avg,
                               const torch::nn::Sequential &critic_Q2_avg) {
   try {
     this->actor = actor;
-    this->critic = critic;
+    this->critic = critic_Q1_main;
     this->critic_Q2_main = critic_Q2_main;
     this->critic_Q1_avg = critic_Q1_avg;
     this->critic_Q2_avg = critic_Q2_avg;
@@ -90,15 +90,12 @@ bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
     this->actor_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->actor_optimizer_type, this->actor,
                                 this->sac_shared_learning_rate)));
-    this->critic_optimizer = std::shared_ptr(
+    this->critic_Q1_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->critic_optimizer_type, this->critic,
                                 this->sac_shared_learning_rate)));
-    this->critic_Q1_optimizer = std::shared_ptr(
-        std::move(makeOptimizer(this->critic_optimizer_type, this->critic_Q1,
-                                this->sac_shared_learning_rate)));
-    this->critic_Q2_optimizer = std::shared_ptr(
-        std::move(makeOptimizer(this->critic_optimizer_type, this->critic_Q1,
-                                this->sac_shared_learning_rate)));
+    this->critic_Q2_optimizer = std::shared_ptr(std::move(
+        makeOptimizer(this->critic_optimizer_type, this->critic_Q2_main,
+                      this->sac_shared_learning_rate)));
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -106,16 +103,12 @@ bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
   return true;
 }
 void BaseSACAgent::update_parameters(
-    const torch::Tensor &actor_loss, const torch::Tensor &critic_loss,
-    const torch::Tensor &critic_Q1_loss,
+    const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
     const torch::Tensor &critic_Q2_loss) const {
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->zero_grad();
   actor_loss.backward();
   this->actor_optimizer->step();
-  this->critic_optimizer->zero_grad();
-  critic_loss.backward();
-  this->critic_optimizer->step();
   this->critic_Q1_optimizer->zero_grad();
   critic_Q1_loss.backward();
   this->critic_Q1_optimizer->step();
@@ -128,29 +121,35 @@ void BaseSACAgent::update_parameters(
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
-          this->critic_V_avg->named_parameters(/*recurse=*/true)[name];
+          this->critic_Q1_avg->named_parameters(/*recurse=*/true)[name];
+      param_avg.mul_(1.0 - this->sac_smoothing_tau);
+      param_avg.add_(this->sac_smoothing_tau * param_main);
+    }
+    for (const auto &pair :
+         this->critic_Q2_main->named_parameters(/*recurse=*/true)) {
+      const std::string &name = pair.key();
+      torch::Tensor param_main = pair.value();
+      torch::Tensor param_avg =
+          this->critic_Q2_avg->named_parameters(/*recurse=*/true)[name];
       param_avg.mul_(1.0 - this->sac_smoothing_tau);
       param_avg.add_(this->sac_smoothing_tau * param_main);
     }
   }
 }
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+           torch::Tensor>
 BaseSACAgent::sac_forward(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
   return {this->actor->forward(x), this->critic->forward(x),
-          this->critic_V_avg->forward(x)};
+          this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
+          this->critic_Q2_avg->forward(x)};
 }
-std::tuple<torch::Tensor, torch::Tensor>
-BaseSACAgent::sac_Q_forward(const torch::Tensor &observation,
-                            const torch::Tensor &action) {
-  torch::Tensor x1 = observation.to(this->device).to(torch::kFloat32);
-  torch::Tensor x2 = action.to(this->device).to(torch::kFloat32);
-  return {this->critic_Q1->forward(x1, x2), this->critic_Q2->forward(x1, x2)};
-}
+
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor, torch::Tensor>
 BaseSACAgent::sac_select_action(const torch::Tensor &observation) {
-  auto [action_probs, V_main, V_avg] = this->sac_forward(observation);
+  auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
+      this->sac_forward(observation);
 }
 
 } // namespace ai_pass_selector

@@ -62,45 +62,35 @@ public:
   /**
    *
    * @param actor
-   * @param critic
+   * @param critic_Q1_main
    * @param critic_Q2_main
    * @param critic_Q1_avg
    * @param critic_Q2_avg
    * @return
    */
   bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic, // critic_V_main
+                  const torch::nn::Sequential &critic_Q1_main,
                   const torch::nn::Sequential &critic_Q2_main,
                   const torch::nn::Sequential &critic_Q1_avg,
                   const torch::nn::Sequential &critic_Q2_avg);
   /**
    *
    * @param actor_loss
-   * @param critic_loss
    * @param critic_Q1_loss
    * @param critic_Q2_loss
    */
   void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss, // critic_V_main_loss
                          const torch::Tensor &critic_Q1_loss,
                          const torch::Tensor &critic_Q2_loss) const;
 
   /**
    *
    * @param observation
-   * @return
+   * @return [policy, Q1_main, Q2_main, Q1_avg, Q2_avg]
    */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+             torch::Tensor>
   sac_forward(const torch::Tensor &observation);
-
-  /**
-   *
-   * @param observation
-   * @param action
-   * @return
-   */
-  std::tuple<torch::Tensor, torch::Tensor>
-  sac_Q_forward(const torch::Tensor &observation, const torch::Tensor &action);
 
   /**
    *
