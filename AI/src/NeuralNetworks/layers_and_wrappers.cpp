@@ -64,12 +64,12 @@ FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
 Tensor FilterLSTMImpl::forward(Tensor x) {
   if (x.dim() != 2 && x.dim() != 3) {
     throw std::invalid_argument(
-        "FilterLSTMImpl expects input tensor of dimension 2 or 3.");
+        "FilterLSTM expects input tensor of dimension 2 or 3.");
   }
   if (x.dim() == 2) {
     x = x.unsqueeze(/*dim=*/1);
   }
-  auto [y, _] = this->my_lstm->forward(x);
+  auto [y, _] = this->my_lstm->forward(x.contiguous());
   return y.squeeze(/*dim=*/1);
 }
 
