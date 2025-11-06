@@ -78,9 +78,9 @@ bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
     this->load_model();
     this->register_module("actor", this->actor);
     this->register_module("critic", this->critic);
-    this->register_module("critic_V_avg", this->critic_V_avg);
-    this->register_module("critic_Q1", this->critic_Q1);
-    this->register_module("critic_Q2", this->critic_Q2);
+    this->register_module("critic_Q2_main", this->critic_Q2_main);
+    this->register_module("critic_Q1_avg", this->critic_Q1_avg);
+    this->register_module("critic_Q2_avg", this->critic_Q2_avg);
     this->actor->to(this->device);
     // The main critic is critic_V_main.
     this->critic->to(this->device);
