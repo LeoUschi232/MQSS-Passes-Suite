@@ -1,4 +1,4 @@
-#include "NeuralNetworks/Agents/SDSAC/base_sac_agent.hpp"
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
 // Environment includes
 #include "Environment/quantum_circuit_environment.hpp"
