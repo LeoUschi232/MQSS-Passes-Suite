@@ -1,5 +1,5 @@
-#ifndef BASE_SAC_AGENT_HPP
-#define BASE_SAC_AGENT_HPP
+#ifndef BASE_SDSAC_AGENT_HPP
+#define BASE_SDSAC_AGENT_HPP
 
 // Torch includes
 #include "torch/torch.h"
@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 namespace ai_pass_selector {
 enum class OptimizerType : int;
 
-class BaseSACAgent : public BaseActorCritic {
+class BaseSDSACAgent : public BaseActorCritic {
 protected:
   /// SDSAC specific attributes
   std::optional<double> sac_temperature_alpha = std::nullopt;
@@ -30,19 +30,19 @@ protected:
 
 public:
   /// Constructors
-  explicit BaseSACAgent(unsigned int max_qubits);
+  explicit BaseSDSACAgent(unsigned int max_qubits);
 
   /// Destructor
-  ~BaseSACAgent() override = default;
+  ~BaseSDSACAgent() override = default;
 
   /// Copy and move constructors and assignment operators
-  BaseSACAgent(const BaseSACAgent &other) noexcept = delete;
+  BaseSDSACAgent(const BaseSDSACAgent &other) noexcept = delete;
 
-  BaseSACAgent(BaseSACAgent &&other) noexcept = default;
+  BaseSDSACAgent(BaseSDSACAgent &&other) noexcept = default;
 
-  BaseSACAgent &operator=(const BaseSACAgent &other) noexcept = delete;
+  BaseSDSACAgent &operator=(const BaseSDSACAgent &other) noexcept = delete;
 
-  BaseSACAgent &operator=(BaseSACAgent &&other) noexcept = delete;
+  BaseSDSACAgent &operator=(BaseSDSACAgent &&other) noexcept = delete;
 
   //////////////////////////////////////////////////////////////////////////////
   /// SDSAC override for disabling methods
@@ -90,7 +90,7 @@ public:
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
              torch::Tensor>
-  sac_forward(const torch::Tensor &observation);
+  sdsac_forward(const torch::Tensor &observation);
 
   /**
    *
@@ -99,10 +99,10 @@ public:
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
              torch::Tensor, torch::Tensor>
-  sac_select_action(const torch::Tensor &observation);
+  sdsac_select_action(const torch::Tensor &observation);
   //////////////////////////////////////////////////////////////////////////////
 };
 
 } // namespace ai_pass_selector
 
-#endif // BASE_SAC_AGENT_HPP
+#endif // BASE_SDSAC_AGENT_HPP
