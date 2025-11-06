@@ -21,13 +21,14 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
-                              const torch::nn::Sequential &critic) {
-  throw std::runtime_error("BaseSDSACAgent has 4 critics and must be initialized "
-                           "using the 4-ciritc initialization method, not the "
-                           "standard 1-critic initialization method.");
+                                const torch::nn::Sequential &critic) {
+  throw std::runtime_error(
+      "BaseSDSACAgent has 4 critics and must be initialized "
+      "using the 4-ciritc initialization method, not the "
+      "standard 1-critic initialization method.");
 }
 void BaseSDSACAgent::update_parameters(const torch::Tensor &actor_loss,
-                                     const torch::Tensor &critic_loss) const {
+                                       const torch::Tensor &critic_loss) const {
   throw std::runtime_error(
       "BaseSDSACAgent has 4 critics and must be updated using the 4-critic "
       "update method, not the standard 1-critic update method.");
@@ -46,7 +47,8 @@ torch::Tensor BaseSDSACAgent::get_value(const torch::Tensor &observation) {
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::select_action(const torch::Tensor &observation) {
   throw std::runtime_error(
-      "BaseSDSACAgent does not implement the standard Actor-Critic select_action "
+      "BaseSDSACAgent does not implement the standard Actor-Critic "
+      "select_action "
       "method with 4 return tensors. Use sac_select_action instead.");
 }
 
@@ -63,10 +65,10 @@ BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
 }
 
 bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
-                              const torch::nn::Sequential &critic_Q1_main,
-                              const torch::nn::Sequential &critic_Q2_main,
-                              const torch::nn::Sequential &critic_Q1_avg,
-                              const torch::nn::Sequential &critic_Q2_avg) {
+                                const torch::nn::Sequential &critic_Q1_main,
+                                const torch::nn::Sequential &critic_Q2_main,
+                                const torch::nn::Sequential &critic_Q1_avg,
+                                const torch::nn::Sequential &critic_Q2_avg) {
   try {
     this->actor = actor;
     this->critic = critic_Q1_main;
