@@ -84,9 +84,9 @@ bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
     this->actor->to(this->device);
     // The main critic is critic_V_main.
     this->critic->to(this->device);
-    this->critic_V_avg->to(this->device);
-    this->critic_Q1->to(this->device);
-    this->critic_Q2->to(this->device);
+    this->critic_Q2_main->to(this->device);
+    this->critic_Q1_avg->to(this->device);
+    this->critic_Q2_avg->to(this->device);
     this->actor_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->actor_optimizer_type, this->actor,
                                 this->sac_shared_learning_rate)));
