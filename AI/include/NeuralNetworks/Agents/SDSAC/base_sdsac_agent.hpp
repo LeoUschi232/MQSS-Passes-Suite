@@ -95,17 +95,26 @@ public:
   /**
    *
    * @param observation
+   * @return [action_index, entropy]
+  */
+  std::tuple<torch::Tensor, torch::Tensor>
+  sdsac_select_action(const torch::Tensor &observation);
+  torch::Tensor
+  sdsac_select_action(const torch::Tensor &observation);
+
+  /**
+   *
+   * @param observation
+   * @param action_index_unsqueezed
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
-             torch::Tensor, torch::Tensor>
-  sdsac_select_action(const torch::Tensor &observation);
+             torch::Tensor>
+  force_select_action(const torch::Tensor &observation,
+                      const torch::Tensor &action_index_unsqueezed);
 
-
-
-
-  std::pair<torch::Tensor, torch::Tensor>
-  get_losses(
+  // std::pair<torch::Tensor, torch::Tensor>
+  // get_losses(
   //////////////////////////////////////////////////////////////////////////////
 };
 

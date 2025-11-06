@@ -74,6 +74,14 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       auto [nr_qubits, nr_gates] = environment.size();
 
       SDSAC_EpisodeRollout rollout_new;
+      std::vector<torch::Tensor> actions_vector;
+      std::vector<torch::Tensor> rewards_vector;
+      std::vector<torch::Tensor> entropies_vector;
+      rollout_new.observations.reserve(T + 1);
+      actions_vector.reserve(T);
+      rewards_vector.reserve(T);
+      entropies_vector.reserve(T);
+
       bool add_bootstrap_new = false;
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
@@ -90,8 +98,14 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
           break;
         }
         // TODO: do loop A
+        torch::Tensor observation =
+            environment.get_observation_as_torch_tensor();
+        auto [action, entropy, Q1_main, Q2_main, Q1_avg, Q2_avg] =
+            agent->sdsac_select_action(observation);
+        rollout_new.observations.push_back(observation);
+        actions_vector.push_back(action);
+        entropies_vector.push_back(_);
       }
-
 
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
@@ -104,8 +118,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         add_bootstrap_old = add_bootstrap_new;
         continue;
       }
-
-
 
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         updateProgresses(
@@ -134,10 +146,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       } else {
         state_values_vector.push_back(torch::zeros({}, options));
       }
-
-
-
-
 
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
