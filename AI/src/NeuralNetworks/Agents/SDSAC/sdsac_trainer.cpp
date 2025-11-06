@@ -140,7 +140,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                     << std::endl;
           break;
         }
-        auto [action_probs, entropy, ] =
+        auto [action_probs, entropy, Q1_main, Q2_main, Q1_avg, Q2_avg] =
             agent->force_select_action(
                 /*observation=*/rollout_old.observations[update_step],
                 /*action_index_unsqueezed=*/rollout_old.actions[update_step]
