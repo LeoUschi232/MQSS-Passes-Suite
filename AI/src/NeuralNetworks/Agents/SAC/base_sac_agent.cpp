@@ -64,15 +64,15 @@ BaseSACAgent::BaseSACAgent(unsigned int max_qubits)
 
 bool BaseSACAgent::initialize(const torch::nn::Sequential &actor,
                               const torch::nn::Sequential &critic,
-                              const torch::nn::Sequential &critic_V_avg,
-                              const torch::nn::Sequential &critic_Q1,
-                              const torch::nn::Sequential &critic_Q2) {
+                              const torch::nn::Sequential &critic_Q2_main,
+                              const torch::nn::Sequential &critic_Q1_avg,
+                              const torch::nn::Sequential &critic_Q2_avg) {
   try {
     this->actor = actor;
     this->critic = critic;
-    this->critic_V_avg = critic_V_avg;
-    this->critic_Q1 = critic_Q1;
-    this->critic_Q2 = critic_Q2;
+    this->critic_Q2_main = critic_Q2_main;
+    this->critic_Q1_avg = critic_Q1_avg;
+    this->critic_Q2_avg = critic_Q2_avg;
     // Load the model before putting it to the device to avoid device
     // scheduling issus.
     this->load_model();

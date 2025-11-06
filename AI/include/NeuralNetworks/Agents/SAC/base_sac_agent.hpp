@@ -22,9 +22,9 @@ protected:
   double sac_smoothing_tau = 0.0;
 
   /// SAC Additional Critics
-  torch::nn::Sequential critic_V_avg{nullptr};
-  torch::nn::Sequential critic_Q1{nullptr};
-  torch::nn::Sequential critic_Q2{nullptr};
+  torch::nn::Sequential critic_Q2_main{nullptr};
+  torch::nn::Sequential critic_Q1_avg{nullptr};
+  torch::nn::Sequential critic_Q2_avg{nullptr};
   std::shared_ptr<torch::optim::Optimizer> critic_Q1_optimizer = nullptr;
   std::shared_ptr<torch::optim::Optimizer> critic_Q2_optimizer = nullptr;
 
@@ -63,16 +63,16 @@ public:
    *
    * @param actor
    * @param critic
-   * @param critic_V_avg
-   * @param critic_Q1
-   * @param critic_Q2
+   * @param critic_Q2_main
+   * @param critic_Q1_avg
+   * @param critic_Q2_avg
    * @return
    */
   bool initialize(const torch::nn::Sequential &actor,
                   const torch::nn::Sequential &critic, // critic_V_main
-                  const torch::nn::Sequential &critic_V_avg,
-                  const torch::nn::Sequential &critic_Q1,
-                  const torch::nn::Sequential &critic_Q2);
+                  const torch::nn::Sequential &critic_Q2_main,
+                  const torch::nn::Sequential &critic_Q1_avg,
+                  const torch::nn::Sequential &critic_Q2_avg);
   /**
    *
    * @param actor_loss
