@@ -2,9 +2,15 @@
 #define SDSAC_TRAINER_HPP
 
 // Agents includes
-#include "NeuralNetworks/Agents/SAC/base_sac_agent.hpp"
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
 namespace ai_pass_selector {
+struct EpisodeRollout {
+  std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
+  torch::Tensor actions;                   // [T]
+  torch::Tensor rewards;                   // [T]
+  torch::Tensor entropies;                   // [T]
+};
 
 /**
  *
