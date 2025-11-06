@@ -82,7 +82,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       rewards_vector.reserve(T);
       entropies_vector.reserve(T);
 
-      bool add_bootstrap_new = false;
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
@@ -104,7 +103,19 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         rollout_new.observations.push_back(observation);
         actions_vector.push_back(action);
         entropies_vector.push_back(entropy);
+        auto [reward, terminated, truncated] =
+            environment.step(action.item<int>());
+        rewards_vector.push_back(torch::tensor(reward, options));
+        total_episode_reward += reward;
+        if (truncated || terminated) {
+          break;
+        }
       }
+      torch::Tensor observation = environment.get_observation_as_torch_tensor();
+      rollout_new.observations.push_back(observation);
+      rollout_new.actions = torch::stack(actions_vector).to(device);
+      rollout_new.rewards = torch::stack(rewards_vector).to(device);
+      rollout_new.entropies = torch::stack(entropies_vector).to(device);
 
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
@@ -114,10 +125,9 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
-        add_bootstrap_old = add_bootstrap_new;
         continue;
       }
-
+      entropies_vector.clear();
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
@@ -130,7 +140,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                     << std::endl;
           break;
         }
-        auto [log_action_probs, state_value, entropy] =
+        auto [action_probs, entropy, ] =
             agent->force_select_action(
                 /*observation=*/rollout_old.observations[update_step],
                 /*action_index_unsqueezed=*/rollout_old.actions[update_step]
