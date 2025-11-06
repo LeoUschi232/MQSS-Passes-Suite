@@ -100,6 +100,12 @@ public:
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
              torch::Tensor, torch::Tensor>
   sdsac_select_action(const torch::Tensor &observation);
+
+
+
+
+  std::pair<torch::Tensor, torch::Tensor>
+  get_losses(
   //////////////////////////////////////////////////////////////////////////////
 };
 
