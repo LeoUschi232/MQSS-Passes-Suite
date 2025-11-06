@@ -16,12 +16,12 @@ enum class OptimizerType : int;
 
 class BaseSACAgent : public BaseActorCritic {
 protected:
-  /// SAC specific attributes
+  /// SDSAC specific attributes
   std::optional<double> sac_temperature_alpha = std::nullopt;
   double sac_shared_learning_rate = 0.0;
   double sac_smoothing_tau = 0.0;
 
-  /// SAC Additional Critics
+  /// SDSAC Additional Critics
   torch::nn::Sequential critic_Q2_main{nullptr};
   torch::nn::Sequential critic_Q1_avg{nullptr};
   torch::nn::Sequential critic_Q2_avg{nullptr};
@@ -45,7 +45,7 @@ public:
   BaseSACAgent &operator=(BaseSACAgent &&other) noexcept = delete;
 
   //////////////////////////////////////////////////////////////////////////////
-  /// SAC override for disabling methods
+  /// SDSAC override for disabling methods
   bool initialize(const torch::nn::Sequential &actor,
                   const torch::nn::Sequential &critic) override;
   void update_parameters(const torch::Tensor &actor_loss,
@@ -58,7 +58,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////////////
-  /// SAC quadruple-critic methods
+  /// SDSAC quadruple-critic methods
   /**
    *
    * @param actor
