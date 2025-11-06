@@ -149,7 +149,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor, torch::Tensor>
 BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
   auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-      this->sac_forward(observation);
+      this->sdsac_forward(observation);
 }
 
 } // namespace ai_pass_selector
