@@ -138,7 +138,7 @@ void BaseSDSACAgent::update_parameters(
 }
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor>
-BaseSDSACAgent::sac_forward(const torch::Tensor &observation) {
+BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
   return {this->actor->forward(x), this->critic->forward(x),
           this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
@@ -147,7 +147,7 @@ BaseSDSACAgent::sac_forward(const torch::Tensor &observation) {
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor, torch::Tensor>
-BaseSDSACAgent::sac_select_action(const torch::Tensor &observation) {
+BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
   auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
       this->sac_forward(observation);
 }
