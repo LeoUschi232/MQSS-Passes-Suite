@@ -130,18 +130,6 @@ cd "${CUDAQ_DIR}" || { echo "Failed to navigate to ${CUDAQ_DIR}."; exit 1; }
 # Create a build directory
 mkdir -p build && cd build || { echo "Failed to create or navigate to build directory."; exit 1; }
 
-'
-rm -rf build/_deps/cuda-quantum/build &&
-cmake -S build/_deps/cuda-quantum -B build/_deps/cuda-quantum/build -G Ninja \
-  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
-  -DMLIR_DIR=/usr/local/llvm/lib/cmake/mlir \
-  -DClang_DIR=/usr/local/llvm/lib/cmake/clang \
-  -DLLVM_DIR=/usr/local/llvm/lib/cmake/llvm \
-  -DCMAKE_CXX_FLAGS="-Wno-error=unused-but-set-variable" \
-  -DBUILD_TESTING=OFF -DCUDAQ_BUILD_TESTS=OFF -DOPENSSL_FOUND=ON &&
-ninja -C build/_deps/cuda-quantum/build -j1 cudaq-mlir-runtime
-'
-
 # Configure CUDA Quantum using CMake
 echo "Configuring CUDA Quantum with CMake."
 cmake -G Ninja \
