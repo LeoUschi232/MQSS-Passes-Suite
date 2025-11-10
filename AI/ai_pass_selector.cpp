@@ -163,14 +163,14 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "ppo-mq28-tcnrelu"},
+      {"agent", "sdsac-mq28-tcnrelu"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
-      {"nr_episodes", 100000},
+      {"nr_episodes", 12},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
       {"max_steps_same_action", 8},
