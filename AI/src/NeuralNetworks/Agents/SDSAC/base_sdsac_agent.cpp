@@ -97,6 +97,11 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
     this->critic_Q2_optimizer = std::shared_ptr(std::move(
         makeOptimizer(this->critic_optimizer_type, this->critic_Q2_main,
                       this->sdsac_shared_learning_rate)));
+    this->alpha_optimizer =
+        std::make_shared<torch::optim::Adam>(torch::optim::Adam(
+            /*params=*/{this->sdsac_temperature_alpha},
+            /*defaults=*/torch::optim::AdamOptions(
+                this->sdsac_shared_learning_rate)));
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -128,11 +133,11 @@ BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
 /// [actor_loss, critic_Q1_loss, critic_Q2_loss,
 /// optional_temperature_alpha_loss]
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-BaseSDSACAgent::get_loss(const torch::Tensor &new_action_probs,
-                         const torch::Tensor & old_entropy, const torch::Tensor & new_entropy,
-                         const torch::Tensor & reward, const torch::Tensor & Q1_main,
-                         const torch::Tensor & Q2_main, const torch::Tensor & Q1_avg,
-                         const torch::Tensor & Q2_avg) {
+BaseSDSACAgent::get_loss(
+    const torch::Tensor &new_action_probs, const torch::Tensor &old_entropy,
+    const torch::Tensor &new_entropy, const torch::Tensor &reward,
+    const torch::Tensor &Q1_main, const torch::Tensor &Q2_main,
+    const torch::Tensor &Q1_avg, const torch::Tensor &Q2_avg) {
 
   torch::Tensor log_action_probs = new_action_probs.log();
   torch::Tensor expectation_Q1 = new_action_probs.dot(
@@ -145,6 +150,7 @@ BaseSDSACAgent::get_loss(const torch::Tensor &new_action_probs,
       torch::clamp(Q1_main - Q1_avg, -this->sdsac_clip_c, this->sdsac_clip_c);
   torch::Tensor clip_value_Q2 =
       torch::clamp(Q2_main - Q2_avg, -this->sdsac_clip_c, this->sdsac_clip_c);
+  torch::Tensor target_entropy = torch::tensor(new_action_probs.size(0)).log();
   return {/*actor_loss=*/new_action_probs.dot(
               this->sdsac_temperature_alpha * log_action_probs -
               torch::min(Q1_main, Q2_main).detach()) +
@@ -155,13 +161,13 @@ BaseSDSACAgent::get_loss(const torch::Tensor &new_action_probs,
           /*critic_Q1_loss=*/
           torch::max((Q2_main - y).pow(2), (Q2_avg + clip_value_Q2 - y).pow(2)),
           /*alpha_loss=*/-this->sdsac_temperature_alpha *
-              (new_entropy.detach() - log(new_action_probs.size(0)))};
+              new_action_probs.dot(log_action_probs + target_entropy).detach()};
 }
 
 void BaseSDSACAgent::sdsac_update_parameters(
     const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
     const torch::Tensor &critic_Q2_loss,
-    const std::optional<torch::Tensor> &temperature_alpha_loss) const {
+    const torch::Tensor &temperature_alpha_loss) const {
   std::lock_guard lock(*this->model_mutex);
   this->actor_optimizer->zero_grad();
   actor_loss.backward();
@@ -192,5 +198,8 @@ void BaseSDSACAgent::sdsac_update_parameters(
       param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
   }
+  this->alpha_optimizer->zero_grad();
+  temperature_alpha_loss.backward();
+  this->alpha_optimizer->step();
 }
 } // namespace ai_pass_selector
