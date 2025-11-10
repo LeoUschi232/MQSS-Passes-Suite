@@ -156,12 +156,13 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*Q2_avg_next=*/Q2_avg_next.detach(),
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
-                /*Q1_avg=*/Q1_avg,
-                /*Q2_avg=*/Q2_avg,
+                /*Q1_avg=*/Q1_avg.detach(),
+                /*Q2_avg=*/Q2_avg.detach(),
                 /*action=*/rollout_old.actions[update_step],
                 /*action_probs=*/action_probs,
                 /*old_entropy=*/rollout_old.entropies[update_step].detach(),
-                /*new_entropy=*/rollout_new.entropies[update_step]);
+                /*new_entropy=*/
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
             /*display_message=*/"Rollout B | Reward: " +
