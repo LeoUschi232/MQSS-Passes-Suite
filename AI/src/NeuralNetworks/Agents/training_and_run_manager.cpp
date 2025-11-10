@@ -8,8 +8,8 @@
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
-#include "NeuralNetworks/Agents/SDSAC/base_ppo_agent.hpp"
-#include "NeuralNetworks/Agents/SDSAC/ppo_trainer.hpp"
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
