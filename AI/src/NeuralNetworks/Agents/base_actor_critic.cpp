@@ -117,8 +117,11 @@ BaseActorCritic::select_action(const torch::Tensor &observation) {
 
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
-  auto [action_probs, _] = this->forward(observation);
-  return action_probs.argmax(/*dim=*/-1).to(torch::kInt32).detach().item<int>();
+  return this->actor->forward(observation)
+      .argmax(/*dim=*/-1)
+      .to(torch::kInt32)
+      .detach()
+      .item<int>();
 }
 
 torch::Tensor BaseActorCritic::compute_advantages(
@@ -181,35 +184,6 @@ void BaseActorCritic::update_parameters(
   this->critic_optimizer->step();
 }
 
-void BaseActorCritic::save_model() const {
-  std::lock_guard lock(*this->model_mutex);
-  std::string name = this->agentName();
-  if (name.empty()) {
-    std::cerr << "No agent to save." << std::endl;
-    return;
-  }
-  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
-  torch::save(this->actor, actor_path.string());
-  torch::save(this->critic, critic_path.string());
-}
-
-void BaseActorCritic::load_model() {
-  std::lock_guard lock(*this->model_mutex);
-  std::string name = this->agentName();
-  if (name.empty()) {
-    return;
-  }
-  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
-  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
-    return;
-  }
-  torch::load(this->actor, actor_path.string(), this->device);
-  torch::load(this->critic, critic_path.string(), this->device);
-  std::cout << "Loaded model: " << name << std::endl;
-}
-
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
     size_t total = 0, bad = 0;
@@ -267,6 +241,35 @@ BaseActorCritic::select_passes_for_circuit(const fs::path &circuit_path) {
     keep_going = !terminated && !truncated;
   }
   return selected_passes;
+}
+
+void BaseActorCritic::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  torch::save(this->actor, actor_path.string());
+  torch::save(this->critic, critic_path.string());
+}
+
+void BaseActorCritic::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+    return;
+  }
+  torch::load(this->actor, actor_path.string(), this->device);
+  torch::load(this->critic, critic_path.string(), this->device);
+  std::cout << "Loaded model: " << name << std::endl;
 }
 
 } // namespace ai_pass_selector

@@ -43,19 +43,24 @@ makeOptimizer(OptimizerType optimizerType,
   switch (optimizerType) {
   case OptimizerType::Adagrad:
     return std::make_unique<torch::optim::Adagrad>(
-        agentModel->parameters(), torch::optim::AdagradOptions(learningRate));
+        /*params=*/agentModel->parameters(),
+        /*defaults=*/torch::optim::AdagradOptions(learningRate));
   case OptimizerType::Adam:
     return std::make_unique<torch::optim::Adam>(
-        agentModel->parameters(), torch::optim::AdamOptions(learningRate));
+        /*params=*/agentModel->parameters(),
+        /*defaults=*/torch::optim::AdamOptions(learningRate));
   case OptimizerType::AdamW:
     return std::make_unique<torch::optim::AdamW>(
-        agentModel->parameters(), torch::optim::AdamWOptions(learningRate));
+        /*params=*/agentModel->parameters(),
+        /*defaults=*/torch::optim::AdamWOptions(learningRate));
   case OptimizerType::RMSProp:
     return std::make_unique<torch::optim::RMSprop>(
-        agentModel->parameters(), torch::optim::RMSpropOptions(learningRate));
+        /*params=*/agentModel->parameters(),
+        /*defaults=*/torch::optim::RMSpropOptions(learningRate));
   case OptimizerType::SGD:
     return std::make_unique<torch::optim::SGD>(
-        agentModel->parameters(), torch::optim::SGDOptions(learningRate));
+        /*params=*/agentModel->parameters(),
+        /*defaults=*/torch::optim::SGDOptions(learningRate));
   default:
     throw std::runtime_error("Unsupported optimizer type: " +
                              std::to_string(static_cast<int>(optimizerType)));

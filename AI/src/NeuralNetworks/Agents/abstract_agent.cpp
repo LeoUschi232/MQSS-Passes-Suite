@@ -6,6 +6,7 @@
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Torch includes
@@ -84,10 +85,8 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "hybrid") {
         return std::make_unique<A3C_HYBRID>(attributes.max_qubits);
       }
-      {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
-      }
+      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      return {};
     }
     case AgentClass::PPO: {
       if (attributes.extras == "tcnrelu") {
@@ -105,10 +104,27 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "hybrid") {
         return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
       }
-      {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
+      std::cerr << "No such PPO agent: " << agent_name << std::endl;
+      return {};
+    }
+    case AgentClass::SDSAC: {
+      if (attributes.extras == "tcnrelu") {
+        return std::make_unique<SDSAC_TCN_RELU>(attributes.max_qubits);
       }
+      if (attributes.extras == "tcnprelu") {
+        return std::make_unique<SDSAC_TCN_PRELU>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmhmpp") {
+        return std::make_unique<SDSAC_LSTM_HMPP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmbmnp") {
+        return std::make_unique<SDSAC_LSTM_BMNP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "hybrid") {
+        return std::make_unique<SDSAC_HYBRID>(attributes.max_qubits);
+      }
+      std::cerr << "No such SDSAC agent: " << agent_name << std::endl;
+      return {};
     }
     default:
       std::cerr << "No such agent yet: " << agent_name << std::endl;

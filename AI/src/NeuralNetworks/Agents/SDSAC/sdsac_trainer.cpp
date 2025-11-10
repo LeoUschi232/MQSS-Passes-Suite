@@ -1,9 +1,7 @@
-#include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
 
 // Environment includes
 #include "Environment/Wrappers/normalize_reward.hpp"
-#include "Environment/quantum_circuit_environment.hpp"
-#include "Environment/statistics_for_rqcg.hpp"
 
 // Utils includes
 #include "Utils/info_utils.hpp"
@@ -12,7 +10,6 @@
 // Standard library includes
 #include <csignal>
 #include <filesystem>
-#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -21,9 +18,10 @@ extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+
 std::unordered_map<std::string, std::string>
-train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
-          const std::string &dataset) {
+train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
+            const std::string &dataset) {
   // Default values
   unsigned int max_qubits = agent->getMaxQubits();
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
@@ -51,10 +49,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
-
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
-  PPO_EpisodeRollout rollout_old;
-  bool add_bootstrap_old = false;
+  SDSAC_EpisodeRollout rollout_old;
   double previous_episode_reward = 0.0;
   unsigned int previous_nr_qubits = 0u;
   unsigned int previous_nr_gates = 0u;
@@ -70,6 +66,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
     }
     updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                    /*display_message=*/"Resetting Enviornment.");
+
     try {
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 1: Rollout A
@@ -77,18 +74,15 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       environment.reset();
       auto [nr_qubits, nr_gates] = environment.size();
 
-      PPO_EpisodeRollout rollout_new;
+      SDSAC_EpisodeRollout rollout_new;
       std::vector<torch::Tensor> actions_vector;
-      std::vector<torch::Tensor> log_action_probs_vector;
-      std::vector<torch::Tensor> state_values_vector;
       std::vector<torch::Tensor> rewards_vector;
+      std::vector<torch::Tensor> entropies_vector;
       rollout_new.observations.reserve(T + 1);
       actions_vector.reserve(T);
-      log_action_probs_vector.reserve(T);
-      state_values_vector.reserve(T + 1);
       rewards_vector.reserve(T);
+      entropies_vector.reserve(T);
 
-      bool add_bootstrap_new = false;
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
@@ -99,44 +93,31 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates));
         if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in PPO training."
+          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
                     << std::endl;
           break;
         }
-
+        // TODO: do loop A
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        auto [action, log_action_prob, state_value, _] =
-            agent->select_action(observation);
+        auto [action, entropy] = agent->sdsac_select_action(observation);
         rollout_new.observations.push_back(observation);
         actions_vector.push_back(action);
-        log_action_probs_vector.push_back(log_action_prob);
-        state_values_vector.push_back(state_value);
+        entropies_vector.push_back(entropy);
         auto [reward, terminated, truncated] =
             environment.step(action.item<int>());
         rewards_vector.push_back(torch::tensor(reward, options));
         total_episode_reward += reward;
-        if (truncated) {
-          add_bootstrap_new = true;
-          break;
-        }
-        if (terminated) {
+        if (truncated || terminated) {
           break;
         }
       }
       torch::Tensor observation = environment.get_observation_as_torch_tensor();
       rollout_new.observations.push_back(observation);
-      if (add_bootstrap_new || update_step >= max_steps_per_episode) {
-        torch::NoGradGuard _;
-        state_values_vector.push_back(agent->get_value(observation));
-      } else {
-        state_values_vector.push_back(torch::zeros({}, options));
-      }
       rollout_new.actions = torch::stack(actions_vector).to(device);
-      rollout_new.log_action_probs =
-          torch::stack(log_action_probs_vector).to(device);
-      rollout_new.state_values = torch::stack(state_values_vector).to(device);
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
+      rollout_new.entropies = torch::stack(entropies_vector).to(device);
+
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
       // Observations is length T+1.
@@ -145,12 +126,11 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
-        add_bootstrap_old = add_bootstrap_new;
+        previous_episode_reward = total_episode_reward;
+        previous_nr_qubits = nr_qubits;
+        previous_nr_gates = nr_gates;
         continue;
       }
-      log_action_probs_vector.clear();
-      state_values_vector.clear();
-      std::vector<torch::Tensor> entropies_vector;
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
@@ -159,53 +139,38 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
                 " | Nr qubits: " + std::to_string(previous_nr_qubits) +
                 " | Nr gates: " + std::to_string(previous_nr_gates));
         if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in PPO training."
+          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
                     << std::endl;
           break;
         }
-        auto [log_action_probs, state_value, entropy] =
-            agent->force_select_action(
-                /*observation=*/rollout_old.observations[update_step],
-                /*action_index_unsqueezed=*/rollout_old.actions[update_step]
-                    .unsqueeze(-1));
-        log_action_probs_vector.push_back(log_action_probs);
-        state_values_vector.push_back(state_value);
-        entropies_vector.push_back(entropy);
-      }
-      if (add_bootstrap_old) {
-        state_values_vector.push_back(
-            agent->get_value(rollout_old.observations.back()));
-      } else {
-        state_values_vector.push_back(torch::zeros({}, options));
-      }
+        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
+            agent->sdsac_all_Q_forward(
+                /*observation=*/rollout_old.observations[update_step]);
+        auto [action_probs_next, Q1_avg_next, Q2_avg_next] =
+            agent->sdsac_Q_avg_only_forward(
+                /*observation=*/rollout_old.observations[update_step + 1u]);
 
-      //////////////////////////////////////////////////////////////////////////
-      /// Compute Losses
-      std::string main_message =
-          "Reward: " + std::to_string(total_episode_reward) +
-          " | Nr qubits: " + std::to_string(nr_qubits) +
-          " | Nr gates: " + std::to_string(nr_gates);
-      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                     /*display_message=*/main_message + " | Computing loss.");
-      auto [actor_loss, critic_loss] = agent->get_losses(
-          /*old_log_action_probs=*/rollout_old.log_action_probs.detach().to(
-              device),
-          /*old_state_values=*/
-          rollout_old.state_values.detach().to(device),
-          /*new_log_action_probs=*/
-          torch::stack(log_action_probs_vector).to(device),
-          /*new_state_values=*/
-          torch::stack(state_values_vector).to(device),
-          /*rewards=*/rollout_old.rewards.to(device),
-          /*entropy=*/torch::stack(entropies_vector).to(device));
-
-      //////////////////////////////////////////////////////////////////////////
-      /// Update Parameters
-      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                     /*display_message=*/main_message + " | Updating params.");
-      agent->update_parameters(actor_loss, critic_loss);
+        auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
+              optional_temperature_alpha_loss] =
+            agent->get_loss(
+                /*reward=*/rollout_old.rewards[update_step],
+                /*action_probs_next=*/action_probs_next.detach(),
+                /*Q1_avg_next=*/Q1_avg_next.detach(),
+                /*Q2_avg_next=*/Q2_avg_next.detach(),
+                /*Q1_main=*/Q1_main,
+                /*Q2_main=*/Q2_main,
+                /*Q1_avg=*/Q1_avg.detach(),
+                /*Q2_avg=*/Q2_avg.detach(),
+                /*action=*/rollout_old.actions[update_step],
+                /*action_probs=*/action_probs,
+                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
+                /*new_entropy=*/
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
+        agent->sdsac_update_parameters(actor_loss, critic_Q1_loss,
+                                       critic_Q2_loss,
+                                       optional_temperature_alpha_loss);
+      }
       rollout_old = std::move(rollout_new);
-      add_bootstrap_old = add_bootstrap_new;
       previous_episode_reward = total_episode_reward;
       previous_nr_qubits = nr_qubits;
       previous_nr_gates = nr_gates;
@@ -227,4 +192,5 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
   }
   return {};
 }
+
 } // namespace ai_pass_selector
