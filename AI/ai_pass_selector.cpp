@@ -188,6 +188,7 @@ void load_default_params() {
       {"sdsac_smoothing_tau", 0.005},
       {"sdsac_penasdlty_beta", 0.5},
       {"sdsac_clip_c", 0.5},
+      {"sdsac_entropy_target_weight", 0.98},
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},

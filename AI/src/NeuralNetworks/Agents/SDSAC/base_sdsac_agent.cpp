@@ -58,11 +58,14 @@ BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
       torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double())
           .to(torch::kFloat32)
           .to(this->device);
+  sdsac_temperature_alpha.set_requires_grad(true);
   this->sdsac_shared_learning_rate =
       GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
   this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
   this->sdsac_penalty_beta = GLOBAL_PARAMS["sdsac_penalty_beta"].to_double();
   this->sdsac_clip_c = GLOBAL_PARAMS["sdsac_clip_c"].to_double();
+  this->sdsac_entropy_target_weight =
+      GLOBAL_PARAMS["sdsac_entropy_target_weight"].to_double();
 }
 
 bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
@@ -171,7 +174,8 @@ BaseSDSACAgent::get_loss(
       torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
                    /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
   torch::Tensor log_action_probs = action_probs.log();
-  torch::Tensor target_entropy = torch::tensor(action_probs.size(0)).log();
+  torch::Tensor target_entropy = this->sdsac_entropy_target_weight *
+                                 torch::tensor(action_probs.size(0)).log();
   return {/*actor_loss=*/action_probs.dot(
               this->sdsac_temperature_alpha * log_action_probs -
               torch::min(Q1_main, Q2_main).detach()) +

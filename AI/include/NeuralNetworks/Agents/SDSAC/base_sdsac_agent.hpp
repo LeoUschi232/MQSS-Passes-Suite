@@ -22,6 +22,7 @@ protected:
   double sdsac_smoothing_tau = 0.0;
   double sdsac_penalty_beta = 0.0;
   double sdsac_clip_c = 0.0;
+  double sdsac_entropy_target_weight = 0.0;
 
   /// SDSAC Additional Critics
   torch::nn::Sequential critic_Q2_main{nullptr};
