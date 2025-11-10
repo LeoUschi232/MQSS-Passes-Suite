@@ -113,10 +113,17 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor>
-BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
+BaseSDSACAgent::sdsac_all_Q_forward(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
   return {this->actor->forward(x), this->critic->forward(x),
           this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
+          this->critic_Q2_avg->forward(x)};
+}
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+BaseSDSACAgent::sdsac_Q_avg_only_forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
+  return {this->actor->forward(x), this->critic_Q1_avg->forward(x),
           this->critic_Q2_avg->forward(x)};
 }
 

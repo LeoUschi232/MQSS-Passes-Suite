@@ -84,7 +84,15 @@ public:
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
              torch::Tensor>
-  sdsac_forward(const torch::Tensor &observation);
+  sdsac_all_Q_forward(const torch::Tensor &observation);
+
+  /**
+   *
+   * @param observation
+   * @return [policy, Q1_avg, Q2_avg]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  sdsac_Q_avg_only_forward(const torch::Tensor &observation);
 
   /**
    *

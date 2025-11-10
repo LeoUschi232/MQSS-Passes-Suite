@@ -141,23 +141,27 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
           break;
         }
         auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->sdsac_forward(
+            agent->sdsac_all_Q_forward(
                 /*observation=*/rollout_old.observations[update_step]);
+        auto [action_probs_next, Q1_avg_next, Q2_avg_next] =
+            agent->sdsac_Q_avg_only_forward(
+                /*observation=*/rollout_old.observations[update_step + 1u]);
+
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
               optional_temperature_alpha_loss] =
             agent->get_loss(
-                /*new_action_probs=*/action_probs,
-                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
-                /*new_entropy=*/
-                -(action_probs * action_probs.log())
-                     .sum(/*dim=*/-1)
-                     .squeeze(-1),
-                /*rewards=*/rollout_old.rewards[update_step],
-                /*actions=*/rollout_old.actions[update_step],
+                /*reward=*/rollout_old.rewards[update_step],
+                /*action_probs_next=*/action_probs_next.detach(),
+                /*Q1_avg_next=*/Q1_avg_next.detach(),
+                /*Q2_avg_next=*/Q2_avg_next.detach(),
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
-                /*Q1_avg=*/Q1_avg.detach(),
-                /*Q2_avg=*/Q2_avg.detach());
+                /*Q1_avg=*/Q1_avg,
+                /*Q2_avg=*/Q2_avg,
+                /*action=*/rollout_old.actions[update_step],
+                /*action_probs=*/action_probs,
+                /*old_entropy=*/rollout_old.entropies[update_step],
+                /*new_entropy=*/rollout_new.entropies[update_step]);
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
             /*display_message=*/"Rollout B | Reward: " +
