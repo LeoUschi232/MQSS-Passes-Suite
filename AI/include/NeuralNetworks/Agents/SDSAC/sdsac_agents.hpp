@@ -4,8 +4,8 @@
 // Torch includes
 #include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
-#define DECLARE_SDSAC_AGENT(ClassName)                                           \
-  class ClassName final : public BaseSDSACAgent {                                \
+#define DECLARE_SDSAC_AGENT(ClassName)                                         \
+  class ClassName final : public BaseSDSACAgent {                              \
   public:                                                                      \
     explicit ClassName(unsigned int max_qubits);                               \
     std::string agentName() const override;                                    \
