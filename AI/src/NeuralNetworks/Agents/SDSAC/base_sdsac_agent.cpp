@@ -55,7 +55,9 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
 BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->sdsac_temperature_alpha =
-      torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double());
+      torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double())
+          .to(torch::kFloat32)
+          .to(this->device);
   this->sdsac_shared_learning_rate =
       GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
   this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
@@ -120,8 +122,8 @@ BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
-  torch::Tensor action_probs =
-      this->actor->forward(observation).to(torch::kFloat32).to(this->device);
+  auto x = observation.to(this->device).to(torch::kFloat32);
+  auto action_probs = this->actor->forward(x);
   return {
       action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
       -(action_probs * action_probs.log())
@@ -136,9 +138,10 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &new_action_probs, const torch::Tensor &old_entropy,
     const torch::Tensor &new_entropy, const torch::Tensor &reward,
-    const torch::Tensor &Q1_main, const torch::Tensor &Q2_main,
-    const torch::Tensor &Q1_avg, const torch::Tensor &Q2_avg) {
-
+    const torch::Tensor &actions, const torch::Tensor &Q1_main,
+    const torch::Tensor &Q2_main, const torch::Tensor &Q1_avg,
+    const torch::Tensor &Q2_avg) {
+  int32_t action_index = actions.item<int32_t>();
   torch::Tensor log_action_probs = new_action_probs.log();
   torch::Tensor expectation_Q1 = new_action_probs.dot(
       Q1_avg - this->sdsac_temperature_alpha * log_action_probs);
@@ -147,9 +150,11 @@ BaseSDSACAgent::get_loss(
   torch::Tensor y = reward + this->discount_factor * 0.5 *
                                  (expectation_Q1 + expectation_Q2).detach();
   torch::Tensor clip_value_Q1 =
-      torch::clamp(Q1_main - Q1_avg, -this->sdsac_clip_c, this->sdsac_clip_c);
+      torch::clamp(/*self=*/Q1_main[action_index] - Q1_avg[action_index],
+                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
   torch::Tensor clip_value_Q2 =
-      torch::clamp(Q2_main - Q2_avg, -this->sdsac_clip_c, this->sdsac_clip_c);
+      torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
+                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
   torch::Tensor target_entropy = torch::tensor(new_action_probs.size(0)).log();
   return {/*actor_loss=*/new_action_probs.dot(
               this->sdsac_temperature_alpha * log_action_probs -
@@ -157,9 +162,11 @@ BaseSDSACAgent::get_loss(
               0.5 * this->sdsac_penalty_beta *
                   (old_entropy - new_entropy).pow(2),
           /*critic_Q1_loss=*/
-          torch::max((Q1_main - y).pow(2), (Q1_avg + clip_value_Q1 - y).pow(2)),
+          torch::max((Q1_main[action_index] - y).pow(2),
+                     (Q1_avg[action_index] + clip_value_Q1 - y).pow(2)),
           /*critic_Q1_loss=*/
-          torch::max((Q2_main - y).pow(2), (Q2_avg + clip_value_Q2 - y).pow(2)),
+          torch::max((Q2_main[action_index] - y).pow(2),
+                     (Q2_avg[action_index] + clip_value_Q2 - y).pow(2)),
           /*alpha_loss=*/-this->sdsac_temperature_alpha *
               new_action_probs.dot(log_action_probs + target_entropy).detach()};
 }

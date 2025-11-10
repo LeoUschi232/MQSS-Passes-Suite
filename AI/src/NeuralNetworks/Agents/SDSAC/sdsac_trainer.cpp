@@ -153,6 +153,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                      .sum(/*dim=*/-1)
                      .squeeze(-1),
                 /*rewards=*/rollout_old.rewards[update_step],
+                /*actions=*/rollout_old.actions[update_step],
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
                 /*Q1_avg=*/Q1_avg.detach(),

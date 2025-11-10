@@ -29,7 +29,7 @@ protected:
   torch::nn::Sequential critic_Q2_avg{nullptr};
   std::shared_ptr<torch::optim::Optimizer> critic_Q1_optimizer = nullptr;
   std::shared_ptr<torch::optim::Optimizer> critic_Q2_optimizer = nullptr;
-  std::shared_ptr<torch::optim::Adam>  alpha_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Adam> alpha_optimizer = nullptr;
 
 public:
   /// Constructors
@@ -100,6 +100,7 @@ public:
    * @param old_entropy
    * @param new_entropy
    * @param reward
+   * @param actions
    * @param Q1_main
    * @param Q2_main
    * @param Q1_avg
@@ -110,9 +111,9 @@ public:
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   get_loss(const torch::Tensor &new_action_probs,
            const torch::Tensor &old_entropy, const torch::Tensor &new_entropy,
-           const torch::Tensor &reward, const torch::Tensor &Q1_main,
-           const torch::Tensor &Q2_main, const torch::Tensor &Q1_avg,
-           const torch::Tensor &Q2_avg);
+           const torch::Tensor &reward, const torch::Tensor &actions,
+           const torch::Tensor &Q1_main, const torch::Tensor &Q2_main,
+           const torch::Tensor &Q1_avg, const torch::Tensor &Q2_avg);
 
   /**
    *
@@ -121,7 +122,8 @@ public:
    * @param critic_Q2_loss
    * @param temperature_alpha_loss
    */
-  void sdsac_update_parameters(const torch::Tensor &actor_loss,
+  void
+  sdsac_update_parameters(const torch::Tensor &actor_loss,
                           const torch::Tensor &critic_Q1_loss,
                           const torch::Tensor &critic_Q2_loss,
                           const torch::Tensor &temperature_alpha_loss) const;
