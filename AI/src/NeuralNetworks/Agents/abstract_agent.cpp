@@ -108,16 +108,16 @@ AbstractAgent::getAgent(const std::string &agent_name) {
     }
     case AgentClass::SDSAC: {
       if (attributes.extras == "tcnrelu") {
-        return std::make_unique<PPO_TCN_RELU>(attributes.max_qubits);
+        return std::make_unique<SDSAC_TCN_RELU>(attributes.max_qubits);
       }
       if (attributes.extras == "tcnprelu") {
-        return std::make_unique<PPO_TCN_PRELU>(attributes.max_qubits);
+        return std::make_unique<SDSAC_TCN_PRELU>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmhmpp") {
-        return std::make_unique<PPO_LSTM_HMPP>(attributes.max_qubits);
+        return std::make_unique<SDSAC_LSTM_HMPP>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmbmnp") {
-        return std::make_unique<PPO_LSTM_BMNP>(attributes.max_qubits);
+        return std::make_unique<SDSAC_LSTM_BMNP>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
         return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
