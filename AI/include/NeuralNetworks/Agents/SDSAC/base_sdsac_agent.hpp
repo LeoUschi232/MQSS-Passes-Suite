@@ -17,12 +17,11 @@ enum class OptimizerType : int;
 class BaseSDSACAgent : public BaseActorCritic {
 protected:
   /// SDSAC specific attributes
-  double sdsac_temperature_alpha = 0.0;
+  torch::Tensor sdsac_temperature_alpha = torch::tensor(0.0);
   double sdsac_shared_learning_rate = 0.0;
   double sdsac_smoothing_tau = 0.0;
   double sdsac_penalty_beta = 0.0;
   double sdsac_clip_c = 0.0;
-  torch::Tensor sdsac_temperature_alpha_tensor = torch::tensor(0.0);
 
   /// SDSAC Additional Critics
   torch::nn::Sequential critic_Q2_main{nullptr};
@@ -99,7 +98,7 @@ public:
    * @param new_action_probs
    * @param old_entropy
    * @param new_entropy
-   * @param rewards
+   * @param reward
    * @param Q1_main
    * @param Q2_main
    * @param Q1_avg
@@ -110,7 +109,7 @@ public:
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor,
              std::optional<torch::Tensor>>
   get_loss(torch::Tensor new_action_probs, torch::Tensor old_entropy,
-           torch::Tensor new_entropy, torch::Tensor rewards,
+           torch::Tensor new_entropy, torch::Tensor reward,
            torch::Tensor Q1_main, torch::Tensor Q2_main, torch::Tensor Q1_avg,
            torch::Tensor Q2_avg);
 

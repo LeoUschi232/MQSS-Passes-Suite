@@ -55,9 +55,7 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
 BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->sdsac_temperature_alpha =
-      GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double();
-  this->sdsac_temperature_alpha_tensor =
-      torch::tensor(this->sdsac_temperature_alpha);
+      torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double());
   this->sdsac_shared_learning_rate =
       GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
   this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
@@ -109,7 +107,7 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor>
 BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
-  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
   return {this->actor->forward(x), this->critic->forward(x),
           this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
           this->critic_Q2_avg->forward(x)};
@@ -117,13 +115,25 @@ BaseSDSACAgent::sdsac_forward(const torch::Tensor &observation) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
-  torch::Tensor action_probs = this->actor->forward(observation);
+  torch::Tensor action_probs =
+      this->actor->forward(observation).to(torch::kFloat32).to(this->device);
   return {
       action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
       -(action_probs * action_probs.log())
            .sum(/*dim=*/-1)
            .squeeze(-1) // Shape []
   };
+}
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor,
+           std::optional<torch::Tensor>>
+BaseSDSACAgent::get_loss(torch::Tensor new_action_probs,
+                         torch::Tensor old_entropy, torch::Tensor new_entropy,
+                         torch::Tensor reward, torch::Tensor Q1_main,
+                         torch::Tensor Q2_main, torch::Tensor Q1_avg,
+                         torch::Tensor Q2_avg) {
+
+  torch::Tensor y = reward + this->discount_factor
 }
 
 void BaseSDSACAgent::sdsac_update_parameters(

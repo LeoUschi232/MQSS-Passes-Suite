@@ -92,7 +92,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates));
         if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in PPO training."
+          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
                     << std::endl;
           break;
         }
@@ -136,7 +136,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 " | Nr gates: " + std::to_string(previous_nr_gates) +
                 " | Recomputing.");
         if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in PPO training."
+          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
                     << std::endl;
           break;
         }
@@ -150,8 +150,8 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*old_entropy=*/rollout_old.entropies[update_step],
                 /*new_entropy=*/
                 -(action_probs * action_probs.log())
-                    .sum(/*dim=*/-1)
-                    .squeeze(-1),
+                     .sum(/*dim=*/-1)
+                     .squeeze(-1),
                 /*rewards=*/rollout_old.rewards[update_step],
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
@@ -164,8 +164,14 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 " | Nr qubits: " + std::to_string(previous_nr_qubits) +
                 " | Nr gates: " + std::to_string(previous_nr_gates) +
                 " | Updating params.");
-      agent->update_parameters(actor_loss, critic_loss);
+        agent->sdsac_update_parameters(actor_loss, critic_Q1_loss,
+                                       critic_Q2_loss,
+                                       optional_temperature_alpha_loss);
       }
+      rollout_old = std::move(rollout_new);
+      previous_episode_reward = total_episode_reward;
+      previous_nr_qubits = nr_qubits;
+      previous_nr_gates = nr_gates;
 
 
     } catch (const std::exception &error) {
