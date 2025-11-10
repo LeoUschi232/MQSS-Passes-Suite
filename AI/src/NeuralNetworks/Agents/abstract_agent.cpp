@@ -6,7 +6,7 @@
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
-#include "NeuralNetworks/Agents/SDSAC/ppo_agents.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Torch includes
