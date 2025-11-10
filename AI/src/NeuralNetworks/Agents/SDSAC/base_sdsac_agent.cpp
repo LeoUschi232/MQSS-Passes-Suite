@@ -138,9 +138,9 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &new_action_probs, // Shape [NR_PASSES]
     const torch::Tensor &old_entropy, // Shape []
-    const torch::Tensor &new_entropy,
-    const torch::Tensor &reward,
-    const torch::Tensor &action ,
+    const torch::Tensor &new_entropy,// Shape []
+    const torch::Tensor &reward,// Shape []
+    const torch::Tensor &action ,// Shape []
     const torch::Tensor &Q1_main,// Shape [NR_PASSES]
     const torch::Tensor &Q2_main,// Shape [NR_PASSES]
     const torch::Tensor &Q1_avg,// Shape [NR_PASSES]
