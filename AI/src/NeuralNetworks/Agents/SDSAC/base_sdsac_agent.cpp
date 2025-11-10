@@ -136,15 +136,15 @@ BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
 /// optional_temperature_alpha_loss]
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
-    const torch::Tensor &new_action_probs,
-    const torch::Tensor &old_entropy,
+    const torch::Tensor &new_action_probs, // Shape [NR_PASSES]
+    const torch::Tensor &old_entropy, // Shape []
     const torch::Tensor &new_entropy,
     const torch::Tensor &reward,
     const torch::Tensor &action ,
-    const torch::Tensor &Q1_main,
-    const torch::Tensor &Q2_main,
-    const torch::Tensor &Q1_avg,
-    const torch::Tensor &Q2_avg
+    const torch::Tensor &Q1_main,// Shape [NR_PASSES]
+    const torch::Tensor &Q2_main,// Shape [NR_PASSES]
+    const torch::Tensor &Q1_avg,// Shape [NR_PASSES]
+    const torch::Tensor &Q2_avg// Shape [NR_PASSES]
     ) {
   int32_t action_index = action.item<int32_t>();
   torch::Tensor log_action_probs = new_action_probs.log();
