@@ -84,10 +84,8 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "hybrid") {
         return std::make_unique<A3C_HYBRID>(attributes.max_qubits);
       }
-      {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
-      }
+      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      return {};
     }
     case AgentClass::PPO: {
       if (attributes.extras == "tcnrelu") {
@@ -105,10 +103,8 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "hybrid") {
         return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
       }
-      {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return {};
-      }
+      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      return {};
     }
     default:
       std::cerr << "No such agent yet: " << agent_name << std::endl;
