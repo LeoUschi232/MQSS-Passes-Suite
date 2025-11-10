@@ -57,7 +57,8 @@ BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
   this->sdsac_temperature_alpha =
       torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double())
           .to(torch::kFloat32)
-          .to(this->device);
+          .to(this->device)
+          .set_requires_grad(true);
   this->sdsac_shared_learning_rate =
       GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
   this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
