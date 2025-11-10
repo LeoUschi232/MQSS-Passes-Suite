@@ -137,15 +137,15 @@ BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &new_action_probs, // Shape [NR_PASSES]
-    const torch::Tensor &old_entropy, // Shape []
-    const torch::Tensor &new_entropy,// Shape []
-    const torch::Tensor &reward,// Shape []
-    const torch::Tensor &action ,// Shape []
-    const torch::Tensor &Q1_main,// Shape [NR_PASSES]
-    const torch::Tensor &Q2_main,// Shape [NR_PASSES]
-    const torch::Tensor &Q1_avg,// Shape [NR_PASSES]
-    const torch::Tensor &Q2_avg// Shape [NR_PASSES]
-    ) {
+    const torch::Tensor &old_entropy,      // Shape []
+    const torch::Tensor &new_entropy,      // Shape []
+    const torch::Tensor &reward,           // Shape []
+    const torch::Tensor &action,           // Shape []
+    const torch::Tensor &Q1_main,          // Shape [NR_PASSES]
+    const torch::Tensor &Q2_main,          // Shape [NR_PASSES]
+    const torch::Tensor &Q1_avg,           // Shape [NR_PASSES]
+    const torch::Tensor &Q2_avg            // Shape [NR_PASSES]
+) {
   int32_t action_index = action.item<int32_t>();
   torch::Tensor log_action_probs = new_action_probs.log();
   torch::Tensor expectation_Q1 = new_action_probs.dot(
