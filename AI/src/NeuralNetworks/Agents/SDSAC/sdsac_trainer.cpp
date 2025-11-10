@@ -124,6 +124,9 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       if (steps_in_episode-- <= 1u) {
         // Empty rollout, probably first episode, skip update.
         rollout_old = std::move(rollout_new);
+        previous_episode_reward = total_episode_reward;
+        previous_nr_qubits = nr_qubits;
+        previous_nr_gates = nr_gates;
         continue;
       }
       for (update_step = 0u; update_step < steps_in_episode; update_step++) {
