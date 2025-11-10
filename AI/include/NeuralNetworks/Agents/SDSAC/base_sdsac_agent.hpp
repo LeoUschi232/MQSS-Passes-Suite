@@ -100,20 +100,27 @@ public:
    * @param old_entropy
    * @param new_entropy
    * @param reward
-   * @param actions
+   * @param old_action
    * @param Q1_main
    * @param Q2_main
    * @param Q1_avg
    * @param Q2_avg
+   * @param next_action_probs
+   * @param next_Q1_avg
+   * @param next_Q2_avg
+   * @param done
    * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
    * optional_temperature_alpha_loss]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   get_loss(const torch::Tensor &new_action_probs,
            const torch::Tensor &old_entropy, const torch::Tensor &new_entropy,
-           const torch::Tensor &reward, const torch::Tensor &actions,
+           const torch::Tensor &reward, const torch::Tensor &old_action,
            const torch::Tensor &Q1_main, const torch::Tensor &Q2_main,
-           const torch::Tensor &Q1_avg, const torch::Tensor &Q2_avg);
+           const torch::Tensor &Q1_avg, const torch::Tensor &Q2_avg,
+           const torch::Tensor &next_action_probs,
+           const torch::Tensor &next_Q1_avg, const torch::Tensor &next_Q2_avg,
+           const torch::Tensor &done);
 
   /**
    *

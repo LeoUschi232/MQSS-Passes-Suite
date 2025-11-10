@@ -10,6 +10,7 @@
 // Standard library includes
 #include <csignal>
 #include <filesystem>
+#include <tuple>
 
 namespace fs = std::filesystem;
 
@@ -77,10 +78,12 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       std::vector<torch::Tensor> actions_vector;
       std::vector<torch::Tensor> rewards_vector;
       std::vector<torch::Tensor> entropies_vector;
+      std::vector<torch::Tensor> dones_vector;
       rollout_new.observations.reserve(T + 1);
       actions_vector.reserve(T);
       rewards_vector.reserve(T);
       entropies_vector.reserve(T);
+      dones_vector.reserve(T);
 
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
@@ -106,6 +109,9 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         auto [reward, terminated, truncated] =
             environment.step(action.item<int>());
         rewards_vector.push_back(torch::tensor(reward, options));
+        dones_vector.push_back(torch::tensor(
+            static_cast<bool>(terminated || truncated),
+            torch::TensorOptions().dtype(torch::kBool)));
         total_episode_reward += reward;
         if (truncated || terminated) {
           break;
@@ -116,6 +122,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       rollout_new.actions = torch::stack(actions_vector).to(device);
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
       rollout_new.entropies = torch::stack(entropies_vector).to(device);
+      rollout_new.dones = torch::stack(dones_vector);
 
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
@@ -143,6 +150,11 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
             agent->sdsac_forward(
                 /*observation=*/rollout_old.observations[update_step]);
+        auto next_forward = agent->sdsac_forward(
+            /*observation=*/rollout_old.observations[update_step + 1]);
+        auto next_action_probs = std::get<0>(next_forward);
+        auto next_Q1_avg = std::get<3>(next_forward);
+        auto next_Q2_avg = std::get<4>(next_forward);
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
               optional_temperature_alpha_loss] =
             agent->get_loss(
@@ -153,11 +165,15 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                      .sum(/*dim=*/-1)
                      .squeeze(-1),
                 /*rewards=*/rollout_old.rewards[update_step],
-                /*actions=*/rollout_old.actions[update_step],
+                /*old_action=*/rollout_old.actions[update_step],
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
-                /*Q1_avg=*/Q1_avg.detach(),
-                /*Q2_avg=*/Q2_avg.detach());
+                /*Q1_avg=*/Q1_avg,
+                /*Q2_avg=*/Q2_avg,
+                /*next_action_probs=*/next_action_probs,
+                /*next_Q1_avg=*/next_Q1_avg,
+                /*next_Q2_avg=*/next_Q2_avg,
+                /*done=*/rollout_old.dones[update_step]);
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
             /*display_message=*/"Rollout B | Reward: " +

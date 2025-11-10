@@ -138,37 +138,58 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &new_action_probs, const torch::Tensor &old_entropy,
     const torch::Tensor &new_entropy, const torch::Tensor &reward,
-    const torch::Tensor &actions, const torch::Tensor &Q1_main,
+    const torch::Tensor &old_action, const torch::Tensor &Q1_main,
     const torch::Tensor &Q2_main, const torch::Tensor &Q1_avg,
-    const torch::Tensor &Q2_avg) {
-  int32_t action_index = actions.item<int32_t>();
-  torch::Tensor log_action_probs = new_action_probs.log();
-  torch::Tensor expectation_Q1 = new_action_probs.dot(
-      Q1_avg - this->sdsac_temperature_alpha * log_action_probs);
-  torch::Tensor expectation_Q2 = new_action_probs.dot(
-      Q2_avg - this->sdsac_temperature_alpha * log_action_probs);
-  torch::Tensor y = reward + this->discount_factor * 0.5 *
-                                 (expectation_Q1 + expectation_Q2).detach();
-  torch::Tensor clip_value_Q1 =
-      torch::clamp(/*self=*/Q1_main[action_index] - Q1_avg[action_index],
-                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
-  torch::Tensor clip_value_Q2 =
-      torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
-                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
-  torch::Tensor target_entropy = torch::tensor(new_action_probs.size(0)).log();
-  return {/*actor_loss=*/new_action_probs.dot(
-              this->sdsac_temperature_alpha * log_action_probs -
-              torch::min(Q1_main, Q2_main).detach()) +
-              0.5 * this->sdsac_penalty_beta *
-                  (old_entropy - new_entropy).pow(2),
-          /*critic_Q1_loss=*/
-          torch::max((Q1_main[action_index] - y).pow(2),
-                     (Q1_avg[action_index] + clip_value_Q1 - y).pow(2)),
-          /*critic_Q1_loss=*/
-          torch::max((Q2_main[action_index] - y).pow(2),
-                     (Q2_avg[action_index] + clip_value_Q2 - y).pow(2)),
-          /*alpha_loss=*/-this->sdsac_temperature_alpha *
-              new_action_probs.dot(log_action_probs + target_entropy).detach()};
+    const torch::Tensor &Q2_avg, const torch::Tensor &next_action_probs,
+    const torch::Tensor &next_Q1_avg, const torch::Tensor &next_Q2_avg,
+    const torch::Tensor &done) {
+  auto log_action_probs = new_action_probs.log();
+  auto action_index = old_action.to(torch::kLong);
+  auto Q1_main_at =
+      Q1_main.gather(/*dim=*/-1, action_index.unsqueeze(0)).squeeze(-1);
+  auto Q2_main_at =
+      Q2_main.gather(/*dim=*/-1, action_index.unsqueeze(0)).squeeze(-1);
+  auto Q1_avg_at =
+      Q1_avg.gather(/*dim=*/-1, action_index.unsqueeze(0)).squeeze(-1);
+  auto Q2_avg_at =
+      Q2_avg.gather(/*dim=*/-1, action_index.unsqueeze(0)).squeeze(-1);
+
+  bool done_bool = done.item<bool>();
+  torch::Tensor y = reward;
+  if (!done_bool) {
+    auto next_log_action_probs = next_action_probs.log();
+    auto expectation_Q1 = next_action_probs.detach().dot(
+        next_Q1_avg.detach() -
+        this->sdsac_temperature_alpha.detach() *
+            next_log_action_probs.detach());
+    auto expectation_Q2 = next_action_probs.detach().dot(
+        next_Q2_avg.detach() -
+        this->sdsac_temperature_alpha.detach() *
+            next_log_action_probs.detach());
+    y = y + this->discount_factor *
+                0.5 * (expectation_Q1 + expectation_Q2);
+  }
+
+  auto clip_value_Q1 = torch::clamp(
+      Q1_main_at - Q1_avg_at.detach(), -this->sdsac_clip_c, this->sdsac_clip_c);
+  auto clip_value_Q2 = torch::clamp(
+      Q2_main_at - Q2_avg_at.detach(), -this->sdsac_clip_c, this->sdsac_clip_c);
+  auto target_entropy =
+      torch::tensor(static_cast<double>(new_action_probs.size(0)),
+                    new_action_probs.options())
+          .log();
+  return {
+      /*actor_loss=*/new_action_probs.dot(
+          this->sdsac_temperature_alpha * log_action_probs -
+          torch::min(Q1_main, Q2_main).detach()) +
+          0.5 * this->sdsac_penalty_beta *
+              (old_entropy - new_entropy).pow(2),
+      /*critic_Q1_loss=*/torch::max((Q1_main_at - y).pow(2),
+                                    (Q1_avg_at + clip_value_Q1 - y).pow(2)),
+      /*critic_Q2_loss=*/torch::max((Q2_main_at - y).pow(2),
+                                    (Q2_avg_at + clip_value_Q2 - y).pow(2)),
+      /*alpha_loss=*/-this->sdsac_temperature_alpha *
+          new_action_probs.dot(log_action_probs + target_entropy).detach()};
 }
 
 void BaseSDSACAgent::sdsac_update_parameters(
