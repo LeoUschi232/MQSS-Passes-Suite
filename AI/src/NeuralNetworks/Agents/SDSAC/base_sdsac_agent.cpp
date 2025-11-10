@@ -138,7 +138,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &new_action_probs, const torch::Tensor &old_entropy,
     const torch::Tensor &new_entropy, const torch::Tensor &reward,
-    const torch::Tensor &actions, const torch::Tensor &Q1_main,
+    const torch::Tensor &action
+    , const torch::Tensor &Q1_main,
     const torch::Tensor &Q2_main, const torch::Tensor &Q1_avg,
     const torch::Tensor &Q2_avg) {
   int32_t action_index = actions.item<int32_t>();
