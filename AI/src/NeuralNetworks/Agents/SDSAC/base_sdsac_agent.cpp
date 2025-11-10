@@ -174,8 +174,10 @@ BaseSDSACAgent::get_loss(
       torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
                    /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
   torch::Tensor log_action_probs = action_probs.log();
-  torch::Tensor target_entropy = this->sdsac_entropy_target_weight *
-                                 torch::tensor(action_probs.size(0)).log();
+  torch::Tensor target_entropy = (this->sdsac_entropy_target_weight *
+                                  torch::tensor(action_probs.size(0)).log())
+                                     .to(this->device)
+                                     .to(torch::kFloat32);
   return {/*actor_loss=*/action_probs.dot(
               this->sdsac_temperature_alpha * log_action_probs -
               torch::min(Q1_main, Q2_main).detach()) +
