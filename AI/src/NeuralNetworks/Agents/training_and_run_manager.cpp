@@ -63,10 +63,10 @@ train(const std::string &agent_name, const std::string &dataset) {
       break;
     }
     case AgentClass::SDSAC: {
-      std::unique_ptr<BasePPOAgent> agent(
-          dynamic_cast<BasePPOAgent *>(abstract_agent.release()));
+      std::unique_ptr<BaseSDSACAgent> agent(
+          dynamic_cast<BaseSDSACAgent *>(abstract_agent.release()));
       if (!agent) {
-        throw std::runtime_error("Failed to cast to BasePPOAgent");
+        throw std::runtime_error("Failed to cast to BaseSDSACAgent");
       }
       agent->load_model();
       training_results = train_ppo(agent, dataset);
