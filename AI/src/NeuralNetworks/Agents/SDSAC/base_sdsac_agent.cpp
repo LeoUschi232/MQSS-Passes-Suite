@@ -242,9 +242,19 @@ void BaseSDSACAgent::save_model() const {
     return;
   }
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path critic_Q1_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
+  fs::path critic_Q2_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
+  fs::path critic_Q1_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
+  fs::path critic_Q2_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
   torch::save(this->actor, actor_path.string());
-  torch::save(this->critic, critic_path.string());
+  torch::save(this->critic, critic_Q1_main_path.string());
+  torch::save(this->critic, critic_Q2_main_path.string());
+  torch::save(this->critic, critic_Q1_avg_path.string());
+  torch::save(this->critic, critic_Q2_avg_path.string());
 }
 
 void BaseSDSACAgent::load_model() {
@@ -254,12 +264,24 @@ void BaseSDSACAgent::load_model() {
     return;
   }
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
-  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+  fs::path critic_Q1_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
+  fs::path critic_Q2_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
+  fs::path critic_Q1_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
+  fs::path critic_Q2_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
+  if (!fs::exists(actor_path) || !fs::exists(critic_Q1_main_path) ||
+      !fs::exists(critic_Q2_main_path) || !fs::exists(critic_Q1_avg_path) ||
+      !fs::exists(critic_Q2_avg_path)) {
     return;
   }
   torch::load(this->actor, actor_path.string(), this->device);
-  torch::load(this->critic, critic_path.string(), this->device);
+  torch::load(this->critic, critic_Q1_main_path.string(), this->device);
+  torch::load(this->critic_Q2_main, critic_Q2_main_path.string(), this->device);
+  torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
+  torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
   std::cout << "Loaded model: " << name << std::endl;
 }
 } // namespace ai_pass_selector
