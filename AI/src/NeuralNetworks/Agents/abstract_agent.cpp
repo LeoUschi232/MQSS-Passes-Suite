@@ -103,7 +103,7 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "hybrid") {
         return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
       }
-      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      std::cerr << "No such PPO agent: " << agent_name << std::endl;
       return {};
     }
     case AgentClass::SDSAC: {
@@ -120,9 +120,9 @@ AbstractAgent::getAgent(const std::string &agent_name) {
         return std::make_unique<SDSAC_LSTM_BMNP>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
-        return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
+        return std::make_unique<SDSAC_HYBRID>(attributes.max_qubits);
       }
-      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      std::cerr << "No such SDSAC agent: " << agent_name << std::endl;
       return {};
     }
     default:
