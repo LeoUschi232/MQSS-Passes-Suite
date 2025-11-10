@@ -31,6 +31,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
   unsigned int save_agent_every_ith_episode =
       GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool save_agent_after_training =
+      GLOBAL_PARAMS["save_agent_after_training"].to_bool();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -219,7 +221,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
   if (!interrupted) {
     std::cout << "\nTraining finished." << std::endl;
   }
-  if (GLOBAL_PARAMS["save_agent_after_training"].to_bool()) {
+  if (save_agent_after_training) {
     agent->save_model();
     std::cout << "Saved: " << agent->agentName() << std::endl;
   }
