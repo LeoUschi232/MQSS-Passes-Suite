@@ -160,7 +160,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*Q2_avg=*/Q2_avg,
                 /*action=*/rollout_old.actions[update_step],
                 /*action_probs=*/action_probs,
-                /*old_entropy=*/rollout_old.entropies[update_step],
+                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/rollout_new.entropies[update_step]);
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
