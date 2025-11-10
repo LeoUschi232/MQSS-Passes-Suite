@@ -147,7 +147,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
               optional_temperature_alpha_loss] =
             agent->get_loss(
                 /*new_action_probs=*/action_probs,
-                /*old_entropy=*/rollout_old.entropies[update_step],
+                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/
                 -(action_probs * action_probs.log())
                      .sum(/*dim=*/-1)
@@ -155,8 +155,8 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*rewards=*/rollout_old.rewards[update_step],
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
-                /*Q1_avg=*/Q1_avg,
-                /*Q2_avg=*/Q2_avg);
+                /*Q1_avg=*/Q1_avg.detach(),
+                /*Q2_avg=*/Q2_avg.detach());
         updateProgresses(
             {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
             /*display_message=*/"Rollout B | Reward: " +
@@ -172,8 +172,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       previous_episode_reward = total_episode_reward;
       previous_nr_qubits = nr_qubits;
       previous_nr_gates = nr_gates;
-
-
     } catch (const std::exception &error) {
       std::cerr << "Episode " << episode_idx << ": " << error.what()
                 << std::endl;

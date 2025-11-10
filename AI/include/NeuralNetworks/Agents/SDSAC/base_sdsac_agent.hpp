@@ -106,12 +106,12 @@ public:
    * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
    * optional_temperature_alpha_loss]
    */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor,
-             std::optional<torch::Tensor>>
-  get_loss(torch::Tensor new_action_probs, torch::Tensor old_entropy,
-           torch::Tensor new_entropy, torch::Tensor reward,
-           torch::Tensor Q1_main, torch::Tensor Q2_main, torch::Tensor Q1_avg,
-           torch::Tensor Q2_avg);
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  get_loss(const torch::Tensor &new_action_probs,
+           const torch::Tensor &old_entropy, const torch::Tensor &new_entropy,
+           const torch::Tensor &reward, const torch::Tensor &Q1_main,
+           const torch::Tensor &Q2_main, const torch::Tensor &Q1_avg,
+           const torch::Tensor &Q2_avg);
 
   /**
    *
