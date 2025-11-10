@@ -2,7 +2,7 @@
 #define SDSAC_AGENTS_HPP
 
 // Torch includes
-#include "NeuralNetworks/Agents/SAC/base_sac_agent.hpp"
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 
 #define DECLARE_SDSAC_AGENT(ClassName)                                           \
   class ClassName final : public BaseSDSACAgent {                                \
