@@ -49,7 +49,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   SDSAC_EpisodeRollout rollout_old;
-  bool add_bootstrap_old = false;
   double previous_episode_reward = 0.0;
   unsigned int previous_nr_qubits = 0u;
   unsigned int previous_nr_gates = 0u;
