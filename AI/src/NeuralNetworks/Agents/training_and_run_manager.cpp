@@ -69,7 +69,7 @@ train(const std::string &agent_name, const std::string &dataset) {
         throw std::runtime_error("Failed to cast to BaseSDSACAgent");
       }
       agent->load_model();
-      training_results = train_ppo(agent, dataset);
+      training_results = train_sdsac(agent, dataset);
       break;
     }
     default:
