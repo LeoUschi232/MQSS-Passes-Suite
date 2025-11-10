@@ -62,6 +62,16 @@ train(const std::string &agent_name, const std::string &dataset) {
       training_results = train_ppo(agent, dataset);
       break;
     }
+    case AgentClass::SDSAC: {
+      std::unique_ptr<BasePPOAgent> agent(
+          dynamic_cast<BasePPOAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BasePPOAgent");
+      }
+      agent->load_model();
+      training_results = train_ppo(agent, dataset);
+      break;
+    }
     default:
       std::cerr << "No such agent yet: " << agent_name << std::endl;
       return {};
