@@ -233,4 +233,33 @@ void BaseSDSACAgent::sdsac_update_parameters(
   temperature_alpha_loss.backward();
   this->alpha_optimizer->step();
 }
+
+void BaseSDSACAgent::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  torch::save(this->actor, actor_path.string());
+  torch::save(this->critic, critic_path.string());
+}
+
+void BaseSDSACAgent::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+    return;
+  }
+  torch::load(this->actor, actor_path.string(), this->device);
+  torch::load(this->critic, critic_path.string(), this->device);
+  std::cout << "Loaded model: " << name << std::endl;
+}
 } // namespace ai_pass_selector
