@@ -12,7 +12,7 @@ struct ACER_TrajectoryTuple {
 };
 struct ACER_Trajectory {
   int environment_reset_seed;
-  std::vector<ACER_TrajectoryTuple> trajectory_elemkents;
+  std::vector<ACER_TrajectoryTuple> trajectory_elements;
 };
 
 /**
