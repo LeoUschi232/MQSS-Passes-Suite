@@ -7,9 +7,6 @@
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/base_actor_critic.hpp"
 
-// Standard library includes
-#include <memory>
-
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
@@ -39,8 +36,6 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
-
-
   /**
    * @param observation
    * @return [policy_main, policy_avg, Q_values]

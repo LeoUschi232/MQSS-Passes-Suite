@@ -17,8 +17,8 @@ BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
 }
 
 torch::Tensor BaseACERAgent::get_value(const torch::Tensor &observation) {
-  auto [policy, Q_values] = this->forward(
+  auto [policy_main, policy_avg, Q_values] = this->forward(
       /*observation=*/observation.to(this->device).to(torch::kFloat32));
-  return policy.dot(Q_values).unsqueeze(-1); // Shape []
+  return policy_avg.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
 }
 } // namespace ai_pass_selector
