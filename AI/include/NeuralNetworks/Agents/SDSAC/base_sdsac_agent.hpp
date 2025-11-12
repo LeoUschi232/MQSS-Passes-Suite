@@ -72,7 +72,7 @@ public:
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
              torch::Tensor>
-  sdsac_all_Q_forward(const torch::Tensor &observation);
+  forward(const torch::Tensor &observation);
 
   /**
    *
@@ -80,7 +80,7 @@ public:
    * @return [policy, Q1_avg, Q2_avg]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
-  sdsac_Q_avg_only_forward(const torch::Tensor &observation);
+  forward_only_Q_avg(const torch::Tensor &observation);
 
   /**
    *
@@ -88,7 +88,7 @@ public:
    * @return [action_index, entropy]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  sdsac_select_action(const torch::Tensor &observation);
+  select_action(const torch::Tensor &observation);
 
   /**
    * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
@@ -117,7 +117,7 @@ public:
    * @param temperature_alpha_loss
    */
   void
-  sdsac_update_parameters(const torch::Tensor &actor_loss,
+  update_parameters(const torch::Tensor &actor_loss,
                           const torch::Tensor &critic_Q1_loss,
                           const torch::Tensor &critic_Q2_loss,
                           const torch::Tensor &temperature_alpha_loss) const;

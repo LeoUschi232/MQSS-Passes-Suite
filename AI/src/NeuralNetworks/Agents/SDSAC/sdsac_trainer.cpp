@@ -100,7 +100,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         // TODO: do loop A
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        auto [action, entropy] = agent->sdsac_select_action(observation);
+        auto [action, entropy] = agent->select_action(observation);
         rollout_new.observations.push_back(observation);
         actions_vector.push_back(action);
         entropies_vector.push_back(entropy);
@@ -144,10 +144,10 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
           break;
         }
         auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->sdsac_all_Q_forward(
+            agent->forward(
                 /*observation=*/rollout_old.observations[update_step]);
         auto [action_probs_next, Q1_avg_next, Q2_avg_next] =
-            agent->sdsac_Q_avg_only_forward(
+            agent->forward_only_Q_avg(
                 /*observation=*/rollout_old.observations[update_step + 1u]);
 
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
@@ -166,7 +166,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/
                 -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
-        agent->sdsac_update_parameters(actor_loss, critic_Q1_loss,
+        agent->update_parameters(actor_loss, critic_Q1_loss,
                                        critic_Q2_loss,
                                        optional_temperature_alpha_loss);
       }

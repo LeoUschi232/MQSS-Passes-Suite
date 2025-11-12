@@ -83,7 +83,7 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
            torch::Tensor>
-BaseSDSACAgent::sdsac_all_Q_forward(const torch::Tensor &observation) {
+BaseSDSACAgent::forward(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
   return {this->actor->forward(x), this->critic->forward(x),
           this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
@@ -91,14 +91,14 @@ BaseSDSACAgent::sdsac_all_Q_forward(const torch::Tensor &observation) {
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
-BaseSDSACAgent::sdsac_Q_avg_only_forward(const torch::Tensor &observation) {
+BaseSDSACAgent::forward_only_Q_avg(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
   return {this->actor->forward(x), this->critic_Q1_avg->forward(x),
           this->critic_Q2_avg->forward(x)};
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BaseSDSACAgent::sdsac_select_action(const torch::Tensor &observation) {
+BaseSDSACAgent::select_action(const torch::Tensor &observation) {
   auto x = observation.to(this->device).to(torch::kFloat32);
   auto action_probs = this->actor->forward(x);
   return {
@@ -162,7 +162,7 @@ BaseSDSACAgent::get_loss(
               action_probs.dot(log_action_probs + target_entropy).detach()};
 }
 
-void BaseSDSACAgent::sdsac_update_parameters(
+void BaseSDSACAgent::update_parameters(
     const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
     const torch::Tensor &critic_Q2_loss,
     const torch::Tensor &temperature_alpha_loss) const {
