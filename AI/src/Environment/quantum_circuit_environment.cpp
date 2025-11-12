@@ -107,6 +107,11 @@ void QuantumCircuitEnvironment::reset() {
   if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     // The QuantumCircuit object validates itself on construction, so no need
     // for extra validation.
+    RandomizerOptions randomizer_options = {
+        .max_nr_qubits = static_cast<int>(this->max_qubits),
+        .weight_min_multiplier_for_unoccurring_gates = 0.1,
+        .probability_additionals_controls = 0.01,
+        .probability_max_qubits = this->probability_max_qubits};
     this->circuit = random_quantum_circuit_from_embedded_statistics(
         /*cholesky_params=*/qubits_cholesky_params.value(),
         /*gates_weights=*/gates_weights.value(),
