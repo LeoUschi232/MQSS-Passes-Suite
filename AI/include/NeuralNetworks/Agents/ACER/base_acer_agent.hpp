@@ -45,9 +45,6 @@ public:
                          const torch::Tensor &critic_loss) const override;
   std::pair<torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &observation) override;
-  torch::Tensor get_value(const torch::Tensor &observation) override;
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation) override;
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
   /**
