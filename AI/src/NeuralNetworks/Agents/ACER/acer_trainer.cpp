@@ -35,8 +35,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     GLOBAL_PARAMS["save_agent_after_training"].to_bool();
   unsigned int acer_max_nr_trajectories =
     GLOBAL_PARAMS["acer_max_nr_trajectories"].to_int();
-  unsigned int acer_nr_replays =
-      GLOBAL_PARAMS["acer_nr_replays"].to_int();
+  unsigned int acer_ratio_of_replay =
+      GLOBAL_PARAMS["acer_ratio_of_replay"].to_int();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;
