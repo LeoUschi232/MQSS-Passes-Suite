@@ -101,58 +101,45 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       trajectory_elements = elements;
       environment.reset(environment_reset_seed);
     }
-        try {
-          double total_episode_reward = 0.0;
-          auto [nr_qubits, nr_gates] = environment.size();
-          for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode;
-                   step_idx++) {
-            updateProgresses({{episode_idx, nr_episodes},
-                              {step_idx + 1, max_steps_per_episode}},
-                             /*display_message=*/"Reward: " +
-                             std::to_string(total_episode_reward) +
-                             " | Nr qubits: " + std::to_string(nr_qubits) +
-                             " | Nr gates: " + std::to_string(nr_gates) +
-                             " | Running step.");
-            if (interrupted) {
-              break;
-            }
-if (on_policy) {
-}
+    try {
+      double total_episode_reward = 0.0;
+      auto [nr_qubits, nr_gates] = environment.size();
+      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode;
+           step_idx++) {
+        updateProgresses(
+            {{episode_idx, nr_episodes}, {step_idx + 1, max_steps_per_episode}},
+            /*display_message=*/"Reward: " +
+                std::to_string(total_episode_reward) +
+                " | Nr qubits: " + std::to_string(nr_qubits) + " | Nr gates: " +
+                std::to_string(nr_gates) + " | Running step.");
+        if (interrupted) {
+          break;
+        }
+        if (on_policy) {
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-            auto [action, action_probs] =
+        auto [action, action_probs] =
             agent->select_action(environment.get_observation_as_torch_tensor());
-            auto [reward, terminated, truncated] =
+        auto [reward, terminated, truncated] =
             environment.step(action.item<int>());
-            total_episode_reward += reward;
-            trajectory_elements.push_back(
+        total_episode_reward += reward;
+        trajectory_elements.push_back(
             ACER_TrajectoryTuple{static_cast<unsigned int>(action.item<int>()),
-                                     reward,
-                                     action_probs.detach()});
-            if (truncated || terminated) {
-              break;
-            }
-                   }
-          if (on_policy && replay_buffer.size() < acer_max_nr_trajectories) {
-            replay_buffer.push_back(ACER_Trajectory{
+                                 reward, action_probs.detach()});
+        if (truncated || terminated) {
+          break;
+        }
+      }
+      if (on_policy && replay_buffer.size() < acer_max_nr_trajectories) {
+        replay_buffer.push_back(ACER_Trajectory{
             /*environment_reset_seed=*/environment.get_last_reset_seed(),
             /*trajectory_elements=*/trajectory_elements});
-          }
-        } catch (const std::exception &e) {
-          std::cerr << "Exception during episode " << episode_idx
-                    << ": " << e.what() << std::endl;
-          continue;
-        }
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "Exception during episode " << episode_idx << ": "
+                << e.what() << std::endl;
+      continue;
+    }
     //////////////////////////////////////////////////////////////////////////////
   }
   //////////////////////////////////////////////////////////////////////////////
