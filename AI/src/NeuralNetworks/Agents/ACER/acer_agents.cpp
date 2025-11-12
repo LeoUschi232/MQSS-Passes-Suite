@@ -20,7 +20,7 @@ ACER_TCN_RELU::ACER_TCN_RELU(unsigned int max_qubits)
   const unsigned int nr_residual_blocks =
       std::ceil(std::log2(TCN_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 5u;
-  this->BaseActorCritic::initialize(
+  this->initialize(
       /*actor=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size),
       /*critic=*/
       make_TCN_Q_estimator(max_qubits, nr_residual_blocks, kernel_size));
@@ -31,7 +31,7 @@ ACER_TCN_PRELU::ACER_TCN_PRELU(unsigned int max_qubits)
       std::ceil(std::log2(TCN_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 5u;
   constexpr double prelu_init = 0.1;
-  this->BaseActorCritic::initialize(
+  this->initialize(
       /*actor=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
                                prelu_init),
       /*critic=*/
@@ -43,7 +43,7 @@ ACER_LSTM_HMPP::ACER_LSTM_HMPP(unsigned int max_qubits)
     : BaseACERAgent(max_qubits) {
   constexpr unsigned int hidden_size_multiplier = 8u;
   constexpr unsigned int projection_size_multiplier = 2u;
-  this->BaseActorCritic::initialize(
+  this->initialize(
       /*actor=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
                                 projection_size_multiplier),
       /*critic=*/
@@ -55,7 +55,7 @@ ACER_LSTM_BMNP::ACER_LSTM_BMNP(unsigned int max_qubits)
     : BaseACERAgent(max_qubits) {
   constexpr unsigned int hidden_size_multiplier = 5u;
   constexpr unsigned int projection_size_multiplier = 5u;
-  this->BaseActorCritic::initialize(
+  this->initialize(
       /*actor=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
                                 projection_size_multiplier),
       /*critic=*/
@@ -69,7 +69,7 @@ ACER_HYBRID::ACER_HYBRID(unsigned int max_qubits) : BaseACERAgent(max_qubits) {
   constexpr unsigned int kernel_size = 3u;
   constexpr unsigned int lstm_hidden_size_multiplier = 3u;
   constexpr unsigned int lstm_projection_size_multiplier = 3u;
-  this->BaseActorCritic::initialize(
+  this->initialize(
       /*actor=*/make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
                                   lstm_hidden_size_multiplier,
                                   lstm_projection_size_multiplier),
