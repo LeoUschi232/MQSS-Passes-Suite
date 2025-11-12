@@ -32,9 +32,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   unsigned int save_agent_every_ith_episode =
       GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
   bool save_agent_after_training =
-    GLOBAL_PARAMS["save_agent_after_training"].to_bool();
+      GLOBAL_PARAMS["save_agent_after_training"].to_bool();
   unsigned int acer_max_nr_trajectories =
-    GLOBAL_PARAMS["acer_max_nr_trajectories"].to_int();
+      GLOBAL_PARAMS["acer_max_nr_trajectories"].to_int();
   unsigned int acer_ratio_of_replay =
       GLOBAL_PARAMS["acer_ratio_of_replay"].to_int();
   torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
@@ -71,21 +71,20 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                      /*display_message=*/"Saving Agent.");
     }
+    std::string reset_string = "Resetting Enviornment.";
     bool on_policy = true;
     if (off_policy_episodes_left <= 0u) {
       off_policy_episodes_left = randomPoisson(acer_ratio_of_replay);
+      if (off_policy_episodes_left > 2 * acer_ratio_of_replay) {
+        reset_string += " | Warning: off_policy_episodes_left=" +
+                        std::to_string(off_policy_episodes_left);
+      }
     } else {
       on_policy = false;
       off_policy_episodes_left--;
     }
     updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                   /*display_message=*/"Resetting Enviornment.");
-
-
-
-
-
-
+                   /*display_message=*/reset_string);
   }
   //////////////////////////////////////////////////////////////////////////////
   if (!interrupted) {
