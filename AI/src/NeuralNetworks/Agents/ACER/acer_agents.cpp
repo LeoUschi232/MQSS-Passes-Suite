@@ -56,8 +56,10 @@ ACER_LSTM_BMNP::ACER_LSTM_BMNP(unsigned int max_qubits)
   constexpr unsigned int hidden_size_multiplier = 5u;
   constexpr unsigned int projection_size_multiplier = 5u;
   this->initialize(
-      /*actor=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
-                                projection_size_multiplier),
+      /*actor_main=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
+      projection_size_multiplier),
+/*actor_avg=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
+      projection_size_multiplier),
       /*critic_Q_estimator=*/
       make_LSTM_Q_estimator(max_qubits, hidden_size_multiplier,
                             projection_size_multiplier));
@@ -70,12 +72,13 @@ ACER_HYBRID::ACER_HYBRID(unsigned int max_qubits) : BaseACERAgent(max_qubits) {
   constexpr unsigned int lstm_hidden_size_multiplier = 3u;
   constexpr unsigned int lstm_projection_size_multiplier = 3u;
   this->initialize(
-      /*actor_main=*/make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
-                                  lstm_hidden_size_multiplier,
-                                  lstm_projection_size_multiplier),
-      /*actor=*/make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
-                                  lstm_hidden_size_multiplier,
-                                  lstm_projection_size_multiplier),
+      /*actor_main=*/make_hybrid_actor(max_qubits, nr_residual_blocks,
+                                       kernel_size, lstm_hidden_size_multiplier,
+                                       lstm_projection_size_multiplier),
+      /*actor_avg=*/
+      make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
+                        lstm_hidden_size_multiplier,
+                        lstm_projection_size_multiplier),
       /*critic_Q_estimator=*/
       make_hybrid_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                               lstm_hidden_size_multiplier,
