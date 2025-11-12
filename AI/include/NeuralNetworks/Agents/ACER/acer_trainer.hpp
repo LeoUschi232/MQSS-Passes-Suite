@@ -5,12 +5,15 @@
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 
 namespace ai_pass_selector {
-
-struct ACER_EpisodeRollout {
-  std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
-  torch::Tensor actions;                   // [T]
-  torch::Tensor log_action_probs;          // [T]
-  torch::Tensor rewards;                   // [T]
+constexp
+struct ACER_TrajectoryTuple {
+  unsigned int action_index;
+  float reward;
+  torch::Tensor action_probs;
+};
+struct ACER_Trajectory {
+  int environment_reset_seed;
+  std::vector<ACER_TrajectoryTuple> trajectory_elemkents;
 };
 
 /**
