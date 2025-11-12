@@ -48,8 +48,6 @@ public:
 
   BaseSDSACAgent &operator=(BaseSDSACAgent &&other) noexcept = delete;
 
-  //////////////////////////////////////////////////////////////////////////////
-  /// SDSAC quadruple-critic methods
   /**
    * @param actor
    * @param critic_Q1_main
@@ -63,6 +61,9 @@ public:
                   const torch::nn::Sequential &critic_Q2_main,
                   const torch::nn::Sequential &critic_Q1_avg,
                   const torch::nn::Sequential &critic_Q2_avg);
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// SDSAC quadruple-critic methods
 
   /**
    * @param observation
@@ -112,11 +113,10 @@ public:
    * @param critic_Q2_loss
    * @param temperature_alpha_loss
    */
-  void
-  update_parameters(const torch::Tensor &actor_loss,
-                          const torch::Tensor &critic_Q1_loss,
-                          const torch::Tensor &critic_Q2_loss,
-                          const torch::Tensor &temperature_alpha_loss) const;
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_Q1_loss,
+                         const torch::Tensor &critic_Q2_loss,
+                         const torch::Tensor &temperature_alpha_loss) const;
   //////////////////////////////////////////////////////////////////////////////
 
   /// Saving and Loading
