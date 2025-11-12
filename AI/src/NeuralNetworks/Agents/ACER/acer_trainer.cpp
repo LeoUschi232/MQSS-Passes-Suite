@@ -94,7 +94,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       off_policy_episodes_left = 0u;
       continue;
     } else {
-      environment.reset(randomInt(0u, replay_buffer.size()));
+      unsigned int replay_index = randomInt(0u, replay_buffer.size());
+      const auto &[environment_reset_seed, trajectory_elements] = replay_buffer[replay_index];
+      environment.reset(environment_reset_seed);
     }
   }
   //////////////////////////////////////////////////////////////////////////////
