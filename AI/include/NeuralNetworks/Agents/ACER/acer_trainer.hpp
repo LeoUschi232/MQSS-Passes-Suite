@@ -13,7 +13,6 @@ struct ACER_EpisodeRollout {
   torch::Tensor rewards;                   // [T]
 };
 
-
 /**
  *
  * @param agent
@@ -21,11 +20,8 @@ struct ACER_EpisodeRollout {
  * @return
  */
 std::unordered_map<std::string, std::string>
-train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
-          const std::string &dataset);
-
-
-
+train_acer(const std::unique_ptr<BaseACERAgent> &agent,
+           const std::string &dataset);
 } // namespace ai_pass_selector
 
 #endif // ACER_TRAINER_HPP
