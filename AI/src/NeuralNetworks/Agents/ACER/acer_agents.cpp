@@ -21,7 +21,8 @@ ACER_TCN_RELU::ACER_TCN_RELU(unsigned int max_qubits)
       std::ceil(std::log2(TCN_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 5u;
   this->initialize(
-      /*actor_main=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size),
+      /*actor_main=*/make_TCN_actor(max_qubits, nr_residual_blocks,
+                                    kernel_size),
       /*actor_avg=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size),
       /*critic_Q_estimator=*/
       make_TCN_Q_estimator(max_qubits, nr_residual_blocks, kernel_size));
@@ -34,9 +35,9 @@ ACER_TCN_PRELU::ACER_TCN_PRELU(unsigned int max_qubits)
   constexpr double prelu_init = 0.1;
   this->initialize(
       /*actor_main=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
-      prelu_init),
-/*actor_avg=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
-      prelu_init),
+                                    prelu_init),
+      /*actor_avg=*/
+      make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size, prelu_init),
       /*critic_Q_estimator=*/
       make_TCN_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                            prelu_init));
@@ -47,8 +48,11 @@ ACER_LSTM_HMPP::ACER_LSTM_HMPP(unsigned int max_qubits)
   constexpr unsigned int hidden_size_multiplier = 8u;
   constexpr unsigned int projection_size_multiplier = 2u;
   this->initialize(
-      /*actor=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
-                                projection_size_multiplier),
+      /*actor_main=*/make_LSTM_actor(max_qubits, hidden_size_multiplier,
+                                     projection_size_multiplier),
+      /*actor_avg=*/
+      make_LSTM_actor(max_qubits, hidden_size_multiplier,
+                      projection_size_multiplier),
       /*critic_Q_estimator=*/
       make_LSTM_Q_estimator(max_qubits, hidden_size_multiplier,
                             projection_size_multiplier));
