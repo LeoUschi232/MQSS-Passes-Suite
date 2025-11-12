@@ -37,17 +37,23 @@ public:
 
   BaseACERAgent &operator=(BaseACERAgent &&other) noexcept = delete;
 
-  /**
-   *
-   * @param actor
-   * @param critic
-   * @return
-   */
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
-
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
+  /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value(const torch::Tensor &observation) override;
+
+  /**
+   *
+   * @param observation
+   * @return
+   */
+  * @param observation
+    * @return
+    */  d::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+    select_action(const torch::Tensor &observation) override;
 
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
