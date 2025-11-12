@@ -25,15 +25,6 @@ public:
   /// Constructors
   explicit BaseA3CAgent(unsigned int max_qubits, bool is_boss = true);
 
-  /**
-   *
-   * @param actor
-   * @param critic
-   * @return
-   */
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic);
-
   /// Destructor
   ~BaseA3CAgent() override = default;
 
@@ -45,6 +36,15 @@ public:
   BaseA3CAgent &operator=(const BaseA3CAgent &other) noexcept = delete;
 
   BaseA3CAgent &operator=(BaseA3CAgent &&other) noexcept = delete;
+
+  /**
+   *
+   * @param actor
+   * @param critic
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic);
 
   //////////////////////////////////////////////////////////////////////////////
   /// A2C/A3C standard methods
@@ -71,14 +71,6 @@ public:
   select_action(const torch::Tensor &observation);
 
   /**
-   *
-   * @param actor_loss
-   * @param critic_loss
-   */
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const;
-
-  /**
    * @param log_action_probs
    * @param state_values
    * @param rewards
@@ -89,6 +81,14 @@ public:
   get_losses(const torch::Tensor &log_action_probs,
              const torch::Tensor &state_values, const torch::Tensor &rewards,
              const torch::Tensor &entropy);
+
+  /**
+   *
+   * @param actor_loss
+   * @param critic_loss
+   */
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_loss) const;
 
   /**
    * Necessary to create worker agents for asynchronous training.
