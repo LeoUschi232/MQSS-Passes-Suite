@@ -78,7 +78,6 @@ public:
   void load_gradients(BaseA3CAgent &other);
   void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////
-
   /// Saving and Loading
   void save_model() const override;
 };

@@ -26,7 +26,7 @@ public:
   explicit BaseACERAgent(unsigned int max_qubits);
 
   /// Destructor
-	~BaseACERAgent() override = default;
+  ~BaseACERAgent() override = default;
 
   /// Copy and move constructors and assignment operators
   BaseACERAgent(const BaseACERAgent &other) noexcept = delete;
@@ -37,11 +37,22 @@ public:
 
   BaseACERAgent &operator=(BaseACERAgent &&other) noexcept = delete;
 
+  /**
+   *
+   * @param actor
+   * @param critic
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic) override;
+
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
 
   //////////////////////////////////////////////////////////////////////////////
-}
+  /// Saving and Loading
+  void save_model() const override;
+};
 } // namespace ai_pass_selector
 
 #endif // BASE_ACER_AGENT_HPP
