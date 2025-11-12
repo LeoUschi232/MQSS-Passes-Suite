@@ -61,6 +61,19 @@ public:
                       const torch::Tensor &action_index_unsqueezed);
 
   /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return [action_index, log_action_probs, state_values, entropy]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &observation);
+
+  /**
    *
    * @param old_log_action_probs
    * @param old_state_values

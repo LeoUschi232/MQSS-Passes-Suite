@@ -18,6 +18,38 @@ BasePPOAgent::BasePPOAgent(unsigned int max_qubits)
   this->max_ratio = 1.0 + ppo_epsilon;
 }
 
+bool BasePPOAgent::initialize(const torch::nn::Sequential &actor,
+                              const torch::nn::Sequential &critic) {
+  try {
+    this->actor = actor;
+    this->critic = critic;
+    // Load the model before putting it to the device to avoid device
+    // scheduling issus.
+    this->load_model();
+    this->register_module("critic", this->critic);
+    this->register_module("actor", this->actor);
+    this->critic->to(this->device);
+    this->actor->to(this->device);
+    this->critic_optimizer = std::shared_ptr(
+        std::move(makeOptimizer(this->critic_optimizer_type, this->critic,
+                                this->critic_learning_rate)));
+    this->actor_optimizer = std::shared_ptr(std::move(makeOptimizer(
+        this->actor_optimizer_type, this->actor, this->actor_learning_rate)));
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
+  return true;
+}
+
+std::pair<torch::Tensor, torch::Tensor>
+BasePPOAgent::forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  // Do NOT reshape/flatten here.
+  // Let the models handle shapes.
+  return {this->actor->forward(x), this->critic->forward(x)};
+}
+
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
 BasePPOAgent::force_select_action(
     const torch::Tensor &observation,
