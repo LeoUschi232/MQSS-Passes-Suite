@@ -24,7 +24,9 @@ inline std::mt19937 &qc_rng() {
   static std::mt19937 rng_engine{std::random_device{}()};
   return rng_engine;
 }
-inline void seed_qc_rng(uint32_t seed) { qc_rng().seed(seed); }
+inline void seed_qc_rng(uint32_t seed) {
+  qc_rng().seed(seed);
+}
 inline double random01() {
   thread_local std::uniform_real_distribution dist01(0.0, 1.0);
   return dist01(qc_rng());

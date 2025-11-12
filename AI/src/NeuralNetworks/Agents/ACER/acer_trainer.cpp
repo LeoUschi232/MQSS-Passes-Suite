@@ -79,12 +79,23 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         reset_string += " | Warning: off_policy_episodes_left=" +
                         std::to_string(off_policy_episodes_left);
       }
+      // Make the new episode true-random to not sample a known trajectory after
+      // a seeded off-policy trajectory.
+      seed_qc_rng(std::random_device{}());
     } else {
       on_policy = false;
       off_policy_episodes_left--;
     }
     updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                    /*display_message=*/reset_string);
+    if (on_policy) {
+      environment.reset();
+    } else if (replay_buffer.empty()) {
+      off_policy_episodes_left = 0u;
+      continue;
+    } else {
+      environment.reset(randomInt(0u, replay_buffer.size()));
+    }
   }
   //////////////////////////////////////////////////////////////////////////////
   if (!interrupted) {
