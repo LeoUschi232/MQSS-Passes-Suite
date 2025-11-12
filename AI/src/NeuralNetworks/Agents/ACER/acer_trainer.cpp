@@ -117,23 +117,6 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         if (on_policy) {
         }
-
-        auto [action, action_probs] =
-            agent->select_action(environment.get_observation_as_torch_tensor());
-        auto [reward, terminated, truncated] =
-            environment.step(action.item<int>());
-        total_episode_reward += reward;
-        trajectory_elements.push_back(
-            ACER_TrajectoryTuple{static_cast<unsigned int>(action.item<int>()),
-                                 reward, action_probs.detach()});
-        if (truncated || terminated) {
-          break;
-        }
-      }
-      if (on_policy && replay_buffer.size() < acer_max_nr_trajectories) {
-        replay_buffer.push_back(ACER_Trajectory{
-            /*environment_reset_seed=*/0/*environment.get_last_reset_seed()*/,
-            /*trajectory_elements=*/trajectory_elements});
       }
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "
