@@ -18,7 +18,7 @@ enum class OptimizerType : int;
 class BaseACERAgent : public BaseActorCritic {
 protected:
   /// ACER specific attributes
-  double acer_retrace_clip_c = 0.0;
+  double acer_truncation_threshold_c = 0.0;
   double acer_trust_region_delta = 0.0;
 
 public:

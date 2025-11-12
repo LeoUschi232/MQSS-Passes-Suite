@@ -10,7 +10,8 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
-  this->acer_retrace_clip_c = GLOBAL_PARAMS["acer_retrace_clip_c"].to_double();
+  this->acer_truncation_threshold_c =
+      GLOBAL_PARAMS["acer_truncation_threshold_c"].to_double();
   this->acer_trust_region_delta =
       GLOBAL_PARAMS["acer_trust_region_delta"].to_double();
 }
