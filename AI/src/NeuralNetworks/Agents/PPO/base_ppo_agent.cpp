@@ -134,4 +134,15 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
               .pow(2)
               .mean()};
 }
+
+void BasePPOAgent::update_parameters(const torch::Tensor &actor_loss,
+                                     const torch::Tensor &critic_loss) const {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->zero_grad();
+  actor_loss.backward();
+  this->actor_optimizer->step();
+  this->critic_optimizer->zero_grad();
+  critic_loss.backward();
+  this->critic_optimizer->step();
+}
 } // namespace ai_pass_selector

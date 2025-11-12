@@ -89,6 +89,13 @@ public:
              const torch::Tensor &new_log_action_probs,
              const torch::Tensor &new_state_values,
              const torch::Tensor &rewards, const torch::Tensor &entropy);
+
+  /**
+   * @param actor_loss
+   * @param critic_loss
+   */
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_loss) const;
   //////////////////////////////////////////////////////////////////////////////
 };
 } // namespace ai_pass_selector
