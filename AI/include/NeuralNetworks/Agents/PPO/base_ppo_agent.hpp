@@ -63,9 +63,6 @@ public:
              const torch::Tensor &new_state_values,
              const torch::Tensor &rewards, const torch::Tensor &entropy);
   //////////////////////////////////////////////////////////////////////////////
-
-  /// Saving and Loading
-  void save_model() const override;
 };
 } // namespace ai_pass_selector
 

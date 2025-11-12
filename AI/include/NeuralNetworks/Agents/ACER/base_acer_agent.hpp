@@ -50,10 +50,8 @@ public:
    * @param observation
    * @return
    */
-  * @param observation
-    * @return
-    */  d::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-    select_action(const torch::Tensor &observation) override;
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &observation) override;
 
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading

@@ -56,6 +56,4 @@ BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
               .pow(2)
               .mean()};
 }
-
-void BasePPOAgent::save_model() const { BaseActorCritic::save_model(); }
 } // namespace ai_pass_selector
