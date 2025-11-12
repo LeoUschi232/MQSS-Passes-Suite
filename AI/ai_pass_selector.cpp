@@ -190,7 +190,7 @@ void load_default_params() {
       {"sdsac_clip_c", 0.5},
       {"sdsac_entropy_target_weight", 0.98},
       {"acer_max_nr_trajectories", 8},
-      {"acer_truncation_threshold_c", 5.0},
+      {"acer_truncation_threshold_c", 10.0},
       {"acer_trust_region_delta", 0.0},
       {"print_param_info", false},
       {"save_agent_after_training", true},
