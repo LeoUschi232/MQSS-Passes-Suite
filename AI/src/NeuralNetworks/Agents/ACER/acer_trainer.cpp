@@ -116,6 +116,20 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             if (interrupted) {
               break;
             }
+if (on_policy) {
+}
+
+
+
+
+
+
+
+
+
+
+
+
             auto [action, action_probs] =
             agent->select_action(environment.get_observation_as_torch_tensor());
             auto [reward, terminated, truncated] =
