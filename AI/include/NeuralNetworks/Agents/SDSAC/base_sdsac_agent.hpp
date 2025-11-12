@@ -49,19 +49,6 @@ public:
   BaseSDSACAgent &operator=(BaseSDSACAgent &&other) noexcept = delete;
 
   //////////////////////////////////////////////////////////////////////////////
-  /// SDSAC override for disabling methods
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const override;
-  std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &observation) override;
-  torch::Tensor get_value(const torch::Tensor &observation) override;
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation) override;
-  //////////////////////////////////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////////////////////////////////
   /// SDSAC quadruple-critic methods
   /**
    *
