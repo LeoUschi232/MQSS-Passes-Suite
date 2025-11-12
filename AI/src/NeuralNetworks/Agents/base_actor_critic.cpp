@@ -173,17 +173,6 @@ BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
   return rewards_to_go;
 }
 
-void BaseActorCritic::update_parameters(
-    const torch::Tensor &actor_loss, const torch::Tensor &critic_loss) const {
-  std::lock_guard lock(*this->model_mutex);
-  this->actor_optimizer->zero_grad();
-  actor_loss.backward();
-  this->actor_optimizer->step();
-  this->critic_optimizer->zero_grad();
-  critic_loss.backward();
-  this->critic_optimizer->step();
-}
-
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
     size_t total = 0, bad = 0;
