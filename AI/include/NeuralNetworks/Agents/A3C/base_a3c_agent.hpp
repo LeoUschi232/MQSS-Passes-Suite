@@ -32,7 +32,7 @@ public:
    * @return
    */
   bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
+                  const torch::nn::Sequential &critic);
 
   /// Destructor
   ~BaseA3CAgent() override = default;
@@ -48,13 +48,22 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// A2C/A3C standard methods
+
+  /**
+   * @param observation
+   * @return [action_index, log_action_probs, state_values, entropy]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+   select_action(const torch::Tensor &observation);
+
+
   /**
    *
    * @param actor_loss
    * @param critic_loss
    */
   void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const override;
+                         const torch::Tensor &critic_loss) const;
 
   /**
    * @param log_action_probs
