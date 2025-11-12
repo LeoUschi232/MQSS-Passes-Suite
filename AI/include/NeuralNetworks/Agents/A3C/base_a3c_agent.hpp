@@ -49,7 +49,6 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   /// A2C/A3C standard methods
   /**
-   *
    * @param observation
    * @return
    */
@@ -57,7 +56,6 @@ public:
   forward(const torch::Tensor &observation);
 
   /**
-   *
    * @param observation
    * @return
    */
@@ -83,7 +81,6 @@ public:
              const torch::Tensor &entropy);
 
   /**
-   *
    * @param actor_loss
    * @param critic_loss
    */
