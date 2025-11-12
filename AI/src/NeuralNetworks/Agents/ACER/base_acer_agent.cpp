@@ -16,6 +16,13 @@ BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
       GLOBAL_PARAMS["acer_trust_region_delta"].to_double();
 }
 
+bool BaseACERAgent::initialize(
+    const torch::nn::Sequential &actor_main,
+    const torch::nn::Sequential &actor_avg,
+    const torch::nn::Sequential &critic_Q_estimator) {
+  return false;
+}
+
 torch::Tensor BaseACERAgent::get_value(const torch::Tensor &observation) {
   auto [policy_main, policy_avg, Q_values] = this->forward(
       /*observation=*/observation.to(this->device).to(torch::kFloat32));
