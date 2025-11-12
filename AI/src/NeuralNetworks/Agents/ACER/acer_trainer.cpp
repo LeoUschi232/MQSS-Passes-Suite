@@ -73,8 +73,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     }
     bool on_policy = true;
     if (off_policy_episodes_left <= 0u) {
-      // TODO: Implement Poisson sampling somewhere
-      off_policy_episodes_left = Poisson(acer_ratio_of_replay);
+      off_policy_episodes_left = randomPoisson(acer_ratio_of_replay);
     } else {
       on_policy = false;
       off_policy_episodes_left--;

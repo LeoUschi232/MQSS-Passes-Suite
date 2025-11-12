@@ -37,6 +37,13 @@ inline int randomInt(int start, int end) {
   std::uniform_int_distribution distInt(start, end - 1);
   return distInt(qc_rng());
 }
+inline int randomPoisson(double mean) {
+  if (mean <= 0.0) {
+    return 0;
+  }
+  std::poisson_distribution distPoisson(mean);
+  return std::max(0, distPoisson(qc_rng()));
+}
 ////////////////////////////////////////////////////////////////////////////////
 /// All no-nonsense quantum circuit should have at least 2 qubits and 2 gates.
 constexpr unsigned int GLOBAL_MIN_NR_QUBITS = 2u;
