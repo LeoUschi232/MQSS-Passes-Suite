@@ -23,7 +23,6 @@ struct PPO_EpisodeRollout {
 std::unordered_map<std::string, std::string>
 train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           const std::string &dataset);
-
 } // namespace ai_pass_selector
 
 #endif // PPO_TRAINER_HPP

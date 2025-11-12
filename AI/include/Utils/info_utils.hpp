@@ -24,7 +24,9 @@ inline std::mt19937 &qc_rng() {
   static std::mt19937 rng_engine{std::random_device{}()};
   return rng_engine;
 }
-inline void seed_qc_rng(uint32_t seed) { qc_rng().seed(seed); }
+inline void seed_qc_rng(uint32_t seed) {
+  qc_rng().seed(seed);
+}
 inline double random01() {
   thread_local std::uniform_real_distribution dist01(0.0, 1.0);
   return dist01(qc_rng());
@@ -36,6 +38,13 @@ inline float randomAngle() {
 inline int randomInt(int start, int end) {
   std::uniform_int_distribution distInt(start, end - 1);
   return distInt(qc_rng());
+}
+inline int randomPoisson(double mean) {
+  if (mean <= 0.0) {
+    return 0;
+  }
+  std::poisson_distribution distPoisson(mean);
+  return std::max(0, distPoisson(qc_rng()));
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// All no-nonsense quantum circuit should have at least 2 qubits and 2 gates.

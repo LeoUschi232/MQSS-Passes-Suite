@@ -15,8 +15,8 @@ NormalizeReward::NormalizeReward(const QuantumCircuitEnvironment &environment)
   }
 }
 
-void NormalizeReward::reset() {
-  QuantumCircuitEnvironment::reset();
+void NormalizeReward::reset(std::optional<int> seed) {
+  QuantumCircuitEnvironment::reset(seed);
   this->discounted_reward = 0.0;
 }
 

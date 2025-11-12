@@ -34,8 +34,22 @@ public:
 
   BasePPOAgent &operator=(BasePPOAgent &&other) noexcept = default;
 
+  /**
+   * @param actor
+   * @param critic
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic);
+
   //////////////////////////////////////////////////////////////////////////////
   /// PPO standard methods
+  /**
+   * @param observation
+   * @return
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
 
   /**
    * @param observation
@@ -45,6 +59,19 @@ public:
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
   force_select_action(const torch::Tensor &observation,
                       const torch::Tensor &action_index_unsqueezed);
+
+  /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return [action_index, log_action_probs, state_values, entropy]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &observation);
 
   /**
    *
@@ -62,10 +89,14 @@ public:
              const torch::Tensor &new_log_action_probs,
              const torch::Tensor &new_state_values,
              const torch::Tensor &rewards, const torch::Tensor &entropy);
-  //////////////////////////////////////////////////////////////////////////////
 
-  /// Saving and Loading
-  void save_model() const override;
+  /**
+   * @param actor_loss
+   * @param critic_loss
+   */
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_loss) const;
+  //////////////////////////////////////////////////////////////////////////////
 };
 } // namespace ai_pass_selector
 

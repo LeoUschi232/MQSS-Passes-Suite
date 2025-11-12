@@ -114,7 +114,7 @@ public:
   /// Short functions
   void clear(bool hard = true);
   bool validate();
-  virtual void reset();
+  virtual void reset(std::optional<int> seed = std::nullopt);
   std::pair<unsigned int, unsigned int> size() const;
 
   /**

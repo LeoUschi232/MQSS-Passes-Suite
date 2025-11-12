@@ -25,15 +25,6 @@ public:
   /// Constructors
   explicit BaseA3CAgent(unsigned int max_qubits, bool is_boss = true);
 
-  /**
-   *
-   * @param actor
-   * @param critic
-   * @return
-   */
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
-
   /// Destructor
   ~BaseA3CAgent() override = default;
 
@@ -46,15 +37,35 @@ public:
 
   BaseA3CAgent &operator=(BaseA3CAgent &&other) noexcept = delete;
 
+  /**
+   * @param actor
+   * @param critic
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic);
+
   //////////////////////////////////////////////////////////////////////////////
   /// A2C/A3C standard methods
   /**
-   *
-   * @param actor_loss
-   * @param critic_loss
+   * @param observation
+   * @return
    */
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const override;
+  std::pair<torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return [action_index, log_action_probs, state_values, entropy]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &observation);
 
   /**
    * @param log_action_probs
@@ -69,6 +80,13 @@ public:
              const torch::Tensor &entropy);
 
   /**
+   * @param actor_loss
+   * @param critic_loss
+   */
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_loss) const;
+
+  /**
    * Necessary to create worker agents for asynchronous training.
    * @return
    */
@@ -78,7 +96,6 @@ public:
   void load_gradients(BaseA3CAgent &other);
   void update_parameters_assuming_gradients_are_loaded();
   //////////////////////////////////////////////////////////////////////////////
-
   /// Saving and Loading
   void save_model() const override;
 };
