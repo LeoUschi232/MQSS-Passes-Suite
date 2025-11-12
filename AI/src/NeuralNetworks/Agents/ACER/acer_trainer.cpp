@@ -132,7 +132,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       }
       if (on_policy && replay_buffer.size() < acer_max_nr_trajectories) {
         replay_buffer.push_back(ACER_Trajectory{
-            /*environment_reset_seed=*/environment.get_last_reset_seed(),
+            /*environment_reset_seed=*/0/*environment.get_last_reset_seed()*/,
             /*trajectory_elements=*/trajectory_elements});
       }
     } catch (const std::exception &e) {
