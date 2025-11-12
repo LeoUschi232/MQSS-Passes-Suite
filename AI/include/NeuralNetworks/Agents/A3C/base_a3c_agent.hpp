@@ -57,6 +57,13 @@ public:
   forward(const torch::Tensor &observation);
 
   /**
+   *
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value(const torch::Tensor &observation);
+
+  /**
    * @param observation
    * @return [action_index, log_action_probs, state_values, entropy]
    */

@@ -61,6 +61,11 @@ BaseA3CAgent::forward(const torch::Tensor &observation) {
   return {this->actor->forward(x), this->critic->forward(x)};
 }
 
+torch::Tensor BaseA3CAgent::get_value(const torch::Tensor &observation) {
+  return this->critic->forward(
+      observation.to(this->device).to(torch::kFloat32));
+}
+
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseA3CAgent::select_action(const torch::Tensor &observation) {
