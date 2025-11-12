@@ -1,3 +1,68 @@
 #include "NeuralNetworks/Agents/ACER/acer_trainer.hpp"
 
-namespace ai_pass_selector {} // namespace ai_pass_selector
+// Environment includes
+#include "Environment/Wrappers/normalize_reward.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
+#include "Environment/statistics_for_rqcg.hpp"
+
+// Utils includes
+#include "Utils/info_utils.hpp"
+#include "Utils/progress_bar.hpp"
+
+// Standard library includes
+#include <csignal>
+#include <filesystem>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+extern sig_atomic_t interrupted;
+extern void signal_handler(int signal);
+
+namespace ai_pass_selector {
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+std::unordered_map<std::string, std::string>
+train_acer(const std::unique_ptr<BaseACERAgent> &agent,
+           const std::string &dataset) {
+  // Default values
+  unsigned int max_qubits = agent->getMaxQubits();
+  unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
+  unsigned int max_steps_per_episode =
+      GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  unsigned int save_agent_every_ith_episode =
+      GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool save_agent_after_training =
+      GLOBAL_PARAMS["save_agent_after_training"].to_bool();
+  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
+  if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
+    std::cerr << "Nothing to train." << std::endl;
+    return {};
+  }
+  auto optional_statistics = get_precomputed_dataset_statistics(dataset);
+  if (!optional_statistics.has_value()) {
+    std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
+              << std::endl;
+    return {};
+  }
+  auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
+  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
+  torch::TensorOptions options =
+      torch::TensorOptions().device(device).dtype(torch::kFloat32);
+  int64_t T = max_steps_per_episode;
+  std::cout << "Beginning training." << std::endl;
+  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
+  //////////////////////////////////////////////////////////////////////////////
+  /// TODO: Train ACER Agent
+  //////////////////////////////////////////////////////////////////////////////
+  if (!interrupted) {
+    std::cout << "\nTraining finished." << std::endl;
+  }
+  if (save_agent_after_training) {
+    agent->save_model();
+    std::cout << "Saved: " << agent->agentName() << std::endl;
+  }
+  return {};
+}
+
+} // namespace ai_pass_selector
