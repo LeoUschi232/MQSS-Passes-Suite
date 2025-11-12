@@ -5,7 +5,6 @@
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 
 namespace ai_pass_selector {
-constexp
 struct ACER_TrajectoryTuple {
   unsigned int action_index;
   float reward;
