@@ -53,6 +53,55 @@ bool BaseA3CAgent::initialize(const torch::nn::Sequential &actor,
   return true;
 }
 
+std::pair<torch::Tensor, torch::Tensor>
+BaseA3CAgent::forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  // Do NOT reshape/flatten here.
+  // Let the models handle shapes.
+  return {this->actor->forward(x), this->critic->forward(x)};
+}
+
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+BaseA3CAgent::select_action(const torch::Tensor &observation) {
+  auto [action_probs, state_value] = this->forward(observation);
+
+  // Multinomial selects num_samples=1 indices per row for the given matrix,
+  // using the values in the row as weights.
+  // action_probs ~ [NR_PASSES]
+  // X.multinomial(num_samples=1) ~ [1]
+  // X.squeeze(dim=-1) ~ []
+  const torch::Tensor action_index_unsqueezed =
+      action_probs.multinomial(/*num_samples=*/1);
+  const torch::Tensor action_index = action_index_unsqueezed.squeeze(-1);
+
+  // For advantage compute log π(a_t|s_t) for the sampled actions.
+  // Gather extracts the values at specified indexes along the specified axis.
+  // Parameter indexes must have the same nr of axes as the input tensor, here
+  // each has 2 axes.
+  // unsqueezed_log_action_probs ~ [NR_PASSES]
+  // X.gather(dim=-1, indexes=action_indexes_unsqueezed) ~ [1]
+  // X.squeeze(dim=-1) ~ []
+  const torch::Tensor unsqueezed_log_action_probs = action_probs.log();
+  const torch::Tensor log_action_prob =
+      unsqueezed_log_action_probs
+          .gather(/*dim=*/-1, /*indexes=*/action_index_unsqueezed)
+          .squeeze(-1);
+
+  // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
+  // action_probs * log_action_probs ~ [NR_PASSES]
+  // -X.sum(dim=-1) ~ [1]
+  // X.squeeze(dim=-1) ~ []
+  const torch::Tensor entropy =
+      -(action_probs * unsqueezed_log_action_probs).sum(/*dim=*/-1).squeeze(-1);
+  return {
+      action_index,    // Shape []
+      log_action_prob, // Shape []
+      state_value,     // Shape []
+      entropy          // Shape []
+  };
+}
+
 void BaseA3CAgent::zero_grad() {
   std::lock_guard lock(*this->model_mutex);
   for (auto &parameter : this->parameters()) {

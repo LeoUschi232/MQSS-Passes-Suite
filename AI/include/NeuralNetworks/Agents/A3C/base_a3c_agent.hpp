@@ -48,14 +48,20 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// A2C/A3C standard methods
+  /**
+   *
+   * @param observation
+   * @return
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
 
   /**
    * @param observation
    * @return [action_index, log_action_probs, state_values, entropy]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-   select_action(const torch::Tensor &observation);
-
+  select_action(const torch::Tensor &observation);
 
   /**
    *
