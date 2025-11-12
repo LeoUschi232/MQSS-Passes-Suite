@@ -58,6 +58,36 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   //////////////////////////////////////////////////////////////////////////////
   /// TODO: Train ACER Agent
+  std::vector<ACER_Trajectory> replay_buffer;
+  replay_buffer.reserve(acer_max_nr_trajectories);
+  unsigned int off_policy_episodes_left = 0u;
+  for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
+       episode_idx++) {
+    if (interrupted) {
+      break;
+    }
+    if (episode_idx % save_agent_every_ith_episode == 0) {
+      agent->save_model();
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Saving Agent.");
+    }
+    bool on_policy = true;
+    if (off_policy_episodes_left <= 0u) {
+      // TODO: Implement Poisson sampling somewhere
+      off_policy_episodes_left = Poisson(acer_ratio_of_replay);
+    } else {
+      on_policy = false;
+      off_policy_episodes_left--;
+    }
+    updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                   /*display_message=*/"Resetting Enviornment.");
+
+
+
+
+
+
+  }
   //////////////////////////////////////////////////////////////////////////////
   if (!interrupted) {
     std::cout << "\nTraining finished." << std::endl;
