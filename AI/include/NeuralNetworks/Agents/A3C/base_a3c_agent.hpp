@@ -38,7 +38,6 @@ public:
   BaseA3CAgent &operator=(BaseA3CAgent &&other) noexcept = delete;
 
   /**
-   *
    * @param actor
    * @param critic
    * @return

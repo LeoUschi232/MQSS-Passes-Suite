@@ -34,8 +34,22 @@ public:
 
   BasePPOAgent &operator=(BasePPOAgent &&other) noexcept = default;
 
+  /**
+   * @param actor
+   * @param critic
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic);
+
   //////////////////////////////////////////////////////////////////////////////
   /// PPO standard methods
+  /**
+   * @param observation
+   * @return
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
 
   /**
    * @param observation
