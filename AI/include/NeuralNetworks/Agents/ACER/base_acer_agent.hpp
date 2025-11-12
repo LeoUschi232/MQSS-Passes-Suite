@@ -34,6 +34,16 @@ public:
 
   BaseACERAgent &operator=(BaseACERAgent &&other) noexcept = delete;
 
+  /**
+   * @param actor_main
+   * @param actor_avg
+   * @param critic_Q_estimator
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor_main,
+                  const torch::nn::Sequential &actor_avg,
+                  const torch::nn::Sequential &critic_Q_estimator);
+
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
   /**
@@ -42,7 +52,6 @@ public:
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
   forward(const torch::Tensor &observation);
-
 
   /**
    * @param observation
