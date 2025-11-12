@@ -7,9 +7,6 @@
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/base_actor_critic.hpp"
 
-// Standard library includes
-#include <memory>
-
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
@@ -37,28 +34,30 @@ public:
 
   BaseACERAgent &operator=(BaseACERAgent &&other) noexcept = delete;
 
-  //////////////////////////////////////////////////////////////////////////////
-  /// ACER override for disabling methods
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const override;
-  std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &observation) override;
+  /**
+   * @param actor_main
+   * @param actor_avg
+   * @param critic_Q_estimator
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor_main,
+                  const torch::nn::Sequential &actor_avg,
+                  const torch::nn::Sequential &critic_Q_estimator);
+
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
   /**
    * @param observation
-   * @return
+   * @return [policy_main, policy_avg, Q_values]
    */
-  torch::Tensor get_value(const torch::Tensor &observation) override;
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
 
   /**
    * @param observation
-   * @return [action_probs, state_value]
+   * @return
    */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
-  acer_forward(const torch::Tensor &observation);
+  torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
@@ -66,7 +65,7 @@ public:
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation) override;
+  select_action(const torch::Tensor &observation);
 
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
