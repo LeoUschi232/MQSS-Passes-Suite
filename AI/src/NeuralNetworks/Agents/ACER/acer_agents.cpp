@@ -33,8 +33,10 @@ ACER_TCN_PRELU::ACER_TCN_PRELU(unsigned int max_qubits)
   constexpr unsigned int kernel_size = 5u;
   constexpr double prelu_init = 0.1;
   this->initialize(
-      /*actor=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
-                               prelu_init),
+      /*actor_main=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
+      prelu_init),
+/*actor_avg=*/make_TCN_actor(max_qubits, nr_residual_blocks, kernel_size,
+      prelu_init),
       /*critic_Q_estimator=*/
       make_TCN_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                            prelu_init));
