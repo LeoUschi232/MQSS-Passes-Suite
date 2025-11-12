@@ -38,27 +38,22 @@ public:
   BaseACERAgent &operator=(BaseACERAgent &&other) noexcept = delete;
 
   //////////////////////////////////////////////////////////////////////////////
-  /// ACER override for disabling methods
-  bool initialize(const torch::nn::Sequential &actor,
-                  const torch::nn::Sequential &critic) override;
-  void update_parameters(const torch::Tensor &actor_loss,
-                         const torch::Tensor &critic_loss) const override;
-  std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &observation) override;
-  //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
+
+
+  /**
+   * @param observation
+   * @return [policy_main, policy_avg, Q_values]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  forward(const torch::Tensor &observation);
+
+
   /**
    * @param observation
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &observation) override;
-
-  /**
-   * @param observation
-   * @return [action_probs, state_value]
-   */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
-  acer_forward(const torch::Tensor &observation);
+  torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
    *
@@ -66,7 +61,7 @@ public:
    * @return
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation) override;
+  select_action(const torch::Tensor &observation);
 
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading

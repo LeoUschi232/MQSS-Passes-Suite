@@ -51,7 +51,6 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   /// SDSAC quadruple-critic methods
   /**
-   *
    * @param actor
    * @param critic_Q1_main
    * @param critic_Q2_main
@@ -66,7 +65,6 @@ public:
                   const torch::nn::Sequential &critic_Q2_avg);
 
   /**
-   *
    * @param observation
    * @return [policy, Q1_main, Q2_main, Q1_avg, Q2_avg]
    */
@@ -75,7 +73,6 @@ public:
   forward(const torch::Tensor &observation);
 
   /**
-   *
    * @param observation
    * @return [policy, Q1_avg, Q2_avg]
    */
@@ -83,7 +80,6 @@ public:
   forward_only_Q_avg(const torch::Tensor &observation);
 
   /**
-   *
    * @param observation
    * @return [action_index, entropy]
    */
