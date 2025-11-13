@@ -4,15 +4,15 @@
 // Torch includes
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 
-#define DECLARE_ACER_AGENT(ClassName)                                          \
-  class ClassName final : public BaseACERAgent {                               \
+#define DECLARE_ACER_AGENT(ClassName)                                         \
+  class ClassName final : public BaseACERAgent {                              \
   public:                                                                      \
     explicit ClassName(unsigned int max_qubits);                               \
     std::string agentName() const override;                                    \
   };
 
 namespace ai_pass_selector {
-/// ACER = Actor-Critic with Experience Replay
+/// SDSAC = Stable Discrete Soft Actor-Critic
 /// TCN = Temporal Convolutional Network
 /// RELU = Activation Functions are set to ReLU
 /// PRELU = Activation Functions are set to PReLU

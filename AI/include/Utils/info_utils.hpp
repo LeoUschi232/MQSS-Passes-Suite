@@ -196,7 +196,6 @@ struct PassSelectorRuntimeParam {
 inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 
 /**
- *
  * @param a
  * @param b
  * @param atol
@@ -205,7 +204,6 @@ inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 bool isclose(double a, double b, double atol = 1e-12);
 
 /**
- *
  * @param str
  * @param delimiter
  * @return
@@ -221,20 +219,17 @@ std::vector<std::string> split_string(const std::string &str, char delimiter);
 std::optional<fs::path> search_circuit(const fs::path &circuit_path);
 
 /**
- *
  * @param circuit_path
  */
 void print_circuit_info(fs::path circuit_path);
 
 /**
- *
  * @param dataset_name
  * @return
  */
 std::vector<fs::path> get_dataset_files(const std::string &dataset_name);
 
 /**
- *
  * @param dataset_name
  * @return
  */
@@ -242,13 +237,11 @@ std::optional<std::vector<std::pair<std::string, std::string>>>
 get_dataset_info(const std::string &dataset_name);
 
 /**
- *
  * @param dataset_name
  */
 void print_dataset_info(const std::string &dataset_name);
 
 /**
- *
  * @param agent_name
  */
 void print_agent_info(const std::string &agent_name);

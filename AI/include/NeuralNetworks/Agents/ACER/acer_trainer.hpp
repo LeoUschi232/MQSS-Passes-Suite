@@ -5,18 +5,16 @@
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 
 namespace ai_pass_selector {
-struct ACER_TrajectoryTuple {
+struct ACER_TrajectoryElement {
   unsigned int action_index;
-  float reward;
   torch::Tensor action_probs;
 };
 struct ACER_Trajectory {
   int environment_reset_seed;
-  std::vector<ACER_TrajectoryTuple> trajectory_elements;
+  std::vector<ACER_TrajectoryElement> trajectory_elements;
 };
 
 /**
- *
  * @param agent
  * @param dataset
  * @return

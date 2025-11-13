@@ -18,6 +18,9 @@ protected:
   double acer_truncation_threshold_c = 0.0;
   double acer_trust_region_delta = 0.0;
 
+  /// ACER Additional Actor
+  torch::nn::Sequential actor_avg{nullptr};
+
 public:
   /// Constructors
   explicit BaseACERAgent(unsigned int max_qubits);
@@ -60,12 +63,17 @@ public:
   torch::Tensor get_value(const torch::Tensor &observation);
 
   /**
-   *
+   * @param action_probs
+   * @return [action, entropy]
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &action_probs);
+
+  /**
    * @param observation
    * @return
    */
-  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation);
+  unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading

@@ -170,7 +170,7 @@ void load_default_params() {
       {"output", ""},
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
-      {"nr_episodes", 12},
+      {"nr_episodes", 1000000},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
       {"max_steps_same_action", 8},

@@ -79,28 +79,25 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         reset_string += " | Warning: off_policy_episodes_left=" +
                         std::to_string(off_policy_episodes_left);
       }
-      // Make the new episode true-random to not sample a known trajectory after
-      // a seeded off-policy trajectory.
-      seed_qc_rng(std::random_device{}());
     } else {
       on_policy = false;
       off_policy_episodes_left--;
     }
     updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                    /*display_message=*/reset_string);
-    std::vector<ACER_TrajectoryTuple> trajectory_elements;
-    if (on_policy) {
-      environment.reset();
-    } else if (replay_buffer.empty()) {
+    int environment_seed = std::random_device{}();
+    std::vector<ACER_TrajectoryElement> trajectory_elements;
+    if (!on_policy && replay_buffer.empty()) {
       off_policy_episodes_left = 0u;
-      continue;
-    } else {
-      unsigned int replay_index = randomInt(0u, replay_buffer.size());
-      const auto &[environment_reset_seed, elements] =
-          replay_buffer[replay_index];
-      trajectory_elements = elements;
-      environment.reset(environment_reset_seed);
+      on_policy = true;
     }
+    if (!on_policy) {
+      unsigned int replay_index = randomInt(0u, replay_buffer.size());
+      auto [seed, elements] = replay_buffer[replay_index];
+      environment_seed = seed;
+      trajectory_elements = elements;
+    }
+    environment.reset(environment_seed);
     try {
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
@@ -112,6 +109,16 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
                 std::to_string(total_episode_reward) +
                 " | Nr qubits: " + std::to_string(nr_qubits) + " | Nr gates: " +
                 std::to_string(nr_gates) + " | Running step.");
+        torch::Tensor observation =
+            environment.get_observation_as_torch_tensor();
+        auto [policy_main, policy_avg, Q_values] = agent->forward(observation);
+        unsigned int action_index;
+        if (on_policy) {
+          auto [action, entropy] =
+              agent->select_action(policy_main);
+          action_index = action.item<unsigned int>();
+        }
+
         if (interrupted) {
           break;
         }

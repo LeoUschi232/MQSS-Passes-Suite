@@ -60,11 +60,10 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   /// Standard Actor-Critic methods
   /**
-   *
    * @param observation
    * @return
    */
-  unsigned int select_greedy_action(const torch::Tensor &observation);
+  virtual unsigned int select_greedy_action(const torch::Tensor &observation);
 
   /**
    * Computes advantages using Generalized Advantage Estimation.
@@ -84,7 +83,6 @@ public:
   torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
   //////////////////////////////////////////////////////////////////////////////
   /**
-   *
    * @param circuit_path
    * @return
    */
