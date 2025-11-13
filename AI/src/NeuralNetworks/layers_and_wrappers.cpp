@@ -59,6 +59,7 @@ FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
         LSTM(LSTMOptions(input_size, hidden_size).bidirectional(bidirectional));
   }
   this->register_module("my_lstm", this->my_lstm);
+  this->my_lstm->flatten_parameters();
 }
 
 Tensor FilterLSTMImpl::forward(Tensor x) {
