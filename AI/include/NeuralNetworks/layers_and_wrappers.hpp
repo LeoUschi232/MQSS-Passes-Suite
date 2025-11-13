@@ -47,6 +47,7 @@ TORCH_MODULE(WeightNormConv1d);
  */
 class FilterLSTMImpl final : public Module {
   LSTM my_lstm{nullptr};
+  bool first_forward = true;
 
 public:
   FilterLSTMImpl(unsigned int input_size, unsigned int hidden_size,

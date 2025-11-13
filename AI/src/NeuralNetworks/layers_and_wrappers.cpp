@@ -60,6 +60,7 @@ FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
   }
   this->register_module("my_lstm", this->my_lstm);
   this->my_lstm->flatten_parameters();
+  this->first_forward = true;
 }
 
 Tensor FilterLSTMImpl::forward(Tensor x) {
@@ -69,6 +70,10 @@ Tensor FilterLSTMImpl::forward(Tensor x) {
   }
   if (x.dim() == 2) {
     x = x.unsqueeze(/*dim=*/1);
+  }
+  if (this->first_forward) {
+    this->my_lstm->flatten_parameters();
+    this->first_forward = false;
   }
   auto [y, _] = this->my_lstm->forward(x.contiguous());
   return y.squeeze(/*dim=*/1);
