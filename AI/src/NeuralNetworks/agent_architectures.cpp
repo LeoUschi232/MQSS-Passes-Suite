@@ -114,6 +114,7 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
       torch::nn::Linear(2 * P, 1),                                  // -> [1]
+      torch::nn::Tanh(),                                            // -> [1]
       torch::nn::Squeeze(/*dim=*/0)                                 // -> []
   );
 }
@@ -200,11 +201,11 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
       torch::nn::Squeeze(/*dim=*/0)                          // -> []
   );
 }
-torch::nn::Sequential
-make_hybrid_Q_estimator(unsigned int max_qubits, unsigned int nr_residual_blocks,
-                  unsigned int kernel_size, unsigned int hidden_size_multiplier,
-                  unsigned int projection_size_multiplier,
-                  const std::optional<double> &optional_prelu_init) {
+torch::nn::Sequential make_hybrid_Q_estimator(
+    unsigned int max_qubits, unsigned int nr_residual_blocks,
+    unsigned int kernel_size, unsigned int hidden_size_multiplier,
+    unsigned int projection_size_multiplier,
+    const std::optional<double> &optional_prelu_init) {
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
