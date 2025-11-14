@@ -219,9 +219,9 @@ void BaseSDSACAgent::save_model() const {
       fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
   torch::save(this->actor, actor_path.string());
   torch::save(this->critic, critic_Q1_main_path.string());
-  torch::save(this->critic, critic_Q2_main_path.string());
-  torch::save(this->critic, critic_Q1_avg_path.string());
-  torch::save(this->critic, critic_Q2_avg_path.string());
+  torch::save(this->critic_Q2_main, critic_Q2_main_path.string());
+  torch::save(this->critic_Q1_avg, critic_Q1_avg_path.string());
+  torch::save(this->critic_Q2_avg, critic_Q2_avg_path.string());
 }
 
 void BaseSDSACAgent::load_model() {
