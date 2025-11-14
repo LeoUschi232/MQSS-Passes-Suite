@@ -59,7 +59,8 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
     if (interrupted) {
       break;
     }
-    if (episode_idx % save_agent_every_ith_episode == 0) {
+    if (save_agent_every_ith_episode > 0 &&
+        episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                      /*display_message=*/"Saving Agent.");
@@ -83,6 +84,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       rewards_vector.reserve(T);
       entropies_vector.reserve(T);
 
+      bool truncated_episode = false;
       unsigned int update_step;
       for (update_step = 0u; update_step < max_steps_per_episode;
            update_step++) {
@@ -108,15 +110,23 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
             environment.step(action.item<int>());
         rewards_vector.push_back(torch::tensor(reward, options));
         total_episode_reward += reward;
-        if (truncated || terminated) {
+        if (truncated) {
+          truncated_episode = true;
+          break;
+        }
+        if (terminated) {
           break;
         }
       }
       torch::Tensor observation = environment.get_observation_as_torch_tensor();
       rollout_new.observations.push_back(observation);
+      if (!truncated_episode && update_step >= max_steps_per_episode) {
+        truncated_episode = true;
+      }
       rollout_new.actions = torch::stack(actions_vector).to(device);
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
       rollout_new.entropies = torch::stack(entropies_vector).to(device);
+      rollout_new.bootstrap_last_state = truncated_episode;
 
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
@@ -143,13 +153,18 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                     << std::endl;
           break;
         }
-        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->forward(
-                /*observation=*/rollout_old.observations[update_step]);
-        auto [action_probs_next, Q1_avg_next, Q2_avg_next] =
-            agent->forward_only_Q_avg(
-                /*observation=*/rollout_old.observations[update_step + 1u]);
-
+        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] = agent->forward(
+            /*observation=*/rollout_old.observations[update_step]);
+        torch::Tensor action_probs_next;
+        torch::Tensor Q1_avg_next;
+        torch::Tensor Q2_avg_next;
+        bool bootstrap_next_state =
+            update_step < steps_in_episode || rollout_old.bootstrap_last_state;
+        if (bootstrap_next_state) {
+          std::tie(action_probs_next, Q1_avg_next, Q2_avg_next) =
+              agent->forward_only_Q_avg(
+                  /*observation=*/rollout_old.observations[update_step + 1u]);
+        }
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
               optional_temperature_alpha_loss] =
             agent->get_loss(
@@ -165,10 +180,10 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*action_probs=*/action_probs,
                 /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/
-                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
-        agent->update_parameters(actor_loss, critic_Q1_loss,
-                                       critic_Q2_loss,
-                                       optional_temperature_alpha_loss);
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1),
+                /*bootstrap_next_state=*/bootstrap_next_state);
+        agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
+                                 optional_temperature_alpha_loss);
       }
       rollout_old = std::move(rollout_new);
       previous_episode_reward = total_episode_reward;

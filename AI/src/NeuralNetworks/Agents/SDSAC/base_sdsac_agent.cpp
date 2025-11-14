@@ -124,14 +124,23 @@ BaseSDSACAgent::get_loss(
     const torch::Tensor &action,            // Shape []
     const torch::Tensor &action_probs,      // Shape [NR_PASSES]
     const torch::Tensor &old_entropy,       // Shape []
-    const torch::Tensor &new_entropy        // Shape []
+    const torch::Tensor &new_entropy,       // Shape []
+    bool bootstrap_next_state               // No shape
 ) {
   int32_t action_index = action.item<int32_t>();
-  torch::Tensor log_action_probs_next = action_probs_next.log().detach();
-  torch::Tensor expectation_Q1 = action_probs_next.dot(
-      Q1_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
-  torch::Tensor expectation_Q2 = action_probs_next.dot(
-      Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+  torch::Tensor expectation_Q1;
+  torch::Tensor expectation_Q2;
+  if (bootstrap_next_state) {
+    torch::Tensor log_action_probs_next = action_probs_next.log().detach();
+    expectation_Q1 = action_probs_next.dot(
+        Q1_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+    expectation_Q2 = action_probs_next.dot(
+        Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+  } else {
+    const torch::TensorOptions scalar_options = reward.options();
+    expectation_Q1 = torch::zeros({}, scalar_options);
+    expectation_Q2 = torch::zeros({}, scalar_options);
+  }
   torch::Tensor y = reward + this->discount_factor * 0.5 *
                                  (expectation_Q1 + expectation_Q2).detach();
   torch::Tensor clip_value_Q1 =
@@ -155,7 +164,7 @@ BaseSDSACAgent::get_loss(
           /*critic_Q1_loss=*/
           torch::max((Q1_main[action_index] - y).pow(2),
                      (Q1_avg[action_index] + clip_value_Q1 - y).pow(2)),
-          /*critic_Q1_loss=*/
+          /*critic_Q2_loss=*/
           torch::max((Q2_main[action_index] - y).pow(2),
                      (Q2_avg[action_index] + clip_value_Q2 - y).pow(2)),
           /*alpha_loss=*/-this->sdsac_temperature_alpha *
@@ -219,9 +228,9 @@ void BaseSDSACAgent::save_model() const {
       fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
   torch::save(this->actor, actor_path.string());
   torch::save(this->critic, critic_Q1_main_path.string());
-  torch::save(this->critic, critic_Q2_main_path.string());
-  torch::save(this->critic, critic_Q1_avg_path.string());
-  torch::save(this->critic, critic_Q2_avg_path.string());
+  torch::save(this->critic_Q2_main, critic_Q2_main_path.string());
+  torch::save(this->critic_Q1_avg, critic_Q1_avg_path.string());
+  torch::save(this->critic_Q2_avg, critic_Q2_avg_path.string());
 }
 
 void BaseSDSACAgent::load_model() {
