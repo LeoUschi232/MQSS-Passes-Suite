@@ -63,7 +63,8 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
     if (interrupted) {
       break;
     }
-    if (episode_idx % save_agent_every_ith_episode == 0) {
+    if (save_agent_every_ith_episode > 0 &&
+        episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                      /*display_message=*/"Saving Agent.");
