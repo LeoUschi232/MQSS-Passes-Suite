@@ -51,9 +51,17 @@ BaseACERAgent::forward(const torch::Tensor &observation) {
           this->critic->forward(x)};
 }
 
-torch::Tensor BaseACERAgent::get_value(const torch::Tensor &observation) {
-  auto [policy_main, policy_avg, Q_values] = this->forward(
-      /*observation=*/observation.to(this->device).to(torch::kFloat32));
+torch::Tensor BaseACERAgent::get_value_main(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  torch::Tensor policy_main = this->actor->forward(x);
+  torch::Tensor Q_values = this->critic->forward(x);
+  return policy_main.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
+}
+
+torch::Tensor BaseACERAgent::get_value_avg(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
+  torch::Tensor policy_avg = this->actor_avg->forward(x);
+  torch::Tensor Q_values = this->critic->forward(x);
   return policy_avg.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
 }
 

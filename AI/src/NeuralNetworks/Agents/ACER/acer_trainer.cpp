@@ -148,7 +148,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         torch::NoGradGuard _;
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        Q_ret = agent->get_value(observation);
+        Q_ret = agent->get_value_main(observation);
       }
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "

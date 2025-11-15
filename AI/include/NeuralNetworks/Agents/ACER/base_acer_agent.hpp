@@ -60,7 +60,13 @@ public:
    * @param observation
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &observation);
+  torch::Tensor get_value_main(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value_avg(const torch::Tensor &observation);
 
   /**
    * @param action_probs
