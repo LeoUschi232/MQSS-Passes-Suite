@@ -117,10 +117,11 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
         /*policy_q=*/policies_main[i]); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
     // Turn g_scalar and k_scalar into g_vector and k_vector using
     // differentiation like in the ACER algorithm paper.
-    std::vector<torch::Tensor> actor_params =
+    std::vector<torch::Tensor> actor_parameters =
         this->actor->parameters(/*recurse=*/true);
     torch::autograd::variable_list g_gradients = torch::autograd::grad(
-        /*outputs=*/{g_scalar}, /*inputs=*/actor_params, /*grad_outputs=*/{},
+        /*outputs=*/{g_scalar}, /*inputs=*/actor_parameters,
+        /*grad_outputs=*/{},
         /*retain_graph=*/true);
     std::vector<torch::Tensor> g_flattened;
     for (const torch::Tensor &g_gradient : g_gradients) {
@@ -128,7 +129,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     }
     torch::Tensor g_vector = torch::cat(g_flattened);
     auto k_gradients = torch::autograd::grad(
-        /*outputs=*/{k_scalar}, /*inputs=*/actor_params, /*grad_outputs=*/{},
+        /*outputs=*/{k_scalar}, /*inputs=*/actor_parameters,
+        /*grad_outputs=*/{},
         /*retain_graph=*/true);
     std::vector<torch::Tensor> k_flattened;
     for (const torch::Tensor &k_gradient : k_gradients) {
@@ -144,10 +146,18 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
                     (k_scalar.square().sum() + DIVISION_BY_ZERO_BLOCK))
                        .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
               * k_vector;              // k
-    //  TODO: Write the loop that assigns adjusted_actor_gradients to the
-    //  parameters of the actor network.
-
-    torch::Tensor critic_loss = (Q_ret - Q_values_list[i][action_index]).pow(2);
+    // Assign adjusted gradients back to actor parameters
+    unsigned int offset = 0;
+    for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
+         param_idx++) {
+      unsigned int numel = actor_parameters[param_idx].numel();
+      actor_parameters[param_idx].mutable_grad() =
+          adjusted_actor_gradients.slice(0, offset, offset + numel)
+              .view_as(actor_parameters[param_idx].grad());
+      offset += numel;
+    }
+    torch::Tensor critic_loss =
+        (Q_ret - Q_values_list[i][action_index]).square();
     critic_loss.backward();
     ////////////////////////////////////////////////////////////////////////////
     /// 3. Update Retrace target
