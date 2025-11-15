@@ -179,9 +179,15 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           torch::stack(truncated_importance_weights).detach().to(device),
           /*action_indices=*/action_indices);
       agent->update_assuming_gradients_are_computed();
-
-
-
+      if (on_policy) {
+        if (replay_buffer.size() >= acer_max_nr_trajectories) {
+          unsigned int remove_index = randomInt(0u, replay_buffer.size());
+          replay_buffer.erase(/*position=*/replay_buffer.begin() +
+                              remove_index);
+        }
+        replay_buffer.push_back(
+            {environment_seed, std::move(trajectory_elements)});
+      }
     } catch (const std::exception &error) {
       std::cerr << "Exception during episode " << episode_idx << ": "
                 << error.what() << std::endl;
