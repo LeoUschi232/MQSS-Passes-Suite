@@ -137,7 +137,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           action_index = action.item<unsigned int>();
           assert(trajectory_elements.size() == step_idx);
           trajectory_elements.push_back(
-              {action_index, /*action_probs=*/policy_main.detach()});
+              {/*action_index=*/action_index,
+               /*action_probs=*/policy_main.detach()});
         } else {
           action_index = trajectory_elements[step_idx].action_index;
         }
@@ -188,7 +189,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
                               remove_index);
         }
         replay_buffer.push_back(
-            {environment_seed, std::move(trajectory_elements)});
+            {/*environment_reset_seed=*/environment_seed,
+             /*trajectory_elements=*/std::move(trajectory_elements)});
       }
     } catch (const std::exception &error) {
       std::cerr << "Exception during episode " << episode_idx << ": "
