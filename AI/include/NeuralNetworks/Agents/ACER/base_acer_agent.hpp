@@ -16,6 +16,7 @@ class BaseACERAgent : public BaseActorCritic {
 protected:
   /// ACER specific attributes
   torch::Tensor acer_truncation_threshold_c = torch::zeros({});
+  torch::Tensor acer_trust_region_delta = torch::zeros({});
   double acer_soft_update_alpha = 0.0;
 
   /// ACER Additional Actor
