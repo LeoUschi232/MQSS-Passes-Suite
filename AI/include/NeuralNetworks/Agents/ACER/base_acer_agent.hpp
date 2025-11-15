@@ -10,6 +10,7 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+constexpr float DIVISION_BY_ZERO_BLOCK = 1e-12f;
 enum class OptimizerType : int;
 
 class BaseACERAgent : public BaseActorCritic {
@@ -18,7 +19,6 @@ protected:
   torch::Tensor acer_truncation_threshold_c = torch::zeros({});
   torch::Tensor acer_trust_region_delta = torch::zeros({});
   double acer_soft_update_alpha = 0.0;
-  const float division_by_zero_block = 1e-12f;
 
   /// ACER Additional Actor
   torch::nn::Sequential actor_avg{nullptr};

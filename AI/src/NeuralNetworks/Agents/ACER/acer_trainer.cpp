@@ -148,7 +148,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         // over all values of a.
         truncated_importance_weights.push_back(
             torch::min(torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
-                       policy_main / (trajectory_elements[step_idx].action_probs + ))
+                       policy_main /
+                           (trajectory_elements[step_idx].action_probs +
+                            DIVISION_BY_ZERO_BLOCK))
                 .detach());
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
