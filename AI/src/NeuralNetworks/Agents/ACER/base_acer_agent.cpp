@@ -100,16 +100,15 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
 void BaseACERAgent::update_assuming_gradients_are_computed() {
   this->actor_optimizer->step();
   this->critic_optimizer->step();
-
   {
     torch::NoGradGuard no_grad_guard;
-    for (const auto &pair : this->critic->named_parameters(/*recurse=*/true)) {
+    for (const auto &pair : this->actor->named_parameters(/*recurse=*/true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
-          this->critic_Q1_avg->named_parameters(/*recurse=*/true)[name];
-      param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
-      param_avg.add_(this->sdsac_smoothing_tau * param_main);
+          this->actor_avg->named_parameters(/*recurse=*/true)[name];
+      param_avg.mul_(this->acer_soft_update_alpha);
+      param_avg.add_((1.0 - this->acer_soft_update_alpha) * param_main);
     }
   }
 }
