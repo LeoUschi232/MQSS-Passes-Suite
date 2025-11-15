@@ -109,6 +109,9 @@ int main(int argc, char **argv) {
   auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
   auto circuit = std::string(GLOBAL_PARAMS["circuit"]);
   auto output = std::string(GLOBAL_PARAMS["output"]);
+  GLOBAL_TENSOR_OPTIONS = torch::TensorOptions()
+                              .device(GLOBAL_PARAMS["device"].to_device_type())
+                              .dtype(torch::kFloat32);
 
   if (info) {
     std::cout << "Parameters:" << std::endl;

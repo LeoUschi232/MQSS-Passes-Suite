@@ -194,6 +194,7 @@ struct PassSelectorRuntimeParam {
   explicit operator torch::DeviceType() const { return to_device_type(); }
 };
 inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+inline torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 /**
  * @param a

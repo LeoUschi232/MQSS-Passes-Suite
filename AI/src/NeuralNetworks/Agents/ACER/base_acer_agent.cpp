@@ -69,6 +69,20 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
+void BaseACERAgent::compute_losses(int k,                  // Nr taken steps
+                                   const torch::Tensor &rewards, // Shape [k]
+                                   torch::Tensor &Q_ret    // Shape []
+) {
+  torch::Tensor state_values = torch::zeros({k}, rewards.options());
+ for (int i = k-1; i >= 0; i--) {
+   Q_ret = rewards[i] + this->discount_factor * Q_ret;
+
+ }
+
+
+
+}
+
 unsigned int
 BaseACERAgent::select_greedy_action(const torch::Tensor &observation) {
   return this->actor_avg->forward(observation)

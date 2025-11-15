@@ -80,6 +80,11 @@ public:
    */
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
+  void compute_losses(int k,              // Nr taken steps
+                      const torch::Tensor &rewards, // Shape [k]
+                      torch::Tensor &Q_ret    // Shape []
+  );
+
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
   void save_model() const override;

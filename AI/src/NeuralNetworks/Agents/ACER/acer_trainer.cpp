@@ -101,10 +101,11 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     try {
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
+      std::vector<torch::Tensor> truncated_importance_weights;
       std::vector<torch::Tensor> policies_main;
       std::vector<torch::Tensor> policies_avg;
       std::vector<torch::Tensor> Q_values_list;
-      std::vector<torch::Tensor> truncated_importance_weights;
+      std::vector<torch::Tensor> rewards;
       unsigned int step_idx;
       for (step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
         if (interrupted) {
@@ -150,6 +151,15 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
+      assert(step_idx > 0u);
+      agent->compute_losses(
+        /*k=*/step_idx,
+        /*rewards=*/torch::stack(rewards).to(device),
+        /*Q_ret=*/Q_ret.to(device),
+
+        );
+
+
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "
                 << e.what() << std::endl;
