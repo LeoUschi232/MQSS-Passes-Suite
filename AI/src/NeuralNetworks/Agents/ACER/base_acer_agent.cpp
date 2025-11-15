@@ -15,6 +15,9 @@ BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
   this->acer_truncation_threshold_c =
       torch::tensor(GLOBAL_PARAMS["acer_truncation_threshold_c"].to_double(),
                     GLOBAL_TENSOR_OPTIONS);
+  this->acer_trust_region_delta =
+      torch::tensor(GLOBAL_PARAMS["acer_trust_region_delta"].to_double(),
+                    GLOBAL_TENSOR_OPTIONS);
   this->acer_soft_update_alpha =
       GLOBAL_PARAMS["acer_soft_update_alpha"].to_double();
 }
@@ -111,12 +114,13 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     // average policy, but we are detaching it here again just to be sure.
     torch::Tensor quantity_k =
         this->compute_KL_divergence(policies_avg[i].detach(), policies_main[i]);
-    torch::Tensor actor_loss = quantity_g - torch::max(
-      torch::tensor(0.0,  GLOBAL_TENSOR_OPTIONS), (quantity_k.dot(quantity_g) -this->acer_trust_region_delta)
-      )
+    torch::Tensor actor_loss =
+        quantity_g -
+        torch::max(torch::tensor(0.0, GLOBAL_TENSOR_OPTIONS),
+                   (quantity_k.dot(quantity_g) - this->acer_trust_region_delta))
 
-    ////////////////////////////////////////////////////////////////////////////
-    actor_loss.backward();
+        ////////////////////////////////////////////////////////////////////////////
+        actor_loss.backward();
     critic_loss.backward();
   }
 }
