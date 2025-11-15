@@ -135,10 +135,12 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
-        truncated_importance_weights.push_back(torch::min(
-            torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
-            policy_main[action_index] /
-                trajectory_elements[step_idx].action_probs[action_index]));
+        truncated_importance_weights.push_back(
+            torch::min(
+                torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
+                policy_main[action_index] /
+                    trajectory_elements[step_idx].action_probs[action_index])
+                .detach());
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg);
         Q_values_list.push_back(Q_values);
