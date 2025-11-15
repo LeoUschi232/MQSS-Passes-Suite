@@ -142,8 +142,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor adjusted_actor_gradients =
         g_vector // g
         - std::max(0.0f,
-                   ((k_scalar.dot(g_scalar) - this->acer_trust_region_delta) /
-                    (k_scalar.square().sum() + DIVISION_BY_ZERO_BLOCK))
+                   ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
+                    (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
                        .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
               * k_vector;              // k
     // Assign adjusted gradients back to actor parameters
@@ -152,7 +152,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
          param_idx++) {
       unsigned int numel = actor_parameters[param_idx].numel();
       actor_parameters[param_idx].mutable_grad() =
-          adjusted_actor_gradients.slice(0, offset, offset + numel)
+          adjusted_actor_gradients
+              .slice(/*dim=*/0, /*start=*/offset, /*end=*/offset + numel)
               .view_as(actor_parameters[param_idx].grad());
       offset += numel;
     }
