@@ -49,6 +49,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
+  void reset_gradients();
+
   /**
    * @param observation
    * @return [policy_main, policy_avg, Q_values]
@@ -80,14 +82,14 @@ public:
    */
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
-  void
-  compute_losses_and_accumulate_gradients(int k,                              // Nr taken steps
-                 const torch::Tensor &rewards,       // Shape [k]
-                 torch::Tensor Q_ret,                // Shape []
-                 const torch::Tensor &policies_main, // Shape [k, NR_PASSES]
-                 const torch::Tensor &policies_avg,  // Shape [k, NR_PASSES]
-                 const torch::Tensor &Q_values_list, // Shape [k, NR_PASSES]
-                 const torch::Tensor &truncated_importance_weights // Shape [k]
+  void compute_losses_and_accumulate_gradients(
+      int k,                                            // Nr taken steps
+      const torch::Tensor &rewards,                     // Shape [k]
+      torch::Tensor Q_ret,                              // Shape []
+      const torch::Tensor &policies_main,               // Shape [k, NR_PASSES]
+      const torch::Tensor &policies_avg,                // Shape [k, NR_PASSES]
+      const torch::Tensor &Q_values_list,               // Shape [k, NR_PASSES]
+      const torch::Tensor &truncated_importance_weights // Shape [k]
   );
 
   //////////////////////////////////////////////////////////////////////////////
