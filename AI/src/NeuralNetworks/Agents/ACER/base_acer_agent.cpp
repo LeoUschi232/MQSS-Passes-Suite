@@ -92,20 +92,23 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
     /// Computing quantities needed for trust region updating
-    torch::Tensor quantity_g =
+    torch::Tensor g_summand_top =
         torch::min(this->acer_truncation_threshold_c,
                    truncated_importance_weights[i][action_index])
-                .detach()                          // min{c,ρi(ai)}
-            * policies_main[i][action_index].log() // ∇φθ(xi)logf(ai|φθ(xi))
-            * (Q_ret - Vi).detach()                // (Qret − Vi)
-        +
+            .detach()                          // min{c,ρi(ai)}
+        * policies_main[i][action_index].log() // ∇φθ(xi)logf(ai|φθ(xi))
+        * (Q_ret - Vi).detach();               // (Qret − Vi)
+    torch::Tensor g_summand_bottom =
         (1.0 -
          this->acer_truncation_threshold_c / truncated_importance_weights[i])
-                .clamp_min(0.0)
-                .detach()               // [1-c/ρi(ai)]+
-            * policies_main[i].detach() // f(a|φθ(xi))
-            * policies_main[i].log()    // ∇φθ(xi)logf(a|φθ(xi))
-            * (Q_values_list[i][action_index] - Vi).detach(); // (Qθv(xi,ai)−Vi)
+            .clamp_min(0.0)
+            .detach()               // [1-c/ρi(ai)]+
+        * policies_main[i].detach() // f(a|φθ(xi))
+        * policies_main[i].log()    // ∇φθ(xi)logf(a|φθ(xi))
+        * (Q_values_list[i][action_index] - Vi).detach(); // (Qθv(xi,ai)−Vi)
+    torch::Tensor quantity_g = g_summand_top + g_summand_bottom.sum();
+
+
 
     ////////////////////////////////////////////////////////////////////////////
     actor_loss.backward();
