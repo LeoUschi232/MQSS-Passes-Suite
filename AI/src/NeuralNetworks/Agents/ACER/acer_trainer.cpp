@@ -181,7 +181,6 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "
                 << e.what() << std::endl;
-      continue;
     }
     //////////////////////////////////////////////////////////////////////////////
   }
