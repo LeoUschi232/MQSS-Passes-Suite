@@ -82,6 +82,15 @@ public:
    */
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
+  /**
+   * @param k
+   * @param rewards
+   * @param Q_ret
+   * @param policies_main
+   * @param policies_avg
+   * @param Q_values_list
+   * @param truncated_importance_weights
+   */
   void compute_losses_and_accumulate_gradients(
       int k,                                            // Nr taken steps
       const torch::Tensor &rewards,                     // Shape [k]
@@ -92,6 +101,11 @@ public:
       const torch::Tensor &truncated_importance_weights // Shape [k]
   );
 
+  /**
+   * Assumes gradients had been computed using the method
+   * compute_losses_and_accumulate_gradients in the trainer.
+   */
+  void update_assuming_gradients_are_computed();
   //////////////////////////////////////////////////////////////////////////////
   /// Saving and Loading
   void save_model() const override;
