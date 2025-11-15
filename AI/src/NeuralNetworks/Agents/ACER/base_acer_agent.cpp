@@ -13,7 +13,8 @@ extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->acer_truncation_threshold_c =
-      GLOBAL_PARAMS["acer_truncation_threshold_c"].to_double();
+      torch::tensor(GLOBAL_PARAMS["acer_truncation_threshold_c"].to_double(),
+                    GLOBAL_TENSOR_OPTIONS);
   this->acer_soft_update_alpha =
       GLOBAL_PARAMS["acer_soft_update_alpha"].to_double();
 }
@@ -76,23 +77,26 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
 }
 
 void BaseACERAgent::compute_losses_and_accumulate_gradients(
-    int k,                                            // Nr taken steps
-    const torch::Tensor &rewards,                     // Shape [k]
-    torch::Tensor Q_ret,                              // Shape []
-    const torch::Tensor &policies_main,               // Shape [k, NR_PASSES]
-    const torch::Tensor &policies_avg,                // Shape [k, NR_PASSES]
-    const torch::Tensor &Q_values_list,               // Shape [k, NR_PASSES]
-    const torch::Tensor &truncated_importance_weights // Shape [k]
+    int k,                                             // Nr taken steps
+    const torch::Tensor &rewards,                      // Shape [k]
+    torch::Tensor Q_ret,                               // Shape []
+    const torch::Tensor &policies_main,                // Shape [k, NR_PASSES]
+    const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
+    const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
+    const torch::Tensor &truncated_importance_weights, // Shape [k]
+    std::vector<unsigned int> action_indices           // Shape [k]
 ) {
   torch::Tensor state_values = torch::zeros({k}, GLOBAL_TENSOR_OPTIONS);
   for (int i = k - 1; i >= 0; i--) {
-    Q_ret = rewards[i] + this->discount_factor * Q_ret;
-    state_values[i] = Q_values_list[i].dot(policies_main[i]);
+    Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
+    state_values[i] = Q_values_list[i].dot(policies_main[i]).detach();
     ////////////////////////////////////////////////////////////////////////////
     /// TODO
-
-    ////////////////////////////////////////////////////////////////////////////
-    actor_loss.backward();
+    torch::Tensor quantity_g =
+        torch::min(this->acer_truncation_threshold_c,
+                   truncated_importance_weights[i])
+        ////////////////////////////////////////////////////////////////////////////
+        actor_loss.backward();
     critic_loss.backward();
   }
 }

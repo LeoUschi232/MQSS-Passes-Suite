@@ -15,7 +15,7 @@ enum class OptimizerType : int;
 class BaseACERAgent : public BaseActorCritic {
 protected:
   /// ACER specific attributes
-  double acer_truncation_threshold_c = 0.0;
+  torch::Tensor acer_truncation_threshold_c = torch::zeros({});
   double acer_soft_update_alpha = 0.0;
 
   /// ACER Additional Actor
