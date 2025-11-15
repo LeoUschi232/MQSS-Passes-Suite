@@ -177,7 +177,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           /*truncated_importance_weights=*/
           torch::stack(truncated_importance_weights).detach().to(device),
           /*action_indices=*/action_indices);
-
+      agent->update_assuming_gradients_are_computed();
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "
                 << e.what() << std::endl;

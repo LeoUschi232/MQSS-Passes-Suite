@@ -94,7 +94,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
-    /// Computing quantities needed for trust region updating
+    /// 1. Computing quantities needed for trust region updating
     torch::Tensor g_summand_top =
         torch::min(this->acer_truncation_threshold_c,
                    truncated_importance_weights[i][action_index])
@@ -112,19 +112,27 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor quantity_g = g_summand_top + g_summand_bottom.sum();
     // Technically the ACER trainer should detach the exponentially moving
     // average policy, but we are detaching it here again just to be sure.
-    torch::Tensor quantity_k =
-        this->compute_KL_divergence(policies_avg[i].detach(), policies_main[i]); // ∇φθ(xi)DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
-
+    torch::Tensor quantity_k = this->compute_KL_divergence(
+        /*policy_p=*/policies_avg[i].detach(),
+        /*policy_q=*/policies_main[i]); // ∇φθ(xi)DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
+    ////////////////////////////////////////////////////////////////////////////
+    /// 2. Accumulating gradients with regard to θ and θv
     torch::Tensor actor_loss =
-        quantity_g -
-        torch::max(torch::tensor(0.0, GLOBAL_TENSOR_OPTIONS),
-                   (quantity_k.dot(quantity_g) - this->acer_trust_region_delta) / (
-                       quantity_k.square() + this->division_by_zero_block)
-                   )
-
-        ////////////////////////////////////////////////////////////////////////////
-        actor_loss.backward();
+        quantity_g // g
+        - torch::max(
+              torch::tensor(0.0, GLOBAL_TENSOR_OPTIONS),
+              (quantity_k.dot(quantity_g) - this->acer_trust_region_delta) /
+                  (quantity_k.square().sum() +
+                   this->division_by_zero_block)) // max{0,(kTg−δ)/(‖k‖^2)}
+              * quantity_k;                       // k
+    // Option 1
+    torch::Tensor critic_loss = (Q_ret - Q_values_list[i][action_index]).pow(2);
+    actor_loss.backward();
     critic_loss.backward();
+    ////////////////////////////////////////////////////////////////////////////
+    /// 3. Update Retrace target
+    Q_ret = Vi + truncated_importance_weights[i][action_index] *
+                     (Q_ret - Q_values_list[i][action_index]);
   }
 }
 
