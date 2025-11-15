@@ -84,7 +84,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
     const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
     const torch::Tensor &truncated_importance_weights, // Shape [k]
-    std::vector<unsigned int> action_indices           // Shape [k]
+    const std::vector<unsigned int> &action_indices           // Shape [k]
 ) {
   torch::Tensor state_values = torch::zeros({k}, GLOBAL_TENSOR_OPTIONS);
   for (int i = k - 1; i >= 0; i--) {
