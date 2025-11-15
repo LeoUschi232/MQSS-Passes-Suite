@@ -46,6 +46,12 @@ bool BaseACERAgent::initialize(
   return true;
 }
 
+void BaseACERAgent::reset_gradients() {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
+}
+
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
 BaseACERAgent::forward(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);

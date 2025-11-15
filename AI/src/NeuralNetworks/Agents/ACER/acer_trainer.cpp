@@ -57,7 +57,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   //////////////////////////////////////////////////////////////////////////////
-  /// Train ACER Agent
+  /// Algorithm 1 ACER for discrete actions (master algorithm)
   std::vector<ACER_Trajectory> replay_buffer;
   replay_buffer.reserve(acer_max_nr_trajectories);
   unsigned int off_policy_episodes_left = 0u;
@@ -91,6 +91,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       off_policy_episodes_left = 0u;
       on_policy = true;
     }
+    //////////////////////////////////////////////////////////////////////////////
+    /// Algorithm 2 ACER for discrete actions
+    agent->reset_gradients();
     if (!on_policy) {
       unsigned int replay_index = randomInt(0u, replay_buffer.size());
       auto [seed, elements] = replay_buffer[replay_index];
