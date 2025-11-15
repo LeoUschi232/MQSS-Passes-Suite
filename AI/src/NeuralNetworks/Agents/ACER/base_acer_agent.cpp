@@ -74,7 +74,7 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
 void BaseACERAgent::compute_losses(
     int k,                              // Nr taken steps
     const torch::Tensor &rewards,       // Shape [k]
-    torch::Tensor &Q_ret,               // Shape []
+    torch::Tensor Q_ret,               // Shape []
     const torch::Tensor &policies_main, // Shape [k, NR_PASSES]
     const torch::Tensor &policies_avg,  // Shape [k, NR_PASSES]
     const torch::Tensor &Q_values_list  // Shape [k, NR_PASSES]

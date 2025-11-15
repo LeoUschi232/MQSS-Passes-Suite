@@ -23,7 +23,6 @@ namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
-
 std::unordered_map<std::string, std::string>
 train_acer(const std::unique_ptr<BaseACERAgent> &agent,
            const std::string &dataset) {
@@ -154,14 +153,12 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       }
       assert(step_idx > 0u);
       agent->compute_losses(
-        /*k=*/step_idx,
-        /*rewards=*/torch::stack(rewards).to(device),
-        /*Q_ret=*/Q_ret.to(device),
-/*policies_main=*/torch::stack(policies_main).to(device),
-/*policies_avg=*/torch::stack(policies_avg).to(device),
-/*Q_values_list=*/torch::stack(Q_values_list).to(device)
-        );
-
+          /*k=*/step_idx,
+          /*rewards=*/torch::stack(rewards).to(device),
+          /*Q_ret=*/Q_ret.to(device),
+          /*policies_main=*/torch::stack(policies_main).to(device),
+          /*policies_avg=*/torch::stack(policies_avg).to(device),
+          /*Q_values_list=*/torch::stack(Q_values_list).to(device));
 
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "
