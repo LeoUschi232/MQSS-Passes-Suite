@@ -90,8 +90,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     const std::vector<unsigned int> &action_indices    // Shape [k]
 ) {
   for (int i = k - 1; i >= 0; i--) {
-    Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
-    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
+    Q_ret = rewards[i] + this->discount_factor * Q_ret;
+    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]);
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
     /// 1. Computing quantities needed for trust region updating
@@ -132,6 +132,62 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     /// 3. Update Retrace target
     Q_ret = Vi + truncated_importance_weights[i][action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
+  }
+}
+
+// In compute_losses_and_accumulate_gradients signature:
+void BaseACERAgent::groks_implementation(
+    int k,
+    const torch::Tensor &rewards,
+    torch::Tensor Q_ret,
+    const torch::Tensor &policies_main,
+    const torch::Tensor &policies_avg,
+    const torch::Tensor &Q_values_list,
+    const torch::Tensor &behavior_policies,  // New arg: Shape [k, NR_PASSES]
+    const std::vector<unsigned int> &action_indices
+) {
+  for (int i = k - 1; i >= 0; i--) {
+    Q_ret = rewards[i] + this->discount_factor * Q_ret;
+    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]);
+    unsigned int action_index = action_indices[i];
+    torch::Tensor rho = policies_main[i] / (behavior_policies[i] + 1e-8);
+    torch::Tensor bar_rho = torch::min(this->acer_truncation_threshold_c, rho);
+    torch::Tensor bar_rho_ai = bar_rho[action_index];
+    torch::Tensor log_pi = policies_main[i].log();
+    torch::Tensor adv = (Q_ret - Vi).detach();
+    torch::Tensor surr1 = bar_rho_ai * log_pi[action_index] * adv;
+    torch::Tensor coeff = (1.0 - this->acer_truncation_threshold_c / rho).clamp_min(0.0);
+    torch::Tensor advs = (Q_values_list[i] - Vi).detach();
+    torch::Tensor surr2 = (coeff * policies_main[i] * log_pi * advs).sum();
+    torch::Tensor surrogate = surr1 + surr2;
+    auto actor_params = this->actor->parameters(/*recurse=*/true);
+    auto g_outputs = torch::autograd::grad({surrogate}, actor_params, /*grad_outputs=*/{}, /*retain_graph=*/true);
+    std::vector<torch::Tensor> g_flat_list;
+    for (const auto& gr : g_outputs) {
+      g_flat_list.push_back(gr.contiguous().view(-1));
+    }
+    torch::Tensor g_flat = torch::cat(g_flat_list);
+    torch::Tensor kl = (policies_avg[i] * (policies_avg[i].log() - log_pi)).sum();
+    auto k_outputs = torch::autograd::grad({kl}, actor_params, /*grad_outputs=*/{}, /*retain_graph=*/true);
+    std::vector<torch::Tensor> k_flat_list;
+    for (const auto& kr : k_outputs) {
+      k_flat_list.push_back(kr.contiguous().view(-1));
+    }
+    torch::Tensor k_flat = torch::cat(k_flat_list);
+    double ktg = g_flat.dot(k_flat).item<double>();
+    double knorm2 = k_flat.pow(2).sum().item<double>();
+    double proj_val = std::max(0.0, (ktg - this->acer_trust_region_delta.item<double>()) / (knorm2 + this->division_by_zero_block));
+    torch::Tensor proj = torch::tensor(proj_val, GLOBAL_TENSOR_OPTIONS);
+    for (size_t p = 0; p < actor_params.size(); ++p) {
+      torch::Tensor& param_grad = actor_params[p].mutable_grad();
+      if (!param_grad.defined()) {
+        param_grad = torch::zeros_like(actor_params[p]);
+      }
+      param_grad -= (g_outputs[p] - proj * k_outputs[p]);
+    }
+    torch::Tensor critic_loss = (Q_ret - Q_values_list[i][action_index]).pow(2);
+    critic_loss.backward();
+    Q_ret = bar_rho_ai * (Q_ret - Q_values_list[i][action_index]) + Vi;
   }
 }
 
