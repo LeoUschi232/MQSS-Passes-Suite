@@ -57,7 +57,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   //////////////////////////////////////////////////////////////////////////////
-  /// TODO: Train ACER Agent
+  /// Train ACER Agent
   std::vector<ACER_Trajectory> replay_buffer;
   replay_buffer.reserve(acer_max_nr_trajectories);
   unsigned int off_policy_episodes_left = 0u;
@@ -157,8 +157,12 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           /*rewards=*/torch::stack(rewards).to(device),
           /*Q_ret=*/Q_ret.to(device),
           /*policies_main=*/torch::stack(policies_main).to(device),
-          /*policies_avg=*/torch::stack(policies_avg).to(device),
-          /*Q_values_list=*/torch::stack(Q_values_list).to(device));
+          /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
+          /*Q_values_list=*/torch::stack(Q_values_list).to(device),
+          /*truncated_importance_weights=*/
+          torch::stack(truncated_importance_weights).detach().to(device)
+
+      );
 
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "

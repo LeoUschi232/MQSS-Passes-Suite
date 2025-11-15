@@ -55,16 +55,14 @@ BaseACERAgent::forward(const torch::Tensor &observation) {
 
 torch::Tensor BaseACERAgent::get_value_main(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  torch::Tensor policy_main = this->actor->forward(x);
-  torch::Tensor Q_values = this->critic->forward(x);
-  return policy_main.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
+  return this->actor->forward(x).dot(this->critic->forward(x)).unsqueeze(-1);
 }
 
 torch::Tensor BaseACERAgent::get_value_avg(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  torch::Tensor policy_avg = this->actor_avg->forward(x);
-  torch::Tensor Q_values = this->critic->forward(x);
-  return policy_avg.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
+  return this->actor_avg->forward(x)
+      .dot(this->critic->forward(x))
+      .unsqueeze(-1);
 }
 
 torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
@@ -72,12 +70,13 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
 }
 
 void BaseACERAgent::compute_losses(
-    int k,                              // Nr taken steps
-    const torch::Tensor &rewards,       // Shape [k]
-    torch::Tensor Q_ret,               // Shape []
-    const torch::Tensor &policies_main, // Shape [k, NR_PASSES]
-    const torch::Tensor &policies_avg,  // Shape [k, NR_PASSES]
-    const torch::Tensor &Q_values_list  // Shape [k, NR_PASSES]
+    int k,                                            // Nr taken steps
+    const torch::Tensor &rewards,                     // Shape [k]
+    torch::Tensor Q_ret,                              // Shape []
+    const torch::Tensor &policies_main,               // Shape [k, NR_PASSES]
+    const torch::Tensor &policies_avg,                // Shape [k, NR_PASSES]
+    const torch::Tensor &Q_values_list,               // Shape [k, NR_PASSES]
+    const torch::Tensor &truncated_importance_weights // Shape [k]
 ) {
   torch::Tensor state_values = torch::zeros({k}, GLOBAL_TENSOR_OPTIONS);
   for (int i = k - 1; i >= 0; i--) {
