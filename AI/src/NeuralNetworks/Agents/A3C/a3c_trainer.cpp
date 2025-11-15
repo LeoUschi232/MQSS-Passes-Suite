@@ -26,6 +26,7 @@ extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 std::unordered_map<std::string, std::string>
 train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
@@ -59,8 +60,6 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
 
-  torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   float global_max_reward = -std::numeric_limits<float>::max();
   int64_t T = max_steps_per_episode;
 
@@ -133,7 +132,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_log_probs_vector.push_back(log_action_probs);
             episode_values_vector.push_back(state_values);
             episode_entropies_vector.push_back(step_entropy);
-            episode_rewards_vector.push_back(torch::tensor(reward, options));
+            episode_rewards_vector.push_back(
+                torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
             // Only check truncated so that bootstrapping is applied for
             // truncated but not for terminated environments.
             if (truncated) {
@@ -245,8 +245,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-  torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
 
   std::cout << "Beginning training." << std::endl;
@@ -301,7 +299,8 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
         episode_values_vector.push_back(state_values);
         episode_entropies_vector.push_back(step_entropy);
         total_episode_reward += reward;
-        episode_rewards_vector.push_back(torch::tensor(reward, options));
+        episode_rewards_vector.push_back(
+            torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         if (truncated) {
           add_bootstrap = true;
           break;
@@ -321,7 +320,8 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
         episode_values_vector.push_back(
             agent->get_value(environment.get_observation_as_torch_tensor()));
       } else {
-        episode_values_vector.push_back(torch::zeros({}, options));
+        episode_values_vector.push_back(
+            torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
       }
       std::string main_message =
           "Reward: " + std::to_string(total_episode_reward) +

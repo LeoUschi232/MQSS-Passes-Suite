@@ -21,6 +21,9 @@ extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
+
 std::unordered_map<std::string, std::string>
 train_acer(const std::unique_ptr<BaseACERAgent> &agent,
            const std::string &dataset) {
@@ -51,8 +54,6 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-  torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
@@ -133,7 +134,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
         truncated_importance_weights.push_back(torch::min(
-            torch::tensor(1.0, options),
+            torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
             policy_main[action_index] /
                 trajectory_elements[step_idx].action_probs[action_index]));
         policies_main.push_back(policy_main);
@@ -144,7 +145,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           break;
         }
       }
-      torch::Tensor Q_ret = torch::zeros({}, options);
+      torch::Tensor Q_ret = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
       if (step_idx < max_steps_per_episode) {
         torch::NoGradGuard _;
         torch::Tensor observation =

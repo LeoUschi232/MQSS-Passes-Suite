@@ -19,6 +19,8 @@
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
 BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->sdsac_temperature_alpha =
@@ -137,9 +139,8 @@ BaseSDSACAgent::get_loss(
     expectation_Q2 = action_probs_next.dot(
         Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
   } else {
-    const torch::TensorOptions scalar_options = reward.options();
-    expectation_Q1 = torch::zeros({}, scalar_options);
-    expectation_Q2 = torch::zeros({}, scalar_options);
+    expectation_Q1 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
+    expectation_Q2 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
   }
   torch::Tensor y = reward + this->discount_factor * 0.5 *
                                  (expectation_Q1 + expectation_Q2).detach();
@@ -152,10 +153,7 @@ BaseSDSACAgent::get_loss(
   torch::Tensor log_action_probs = action_probs.log();
   torch::Tensor target_entropy =
       this->sdsac_entropy_target_weight *
-      torch::tensor(
-          action_probs.size(0),
-          torch::TensorOptions().dtype(torch::kFloat32).device(this->device))
-          .log();
+      torch::tensor(action_probs.size(0), GLOBAL_TENSOR_OPTIONS).log();
   return {/*actor_loss=*/action_probs.dot(
               this->sdsac_temperature_alpha * log_action_probs -
               torch::min(Q1_main, Q2_main).detach()) +

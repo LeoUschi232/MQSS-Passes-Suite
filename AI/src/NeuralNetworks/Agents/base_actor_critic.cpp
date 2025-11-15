@@ -21,6 +21,7 @@
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
     : AbstractAgent(max_qubits) {
@@ -54,15 +55,14 @@ torch::Tensor BaseActorCritic::compute_advantages(
   // An episode generates T rewards from R_1 to R_T.
   // An episode generates T+1 states from S_0 to S_T.
   int T = rewards.size(0);
-  const torch::TensorOptions options = rewards.options();
-  torch::Tensor advantages = torch::zeros({T}, options);
+  torch::Tensor advantages = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
 
   // Compute the advantages using Generalized Advantage Estimation.
   // Temporal Difference is a method used in Reinforcement Learning to estimate
   // the value function of a state based on the difference between the immediate
   // reward obtained from a current state and the estimated value of the next
   // state.
-  torch::Tensor A_gae = torch::zeros({}, options);
+  torch::Tensor A_gae = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
   for (int t = T - 1; t >= 0; t--) {
     // Temporal Difference Error of V(s) with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
@@ -85,8 +85,7 @@ BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
   if (T <= 0) {
     return torch::tensor({}, rewards.options());
   }
-  const torch::TensorOptions options = rewards.options();
-  torch::Tensor rewards_to_go = torch::zeros({T}, options);
+  torch::Tensor rewards_to_go = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
   rewards_to_go[T - 1] = rewards[T - 1];
   for (int t = T - 2; t >= 0; t--) {
     rewards_to_go[t] =

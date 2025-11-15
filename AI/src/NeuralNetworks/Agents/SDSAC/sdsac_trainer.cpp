@@ -18,6 +18,7 @@ extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 std::unordered_map<std::string, std::string>
 train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
@@ -45,8 +46,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-  torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
@@ -108,7 +107,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         entropies_vector.push_back(entropy);
         auto [reward, terminated, truncated] =
             environment.step(action.item<int>());
-        rewards_vector.push_back(torch::tensor(reward, options));
+        rewards_vector.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         total_episode_reward += reward;
         if (truncated) {
           truncated_episode = true;
