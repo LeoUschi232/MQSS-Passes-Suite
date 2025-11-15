@@ -97,6 +97,12 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
   }
 }
 
+void BaseACERAgent::update_assuming_gradients_are_computed() {
+  this->actor_optimizer->step();
+  this->critic_optimizer->step();
+
+}
+
 unsigned int
 BaseACERAgent::select_greedy_action(const torch::Tensor &observation) {
   return this->actor_avg->forward(observation)
