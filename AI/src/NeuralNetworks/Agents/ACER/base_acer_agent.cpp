@@ -150,12 +150,14 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     unsigned int offset = 0;
     for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
          param_idx++) {
-      unsigned int numel = actor_parameters[param_idx].numel();
-      actor_parameters[param_idx].mutable_grad() =
+      torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
+      unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
+      actor_parameter_tensor.mutable_grad() +=
           adjusted_actor_gradients
-              .slice(/*dim=*/0, /*start=*/offset, /*end=*/offset + numel)
-              .view_as(actor_parameters[param_idx].grad());
-      offset += numel;
+              .slice(/*dim=*/0, /*start=*/offset,
+                     /*end=*/offset + nr_trainable_parameters)
+              .reshape(actor_parameter_tensor.sizes());
+      offset += nr_trainable_parameters;
     }
     torch::Tensor critic_loss =
         (Q_ret - Q_values_list[i][action_index]).square();
