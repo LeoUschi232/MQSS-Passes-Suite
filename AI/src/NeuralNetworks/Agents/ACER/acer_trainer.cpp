@@ -142,7 +142,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
-        // One element of truncated_importance_weights has shape [NR_PASSES]
+        // One element of truncated_importance_weights has shape [NR_PASSES].
+        // This is because we need to sum a value which is dependent on ρi(a)
+        // over all values of a.
         truncated_importance_weights.push_back(
             torch::min(torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
                        policy_main / trajectory_elements[step_idx].action_probs)
@@ -150,7 +152,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
         Q_values_list.push_back(Q_values);
-         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+        rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
         total_episode_reward += reward;
         if (terminated || truncated) {

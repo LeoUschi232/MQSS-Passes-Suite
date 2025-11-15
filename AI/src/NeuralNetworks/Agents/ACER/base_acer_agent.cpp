@@ -94,11 +94,13 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     /// Computing quantities needed for trust region updating
     torch::Tensor quantity_g =
         torch::min(this->acer_truncation_threshold_c,
-                   truncated_importance_weights[i])
+                   truncated_importance_weights[i][action_index])
             .detach()                          // min{c,ρi(ai)}
         * policies_main[i][action_index].log() // ∇φθ′(xi)logf(ai|φθ′(xi))
         * (Q_ret - Vi).detach()              // (Qret − Vi)
-+
++ (1.0 - this->acer_truncation_threshold_c / truncated_importance_weights[i]).clamp_min(0.0).detach() // [1-c/ρi(ai)]+
+    *
+
 
 
 
