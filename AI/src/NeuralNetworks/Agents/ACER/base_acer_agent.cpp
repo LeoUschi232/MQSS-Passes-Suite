@@ -88,6 +88,12 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
   for (int i = k - 1; i >= 0; i--) {
     Q_ret = rewards[i] + this->discount_factor * Q_ret;
     state_values[i] = Q_values_list[i].dot(policies_main[i]);
+    ////////////////////////////////////////////////////////////////////////////
+    /// TODO
+
+    ////////////////////////////////////////////////////////////////////////////
+    actor_loss.backward();
+    critic_loss.backward();
   }
 }
 
