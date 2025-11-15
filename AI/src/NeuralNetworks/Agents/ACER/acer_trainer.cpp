@@ -142,7 +142,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
                     trajectory_elements[step_idx].action_probs[action_index])
                 .detach());
         policies_main.push_back(policy_main);
-        policies_avg.push_back(policy_avg);
+        policies_avg.push_back(policy_avg.detach());
         Q_values_list.push_back(Q_values);
         total_episode_reward += reward;
         if (terminated || truncated) {
