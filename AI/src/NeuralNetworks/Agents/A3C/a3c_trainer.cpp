@@ -46,7 +46,6 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       GLOBAL_PARAMS["stop_training_on_error"].to_bool();
   bool save_agent_after_training =
       GLOBAL_PARAMS["save_agent_after_training"].to_bool();
-  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_asynchronous_agents <= 0 || a3c_max_async_steps <= 0) {
     std::cerr << "Nothing to train." << std::endl;
@@ -156,7 +155,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
             episode_values_vector.push_back(agent->get_value(
                 environment.get_observation_as_torch_tensor()));
           } else {
-            episode_values_vector.push_back(torch::zeros({}, options));
+            episode_values_vector.push_back(
+                torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
           }
           auto [actor_loss, critic_loss] = agent->get_losses(
               /*log_action_probs=*/torch::stack(episode_log_probs_vector),
@@ -230,7 +230,6 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
       GLOBAL_PARAMS["stop_training_on_error"].to_bool();
   bool save_agent_after_training =
       GLOBAL_PARAMS["save_agent_after_training_"].to_bool();
-  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
 
   if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
     std::cerr << "Nothing to train." << std::endl;

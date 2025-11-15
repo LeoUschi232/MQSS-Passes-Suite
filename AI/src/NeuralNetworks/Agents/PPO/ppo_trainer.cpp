@@ -177,7 +177,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         state_values_vector.push_back(
             agent->get_value(rollout_old.observations.back()));
       } else {
-        state_values_vector.push_back(torch::zeros({}, options));
+        state_values_vector.push_back(torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
       }
 
       //////////////////////////////////////////////////////////////////////////
