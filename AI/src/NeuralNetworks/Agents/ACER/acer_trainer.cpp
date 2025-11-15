@@ -33,6 +33,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       GLOBAL_PARAMS["max_steps_per_episode"].to_int();
   unsigned int save_agent_every_ith_episode =
       GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool stop_training_on_error =
+      GLOBAL_PARAMS["stop_training_on_error"].to_bool();
   bool save_agent_after_training =
       GLOBAL_PARAMS["save_agent_after_training"].to_bool();
   unsigned int acer_max_nr_trajectories =
@@ -53,7 +55,6 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-  int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
   //////////////////////////////////////////////////////////////////////////////
@@ -178,9 +179,13 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           torch::stack(truncated_importance_weights).detach().to(device),
           /*action_indices=*/action_indices);
       agent->update_assuming_gradients_are_computed();
-    } catch (const std::exception &e) {
+    } catch (const std::exception &error) {
       std::cerr << "Exception during episode " << episode_idx << ": "
-                << e.what() << std::endl;
+                << error.what() << std::endl;
+      if (stop_training_on_error) {
+        interrupted = 1;
+        break;
+      }
     }
     //////////////////////////////////////////////////////////////////////////////
   }
