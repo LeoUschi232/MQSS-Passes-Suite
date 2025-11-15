@@ -105,10 +105,17 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
       std::vector<torch::Tensor> truncated_importance_weights;
+      truncated_importance_weights.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_main;
+      policies_main.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_avg;
+      policies_avg.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> Q_values_list;
+      Q_values_list.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> rewards;
+      rewards.reserve(max_steps_per_episode);
+      std::vector<unsigned int> action_indices;
+      action_indices.reserve(max_steps_per_episode);
       unsigned int step_idx;
       for (step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
         if (interrupted) {
@@ -135,15 +142,16 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
+        // One element of truncated_importance_weights has shape [NR_PASSES]
         truncated_importance_weights.push_back(
-            torch::min(
-                torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
-                policy_main[action_index] /
-                    trajectory_elements[step_idx].action_probs[action_index])
+            torch::min(torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
+                       policy_main / trajectory_elements[step_idx].action_probs)
                 .detach());
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
         Q_values_list.push_back(Q_values);
+         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+        action_indices.push_back(action_index);
         total_episode_reward += reward;
         if (terminated || truncated) {
           break;
@@ -165,9 +173,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
           /*Q_values_list=*/torch::stack(Q_values_list).to(device),
           /*truncated_importance_weights=*/
-          torch::stack(truncated_importance_weights).detach().to(device)
-
-      );
+          torch::stack(truncated_importance_weights).detach().to(device),
+          /*action_indices=*/action_indices);
 
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "

@@ -84,19 +84,31 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
     const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
     const torch::Tensor &truncated_importance_weights, // Shape [k]
-    const std::vector<unsigned int> &action_indices           // Shape [k]
+    const std::vector<unsigned int> &action_indices    // Shape [k]
 ) {
-  torch::Tensor state_values = torch::zeros({k}, GLOBAL_TENSOR_OPTIONS);
   for (int i = k - 1; i >= 0; i--) {
     Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
-    state_values[i] = Q_values_list[i].dot(policies_main[i]).detach();
+    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
+    unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
-    /// TODO
+    /// Computing quantities needed for trust region updating
     torch::Tensor quantity_g =
         torch::min(this->acer_truncation_threshold_c,
                    truncated_importance_weights[i])
-        ////////////////////////////////////////////////////////////////////////////
-        actor_loss.backward();
+            .detach()                          // min{c,ρi(ai)}
+        * policies_main[i][action_index].log() // ∇φθ′(xi)logf(ai|φθ′(xi))
+        * (Q_ret - Vi).detach()              // (Qret − Vi)
++
+
+
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    actor_loss.backward();
     critic_loss.backward();
   }
 }
