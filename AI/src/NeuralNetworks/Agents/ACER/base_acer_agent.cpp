@@ -95,19 +95,17 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor quantity_g =
         torch::min(this->acer_truncation_threshold_c,
                    truncated_importance_weights[i][action_index])
-            .detach()                          // min{c,ρi(ai)}
-        * policies_main[i][action_index].log() // ∇φθ′(xi)logf(ai|φθ′(xi))
-        * (Q_ret - Vi).detach()              // (Qret − Vi)
-+ (1.0 - this->acer_truncation_threshold_c / truncated_importance_weights[i]).clamp_min(0.0).detach() // [1-c/ρi(ai)]+
-    *
-
-
-
-
-
-
-
-
+                .detach()                          // min{c,ρi(ai)}
+            * policies_main[i][action_index].log() // ∇φθ(xi)logf(ai|φθ(xi))
+            * (Q_ret - Vi).detach()                // (Qret − Vi)
+        +
+        (1.0 -
+         this->acer_truncation_threshold_c / truncated_importance_weights[i])
+                .clamp_min(0.0)
+                .detach()               // [1-c/ρi(ai)]+
+            * policies_main[i].detach() // f(a|φθ(xi))
+            * policies_main[i].log()    // ∇φθ(xi)logf(a|φθ(xi))
+            * (Q_values_list[i][action_index] - Vi).detach(); // (Qθv(xi,ai)−Vi)
 
     ////////////////////////////////////////////////////////////////////////////
     actor_loss.backward();
