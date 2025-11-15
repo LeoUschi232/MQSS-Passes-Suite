@@ -101,8 +101,15 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     try {
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
-      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode;
-           step_idx++) {
+      std::vector<torch::Tensor> policies_main;
+      std::vector<torch::Tensor> policies_avg;
+      std::vector<torch::Tensor> Q_values_list;
+      std::vector<torch::Tensor> truncated_importance_weights;
+      unsigned int step_idx;
+      for (step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
+        if (interrupted) {
+          break;
+        }
         updateProgresses(
             {{episode_idx, nr_episodes}, {step_idx + 1, max_steps_per_episode}},
             /*display_message=*/"Reward: " +
@@ -114,16 +121,34 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         auto [policy_main, policy_avg, Q_values] = agent->forward(observation);
         unsigned int action_index;
         if (on_policy) {
-          auto [action, entropy] =
-              agent->select_action(policy_main);
+          torch::Tensor action = agent->select_action(policy_main);
           action_index = action.item<unsigned int>();
+          assert(trajectory_elements.size() == step_idx);
+          trajectory_elements.push_back(
+              {action_index, /*action_probs=*/policy_main.detach()});
+        } else {
+          action_index = trajectory_elements[step_idx].action_index;
         }
-
-        if (interrupted) {
+        auto [reward, terminated, truncated] =
+            environment.step(/*action=*/action_index);
+        truncated_importance_weights.push_back(torch::min(
+            torch::tensor(1.0, options),
+            policy_main[action_index] /
+                trajectory_elements[step_idx].action_probs[action_index]));
+        policies_main.push_back(policy_main);
+        policies_avg.push_back(policy_avg);
+        Q_values_list.push_back(Q_values);
+        total_episode_reward += reward;
+        if (terminated || truncated) {
           break;
         }
-        if (on_policy) {
-        }
+      }
+      torch::Tensor Q_ret = torch::zeros({}, options);
+      if (step_idx < max_steps_per_episode) {
+        torch::NoGradGuard _;
+        torch::Tensor observation =
+            environment.get_observation_as_torch_tensor();
+        Q_ret = agent->get_value(observation);
       }
     } catch (const std::exception &e) {
       std::cerr << "Exception during episode " << episode_idx << ": "

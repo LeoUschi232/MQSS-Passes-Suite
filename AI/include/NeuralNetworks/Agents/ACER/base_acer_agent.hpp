@@ -66,8 +66,7 @@ public:
    * @param action_probs
    * @return [action, entropy]
    */
-  std::pair<torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &action_probs);
+  torch::Tensor select_action(const torch::Tensor &action_probs);
 
   /**
    * @param observation

@@ -57,14 +57,8 @@ torch::Tensor BaseACERAgent::get_value(const torch::Tensor &observation) {
   return policy_avg.detach().dot(Q_values.detach()).detach().unsqueeze(-1);
 }
 
-std::pair<torch::Tensor, torch::Tensor>
-BaseACERAgent::select_action(const torch::Tensor &action_probs) {
-  return {
-      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
-      -(action_probs * action_probs.log())
-           .sum(/*dim=*/-1)
-           .squeeze(-1) // Shape []
-  };
+torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
+  return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
 unsigned int
