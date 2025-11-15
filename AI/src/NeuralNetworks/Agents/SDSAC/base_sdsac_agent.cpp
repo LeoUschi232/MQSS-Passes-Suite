@@ -185,7 +185,8 @@ void BaseSDSACAgent::update_parameters(
   this->critic_Q2_optimizer->step();
   {
     torch::NoGradGuard no_grad_guard;
-    for (const auto &pair : this->critic->named_parameters(/*recurse=*/true)) {
+    for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
+         this->critic->named_parameters(/*recurse=*/true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
@@ -193,7 +194,7 @@ void BaseSDSACAgent::update_parameters(
       param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
       param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
-    for (const auto &pair :
+    for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
          this->critic_Q2_main->named_parameters(/*recurse=*/true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
