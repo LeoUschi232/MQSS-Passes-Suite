@@ -125,7 +125,6 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
                   (quantity_k.square().sum() +
                    this->division_by_zero_block)) // max{0,(kTg−δ)/(‖k‖^2)}
               * quantity_k;                       // k
-    // Option 1
     torch::Tensor critic_loss = (Q_ret - Q_values_list[i][action_index]).pow(2);
     actor_loss.backward();
     critic_loss.backward();
