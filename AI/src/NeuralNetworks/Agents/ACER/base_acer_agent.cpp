@@ -14,8 +14,8 @@ BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->acer_truncation_threshold_c =
       GLOBAL_PARAMS["acer_truncation_threshold_c"].to_double();
-  this->acer_trust_region_delta =
-      GLOBAL_PARAMS["acer_trust_region_delta"].to_double();
+  this->acer_soft_update_alpha =
+      GLOBAL_PARAMS["acer_soft_update_alpha"].to_double();
 }
 
 bool BaseACERAgent::initialize(
