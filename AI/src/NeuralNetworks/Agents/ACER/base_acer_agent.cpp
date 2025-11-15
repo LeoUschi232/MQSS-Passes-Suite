@@ -168,10 +168,11 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
 
 void BaseACERAgent::update_assuming_gradients_are_computed() {
   this->actor_optimizer->step();
-  this->critic_optimizer->step();
+  this->critic_optimizer->step(); //
   {
     torch::NoGradGuard no_grad_guard;
-    for (const auto &pair : this->actor->named_parameters(/*recurse=*/true)) {
+    for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
+         this->actor->named_parameters(/*recurse=*/true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
