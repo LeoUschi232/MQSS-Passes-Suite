@@ -107,8 +107,10 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
         * policies_main[i].log()    // ∇φθ(xi)logf(a|φθ(xi))
         * (Q_values_list[i][action_index] - Vi).detach(); // (Qθv(xi,ai)−Vi)
     torch::Tensor quantity_g = g_summand_top + g_summand_bottom.sum();
-
-
+    // Technically the ACER trainer should detach the exponentially moving
+    // average policy, but we are detaching it here again just to be sure.
+    torch::Tensor quantity_k =
+        this->compute_KL_divergence(policies_avg[i].detach(), policies_main[i]);
 
     ////////////////////////////////////////////////////////////////////////////
     actor_loss.backward();

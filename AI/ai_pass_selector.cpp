@@ -196,6 +196,7 @@ void load_default_params() {
       {"acer_ratio_of_replay", 8},
       {"acer_truncation_threshold_c", 10.0},
       {"acer_soft_update_alpha", 0.99},
+      {"acer_trust_region_delta", 1.0},
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},
