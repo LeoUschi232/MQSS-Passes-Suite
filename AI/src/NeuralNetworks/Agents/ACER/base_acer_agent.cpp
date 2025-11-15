@@ -69,7 +69,7 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
-void BaseACERAgent::compute_losses(
+void BaseACERAgent::compute_losses_and_accumulate_gradients(
     int k,                                            // Nr taken steps
     const torch::Tensor &rewards,                     // Shape [k]
     torch::Tensor Q_ret,                              // Shape []

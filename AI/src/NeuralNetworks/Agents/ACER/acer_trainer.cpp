@@ -152,7 +152,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         Q_ret = agent->get_value_main(observation);
       }
       assert(step_idx > 0u);
-      agent->compute_losses(
+      agent->compute_losses_and_accumulate_gradients(
           /*k=*/step_idx,
           /*rewards=*/torch::stack(rewards).to(device),
           /*Q_ret=*/Q_ret.to(device),

@@ -81,7 +81,7 @@ public:
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
   void
-  compute_losses(int k,                              // Nr taken steps
+  compute_losses_and_accumulate_gradients(int k,                              // Nr taken steps
                  const torch::Tensor &rewards,       // Shape [k]
                  torch::Tensor Q_ret,                // Shape []
                  const torch::Tensor &policies_main, // Shape [k, NR_PASSES]
