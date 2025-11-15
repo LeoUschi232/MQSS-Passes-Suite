@@ -94,6 +94,12 @@ BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
   return rewards_to_go;
 }
 
+torch::Tensor
+BaseActorCritic::compute_KL_divergence(const torch::Tensor &policy_p,
+                                       const torch::Tensor &policy_q) const {
+  return (policy_p * (policy_p.log() - policy_q.log())).sum(-1);
+}
+
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
     size_t total = 0, bad = 0;
