@@ -8,6 +8,8 @@
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
 BaseACERAgent::BaseACERAgent(unsigned int max_qubits)
     : BaseActorCritic(max_qubits) {
   this->acer_truncation_threshold_c =
@@ -69,18 +71,19 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
-void BaseACERAgent::compute_losses(int k,                  // Nr taken steps
-                                   const torch::Tensor &rewards, // Shape [k]
-                                   torch::Tensor &Q_ret    // Shape []
+void BaseACERAgent::compute_losses(
+    int k,                              // Nr taken steps
+    const torch::Tensor &rewards,       // Shape [k]
+    torch::Tensor &Q_ret,               // Shape []
+    const torch::Tensor &policies_main, // Shape [k, NR_PASSES]
+    const torch::Tensor &policies_avg,  // Shape [k, NR_PASSES]
+    const torch::Tensor &Q_values_list  // Shape [k, NR_PASSES]
 ) {
-  torch::Tensor state_values = torch::zeros({k}, rewards.options());
- for (int i = k-1; i >= 0; i--) {
-   Q_ret = rewards[i] + this->discount_factor * Q_ret;
-
- }
-
-
-
+  torch::Tensor state_values = torch::zeros({k}, GLOBAL_TENSOR_OPTIONS);
+  for (int i = k - 1; i >= 0; i--) {
+    Q_ret = rewards[i] + this->discount_factor * Q_ret;
+    state_values[i] = Q_values_list[i].dot(policies_main[i]);
+  }
 }
 
 unsigned int
