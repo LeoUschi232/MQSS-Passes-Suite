@@ -134,7 +134,8 @@ make_LSTM_Q_estimator(unsigned int max_qubits,
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
-      torch::nn::Linear(2 * P, NR_PASSES) // -> [NR_PASSES]
+      torch::nn::Linear(2 * P, NR_PASSES), // -> [NR_PASSES]
+      torch::nn::Tanh()                    // -> [NR_PASSES]
   );
 }
 
@@ -198,6 +199,7 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
       torch::nn::Flatten(
           torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*P]
       torch::nn::Linear(2 * P, 1),                           // -> [1]
+      torch::nn::Tanh(),                                     // -> [1]
       torch::nn::Squeeze(/*dim=*/0)                          // -> []
   );
 }
@@ -228,7 +230,8 @@ torch::nn::Sequential make_hybrid_Q_estimator(
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(
           torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*P]
-      torch::nn::Linear(2 * P, NR_PASSES)                    // -> [NR_PASSES]
+      torch::nn::Linear(2 * P, NR_PASSES),                   // -> [NR_PASSES]
+      torch::nn::Tanh()                                      // -> [NR_PASSES]
   );
 }
 
