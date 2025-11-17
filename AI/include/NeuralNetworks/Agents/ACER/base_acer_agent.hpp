@@ -91,7 +91,7 @@ public:
    * @param policies_main
    * @param policies_avg
    * @param Q_values_list
-   * @param truncated_importance_weights
+   * @param original_policies
    * @param action_indices
    */
   void compute_losses_and_accumulate_gradients(
@@ -101,7 +101,7 @@ public:
       const torch::Tensor &policies_main,                // Shape [k, NR_PASSES]
       const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
       const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
-      const torch::Tensor &truncated_importance_weights, // Shape [k]
+      const torch::Tensor &original_policies, // Shape [k]
       const std::vector<unsigned int> &action_indices    // Shape [k]
   );
 

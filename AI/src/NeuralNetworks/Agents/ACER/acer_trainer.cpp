@@ -105,8 +105,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     try {
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
-      std::vector<torch::Tensor> truncated_importance_weights;
-      truncated_importance_weights.reserve(max_steps_per_episode);
+      std::vector<torch::Tensor> original_policies;
+      original_policies.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_main;
       policies_main.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_avg;
@@ -144,20 +144,13 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
-        // One element of truncated_importance_weights has shape [NR_PASSES].
-        // This is because we need to sum a value which is dependent on ρi(a)
-        // over all values of a.
-        truncated_importance_weights.push_back(
-            torch::min(torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
-                       policy_main /
-                           (trajectory_elements[step_idx].action_probs +
-                            DIVISION_BY_ZERO_BLOCK))
-                .detach());
+        original_policies.push_back(trajectory_elements[step_idx].action_probs);
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
         Q_values_list.push_back(Q_values);
         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
+        total_episode_reward += reward;
         total_episode_reward += reward;
         if (terminated || truncated) {
           break;
@@ -178,8 +171,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           /*policies_main=*/torch::stack(policies_main).to(device),
           /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
           /*Q_values_list=*/torch::stack(Q_values_list).to(device),
-          /*truncated_importance_weights=*/
-          torch::stack(truncated_importance_weights).detach().to(device),
+          /*original_policies=*/
+          torch::stack(original_policies).detach().to(device),
           /*action_indices=*/action_indices);
       agent->update_assuming_gradients_are_computed();
       if (on_policy) {
