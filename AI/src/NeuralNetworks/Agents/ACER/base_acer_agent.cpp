@@ -100,8 +100,9 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
     const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
-  torch::Tensor critic_loss = torch::tensor(0.0);
-  torch::Tensor actor_gradients = torch::tensor(0.0);
+  torch::Tensor final_critic_loss;
+  torch::Tensor final_actor_gradients;
+  bool first_iteration = true;
   for (int i = k - 1; i >= 0; i--) {
     Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
     torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
@@ -154,20 +155,29 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor k_vector = torch::cat(k_flattened);
     ////////////////////////////////////////////////////////////////////////////
     /// 2. Accumulating gradients with regard to θ and θv
-    actor_gradients +=
+    torch::Tensor actor_gradients =
         g_vector // g
         - std::max(0.0f,
                    ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
                     (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
                        .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
               * k_vector;              // k
-    critic_loss += (Q_ret - Q_values_list[i][action_index]).square();
+    torch::Tensor critic_loss =
+        (Q_ret - Q_values_list[i][action_index]).square();
+    if (first_iteration) {
+      final_actor_gradients = actor_gradients;
+      final_critic_loss = critic_loss;
+      first_iteration = false;
+    } else {
+      final_actor_gradients += actor_gradients;
+      final_critic_loss += critic_loss;
+    }
     ////////////////////////////////////////////////////////////////////////////
     /// 3. Update Retrace target
     Q_ret = Vi + truncated_importance_weights[action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
   }
-  return {actor_gradients, critic_loss};
+  return {final_actor_gradients, final_critic_loss};
 }
 
 void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
