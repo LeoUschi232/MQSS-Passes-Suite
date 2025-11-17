@@ -95,7 +95,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
     const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
     const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
-    const torch::Tensor &original_policies,             // Shape [k, NR_PASSES]
+    const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
     const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
   for (int i = k - 1; i >= 0; i--) {
@@ -104,19 +104,19 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
     /// 1. Computing quantities needed for trust region updating
-    torch::Tensor truncated_importance_weights =
-        policies_main[i] / (policies_main[i] + DIVISION_BY_ZERO_BLOCK);
+    torch::Tensor importance_weights =
+        policies_main[i] /
+        (original_policies[i] + DIVISION_BY_ZERO_BLOCK); // ρi(a)
+    torch::Tensor truncated_importance_weights = torch::min(
+        this->acer_truncation_threshold_c, importance_weights); // min{c,ρi(a)}
     torch::Tensor g_summand_top =
-        torch::min(this->acer_truncation_threshold_c,
-                   truncated_importance_weights[i][action_index])
-            .detach()                          // min{c,ρi(ai)}
-        * policies_main[i][action_index].log() // logf(ai|φθ(xi))
-        * (Q_ret - Vi).detach();               // (Qret − Vi)
+        truncated_importance_weights[action_index].detach() // min{c,ρi(ai)}
+        * policies_main[i][action_index].log()              // logf(ai|φθ(xi))
+        * (Q_ret - Vi).detach();                            // (Qret − Vi)
     torch::Tensor g_summand_bottom =
-        (1.0 -
-         this->acer_truncation_threshold_c / truncated_importance_weights[i])
+        (1.0 - this->acer_truncation_threshold_c / importance_weights)
             .clamp_min(0.0)
-            .detach()                       // [1-c/ρi(ai)]+
+            .detach()                       // max(0,[1-c/ρi(a)])
         * policies_main[i].detach()         // f(a|φθ(xi))
         * policies_main[i].log()            // logf(a|φθ(xi))
         * (Q_values_list[i] - Vi).detach(); // (Qθv(xi,a)−Vi)
@@ -139,7 +139,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
       g_flattened.push_back(g_gradient.contiguous().view(-1));
     }
     torch::Tensor g_vector = torch::cat(g_flattened);
-    auto k_gradients = torch::autograd::grad(
+    torch::autograd::variable_list k_gradients = torch::autograd::grad(
         /*outputs=*/{k_scalar}, /*inputs=*/actor_parameters,
         /*grad_outputs=*/{},
         /*retain_graph=*/true);
@@ -175,7 +175,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     critic_loss.backward();
     ////////////////////////////////////////////////////////////////////////////
     /// 3. Update Retrace target
-    Q_ret = Vi + truncated_importance_weights[i][action_index] *
+    Q_ret = Vi + truncated_importance_weights[action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
   }
 }
