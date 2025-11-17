@@ -1,8 +1,0 @@
-[ge78zic2@wolpy01 AI]$ ./ai_pass_selector --agent ppo-mq28-lstmhmpp stop_training_on_error=false nr_episodes=12345678                                                                                                          Sun16 [87/87]
-Beginning training.
-: [>                                                 ] 4109/12345678, 130/256 (0%) (Rollout A | Reward: -378.121088 | Nr qubits: 12 | Nr gates: 118) Episode 4109: CUDA out of memory. Tried to allocate 510.00 MiB. GPU 0 has a total capac
-ity of 79.25 GiB of which 77.88 MiB is free. Including non-PyTorch memory, this process has 79.17 GiB memory in use. Of the allocated memory 72.80 GiB is allocated by PyTorch, and 5.86 GiB is reserved by PyTorch but unallocated. If rese
-rved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
-: [>                                                 ] 4111/12345678, 50/256 (0%) (Rollout A | Reward: -187.137312 | Nr qubits: 28 | Nr gates: 731) Episode 4111: CUDA out of memory. Tried to allocate 1.08 GiB. GPU 0 has a total capacity
- of 79.25 GiB of which 679.88 MiB is free. Including non-PyTorch memory, this process has 78.58 GiB memory in use. Of the allocated memory 71.64 GiB is allocated by PyTorch, and 6.43 GiB is reserved by PyTorch but unallocated. If reserv
-ed but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
