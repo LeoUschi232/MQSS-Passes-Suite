@@ -216,7 +216,6 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       previous_episode_reward = total_episode_reward;
       previous_nr_qubits = nr_qubits;
       previous_nr_gates = nr_gates;
-      torch::cuda::empty_cache();
     } catch (const std::exception &error) {
       std::cerr << "\nError in Episode " << episode_idx << ":\n"
                 << cut_to_newline(error.what()) << std::endl;
