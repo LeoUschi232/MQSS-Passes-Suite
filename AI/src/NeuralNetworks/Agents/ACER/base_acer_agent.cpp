@@ -182,7 +182,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
 
 void BaseACERAgent::update_assuming_gradients_are_computed() {
   this->actor_optimizer->step();
-  this->critic_optimizer->step(); //
+  this->critic_optimizer->step();
   {
     torch::NoGradGuard no_grad_guard;
     for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
@@ -195,6 +195,8 @@ void BaseACERAgent::update_assuming_gradients_are_computed() {
       param_avg.add_((1.0 - this->acer_soft_update_alpha) * param_main);
     }
   }
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
 }
 
 unsigned int

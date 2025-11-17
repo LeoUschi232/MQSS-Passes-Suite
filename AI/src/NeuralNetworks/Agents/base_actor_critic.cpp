@@ -40,7 +40,7 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
 
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
-  return this->actor->forward(observation)
+  return this->actor->forward(observation.to(this->device).to(torch::kFloat32))
       .argmax(/*dim=*/-1)
       .to(torch::kInt32)
       .detach()
