@@ -163,11 +163,16 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
          param_idx++) {
       torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
       unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
-      actor_parameter_tensor.mutable_grad() +=
+      torch::Tensor gradient_slice =
           adjusted_actor_gradients
               .slice(/*dim=*/0, /*start=*/offset,
                      /*end=*/offset + nr_trainable_parameters)
               .reshape(actor_parameter_tensor.sizes());
+      if (actor_parameter_tensor.grad().defined()) {
+        actor_parameter_tensor.mutable_grad() += gradient_slice;
+      } else {
+        actor_parameter_tensor.mutable_grad() = gradient_slice.clone();
+      }
       offset += nr_trainable_parameters;
     }
     torch::Tensor critic_loss =
