@@ -119,7 +119,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       action_indices.reserve(max_steps_per_episode);
 
       bool add_bootstrap = false;
-      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
+      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode;
+           step_idx++) {
         if (interrupted) {
           break;
         }
@@ -152,24 +153,23 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
         total_episode_reward += reward;
-        if (terminated || truncated) {
+        if (truncated) {
+          add_bootstrap = true;
           break;
         }
-        if (terminated || truncated) {
+        if (terminated) {
           break;
         }
       }
       torch::Tensor Q_ret = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
-      if (step_idx < max_steps_per_episode) {
+      if (add_bootstrap) {
         torch::NoGradGuard _;
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
-        step_idx++;
       }
-      assert(step_idx > 0u);
       agent->compute_losses_and_accumulate_gradients(
-          /*k=*/step_idx,
+          /*k=*/static_cast<int>(original_policies.size()),
           /*rewards=*/torch::stack(rewards).to(device),
           /*Q_ret=*/Q_ret.to(device),
           /*policies_main=*/torch::stack(policies_main).to(device),
