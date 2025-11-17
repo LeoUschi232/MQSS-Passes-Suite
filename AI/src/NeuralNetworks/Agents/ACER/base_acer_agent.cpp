@@ -203,8 +203,8 @@ void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
     }
     offset += nr_trainable_parameters;
   }
-  this->critic_optimizer->zero_grad();
   this->actor_optimizer->step();
+  this->critic_optimizer->zero_grad();
   critic_loss.backward();
   this->critic_optimizer->step();
   {
