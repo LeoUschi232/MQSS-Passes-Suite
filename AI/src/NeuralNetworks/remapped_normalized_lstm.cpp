@@ -11,10 +11,11 @@ RemappedNormalizedLSTMImpl::RemappedNormalizedLSTMImpl(unsigned int input_size,
                                                        unsigned int hidden_size,
                                                        bool bidirectional,
                                                        unsigned int proj_size)
-    : remapper_normalizer(torch::nn::Sequential(        // Input: [N, IRS]
-          torch::nn::TransposeContiguous(0u, 1u),       // -> [IRS, N]
-          torch::nn::Conv1d(input_size, input_size, 1), // -> [IRS, N]
-          torch::nn::TransposeContiguous(0u, 1u),       // -> [N, IRS]
+    : remapper_normalizer(torch::nn::Sequential(  // Input: [N, IRS]
+          torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
+          torch::nn::Conv1d(input_size, input_size,
+                            /*kernel_size=*/1),   // -> [IRS, N]
+          torch::nn::TransposeContiguous(0u, 1u), // -> [N, IRS]
           torch::nn::LayerNorm(torch::nn::LayerNormOptions(
               /*normalized_shape*/ {input_size})), // -> [N, IRS]
           torch::nn::ReLU()                        // -> [N, IRS]
