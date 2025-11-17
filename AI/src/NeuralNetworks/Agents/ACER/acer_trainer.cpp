@@ -190,7 +190,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
                          std::to_string(total_episode_reward) +
                          " | Nr qubits: " + std::to_string(nr_qubits) +
                          " | Nr gates: " + std::to_string(nr_gates) +
-                         " | Updating parmaeters.");
+                         " | Updating parameters.");
       agent->update_parameters(actor_gradients, critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {

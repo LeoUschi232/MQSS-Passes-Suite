@@ -100,6 +100,8 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
     const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
+  std::vector<torch::Tensor> actor_parameters =
+      this->actor->parameters(/*recurse=*/true);
   torch::Tensor final_critic_loss;
   torch::Tensor final_actor_gradients;
   bool first_iteration = true;
@@ -133,8 +135,6 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
         /*policy_q=*/policies_main[i]); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
     // Turn g_scalar and k_scalar into g_vector and k_vector using
     // differentiation like in the ACER algorithm paper.
-    std::vector<torch::Tensor> actor_parameters =
-        this->actor->parameters(/*recurse=*/true);
     torch::autograd::variable_list g_gradients = torch::autograd::grad(
         /*outputs=*/{g_scalar}, /*inputs=*/actor_parameters,
         /*grad_outputs=*/{},
