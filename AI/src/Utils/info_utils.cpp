@@ -43,6 +43,13 @@ std::vector<std::string> split_string(const std::string &str, char delimiter) {
   return parts;
 }
 
+std::string cut_to_newline(std::string str) {
+  if (const auto pos = str.find('\n'); pos != std::string::npos) {
+    str.resize(pos);
+  }
+  return str;
+}
+
 std::optional<fs::path> search_circuit(const fs::path &circuit_path) {
   std::string circuit_name = circuit_path.stem().string();
 
