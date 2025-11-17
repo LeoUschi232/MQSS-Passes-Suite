@@ -10,13 +10,15 @@
 namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
+constexpr float DIVISION_BY_ZERO_BLOCK = 1e-12f;
 enum class OptimizerType : int;
 
 class BaseACERAgent : public BaseActorCritic {
 protected:
   /// ACER specific attributes
-  double acer_truncation_threshold_c = 0.0;
-  double acer_trust_region_delta = 0.0;
+  torch::Tensor acer_truncation_threshold_c = torch::zeros({});
+  torch::Tensor acer_trust_region_delta = torch::zeros({});
+  double acer_soft_update_alpha = 0.0;
 
   /// ACER Additional Actor
   torch::nn::Sequential actor_avg{nullptr};
@@ -49,6 +51,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// ACER standard methods
+  void reset_gradients();
+
   /**
    * @param observation
    * @return [policy_main, policy_avg, Q_values]
@@ -60,14 +64,19 @@ public:
    * @param observation
    * @return
    */
-  torch::Tensor get_value(const torch::Tensor &observation);
+  torch::Tensor get_value_main(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return
+   */
+  torch::Tensor get_value_avg(const torch::Tensor &observation);
 
   /**
    * @param action_probs
    * @return [action, entropy]
    */
-  std::pair<torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &action_probs);
+  torch::Tensor select_action(const torch::Tensor &action_probs);
 
   /**
    * @param observation
@@ -75,9 +84,37 @@ public:
    */
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
+  /**
+   * @param k
+   * @param rewards
+   * @param Q_ret
+   * @param policies_main
+   * @param policies_avg
+   * @param Q_values_list
+   * @param original_policies
+   * @param action_indices
+   * @return [actor_gradients, critic_loss]
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  compute_losses_and_accumulate_gradients(
+      int k,                                          // Nr taken steps
+      const torch::Tensor &rewards,                   // Shape [k]
+      torch::Tensor Q_ret,                            // Shape []
+      const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
+      const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
+      const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
+      const torch::Tensor &original_policies,         // Shape [k]
+      const std::vector<unsigned int> &action_indices // Shape [k]
+  );
+
+  /**
+   *
+   * @param actor_gradients
+   * @param critic_loss
+   */
+  void update_parameters(const torch::Tensor &actor_gradients,
+                         const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
-  /// Saving and Loading
-  void save_model() const override;
 };
 } // namespace ai_pass_selector
 

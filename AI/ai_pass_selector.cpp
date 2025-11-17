@@ -109,6 +109,9 @@ int main(int argc, char **argv) {
   auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
   auto circuit = std::string(GLOBAL_PARAMS["circuit"]);
   auto output = std::string(GLOBAL_PARAMS["output"]);
+  GLOBAL_TENSOR_OPTIONS = torch::TensorOptions()
+                              .device(GLOBAL_PARAMS["device"].to_device_type())
+                              .dtype(torch::kFloat32);
 
   if (info) {
     std::cout << "Parameters:" << std::endl;
@@ -163,7 +166,7 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "sdsac-mq28-tcnrelu"},
+      {"agent", "a3c-mq28-tcnrelu"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
@@ -192,7 +195,8 @@ void load_default_params() {
       {"acer_max_nr_trajectories", 500},
       {"acer_ratio_of_replay", 8},
       {"acer_truncation_threshold_c", 10.0},
-      {"acer_trust_region_delta", 0.0},
+      {"acer_soft_update_alpha", 0.99},
+      {"acer_trust_region_delta", 1.0},
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},

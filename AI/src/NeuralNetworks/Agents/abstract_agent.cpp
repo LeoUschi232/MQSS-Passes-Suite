@@ -5,6 +5,7 @@
 
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/ACER/acer_agents.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
 #include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
@@ -124,6 +125,25 @@ AbstractAgent::getAgent(const std::string &agent_name) {
         return std::make_unique<SDSAC_HYBRID>(attributes.max_qubits);
       }
       std::cerr << "No such SDSAC agent: " << agent_name << std::endl;
+      return {};
+    }
+    case AgentClass::ACER: {
+      if (attributes.extras == "tcnrelu") {
+        return std::make_unique<ACER_TCN_RELU>(attributes.max_qubits);
+      }
+      if (attributes.extras == "tcnprelu") {
+        return std::make_unique<ACER_TCN_PRELU>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmhmpp") {
+        return std::make_unique<ACER_LSTM_HMPP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "lstmbmnp") {
+        return std::make_unique<ACER_LSTM_BMNP>(attributes.max_qubits);
+      }
+      if (attributes.extras == "hybrid") {
+        return std::make_unique<ACER_HYBRID>(attributes.max_qubits);
+      }
+      std::cerr << "No such ACER agent: " << agent_name << std::endl;
       return {};
     }
     default:

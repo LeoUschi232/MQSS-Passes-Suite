@@ -21,6 +21,7 @@
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
     : AbstractAgent(max_qubits) {
@@ -39,7 +40,7 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
 
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
-  return this->actor->forward(observation)
+  return this->actor->forward(observation.to(this->device).to(torch::kFloat32))
       .argmax(/*dim=*/-1)
       .to(torch::kInt32)
       .detach()
@@ -54,15 +55,14 @@ torch::Tensor BaseActorCritic::compute_advantages(
   // An episode generates T rewards from R_1 to R_T.
   // An episode generates T+1 states from S_0 to S_T.
   int T = rewards.size(0);
-  const torch::TensorOptions options = rewards.options();
-  torch::Tensor advantages = torch::zeros({T}, options);
+  torch::Tensor advantages = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
 
   // Compute the advantages using Generalized Advantage Estimation.
   // Temporal Difference is a method used in Reinforcement Learning to estimate
   // the value function of a state based on the difference between the immediate
   // reward obtained from a current state and the estimated value of the next
   // state.
-  torch::Tensor A_gae = torch::zeros({}, options);
+  torch::Tensor A_gae = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
   for (int t = T - 1; t >= 0; t--) {
     // Temporal Difference Error of V(s) with discount gamma is:
     // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
@@ -85,8 +85,7 @@ BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
   if (T <= 0) {
     return torch::tensor({}, rewards.options());
   }
-  const torch::TensorOptions options = rewards.options();
-  torch::Tensor rewards_to_go = torch::zeros({T}, options);
+  torch::Tensor rewards_to_go = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
   rewards_to_go[T - 1] = rewards[T - 1];
   for (int t = T - 2; t >= 0; t--) {
     rewards_to_go[t] =
@@ -95,10 +94,17 @@ BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
   return rewards_to_go;
 }
 
+torch::Tensor
+BaseActorCritic::compute_KL_divergence(const torch::Tensor &policy_p,
+                                       const torch::Tensor &policy_q) const {
+  return (policy_p * (policy_p.log() - policy_q.log())).sum(-1);
+}
+
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
-    size_t total = 0, bad = 0;
-    for (auto &keyvalue : network->named_parameters(/*recurse=*/true)) {
+    size_t total = 0, bad = 0; //
+    for (torch::OrderedDict<std::string, torch::Tensor>::Item &keyvalue :
+         network->named_parameters(/*recurse=*/true)) {
       const std::string &name = keyvalue.key();
       const torch::Tensor &value = keyvalue.value();
       total += value.numel();
@@ -127,10 +133,10 @@ void BaseActorCritic::check_params(double tiny, double big) const {
               << " suspicious=" << bad << "\n";
   };
   if (this->actor) {
-    check("actor", this->actor);
+    check(/*tag=*/"actor", this->actor);
   }
   if (this->critic) {
-    check("critic", this->critic);
+    check(/*tag=*/"critic", this->critic);
   }
 }
 
@@ -161,8 +167,10 @@ void BaseActorCritic::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
   torch::save(this->actor, actor_path.string());
   torch::save(this->critic, critic_path.string());
 }
@@ -173,13 +181,20 @@ void BaseActorCritic::load_model() {
   if (name.empty()) {
     return;
   }
-  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
-  torch::load(this->actor, actor_path.string(), this->device);
-  torch::load(this->critic, critic_path.string(), this->device);
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->critic, critic_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
   std::cout << "Loaded model: " << name << std::endl;
 }
 

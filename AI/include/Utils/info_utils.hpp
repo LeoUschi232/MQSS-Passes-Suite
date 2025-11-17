@@ -194,6 +194,7 @@ struct PassSelectorRuntimeParam {
   explicit operator torch::DeviceType() const { return to_device_type(); }
 };
 inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+inline torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 /**
  * @param a
@@ -209,6 +210,13 @@ bool isclose(double a, double b, double atol = 1e-12);
  * @return
  */
 std::vector<std::string> split_string(const std::string &str, char delimiter);
+
+/**
+ * Returns the string passed as argument cut to the next newline.
+ * @param str String to cut.
+ * @return The cut string.
+ */
+std::string cut_to_newline(std::string str);
 
 /**
  * Given a circuit name or its full filepath, search for the circuit and

@@ -72,6 +72,15 @@ torch::Tensor BasePPOAgent::get_value(const torch::Tensor &observation) {
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BasePPOAgent::select_action(const torch::Tensor &observation) {
   auto [action_probs, state_value] = this->forward(observation);
+  if ((action_probs < 0).any().item<bool>()) {
+    throw std::runtime_error("PPO action_probs contains x<0.");
+  }
+  if (torch::isinf(action_probs).any().item<bool>()) {
+    throw std::runtime_error("PPO action_probs contains Inf.");
+  }
+  if (torch::isnan(action_probs).any().item<bool>()) {
+    throw std::runtime_error("PPO action_probs contains NaN.");
+  }
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.

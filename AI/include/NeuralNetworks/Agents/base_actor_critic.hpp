@@ -81,6 +81,17 @@ public:
    * @return
    */
   torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
+
+  /**
+   * Computes the Kullback-Leibler divergence D_KL(P||Q) between two policies.
+   * D_KL(P||Q) = sum_i(P(i)*(log(P(i))-log(Q(i))))
+   * @param policy_p
+   * @param policy_q
+   * @return
+   */
+  torch::Tensor compute_KL_divergence(const torch::Tensor &policy_p,
+                                      const torch::Tensor &policy_q) const;
+
   //////////////////////////////////////////////////////////////////////////////
   /**
    * @param circuit_path

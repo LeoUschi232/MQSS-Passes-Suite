@@ -13,6 +13,7 @@ struct SDSAC_EpisodeRollout {
   torch::Tensor actions;                   // [T]
   torch::Tensor rewards;                   // [T]
   torch::Tensor entropies;                 // [T]
+  bool bootstrap_last_state = false;       // No shape
 };
 
 /**

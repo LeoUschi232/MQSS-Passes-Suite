@@ -18,6 +18,7 @@ extern void signal_handler(int signal);
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 std::unordered_map<std::string, std::string>
 train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
@@ -45,8 +46,6 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
-  torch::TensorOptions options =
-      torch::TensorOptions().device(device).dtype(torch::kFloat32);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
@@ -59,7 +58,8 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
     if (interrupted) {
       break;
     }
-    if (episode_idx % save_agent_every_ith_episode == 0) {
+    if (save_agent_every_ith_episode > 0 &&
+        episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                      /*display_message=*/"Saving Agent.");
@@ -83,40 +83,53 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       rewards_vector.reserve(T);
       entropies_vector.reserve(T);
 
+      bool truncated_episode = false;
       unsigned int update_step;
-      for (update_step = 0u; update_step < max_steps_per_episode;
-           update_step++) {
-        updateProgresses({{episode_idx, nr_episodes},
-                          {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Rollout A | Reward: " +
-                             std::to_string(total_episode_reward) +
-                             " | Nr qubits: " + std::to_string(nr_qubits) +
-                             " | Nr gates: " + std::to_string(nr_gates));
-        if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
-                    << std::endl;
-          break;
-        }
-        // TODO: do loop A
-        torch::Tensor observation =
-            environment.get_observation_as_torch_tensor();
-        auto [action, entropy] = agent->select_action(observation);
-        rollout_new.observations.push_back(observation);
-        actions_vector.push_back(action);
-        entropies_vector.push_back(entropy);
-        auto [reward, terminated, truncated] =
-            environment.step(action.item<int>());
-        rewards_vector.push_back(torch::tensor(reward, options));
-        total_episode_reward += reward;
-        if (truncated || terminated) {
-          break;
+      {
+        torch::NoGradGuard no_grad;
+        for (update_step = 0u; update_step < max_steps_per_episode;
+             update_step++) {
+          updateProgresses({{episode_idx, nr_episodes},
+                            {update_step + 1, max_steps_per_episode}},
+                           /*display_message=*/"Rollout A | Reward: " +
+                               std::to_string(total_episode_reward) +
+                               " | Nr qubits: " + std::to_string(nr_qubits) +
+                               " | Nr gates: " + std::to_string(nr_gates));
+          if (interrupted) {
+            std::cout << "Caught Ctrl+C Interruption in SDSAC training."
+                      << std::endl;
+            break;
+          }
+          // TODO: do loop A
+          torch::Tensor observation =
+              environment.get_observation_as_torch_tensor();
+          auto [action, entropy] = agent->select_action(observation);
+          rollout_new.observations.push_back(observation);
+          actions_vector.push_back(action.detach());
+          entropies_vector.push_back(entropy.detach());
+          auto [reward, terminated, truncated] =
+              environment.step(action.item<int>());
+          rewards_vector.push_back(
+              torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+          total_episode_reward += reward;
+          if (truncated) {
+            truncated_episode = true;
+            break;
+          }
+          if (terminated) {
+            break;
+          }
         }
       }
       torch::Tensor observation = environment.get_observation_as_torch_tensor();
       rollout_new.observations.push_back(observation);
+      if (!truncated_episode && update_step >= max_steps_per_episode) {
+        truncated_episode = true;
+      }
       rollout_new.actions = torch::stack(actions_vector).to(device);
       rollout_new.rewards = torch::stack(rewards_vector).to(device);
       rollout_new.entropies = torch::stack(entropies_vector).to(device);
+      rollout_new.bootstrap_last_state = truncated_episode;
 
       //////////////////////////////////////////////////////////////////////////
       /// Inner loop 2: Rollout B
@@ -143,13 +156,18 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                     << std::endl;
           break;
         }
-        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
-            agent->forward(
-                /*observation=*/rollout_old.observations[update_step]);
-        auto [action_probs_next, Q1_avg_next, Q2_avg_next] =
-            agent->forward_only_Q_avg(
-                /*observation=*/rollout_old.observations[update_step + 1u]);
-
+        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] = agent->forward(
+            /*observation=*/rollout_old.observations[update_step]);
+        torch::Tensor action_probs_next;
+        torch::Tensor Q1_avg_next;
+        torch::Tensor Q2_avg_next;
+        bool bootstrap_next_state = update_step + 1u < steps_in_episode ||
+                                    rollout_old.bootstrap_last_state;
+        if (bootstrap_next_state) {
+          std::tie(action_probs_next, Q1_avg_next, Q2_avg_next) =
+              agent->forward_only_Q_avg(
+                  /*observation=*/rollout_old.observations[update_step + 1u]);
+        }
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
               optional_temperature_alpha_loss] =
             agent->get_loss(
@@ -165,18 +183,19 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*action_probs=*/action_probs,
                 /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/
-                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
-        agent->update_parameters(actor_loss, critic_Q1_loss,
-                                       critic_Q2_loss,
-                                       optional_temperature_alpha_loss);
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1),
+                /*bootstrap_next_state=*/bootstrap_next_state);
+        agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
+                                 optional_temperature_alpha_loss);
       }
       rollout_old = std::move(rollout_new);
       previous_episode_reward = total_episode_reward;
       previous_nr_qubits = nr_qubits;
       previous_nr_gates = nr_gates;
     } catch (const std::exception &error) {
-      std::cerr << "Episode " << episode_idx << ": " << error.what()
-                << std::endl;
+      std::cerr << "Error in Episode " << episode_idx << ":\n"
+                << error.what() << std::endl;
+      agent->load_model();
       if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
         interrupted = 1;
         break;

@@ -103,7 +103,8 @@ public:
            const torch::Tensor &action,            // Shape []
            const torch::Tensor &action_probs,      // Shape [NR_PASSES]
            const torch::Tensor &old_entropy,       // Shape []
-           const torch::Tensor &new_entropy        // Shape []
+           const torch::Tensor &new_entropy,       // Shape []
+           bool bootstrap_next_state               // No shape
   );
 
   /**

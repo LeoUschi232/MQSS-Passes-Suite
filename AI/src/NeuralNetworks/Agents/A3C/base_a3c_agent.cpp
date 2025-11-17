@@ -66,10 +66,18 @@ torch::Tensor BaseA3CAgent::get_value(const torch::Tensor &observation) {
       observation.to(this->device).to(torch::kFloat32));
 }
 
-
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseA3CAgent::select_action(const torch::Tensor &observation) {
   auto [action_probs, state_value] = this->forward(observation);
+  if ((action_probs < 0).any().item<bool>()) {
+    throw std::runtime_error("A3C action_probs contains x<0.");
+  }
+  if (torch::isinf(action_probs).any().item<bool>()) {
+    throw std::runtime_error("A3C action_probs contains Inf.");
+  }
+  if (torch::isnan(action_probs).any().item<bool>()) {
+    throw std::runtime_error("A3C action_probs contains NaN.");
+  }
 
   // Multinomial selects num_samples=1 indices per row for the given matrix,
   // using the values in the row as weights.
