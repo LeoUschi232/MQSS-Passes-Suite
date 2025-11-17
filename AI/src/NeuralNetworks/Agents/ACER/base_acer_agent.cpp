@@ -99,9 +99,11 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
     const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
+  torch::Tensor critic_loss = torch::tensor(0.0);
+  torch::Tensor actor_gradients = torch::tensor(0.0);
   for (int i = k - 1; i >= 0; i--) {
-    Q_ret = rewards[i] + this->discount_factor * Q_ret;
-    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]);
+    Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
+    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
     /// 1. Computing quantities needed for trust region updating
@@ -151,42 +153,46 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     torch::Tensor k_vector = torch::cat(k_flattened);
     ////////////////////////////////////////////////////////////////////////////
     /// 2. Accumulating gradients with regard to θ and θv
-    torch::Tensor adjusted_actor_gradients =
+    actor_gradients +=
         g_vector // g
         - std::max(0.0f,
                    ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
                     (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
                        .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
               * k_vector;              // k
-    // Assign adjusted gradients back to actor parameters
-    unsigned int offset = 0;
-    for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
-         param_idx++) {
-      torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
-      unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
-      torch::Tensor gradient_slice =
-          adjusted_actor_gradients
-              .slice(/*dim=*/0, /*start=*/offset,
-                     /*end=*/offset + nr_trainable_parameters)
-              .reshape(actor_parameter_tensor.sizes());
-      if (actor_parameter_tensor.grad().defined()) {
-        actor_parameter_tensor.mutable_grad() += gradient_slice;
-      } else {
-        actor_parameter_tensor.mutable_grad() = gradient_slice.clone();
-      }
-      offset += nr_trainable_parameters;
-    }
-    torch::Tensor critic_loss =
-        (Q_ret - Q_values_list[i][action_index]).square();
-    critic_loss.backward();
+    critic_loss += (Q_ret - Q_values_list[i][action_index]).square();
     ////////////////////////////////////////////////////////////////////////////
     /// 3. Update Retrace target
     Q_ret = Vi + truncated_importance_weights[action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
   }
+  critic_loss.backward();
 }
 
-void BaseACERAgent::update_assuming_gradients_are_computed() {
+void BaseACERAgent::update_assuming_gradients_are_computed(
+    torch::Tensor actor_gradients, torch::Tensor critic_loss) {
+  this->actor_optimizer->zero_grad();
+  this->critic_optimizer->zero_grad();
+  std::vector<torch::Tensor> actor_parameters =
+      this->actor->parameters(/*recurse=*/true);
+  // Assign adjusted gradients back to actor parameters
+  unsigned int offset = 0;
+  for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
+       param_idx++) {
+    torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
+    unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
+    torch::Tensor gradient_slice =
+        actor_gradients
+            .slice(/*dim=*/0, /*start=*/offset,
+                   /*end=*/offset + nr_trainable_parameters)
+            .reshape(actor_parameter_tensor.sizes());
+    if (actor_parameter_tensor.grad().defined()) {
+      actor_parameter_tensor.mutable_grad() += gradient_slice;
+    } else {
+      actor_parameter_tensor.mutable_grad() = gradient_slice.clone();
+    }
+    offset += nr_trainable_parameters;
+  }
   this->actor_optimizer->step();
   this->critic_optimizer->step();
   {
@@ -201,8 +207,6 @@ void BaseACERAgent::update_assuming_gradients_are_computed() {
       param_avg.add_((1.0 - this->acer_soft_update_alpha) * param_main);
     }
   }
-  this->actor_optimizer->zero_grad();
-  this->critic_optimizer->zero_grad();
 }
 
 unsigned int
