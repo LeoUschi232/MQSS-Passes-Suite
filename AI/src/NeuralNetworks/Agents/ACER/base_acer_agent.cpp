@@ -76,6 +76,15 @@ torch::Tensor BaseACERAgent::get_value_avg(const torch::Tensor &observation) {
 }
 
 torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
+  if ((action_probs < 0).any().item<bool>()) {
+    throw std::runtime_error("ACER action_probs contains x<0.");
+  }
+  if (torch::isinf(action_probs).any().item<bool>()) {
+    throw std::runtime_error("ACER action_probs contains Inf.");
+  }
+  if (torch::isnan(action_probs).any().item<bool>()) {
+    throw std::runtime_error("ACER action_probs contains NaN.");
+  }
   return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
