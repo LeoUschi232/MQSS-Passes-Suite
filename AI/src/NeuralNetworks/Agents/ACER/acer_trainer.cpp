@@ -128,8 +128,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             {{episode_idx, nr_episodes}, {step_idx + 1, max_steps_per_episode}},
             /*display_message=*/"Reward: " +
                 std::to_string(total_episode_reward) +
-                " | Nr qubits: " + std::to_string(nr_qubits) + " | Nr gates: " +
-                std::to_string(nr_gates) + " | Running step.");
+                " | Nr qubits: " + std::to_string(nr_qubits) +
+                " | Nr gates: " + std::to_string(nr_gates) + " | Stepping.");
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         auto [policy_main, policy_avg, Q_values] = agent->forward(observation);
@@ -168,16 +168,29 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
-      auto [actor_gradients, critic_loss] = agent->compute_losses_and_accumulate_gradients(
-          /*k=*/static_cast<int>(original_policies.size()),
-          /*rewards=*/torch::stack(rewards).to(device),
-          /*Q_ret=*/Q_ret.to(device),
-          /*policies_main=*/torch::stack(policies_main).to(device),
-          /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
-          /*Q_values_list=*/torch::stack(Q_values_list).to(device),
-          /*original_policies=*/
-          torch::stack(original_policies).detach().to(device),
-          /*action_indices=*/action_indices);
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Reward: " +
+                         std::to_string(total_episode_reward) +
+                         " | Nr qubits: " + std::to_string(nr_qubits) +
+                         " | Nr gates: " + std::to_string(nr_gates) +
+                         " | Computing losses.");
+      auto [actor_gradients, critic_loss] =
+          agent->compute_losses_and_accumulate_gradients(
+              /*k=*/static_cast<int>(original_policies.size()),
+              /*rewards=*/torch::stack(rewards).to(device),
+              /*Q_ret=*/Q_ret.to(device),
+              /*policies_main=*/torch::stack(policies_main).to(device),
+              /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
+              /*Q_values_list=*/torch::stack(Q_values_list).to(device),
+              /*original_policies=*/
+              torch::stack(original_policies).detach().to(device),
+              /*action_indices=*/action_indices);
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Reward: " +
+                         std::to_string(total_episode_reward) +
+                         " | Nr qubits: " + std::to_string(nr_qubits) +
+                         " | Nr gates: " + std::to_string(nr_gates) +
+                         " | Updating parmaeters.");
       agent->update_parameters(actor_gradients, critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {
