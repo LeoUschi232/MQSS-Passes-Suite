@@ -183,8 +183,13 @@ void BaseActorCritic::load_model() {
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
-  torch::load(this->actor, actor_path.string(), this->device);
-  torch::load(this->critic, critic_path.string(), this->device);
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->critic, critic_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
   std::cout << "Loaded model: " << name << std::endl;
 }
 
