@@ -164,8 +164,8 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
         torch::Tensor action_probs_next;
         torch::Tensor Q1_avg_next;
         torch::Tensor Q2_avg_next;
-        bool bootstrap_next_state =
-            update_step < steps_in_episode || rollout_old.bootstrap_last_state;
+        bool bootstrap_next_state = update_step + 1u < steps_in_episode ||
+                                    rollout_old.bootstrap_last_state;
         if (bootstrap_next_state) {
           std::tie(action_probs_next, Q1_avg_next, Q2_avg_next) =
               agent->forward_only_Q_avg(
