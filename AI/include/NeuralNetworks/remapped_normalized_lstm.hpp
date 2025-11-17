@@ -5,7 +5,6 @@
 #include "torch/torch.h"
 
 namespace ai_pass_selector {
-
 /**
  * The LSTM in libtorch returns a std::tuple<Tensor, std::tuple<Tensor,
  * Tensor>> where only the first tensor is the actual output of the LSTM. The

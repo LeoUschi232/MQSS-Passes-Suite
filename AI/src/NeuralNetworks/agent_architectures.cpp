@@ -1,7 +1,8 @@
 #include "NeuralNetworks/agent_architectures.hpp"
 
-// Neural-Networks includes
+// Neural Networks includes
 #include "NeuralNetworks/layers_and_wrappers.hpp"
+#include "NeuralNetworks/remapped_normalized_lstm.hpp"
 #include "NeuralNetworks/tcn_full_network.hpp"
 
 // Environment includes
@@ -86,9 +87,9 @@ torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
   return torch::nn::Sequential( // Input: [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
@@ -105,9 +106,9 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
   return torch::nn::Sequential( // Input: [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
@@ -125,9 +126,9 @@ make_LSTM_Q_estimator(unsigned int max_qubits,
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
   return torch::nn::Sequential( // Input: [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
@@ -155,9 +156,9 @@ make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
                 TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
                                        kernel_size)), // -> [IRS, N]
       torch::nn::TransposeContiguous(0u, 1u),         // -> [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
@@ -187,9 +188,9 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
                 TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
                                        kernel_size)), // -> [IRS, N]
       torch::nn::TransposeContiguous(0u, 1u),         // -> [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
@@ -218,9 +219,9 @@ torch::nn::Sequential make_hybrid_Q_estimator(
                 TCNFullNetworkWithReLU(IRS, nr_residual_blocks,
                                        kernel_size)), // -> [IRS, N]
       torch::nn::TransposeContiguous(0u, 1u),         // -> [N, IRS]
-      torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
-                            /*bidirectional=*/true,
-                            /*proj_size=*/P), // -> [N, 2*P]
+      RemappedNormalizedLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
+                             /*bidirectional=*/true,
+                             /*proj_size=*/P), // -> [N, 2*P]
       torch::nn::LayerNorm(torch::nn::LayerNormOptions(
           /*normalized_shape=*/{2 * P})),     // -> [N, 2*P]
       torch::nn::TransposeContiguous(0u, 1u), // -> [2*P, N]
