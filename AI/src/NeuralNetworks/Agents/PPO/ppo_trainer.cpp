@@ -91,48 +91,54 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
 
       bool add_bootstrap_new = false;
       unsigned int update_step;
-      for (update_step = 0u; update_step < max_steps_per_episode;
-           update_step++) {
-        updateProgresses({{episode_idx, nr_episodes},
-                          {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Rollout A | Reward: " +
-                             std::to_string(total_episode_reward) +
-                             " | Nr qubits: " + std::to_string(nr_qubits) +
-                             " | Nr gates: " + std::to_string(nr_gates));
-        if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in PPO training."
-                    << std::endl;
-          break;
-        }
+      {
+        torch::NoGradGuard no_grad;
+        for (update_step = 0u; update_step < max_steps_per_episode;
+             update_step++) {
+          updateProgresses({{episode_idx, nr_episodes},
+                            {update_step + 1, max_steps_per_episode}},
+                           /*display_message=*/"Rollout A | Reward: " +
+                               std::to_string(total_episode_reward) +
+                               " | Nr qubits: " + std::to_string(nr_qubits) +
+                               " | Nr gates: " + std::to_string(nr_gates));
+          if (interrupted) {
+            std::cout << "Caught Ctrl+C Interruption in PPO training."
+                      << std::endl;
+            break;
+          }
 
+          torch::Tensor observation =
+              environment.get_observation_as_torch_tensor();
+          auto [action, log_action_prob, state_value, _] =
+              agent->select_action(observation);
+          rollout_new.observations.push_back(observation);
+          actions_vector.push_back(action.detach());
+          log_action_probs_vector.push_back(log_action_prob.detach());
+          state_values_vector.push_back(state_value.detach());
+          auto [reward, terminated, truncated] =
+              environment.step(action.item<int>());
+          rewards_vector.push_back(
+              torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+          total_episode_reward += reward;
+          if (truncated) {
+            add_bootstrap_new = true;
+            break;
+          }
+          if (terminated) {
+            break;
+          }
+        }
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
-        auto [action, log_action_prob, state_value, _] =
-            agent->select_action(observation);
         rollout_new.observations.push_back(observation);
-        actions_vector.push_back(action);
-        log_action_probs_vector.push_back(log_action_prob);
-        state_values_vector.push_back(state_value);
-        auto [reward, terminated, truncated] =
-            environment.step(action.item<int>());
-        rewards_vector.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
-        total_episode_reward += reward;
-        if (truncated) {
-          add_bootstrap_new = true;
-          break;
-        }
-        if (terminated) {
-          break;
+        if (add_bootstrap_new || update_step >= max_steps_per_episode) {
+          state_values_vector.push_back(agent->get_value(observation));
+        } else {
+          state_values_vector.push_back(
+              torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
         }
       }
-      torch::Tensor observation = environment.get_observation_as_torch_tensor();
-      rollout_new.observations.push_back(observation);
-      if (add_bootstrap_new || update_step >= max_steps_per_episode) {
-        torch::NoGradGuard _;
-        state_values_vector.push_back(agent->get_value(observation));
-      } else {
-        state_values_vector.push_back(torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
-      }
+
       rollout_new.actions = torch::stack(actions_vector).to(device);
       rollout_new.log_action_probs =
           torch::stack(log_action_probs_vector).to(device);
