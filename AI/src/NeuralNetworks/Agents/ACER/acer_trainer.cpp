@@ -168,7 +168,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
-      agent->compute_losses_and_accumulate_gradients(
+      auto [actor_gradients, critic_loss] = agent->compute_losses_and_accumulate_gradients(
           /*k=*/static_cast<int>(original_policies.size()),
           /*rewards=*/torch::stack(rewards).to(device),
           /*Q_ret=*/Q_ret.to(device),
@@ -178,7 +178,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           /*original_policies=*/
           torch::stack(original_policies).detach().to(device),
           /*action_indices=*/action_indices);
-      agent->update_assuming_gradients_are_computed();
+      agent->update_parameters(actor_gradients, critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {
           unsigned int remove_index = randomInt(0u, replay_buffer.size());

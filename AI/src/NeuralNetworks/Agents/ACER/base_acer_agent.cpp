@@ -89,7 +89,8 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
 }
 
-void BaseACERAgent::compute_losses_and_accumulate_gradients(
+std::pair<torch::Tensor, torch::Tensor>
+BaseACERAgent::compute_losses_and_accumulate_gradients(
     int k,                                          // Shape []
     const torch::Tensor &rewards,                   // Shape [k]
     torch::Tensor Q_ret,                            // Shape []
@@ -166,6 +167,7 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     Q_ret = Vi + truncated_importance_weights[action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
   }
+  return {actor_gradients, critic_loss};
 }
 
 void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,

@@ -93,8 +93,10 @@ public:
    * @param Q_values_list
    * @param original_policies
    * @param action_indices
+   * @return [actor_gradients, critic_loss]
    */
-  void compute_losses_and_accumulate_gradients(
+  std::pair<torch::Tensor, torch::Tensor>
+  compute_losses_and_accumulate_gradients(
       int k,                                          // Nr taken steps
       const torch::Tensor &rewards,                   // Shape [k]
       torch::Tensor Q_ret,                            // Shape []
