@@ -161,6 +161,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           break;
         }
       }
+      if (original_policies.empty()) {
+        continue;
+      }
       torch::Tensor Q_ret = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
       if (add_bootstrap) {
         torch::NoGradGuard _;

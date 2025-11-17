@@ -156,8 +156,8 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
     ////////////////////////////////////////////////////////////////////////////
     /// 2. Accumulating gradients with regard to θ and θv
     torch::Tensor actor_gradients =
-        g_vector // g
-        - std::max(0.0f,
+        -g_vector // g
+        + std::max(0.0f,
                    ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
                     (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
                        .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
