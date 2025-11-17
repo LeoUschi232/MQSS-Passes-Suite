@@ -151,7 +151,6 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
         total_episode_reward += reward;
-        total_episode_reward += reward;
         if (terminated || truncated) {
           break;
         }
@@ -162,6 +161,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
+        step_idx++;
       }
       assert(step_idx > 0u);
       agent->compute_losses_and_accumulate_gradients(
