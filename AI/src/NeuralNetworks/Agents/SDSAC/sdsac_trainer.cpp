@@ -85,36 +85,40 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
 
       bool truncated_episode = false;
       unsigned int update_step;
-      for (update_step = 0u; update_step < max_steps_per_episode;
-           update_step++) {
-        updateProgresses({{episode_idx, nr_episodes},
-                          {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Rollout A | Reward: " +
-                             std::to_string(total_episode_reward) +
-                             " | Nr qubits: " + std::to_string(nr_qubits) +
-                             " | Nr gates: " + std::to_string(nr_gates));
-        if (interrupted) {
-          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
-                    << std::endl;
-          break;
-        }
-        // TODO: do loop A
-        torch::Tensor observation =
-            environment.get_observation_as_torch_tensor();
-        auto [action, entropy] = agent->select_action(observation);
-        rollout_new.observations.push_back(observation);
-        actions_vector.push_back(action);
-        entropies_vector.push_back(entropy);
-        auto [reward, terminated, truncated] =
-            environment.step(action.item<int>());
-        rewards_vector.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
-        total_episode_reward += reward;
-        if (truncated) {
-          truncated_episode = true;
-          break;
-        }
-        if (terminated) {
-          break;
+      {
+        torch::NoGradGuard no_grad;
+        for (update_step = 0u; update_step < max_steps_per_episode;
+             update_step++) {
+          updateProgresses({{episode_idx, nr_episodes},
+                            {update_step + 1, max_steps_per_episode}},
+                           /*display_message=*/"Rollout A | Reward: " +
+                               std::to_string(total_episode_reward) +
+                               " | Nr qubits: " + std::to_string(nr_qubits) +
+                               " | Nr gates: " + std::to_string(nr_gates));
+          if (interrupted) {
+            std::cout << "Caught Ctrl+C Interruption in SDSAC training."
+                      << std::endl;
+            break;
+          }
+          // TODO: do loop A
+          torch::Tensor observation =
+              environment.get_observation_as_torch_tensor();
+          auto [action, entropy] = agent->select_action(observation);
+          rollout_new.observations.push_back(observation);
+          actions_vector.push_back(action.detach());
+          entropies_vector.push_back(entropy.detach());
+          auto [reward, terminated, truncated] =
+              environment.step(action.item<int>());
+          rewards_vector.push_back(
+              torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+          total_episode_reward += reward;
+          if (truncated) {
+            truncated_episode = true;
+            break;
+          }
+          if (terminated) {
+            break;
+          }
         }
       }
       torch::Tensor observation = environment.get_observation_as_torch_tensor();
