@@ -195,8 +195,8 @@ train_a3c(const std::unique_ptr<BaseA3CAgent> &agent_boss,
       } catch (const std::exception &error) {
         // No need to lock global mutex because global_async_step is only
         // accessed for rough diagnostics, it doesn't have to be exact.
-        std::cerr << "Step: " << global_async_step << ": " << error.what()
-                  << std::endl;
+        std::cerr << "\nError in Step " << global_async_step << ":\n"
+                  << cut_to_newline(error.what()) << std::endl;
         if (stop_training_on_error) {
           interrupted = 1;
         }
@@ -340,8 +340,8 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                            " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
     } catch (const std::exception &error) {
-      std::cerr << "\nEpisode " << episode_idx << ": " << error.summary()
-                << std::endl;
+      std::cerr << "\nError in Episode " << episode_idx << ":\n"
+                << cut_to_newline(error.what()) << std::endl;
       if (stop_training_on_error) {
         interrupted = 1;
         break;
