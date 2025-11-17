@@ -105,20 +105,22 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     try {
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
-      std::vector<torch::Tensor> truncated_importance_weights;
-      truncated_importance_weights.reserve(max_steps_per_episode);
+      std::vector<torch::Tensor> original_policies;
       std::vector<torch::Tensor> policies_main;
-      policies_main.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_avg;
-      policies_avg.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> Q_values_list;
-      Q_values_list.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> rewards;
-      rewards.reserve(max_steps_per_episode);
       std::vector<unsigned int> action_indices;
+      original_policies.reserve(max_steps_per_episode);
+      policies_main.reserve(max_steps_per_episode);
+      policies_avg.reserve(max_steps_per_episode);
+      Q_values_list.reserve(max_steps_per_episode);
+      rewards.reserve(max_steps_per_episode);
       action_indices.reserve(max_steps_per_episode);
-      unsigned int step_idx;
-      for (step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
+
+      bool add_bootstrap = false;
+      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode;
+           step_idx++) {
         if (interrupted) {
           break;
         }
@@ -126,15 +128,15 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             {{episode_idx, nr_episodes}, {step_idx + 1, max_steps_per_episode}},
             /*display_message=*/"Reward: " +
                 std::to_string(total_episode_reward) +
-                " | Nr qubits: " + std::to_string(nr_qubits) + " | Nr gates: " +
-                std::to_string(nr_gates) + " | Running step.");
+                " | Nr qubits: " + std::to_string(nr_qubits) +
+                " | Nr gates: " + std::to_string(nr_gates) + " | Stepping.");
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         auto [policy_main, policy_avg, Q_values] = agent->forward(observation);
         unsigned int action_index;
         if (on_policy) {
           torch::Tensor action = agent->select_action(policy_main);
-          action_index = action.item<unsigned int>();
+          action_index = action.item<int>();
           assert(trajectory_elements.size() == step_idx);
           trajectory_elements.push_back(
               {/*action_index=*/action_index,
@@ -144,44 +146,55 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         auto [reward, terminated, truncated] =
             environment.step(/*action=*/action_index);
-        // One element of truncated_importance_weights has shape [NR_PASSES].
-        // This is because we need to sum a value which is dependent on ρi(a)
-        // over all values of a.
-        truncated_importance_weights.push_back(
-            torch::min(torch::tensor(1.0, GLOBAL_TENSOR_OPTIONS),
-                       policy_main /
-                           (trajectory_elements[step_idx].action_probs +
-                            DIVISION_BY_ZERO_BLOCK))
-                .detach());
+        original_policies.push_back(trajectory_elements[step_idx].action_probs);
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
         Q_values_list.push_back(Q_values);
         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
         total_episode_reward += reward;
-        if (terminated || truncated) {
+        if (truncated) {
+          add_bootstrap = true;
+          break;
+        }
+        if (terminated) {
           break;
         }
       }
+      if (original_policies.empty()) {
+        continue;
+      }
       torch::Tensor Q_ret = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
-      if (step_idx < max_steps_per_episode) {
+      if (add_bootstrap) {
         torch::NoGradGuard _;
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
-      assert(step_idx > 0u);
-      agent->compute_losses_and_accumulate_gradients(
-          /*k=*/step_idx,
-          /*rewards=*/torch::stack(rewards).to(device),
-          /*Q_ret=*/Q_ret.to(device),
-          /*policies_main=*/torch::stack(policies_main).to(device),
-          /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
-          /*Q_values_list=*/torch::stack(Q_values_list).to(device),
-          /*truncated_importance_weights=*/
-          torch::stack(truncated_importance_weights).detach().to(device),
-          /*action_indices=*/action_indices);
-      agent->update_assuming_gradients_are_computed();
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Reward: " +
+                         std::to_string(total_episode_reward) +
+                         " | Nr qubits: " + std::to_string(nr_qubits) +
+                         " | Nr gates: " + std::to_string(nr_gates) +
+                         " | Computing losses.");
+      auto [actor_gradients, critic_loss] =
+          agent->compute_losses_and_accumulate_gradients(
+              /*k=*/static_cast<int>(original_policies.size()),
+              /*rewards=*/torch::stack(rewards).to(device),
+              /*Q_ret=*/Q_ret.to(device),
+              /*policies_main=*/torch::stack(policies_main).to(device),
+              /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
+              /*Q_values_list=*/torch::stack(Q_values_list).to(device),
+              /*original_policies=*/
+              torch::stack(original_policies).detach().to(device),
+              /*action_indices=*/action_indices);
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Reward: " +
+                         std::to_string(total_episode_reward) +
+                         " | Nr qubits: " + std::to_string(nr_qubits) +
+                         " | Nr gates: " + std::to_string(nr_gates) +
+                         " | Updating parameters.");
+      agent->update_parameters(actor_gradients, critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {
           unsigned int remove_index = randomInt(0u, replay_buffer.size());

@@ -91,28 +91,30 @@ public:
    * @param policies_main
    * @param policies_avg
    * @param Q_values_list
-   * @param truncated_importance_weights
+   * @param original_policies
    * @param action_indices
+   * @return [actor_gradients, critic_loss]
    */
-  void compute_losses_and_accumulate_gradients(
-      int k,                                             // Nr taken steps
-      const torch::Tensor &rewards,                      // Shape [k]
-      torch::Tensor Q_ret,                               // Shape []
-      const torch::Tensor &policies_main,                // Shape [k, NR_PASSES]
-      const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
-      const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
-      const torch::Tensor &truncated_importance_weights, // Shape [k]
-      const std::vector<unsigned int> &action_indices    // Shape [k]
+  std::pair<torch::Tensor, torch::Tensor>
+  compute_losses_and_accumulate_gradients(
+      int k,                                          // Nr taken steps
+      const torch::Tensor &rewards,                   // Shape [k]
+      torch::Tensor Q_ret,                            // Shape []
+      const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
+      const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
+      const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
+      const torch::Tensor &original_policies,         // Shape [k]
+      const std::vector<unsigned int> &action_indices // Shape [k]
   );
 
   /**
-   * Assumes gradients had been computed using the method
-   * compute_losses_and_accumulate_gradients in the trainer.
+   *
+   * @param actor_gradients
+   * @param critic_loss
    */
-  void update_assuming_gradients_are_computed();
+  void update_parameters(const torch::Tensor &actor_gradients,
+                         const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
-  /// Saving and Loading
-  void save_model() const override;
 };
 } // namespace ai_pass_selector
 
