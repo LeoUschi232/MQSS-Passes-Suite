@@ -201,7 +201,8 @@ void BaseACERAgent::update_assuming_gradients_are_computed() {
 
 unsigned int
 BaseACERAgent::select_greedy_action(const torch::Tensor &observation) {
-  return this->actor_avg->forward(observation)
+  return this->actor_avg
+      ->forward(observation.to(this->device).to(torch::kFloat32))
       .argmax(/*dim=*/-1)
       .to(torch::kInt32)
       .detach()
