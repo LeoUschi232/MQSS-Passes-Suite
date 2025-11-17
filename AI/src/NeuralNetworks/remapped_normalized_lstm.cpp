@@ -32,18 +32,12 @@ RemappedNormalizedLSTMImpl::RemappedNormalizedLSTMImpl(unsigned int input_size,
 }
 
 torch::Tensor RemappedNormalizedLSTMImpl::forward(torch::Tensor x) {
-  if (x.dim() != 2 && x.dim() != 3) {
-    throw std::invalid_argument(
-        "FilterLSTM expects input tensor of dimension 2 or 3.");
-  }
-  if (x.dim() == 2) {
-    x = x.unsqueeze(/*dim=*/1);
-  }
   if (this->first_forward) {
     this->my_lstm->flatten_parameters();
     this->first_forward = false;
   }
-  auto [y, _] = this->my_lstm->forward(this->remapper_normalizer->forward(x));
+  auto [y, _] = this->my_lstm->forward(
+      this->remapper_normalizer->forward(x).unsqueeze(/*dim=*/1));
   return y.squeeze(/*dim=*/1);
 }
 } // namespace ai_pass_selector
