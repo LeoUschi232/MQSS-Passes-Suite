@@ -190,7 +190,9 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*bootstrap_next_state=*/bootstrap_next_state);
         agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
                                  optional_temperature_alpha_loss);
-        c10::cuda::CUDACachingAllocator::emptyCache();
+        if (device == torch::kCUDA) {
+          c10::cuda::CUDACachingAllocator::emptyCache();
+        }
       }
       rollout_old = std::move(rollout_new);
       previous_episode_reward = total_episode_reward;

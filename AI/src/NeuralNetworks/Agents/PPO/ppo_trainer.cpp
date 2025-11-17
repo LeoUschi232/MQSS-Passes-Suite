@@ -214,7 +214,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
                      /*display_message=*/main_message + " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
-      c10::cuda::CUDACachingAllocator::emptyCache();
+      if (device == torch::kCUDA) {
+        c10::cuda::CUDACachingAllocator::emptyCache();
+      }
       rollout_old = std::move(rollout_new);
       add_bootstrap_old = add_bootstrap_new;
       previous_episode_reward = total_episode_reward;
