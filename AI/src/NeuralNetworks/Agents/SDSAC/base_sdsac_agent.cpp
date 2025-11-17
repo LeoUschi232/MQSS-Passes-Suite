@@ -103,6 +103,15 @@ std::pair<torch::Tensor, torch::Tensor>
 BaseSDSACAgent::select_action(const torch::Tensor &observation) {
   auto x = observation.to(this->device).to(torch::kFloat32);
   auto action_probs = this->actor->forward(x);
+  if ((action_probs < 0).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains x<0.");
+  }
+  if (torch::isinf(action_probs).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains Inf.");
+  }
+  if (torch::isnan(action_probs).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains NaN.");
+  }
   return {
       action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
       -(action_probs * action_probs.log())
@@ -255,7 +264,8 @@ void BaseSDSACAgent::load_model() {
   try {
     torch::load(this->actor, actor_path.string(), this->device);
     torch::load(this->critic, critic_Q1_main_path.string(), this->device);
-    torch::load(this->critic_Q2_main, critic_Q2_main_path.string(), this->device);
+    torch::load(this->critic_Q2_main, critic_Q2_main_path.string(),
+                this->device);
     torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
     torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
   } catch (const std::exception &) {
