@@ -117,8 +117,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       rewards.reserve(max_steps_per_episode);
       std::vector<unsigned int> action_indices;
       action_indices.reserve(max_steps_per_episode);
-      unsigned int step_idx;
-      for (step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
+      for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
         if (interrupted) {
           break;
         }
@@ -151,6 +150,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         rewards.push_back(torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
         action_indices.push_back(action_index);
         total_episode_reward += reward;
+        if (terminated || truncated) {
+          break;
+        }
         if (terminated || truncated) {
           break;
         }
