@@ -46,8 +46,7 @@ TCNResidualBlockWithReLU::TCNResidualBlockWithReLU(unsigned int in_channels,
   // Expects input shape: [C_in, N]
   // Exerts output shape: [C_out, N]
   this->convolutional_block = torch::nn::Sequential(
-      this->weight_norm_conv1, // -> [C_out, N] // <- Here I want weight norm to
-                               // remove layer norm
+      this->weight_norm_conv1, // -> [C_out, N]
       torch::nn::ReLU(),       // -> [C_out, N]
       torch::nn::Dropout(
           torch::nn::DropoutOptions().p(dropout)), // -> [C_out, N]
