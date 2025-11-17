@@ -95,6 +95,7 @@ torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
       torch::nn::AdaptiveAvgPool1d(1u),       // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
       torch::nn::Linear(2 * P, NR_PASSES), // -> [NR_PASSES]
+      torch::nn::Tanh(),                   // -> [NR_PASSES]
       torch::nn::Softmax(/*dim=*/0u)       // -> [NR_PASSES]
   );
 }
@@ -167,6 +168,7 @@ make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
       torch::nn::Flatten(
           torch::nn::FlattenOptions().start_dim(/*dim=*/0)), // -> [2*P]
       torch::nn::Linear(2 * P, NR_PASSES),                   // -> [NR_PASSES]
+      torch::nn::Tanh(),                                     // -> [NR_PASSES]
       torch::nn::Softmax(/*dim=*/0u)                         // -> [NR_PASSES]
   );
 }
