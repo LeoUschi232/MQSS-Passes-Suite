@@ -193,8 +193,8 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
              /*trajectory_elements=*/std::move(trajectory_elements)});
       }
     } catch (const std::exception &error) {
-      std::cerr << "Exception during episode " << episode_idx << ": "
-                << error.what() << std::endl;
+      std::cerr << "\nError in Episode " << episode_idx << ":\n"
+                << cut_to_newline(error.what()) << std::endl;
       if (stop_training_on_error) {
         interrupted = 1;
         break;
