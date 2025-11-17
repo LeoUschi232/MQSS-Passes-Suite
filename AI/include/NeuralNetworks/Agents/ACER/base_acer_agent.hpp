@@ -111,8 +111,6 @@ public:
    */
   void update_assuming_gradients_are_computed();
   //////////////////////////////////////////////////////////////////////////////
-  /// Saving and Loading
-  void save_model() const override;
 };
 } // namespace ai_pass_selector
 

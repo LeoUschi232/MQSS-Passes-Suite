@@ -136,7 +136,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         unsigned int action_index;
         if (on_policy) {
           torch::Tensor action = agent->select_action(policy_main);
-          action_index = action.item<unsigned int>();
+          action_index = action.item<int>();
           assert(trajectory_elements.size() == step_idx);
           trajectory_elements.push_back(
               {/*action_index=*/action_index,
