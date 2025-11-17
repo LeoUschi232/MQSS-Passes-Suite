@@ -252,11 +252,16 @@ void BaseSDSACAgent::load_model() {
       !fs::exists(critic_Q2_avg_path)) {
     return;
   }
-  torch::load(this->actor, actor_path.string(), this->device);
-  torch::load(this->critic, critic_Q1_main_path.string(), this->device);
-  torch::load(this->critic_Q2_main, critic_Q2_main_path.string(), this->device);
-  torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
-  torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->critic, critic_Q1_main_path.string(), this->device);
+    torch::load(this->critic_Q2_main, critic_Q2_main_path.string(), this->device);
+    torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
+    torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
   std::cout << "Loaded model: " << name << std::endl;
 }
 } // namespace ai_pass_selector
