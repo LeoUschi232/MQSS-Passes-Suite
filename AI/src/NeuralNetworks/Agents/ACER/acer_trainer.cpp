@@ -106,17 +106,19 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       double total_episode_reward = 0.0;
       auto [nr_qubits, nr_gates] = environment.size();
       std::vector<torch::Tensor> original_policies;
-      original_policies.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_main;
-      policies_main.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> policies_avg;
-      policies_avg.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> Q_values_list;
-      Q_values_list.reserve(max_steps_per_episode);
       std::vector<torch::Tensor> rewards;
-      rewards.reserve(max_steps_per_episode);
       std::vector<unsigned int> action_indices;
+      original_policies.reserve(max_steps_per_episode);
+      policies_main.reserve(max_steps_per_episode);
+      policies_avg.reserve(max_steps_per_episode);
+      Q_values_list.reserve(max_steps_per_episode);
+      rewards.reserve(max_steps_per_episode);
       action_indices.reserve(max_steps_per_episode);
+
+      bool add_bootstrap = false;
       for (unsigned int step_idx = 0u; step_idx < max_steps_per_episode; step_idx++) {
         if (interrupted) {
           break;
