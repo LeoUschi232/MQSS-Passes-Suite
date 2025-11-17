@@ -20,7 +20,7 @@ make_TCN_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
                const std::optional<double> &optional_prelu_init) {
   // Input shape: [N, IRS]
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(
@@ -42,7 +42,7 @@ make_TCN_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
                 const std::optional<double> &optional_prelu_init) {
   // Input shape: [N, IRS]
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(
@@ -64,7 +64,7 @@ make_TCN_Q_estimator(unsigned int max_qubits, unsigned int nr_residual_blocks,
                      const std::optional<double> &optional_prelu_init) {
   // Input shape: [N, IRS]
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(
@@ -85,7 +85,7 @@ torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential( // Input: [N, IRS]
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
@@ -104,7 +104,7 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential( // Input: [N, IRS]
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
@@ -124,7 +124,7 @@ make_LSTM_Q_estimator(unsigned int max_qubits,
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential( // Input: [N, IRS]
       torch::nn::FilterLSTM(/*input_size=*/IRS, /*hidden_size=*/H,
                             /*bidirectional=*/true,
                             /*proj_size=*/P), // -> [N, 2*P]
@@ -145,7 +145,7 @@ make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(
@@ -177,7 +177,7 @@ make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(
@@ -208,7 +208,7 @@ torch::nn::Sequential make_hybrid_Q_estimator(
   const unsigned int IRS = MAX_QUBITS_TO_IRS(max_qubits);
   const unsigned int H = hidden_size_multiplier * IRS;
   const unsigned int P = projection_size_multiplier * IRS;
-  return torch::nn::Sequential(
+  return torch::nn::Sequential(               // Input: [N, IRS]
       torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
       optional_prelu_init.has_value()
           ? torch::nn::AnyModule(

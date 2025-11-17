@@ -47,37 +47,7 @@ Tensor WeightNormConv1dImpl::forward(const Tensor &input) {
                 this->stride, this->padding, this->dilation);
 }
 
-FilterLSTMImpl::FilterLSTMImpl(unsigned int input_size,
-                               unsigned int hidden_size, bool bidirectional,
-                               unsigned int proj_size) {
-  if (0u < proj_size && proj_size < hidden_size) {
-    this->my_lstm = LSTM(LSTMOptions(input_size, hidden_size)
-                             .bidirectional(bidirectional)
-                             .proj_size(proj_size));
-  } else {
-    this->my_lstm =
-        LSTM(LSTMOptions(input_size, hidden_size).bidirectional(bidirectional));
-  }
-  this->register_module("my_lstm", this->my_lstm);
-  this->my_lstm->flatten_parameters();
-  this->first_forward = true;
-}
 
-Tensor FilterLSTMImpl::forward(Tensor x) {
-  if (x.dim() != 2 && x.dim() != 3) {
-    throw std::invalid_argument(
-        "FilterLSTM expects input tensor of dimension 2 or 3.");
-  }
-  if (x.dim() == 2) {
-    x = x.unsqueeze(/*dim=*/1);
-  }
-  if (this->first_forward) {
-    this->my_lstm->flatten_parameters();
-    this->first_forward = false;
-  }
-  auto [y, _] = this->my_lstm->forward(x.contiguous());
-  return y.squeeze(/*dim=*/1);
-}
 
 Functional TransposeContiguous(int32_t dim0, int32_t dim1) {
   return Functional([dim0, dim1](const Tensor &x) {
