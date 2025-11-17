@@ -166,13 +166,11 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     Q_ret = Vi + truncated_importance_weights[action_index] *
                      (Q_ret - Q_values_list[i][action_index]);
   }
-  critic_loss.backward();
 }
 
-void BaseACERAgent::update_parameters(
-    const torch::Tensor &actor_gradients, const torch::Tensor &critic_loss) {
+void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
+                                      const torch::Tensor &critic_loss) {
   this->actor_optimizer->zero_grad();
-  this->critic_optimizer->zero_grad();
   std::vector<torch::Tensor> actor_parameters =
       this->actor->parameters(/*recurse=*/true);
   // Assign adjusted gradients back to actor parameters
@@ -193,7 +191,9 @@ void BaseACERAgent::update_parameters(
     }
     offset += nr_trainable_parameters;
   }
+  this->critic_optimizer->zero_grad();
   this->actor_optimizer->step();
+  critic_loss.backward();
   this->critic_optimizer->step();
   {
     torch::NoGradGuard no_grad_guard;
