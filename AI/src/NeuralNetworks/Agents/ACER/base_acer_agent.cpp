@@ -37,6 +37,7 @@ bool BaseACERAgent::initialize(
     this->register_module("actor_avg", this->actor_avg);
     this->register_module("critic", this->critic);
     this->critic->to(this->device);
+    this->actor_avg->to(this->device);
     this->actor->to(this->device);
     this->actor_optimizer = std::shared_ptr(std::move(makeOptimizer(
         this->actor_optimizer_type, this->actor, this->actor_learning_rate)));
