@@ -192,8 +192,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             {/*environment_reset_seed=*/environment_seed,
              /*trajectory_elements=*/std::move(trajectory_elements)});
       }
-    } catch (const std::exception &) {
-      std::cerr << "Error in Episode " << episode_idx << "." << std::endl;
+    } catch (const std::exception &error) {
+      std::cerr << "Error in Episode " << episode_idx << ":\n"
+                << error.what() << std::endl;
       agent->load_model();
       if (stop_training_on_error) {
         interrupted = 1;

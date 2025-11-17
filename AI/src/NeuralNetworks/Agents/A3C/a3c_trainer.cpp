@@ -339,8 +339,9 @@ train_a2c(const std::unique_ptr<BaseA3CAgent> &agent,
                        /*display_message=*/main_message +
                            " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
-    } catch (const std::exception &) {
-      std::cerr << "Error in Episode " << episode_idx << "." << std::endl;
+    } catch (const std::exception &error) {
+      std::cerr << "Error in Episode " << episode_idx << ":\n"
+                << error.what() << std::endl;
       agent->load_model();
       if (stop_training_on_error) {
         interrupted = 1;

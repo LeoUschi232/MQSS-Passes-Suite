@@ -222,8 +222,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
       previous_episode_reward = total_episode_reward;
       previous_nr_qubits = nr_qubits;
       previous_nr_gates = nr_gates;
-    } catch (const std::exception &) {
-      std::cerr << "Error in Episode " << episode_idx << "." << std::endl;
+    } catch (const std::exception &error) {
+      std::cerr << "Error in Episode " << episode_idx << ":\n"
+                << error.what() << std::endl;
       agent->load_model();
       if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
         interrupted = 1;
