@@ -106,10 +106,12 @@ public:
   );
 
   /**
-   * Assumes gradients had been computed using the method
-   * compute_losses_and_accumulate_gradients in the trainer.
+   *
+   * @param actor_gradients
+   * @param critic_loss
    */
-  void update_assuming_gradients_are_computed();
+  void update_parameters(const torch::Tensor &actor_gradients,
+                         const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
 };
 } // namespace ai_pass_selector

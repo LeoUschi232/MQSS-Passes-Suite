@@ -169,8 +169,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
   critic_loss.backward();
 }
 
-void BaseACERAgent::update_assuming_gradients_are_computed(
-    torch::Tensor actor_gradients, torch::Tensor critic_loss) {
+void BaseACERAgent::update_parameters(
+    const torch::Tensor &actor_gradients, const torch::Tensor &critic_loss) {
   this->actor_optimizer->zero_grad();
   this->critic_optimizer->zero_grad();
   std::vector<torch::Tensor> actor_parameters =
