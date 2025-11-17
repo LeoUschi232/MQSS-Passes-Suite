@@ -95,14 +95,14 @@ public:
    * @param action_indices
    */
   void compute_losses_and_accumulate_gradients(
-      int k,                                             // Nr taken steps
-      const torch::Tensor &rewards,                      // Shape [k]
-      torch::Tensor Q_ret,                               // Shape []
-      const torch::Tensor &policies_main,                // Shape [k, NR_PASSES]
-      const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
-      const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
-      const torch::Tensor &original_policies, // Shape [k]
-      const std::vector<unsigned int> &action_indices    // Shape [k]
+      int k,                                          // Nr taken steps
+      const torch::Tensor &rewards,                   // Shape [k]
+      torch::Tensor Q_ret,                            // Shape []
+      const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
+      const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
+      const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
+      const torch::Tensor &original_policies,         // Shape [k]
+      const std::vector<unsigned int> &action_indices // Shape [k]
   );
 
   /**

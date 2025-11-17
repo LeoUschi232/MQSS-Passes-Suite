@@ -89,14 +89,14 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
 }
 
 void BaseACERAgent::compute_losses_and_accumulate_gradients(
-    int k,                                             // Shape []
-    const torch::Tensor &rewards,                      // Shape [k]
-    torch::Tensor Q_ret,                               // Shape []
-    const torch::Tensor &policies_main,                // Shape [k, NR_PASSES]
-    const torch::Tensor &policies_avg,                 // Shape [k, NR_PASSES]
-    const torch::Tensor &Q_values_list,                // Shape [k, NR_PASSES]
-    const torch::Tensor &original_policies, // Shape [k, NR_PASSES]
-    const std::vector<unsigned int> &action_indices    // Shape [k]
+    int k,                                          // Shape []
+    const torch::Tensor &rewards,                   // Shape [k]
+    torch::Tensor Q_ret,                            // Shape []
+    const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
+    const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
+    const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
+    const torch::Tensor &original_policies,             // Shape [k, NR_PASSES]
+    const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
   for (int i = k - 1; i >= 0; i--) {
     Q_ret = rewards[i] + this->discount_factor * Q_ret;
@@ -104,6 +104,8 @@ void BaseACERAgent::compute_losses_and_accumulate_gradients(
     unsigned int action_index = action_indices[i];
     ////////////////////////////////////////////////////////////////////////////
     /// 1. Computing quantities needed for trust region updating
+    torch::Tensor truncated_importance_weights =
+        policies_main[i] / (policies_main[i] + DIVISION_BY_ZERO_BLOCK);
     torch::Tensor g_summand_top =
         torch::min(this->acer_truncation_threshold_c,
                    truncated_importance_weights[i][action_index])
