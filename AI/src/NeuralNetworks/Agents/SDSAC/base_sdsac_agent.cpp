@@ -237,7 +237,7 @@ void BaseSDSACAgent::load_model() {
   try {
     torch::load(this->actor, actor_path.string(), this->device);
     torch::load(this->critic, critic_Q1_path.string(), this->device);
-    torch::load(this->critic_Q2_main, critic_Q1_path.string(), this->device);
+    torch::load(this->critic_Q2_main, critic_Q2_path.string(), this->device);
     torch::load(this->critic_Q1_avg, critic_Q1_path.string(), this->device);
     torch::load(this->critic_Q2_avg, critic_Q2_path.string(), this->device);
   } catch (const std::exception &) {
