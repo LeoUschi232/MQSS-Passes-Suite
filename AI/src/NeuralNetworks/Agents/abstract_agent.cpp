@@ -74,7 +74,7 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "tcn") {
         return std::make_unique<A3C_TCN>(attributes.max_qubits);
       }
-      if (attributes.extras == "lstmbmnp") {
+      if (attributes.extras == "lstm") {
         return std::make_unique<A3C_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
@@ -87,7 +87,7 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "tcn") {
         return std::make_unique<PPO_TCN>(attributes.max_qubits);
       }
-      if (attributes.extras == "lstmbmnp") {
+      if (attributes.extras == "lstm") {
         return std::make_unique<PPO_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
@@ -100,7 +100,7 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "tcn") {
         return std::make_unique<SDSAC_TCN>(attributes.max_qubits);
       }
-      if (attributes.extras == "lstmbmnp") {
+      if (attributes.extras == "lstm") {
         return std::make_unique<SDSAC_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
@@ -113,7 +113,7 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       if (attributes.extras == "tcn") {
         return std::make_unique<ACER_TCN>(attributes.max_qubits);
       }
-      if (attributes.extras == "lstmbmnp") {
+      if (attributes.extras == "lstm") {
         return std::make_unique<ACER_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
