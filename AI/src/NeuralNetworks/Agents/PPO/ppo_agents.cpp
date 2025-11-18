@@ -48,7 +48,7 @@ PPO_HYBRID::PPO_HYBRID(unsigned int max_qubits) : BasePPOAgent(max_qubits) {
 std::string PPO_TCN::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "ppo-" << size_string << "-tcn ";
+  oss << "ppo-" << size_string << "-tcn";
   return oss.str();
 }
 
