@@ -26,15 +26,15 @@ TCNResidualBlock::TCNResidualBlock(unsigned int in_channels,
           ),
       layer_norm(torch::nn::Sequential(         // Input shape: [C_out, N]
           torch::nn::TransposeContiguous(0, 1), // -> [N, C_out]
-          torch::nn::LayerNorm(torch::nn::LayerNormOptions(
-              /*normalized_shape=*/{out_channels})), // -> [N, C_out]
-          torch::nn::TransposeContiguous(0, 1)       // -> [C_out, N]
+          torch::nn::LayerNorm(
+              torch::nn::LayerNormOptions({out_channels})), // -> [N, C_out]
+          torch::nn::TransposeContiguous(0, 1)              // -> [C_out, N]
           )) {
   if (kernel_size % 2 == 0) {
     throw std::invalid_argument("Kernel size in TCNResidualBlock must be odd.");
   }
-  this->register_module("convolutional_block", convolutional_block);
-  this->register_module("layer_norm_block", layer_norm);
+  this->register_module("convolutional_block", this->convolutional_block);
+  this->register_module("layer_norm_block", this->layer_norm);
 }
 
 torch::Tensor TCNResidualBlock::forward(const torch::Tensor &x) {
@@ -50,8 +50,7 @@ TCNFullNetwork::TCNFullNetwork(unsigned int nr_channels,
   unsigned int dilation = 1u;
   for (unsigned i = 0u; i < nr_residual_blocks; i++) {
     this->tcn_sequence->push_back(TCNResidualBlock(
-        /*in_channels=*/nr_channels, /*out_channels=*/nr_channels, kernel_size,
-        dilation, dropout));
+        nr_channels, nr_channels, kernel_size, dilation, dropout));
     dilation <<= 1u;
   }
   this->register_module("tcn_sequence", this->tcn_sequence);

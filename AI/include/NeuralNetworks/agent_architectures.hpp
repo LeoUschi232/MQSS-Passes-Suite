@@ -22,18 +22,15 @@ constexpr double TCN_QUBIT_MAGIC = 31.5;
 // log2(x*130)=9 => x=3.94.
 constexpr double HYBRID_QUBIT_MAGIC = 3.93;
 
-torch::nn::Sequential
-make_TCN_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
-               unsigned int kernel_size,
-               const std::optional<double> &optional_prelu_init = std::nullopt);
-torch::nn::Sequential make_TCN_critic(
-    unsigned int max_qubits, unsigned int nr_residual_blocks,
-    unsigned int kernel_size,
-    const std::optional<double> &optional_prelu_init = std::nullopt);
-torch::nn::Sequential make_TCN_Q_estimator(
-    unsigned int max_qubits, unsigned int nr_residual_blocks,
-    unsigned int kernel_size,
-    const std::optional<double> &optional_prelu_init = std::nullopt);
+torch::nn::Sequential make_TCN_actor(unsigned int max_qubits,
+                                     unsigned int nr_residual_blocks,
+                                     unsigned int kernel_size);
+torch::nn::Sequential make_TCN_critic(unsigned int max_qubits,
+                                      unsigned int nr_residual_blocks,
+                                      unsigned int kernel_size);
+torch::nn::Sequential make_TCN_Q_estimator(unsigned int max_qubits,
+                                           unsigned int nr_residual_blocks,
+                                           unsigned int kernel_size);
 
 torch::nn::Sequential make_LSTM_actor(unsigned int max_qubits,
                                       unsigned int hidden_size_multiplier,
@@ -46,21 +43,19 @@ make_LSTM_Q_estimator(unsigned int max_qubits,
                       unsigned int hidden_size_multiplier,
                       unsigned int projection_size_multiplier);
 
-torch::nn::Sequential make_hybrid_actor(
-    unsigned int max_qubits, unsigned int nr_residual_blocks,
-    unsigned int kernel_size, unsigned int hidden_size_multiplier,
-    unsigned int projection_size_multiplier,
-    const std::optional<double> &optional_prelu_init = std::nullopt);
-torch::nn::Sequential make_hybrid_critic(
-    unsigned int max_qubits, unsigned int nr_residual_blocks,
-    unsigned int kernel_size, unsigned int hidden_size_multiplier,
-    unsigned int projection_size_multiplier,
-    const std::optional<double> &optional_prelu_init = std::nullopt);
+torch::nn::Sequential
+make_hybrid_actor(unsigned int max_qubits, unsigned int nr_residual_blocks,
+                  unsigned int kernel_size, unsigned int hidden_size_multiplier,
+                  unsigned int projection_size_multiplier);
+torch::nn::Sequential
+make_hybrid_critic(unsigned int max_qubits, unsigned int nr_residual_blocks,
+                   unsigned int kernel_size,
+                   unsigned int hidden_size_multiplier,
+                   unsigned int projection_size_multiplier);
 torch::nn::Sequential make_hybrid_Q_estimator(
     unsigned int max_qubits, unsigned int nr_residual_blocks,
     unsigned int kernel_size, unsigned int hidden_size_multiplier,
-    unsigned int projection_size_multiplier,
-    const std::optional<double> &optional_prelu_init = std::nullopt);
+    unsigned int projection_size_multiplier);
 
 } // namespace ai_pass_selector
 
