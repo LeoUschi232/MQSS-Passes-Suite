@@ -75,14 +75,12 @@ const std::unordered_map<OptimizerType, std::string, EnumClassHash>
                               {OptimizerType::SGD, "sgd"}};
 
 /**
- *
  * @param agent_name
  * @return
  */
 AgentAttributes parseAgentName(const std::string &agent_name);
 
 /**
- *
  * @param optimizerType
  * @param agentModel
  * @param learningRate
@@ -93,14 +91,12 @@ makeOptimizer(OptimizerType optimizerType,
               const torch::nn::Sequential &agentModel, double learningRate);
 
 /**
- *
  * @param circuit
  * @return
  */
 std::string select_best_agent(const std::string &circuit);
 
 /**
- *
  * @param network
  * @return
  */

@@ -216,14 +216,10 @@ void print_agent_info(const std::string &agent_name) {
             attributes.agent_class) {
     case AgentClass::A3C: {
       std::unique_ptr<BaseA3CAgent> agent;
-      if (attributes.extras == "tcnrelu") {
-        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
-      } else if (attributes.extras == "tcnprelu") {
-        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmhmpp") {
-        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmbmnp") {
-        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<A3C_TCN>(attributes.max_qubits);
+      } else if (attributes.extras == "lstm") {
+        agent = std::make_unique<A3C_LSTM>(attributes.max_qubits);
       } else if (attributes.extras == "hybrid") {
         agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
       } else {

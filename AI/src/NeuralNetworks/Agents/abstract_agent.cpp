@@ -71,17 +71,11 @@ AbstractAgent::getAgent(const std::string &agent_name) {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case AgentClass::A3C: {
-      if (attributes.extras == "tcnrelu") {
-        return std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "tcnprelu") {
-        return std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "lstmhmpp") {
-        return std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        return std::make_unique<A3C_TCN>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmbmnp") {
-        return std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+        return std::make_unique<A3C_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
         return std::make_unique<A3C_HYBRID>(attributes.max_qubits);
@@ -90,17 +84,11 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       return {};
     }
     case AgentClass::PPO: {
-      if (attributes.extras == "tcnrelu") {
-        return std::make_unique<PPO_TCN_RELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "tcnprelu") {
-        return std::make_unique<PPO_TCN_PRELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "lstmhmpp") {
-        return std::make_unique<PPO_LSTM_HMPP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        return std::make_unique<PPO_TCN>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmbmnp") {
-        return std::make_unique<PPO_LSTM_BMNP>(attributes.max_qubits);
+        return std::make_unique<PPO_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
         return std::make_unique<PPO_HYBRID>(attributes.max_qubits);
@@ -109,17 +97,11 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       return {};
     }
     case AgentClass::SDSAC: {
-      if (attributes.extras == "tcnrelu") {
-        return std::make_unique<SDSAC_TCN_RELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "tcnprelu") {
-        return std::make_unique<SDSAC_TCN_PRELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "lstmhmpp") {
-        return std::make_unique<SDSAC_LSTM_HMPP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        return std::make_unique<SDSAC_TCN>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmbmnp") {
-        return std::make_unique<SDSAC_LSTM_BMNP>(attributes.max_qubits);
+        return std::make_unique<SDSAC_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
         return std::make_unique<SDSAC_HYBRID>(attributes.max_qubits);
@@ -128,17 +110,11 @@ AbstractAgent::getAgent(const std::string &agent_name) {
       return {};
     }
     case AgentClass::ACER: {
-      if (attributes.extras == "tcnrelu") {
-        return std::make_unique<ACER_TCN_RELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "tcnprelu") {
-        return std::make_unique<ACER_TCN_PRELU>(attributes.max_qubits);
-      }
-      if (attributes.extras == "lstmhmpp") {
-        return std::make_unique<ACER_LSTM_HMPP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        return std::make_unique<ACER_TCN>(attributes.max_qubits);
       }
       if (attributes.extras == "lstmbmnp") {
-        return std::make_unique<ACER_LSTM_BMNP>(attributes.max_qubits);
+        return std::make_unique<ACER_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
         return std::make_unique<ACER_HYBRID>(attributes.max_qubits);
