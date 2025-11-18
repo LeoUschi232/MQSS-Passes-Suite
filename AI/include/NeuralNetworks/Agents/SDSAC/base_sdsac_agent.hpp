@@ -102,8 +102,7 @@ public:
            const torch::Tensor &Q2_avg,            // Shape [NR_PASSES]
            const torch::Tensor &action,            // Shape []
            const torch::Tensor &action_probs,      // Shape [NR_PASSES]
-           const torch::Tensor &old_entropy,       // Shape []
-           const torch::Tensor &new_entropy        // Shape []
+           const torch::Tensor &old_entropy       // Shape []
   );
 
   /**

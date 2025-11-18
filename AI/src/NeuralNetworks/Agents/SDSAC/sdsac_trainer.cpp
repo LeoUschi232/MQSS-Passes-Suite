@@ -172,9 +172,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*Q2_avg=*/Q2_avg.detach(),
                 /*action=*/rollout_old.actions[update_step],
                 /*action_probs=*/action_probs,
-                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
-                /*new_entropy=*/
-                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
+                /*old_entropy=*/rollout_old.entropies[update_step].detach()  );
         agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
                                  optional_temperature_alpha_loss);
         action_probs_next = action_probs.detach();
