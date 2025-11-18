@@ -23,7 +23,6 @@ extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 std::unordered_map<std::string, std::string>
 train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
             const std::string &dataset) {
-  // Default values
   unsigned int max_qubits = agent->getMaxQubits();
   unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
   unsigned int max_steps_per_episode =

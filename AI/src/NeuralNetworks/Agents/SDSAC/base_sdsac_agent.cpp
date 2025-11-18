@@ -73,9 +73,8 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
                       this->sdsac_shared_learning_rate)));
     this->alpha_optimizer =
         std::make_shared<torch::optim::Adam>(torch::optim::Adam(
-            /*params=*/{this->sdsac_temperature_alpha},
-            /*defaults=*/torch::optim::AdamOptions(
-                this->sdsac_shared_learning_rate)));
+            {this->sdsac_temperature_alpha},
+            torch::optim::AdamOptions(this->sdsac_shared_learning_rate)));
   } catch (const std::runtime_error &e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -113,10 +112,8 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
     throw std::runtime_error("SDSAC action_probs contains NaN.");
   }
   return {
-      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
-      -(action_probs * action_probs.log())
-           .sum(/*dim=*/-1)
-           .squeeze(-1) // Shape []
+      action_probs.multinomial(1).squeeze(-1),                 // Shape []
+      -(action_probs * action_probs.log()).sum(-1).squeeze(-1) // Shape []
   };
 }
 
@@ -154,27 +151,25 @@ BaseSDSACAgent::get_loss(
   torch::Tensor y = reward + this->discount_factor * 0.5 *
                                  (expectation_Q1 + expectation_Q2).detach();
   torch::Tensor clip_value_Q1 =
-      torch::clamp(/*self=*/Q1_main[action_index] - Q1_avg[action_index],
-                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
+      torch::clamp(Q1_main[action_index] - Q1_avg[action_index],
+                   -this->sdsac_clip_c, this->sdsac_clip_c);
   torch::Tensor clip_value_Q2 =
-      torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
-                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
+      torch::clamp(Q2_main[action_index] - Q2_avg[action_index],
+                   -this->sdsac_clip_c, this->sdsac_clip_c);
   torch::Tensor log_action_probs = action_probs.log();
   torch::Tensor target_entropy =
       this->sdsac_entropy_target_weight *
       torch::tensor(action_probs.size(0), GLOBAL_TENSOR_OPTIONS).log();
-  return {/*actor_loss=*/action_probs.dot(
-              this->sdsac_temperature_alpha.detach() * log_action_probs -
-              torch::min(Q1_main, Q2_main).detach()) +
+  return {action_probs.dot(this->sdsac_temperature_alpha.detach() *
+                               log_action_probs -
+                           torch::min(Q1_main, Q2_main).detach()) +
               0.5 * this->sdsac_penalty_beta *
                   (old_entropy - new_entropy).pow(2),
-          /*critic_Q1_loss=*/
           torch::max((Q1_main[action_index] - y).pow(2),
                      (Q1_avg[action_index] + clip_value_Q1 - y).pow(2)),
-          /*critic_Q2_loss=*/
           torch::max((Q2_main[action_index] - y).pow(2),
                      (Q2_avg[action_index] + clip_value_Q2 - y).pow(2)),
-          /*alpha_loss=*/-this->sdsac_temperature_alpha *
+          -this->sdsac_temperature_alpha *
               action_probs.dot(log_action_probs + target_entropy).detach()};
 }
 
@@ -195,20 +190,20 @@ void BaseSDSACAgent::update_parameters(
   {
     torch::NoGradGuard no_grad_guard;
     for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
-         this->critic->named_parameters(/*recurse=*/true)) {
+         this->critic->named_parameters(true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
-          this->critic_Q1_avg->named_parameters(/*recurse=*/true)[name];
+          this->critic_Q1_avg->named_parameters(true)[name];
       param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
       param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
     for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
-         this->critic_Q2_main->named_parameters(/*recurse=*/true)) {
+         this->critic_Q2_main->named_parameters(true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
       torch::Tensor param_avg =
-          this->critic_Q2_avg->named_parameters(/*recurse=*/true)[name];
+          this->critic_Q2_avg->named_parameters(true)[name];
       param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
       param_avg.add_(this->sdsac_smoothing_tau * param_main);
     }
@@ -226,19 +221,11 @@ void BaseSDSACAgent::save_model() const {
     return;
   }
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_Q1_main_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
-  fs::path critic_Q2_main_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
-  fs::path critic_Q1_avg_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
-  fs::path critic_Q2_avg_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
+  fs::path critic_Q1_path = fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1.pt");
+  fs::path critic_Q2_path = fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2.pt");
   torch::save(this->actor, actor_path.string());
-  torch::save(this->critic, critic_Q1_main_path.string());
-  torch::save(this->critic_Q2_main, critic_Q2_main_path.string());
-  torch::save(this->critic_Q1_avg, critic_Q1_avg_path.string());
-  torch::save(this->critic_Q2_avg, critic_Q2_avg_path.string());
+  torch::save(this->critic_Q1_avg, critic_Q1_path.string());
+  torch::save(this->critic_Q2_avg, critic_Q2_path.string());
 }
 
 void BaseSDSACAgent::load_model() {
@@ -248,26 +235,18 @@ void BaseSDSACAgent::load_model() {
     return;
   }
   fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_Q1_main_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
-  fs::path critic_Q2_main_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
-  fs::path critic_Q1_avg_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
-  fs::path critic_Q2_avg_path =
-      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
-  if (!fs::exists(actor_path) || !fs::exists(critic_Q1_main_path) ||
-      !fs::exists(critic_Q2_main_path) || !fs::exists(critic_Q1_avg_path) ||
-      !fs::exists(critic_Q2_avg_path)) {
+  fs::path critic_Q1_path = fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1.pt");
+  fs::path critic_Q2_path = fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2.pt");
+  if (!fs::exists(actor_path) || !fs::exists(critic_Q1_path) ||
+      !fs::exists(critic_Q2_path)) {
     return;
   }
   try {
     torch::load(this->actor, actor_path.string(), this->device);
-    torch::load(this->critic, critic_Q1_main_path.string(), this->device);
-    torch::load(this->critic_Q2_main, critic_Q2_main_path.string(),
-                this->device);
-    torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
-    torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
+    torch::load(this->critic, critic_Q1_path.string(), this->device);
+    torch::load(this->critic_Q2_main, critic_Q1_path.string(), this->device);
+    torch::load(this->critic_Q1_avg, critic_Q1_path.string(), this->device);
+    torch::load(this->critic_Q2_avg, critic_Q2_path.string(), this->device);
   } catch (const std::exception &) {
     std::cerr << "Failed to load model for agent: " << name << std::endl;
     return;
