@@ -63,7 +63,8 @@ bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
     this->critic_Q2_main->to(this->device);
     this->critic_Q1_avg->to(this->device);
     this->critic_Q2_avg->to(this->device);
-    this->sdsac_temperature_alpha.to(this->device);
+    this->sdsac_temperature_alpha =
+        this->sdsac_temperature_alpha.to(this->device);
     this->actor_optimizer = std::shared_ptr(
         std::move(makeOptimizer(this->actor_optimizer_type, this->actor,
                                 this->sdsac_shared_learning_rate)));
