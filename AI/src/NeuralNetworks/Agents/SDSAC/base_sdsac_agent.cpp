@@ -157,7 +157,7 @@ BaseSDSACAgent::get_loss(
       torch::tensor(action_probs.size(0), GLOBAL_TENSOR_OPTIONS).log();
   return {action_probs.dot(this->sdsac_temperature_alpha.detach() *
                                log_action_probs -
-                           torch::min(Q1_main, Q2_main).detach()) +
+                           torch::mean(Q1_main, Q2_main).detach()) +
               0.5 * this->sdsac_penalty_beta *
                   (old_entropy - new_entropy).square(),
           torch::max((Q1_main[action_index] - y).square(),
