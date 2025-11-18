@@ -18,14 +18,14 @@ namespace ai_pass_selector {
 /// TCN = Temporal Convolutional Network
 /// LSTM = Long Short-Term Memory
 /// HYBRID = Hybrid of TCN and LSTM
-// a3c-mq28-tcn Nr trainable parameters: 934434
-// a3c-mq130-tcn Nr trainable parameters: 10845966
+// a3c-mq28-tcn Nr trainable parameters:
+// a3c-mq130-tcn Nr trainable parameters:
 DECLARE_A3C_AGENT(A3C_TCN)
-// a3c-mq28-lstm Nr trainable parameters: 1057986
-// a3c-mq130-lstm Nr trainable parameters: 10160466
+// a3c-mq28-lstm Nr trainable parameters:
+// a3c-mq130-lstm Nr trainable parameters:
 DECLARE_A3C_AGENT(A3C_LSTM)
-// a3c-mq28-hybrid Nr trainable parameters: 860994
-// a3c-mq130-hybrid Nr trainable parameters: 9284466
+// a3c-mq28-hybrid Nr trainable parameters:
+// a3c-mq130-hybrid Nr trainable parameters:
 DECLARE_A3C_AGENT(A3C_HYBRID)
 } // namespace ai_pass_selector
 #endif // A3C_AGENTS_HPP
