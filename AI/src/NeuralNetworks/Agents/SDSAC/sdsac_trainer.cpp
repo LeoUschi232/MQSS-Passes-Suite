@@ -163,9 +163,9 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
               optional_temperature_alpha_loss] =
             agent->get_loss(
                 /*reward=*/rollout_old.rewards[update_step],
-                /*action_probs_next=*/action_probs_next.detach(),
-                /*Q1_avg_next=*/Q1_avg_next.detach(),
-                /*Q2_avg_next=*/Q2_avg_next.detach(),
+                /*action_probs_next=*/action_probs_next,
+                /*Q1_avg_next=*/Q1_avg_next,
+                /*Q2_avg_next=*/Q2_avg_next,
                 /*Q1_main=*/Q1_main,
                 /*Q2_main=*/Q2_main,
                 /*Q1_avg=*/Q1_avg.detach(),

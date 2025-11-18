@@ -89,7 +89,7 @@ public:
 
   /**
    * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
-   * optional_temperature_alpha_loss]
+   * temperature_alpha_loss]
    */
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   get_loss(const torch::Tensor &reward,            // Shape []

@@ -117,8 +117,7 @@ BaseSDSACAgent::select_action(const torch::Tensor &observation) {
   };
 }
 
-/// [actor_loss, critic_Q1_loss, critic_Q2_loss,
-/// optional_temperature_alpha_loss]
+/// [actor_loss, critic_Q1_loss, critic_Q2_loss, temperature_alpha_loss]
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 BaseSDSACAgent::get_loss(
     const torch::Tensor &reward,            // Shape []
