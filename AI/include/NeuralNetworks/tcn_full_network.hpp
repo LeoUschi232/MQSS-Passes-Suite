@@ -15,15 +15,5 @@ public:
                           unsigned int kernel_size, double dropout = 0.2);
   torch::Tensor forward(const torch::Tensor &x);
 };
-class TCNFullNetworkWithReLU final : public TCNFullNetwork {
-public:
-  explicit TCNFullNetworkWithReLU(unsigned int nr_channels,
-                                  unsigned int nr_residual_blocks = 12u,
-                                  unsigned int kernel_size = 5u,
-                                  double dropout = 0.2);
-  explicit TCNFullNetworkWithReLU(
-      const std::vector<unsigned int> &nr_channels_per_layer,
-      unsigned int kernel_size = 5u, double dropout = 0.2);
-};
 } // namespace ai_pass_selector
 #endif // TCN_FULL_NETWORK_HPP

@@ -8,86 +8,22 @@
 
 namespace ai_pass_selector {
 TCNFullNetwork::TCNFullNetwork(unsigned int nr_channels,
-                          unsigned int nr_residual_blocks,
-                          unsigned int kernel_size, double dropout) : tcn_sequence(
-
-
-                          )
-
-
-
-{
+                               unsigned int nr_residual_blocks,
+                               unsigned int kernel_size, double dropout)
+    : tcn_sequence(torch::nn::Sequential()) {
   if (kernel_size % 2 == 0) {
     throw std::invalid_argument("Kernel size in TCNResidualBlock must be odd.");
   }
-}
-torch::Tensor TCNFullNetwork::forward(const torch::Tensor &x) {
-  if (!this->tcn_sequence) {
-    throw std::runtime_error("TCNFullNetwork network not initialized.");
-  }
-  return this->tcn_sequence->forward(x);
-}
-
-TCNFullNetworkWithReLU::TCNFullNetworkWithReLU(unsigned int nr_channels,
-                                               unsigned int nr_residual_blocks,
-                                               unsigned int kernel_size,
-                                               double dropout)
-    : TCNFullNetwork(kernel_size) {
-  this->tcn_sequence = torch::nn::Sequential();
   unsigned int dilation = 1u;
   for (unsigned i = 0u; i < nr_residual_blocks; i++) {
-    this->tcn_sequence->push_back(TCNResidualBlockWithReLU(
+    this->tcn_sequence->push_back(TCNResidualBlock(
         /*in_channels=*/nr_channels, /*out_channels=*/nr_channels, kernel_size,
         dilation, dropout));
     dilation <<= 1u;
   }
-  this->register_module("network", this->tcn_sequence);
+  this->register_module("tcn_sequence", this->tcn_sequence);
 }
-
-TCNFullNetworkWithReLU::TCNFullNetworkWithReLU(
-    const std::vector<unsigned int> &nr_channels_per_layer,
-    unsigned int kernel_size, double dropout)
-    : TCNFullNetwork(kernel_size) {
-  this->tcn_sequence = torch::nn::Sequential();
-  unsigned int dilation = 1u;
-  for (unsigned int i = 1u; i < nr_channels_per_layer.size(); i++) {
-    this->tcn_sequence->push_back(TCNResidualBlockWithReLU(
-        /*in_channels=*/nr_channels_per_layer[i - 1u],
-        /*out_channels=*/nr_channels_per_layer[i], kernel_size, dilation,
-        dropout));
-    dilation <<= 1u;
-  }
-  this->register_module("network", this->tcn_sequence);
-}
-
-TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
-    unsigned int nr_channels, unsigned int nr_residual_blocks,
-    unsigned int kernel_size, double prelu_init, double dropout)
-    : TCNFullNetwork(kernel_size) {
-  this->network = torch::nn::Sequential();
-  unsigned int dilation = 1u;
-  for (unsigned i = 0u; i < nr_residual_blocks; i++) {
-    this->network->push_back(TCNResidualBlockWithPReLU(
-        /*in_channels=*/nr_channels, /*out_channels=*/nr_channels, kernel_size,
-        dilation, prelu_init, dropout));
-    dilation <<= 1u;
-  }
-  this->register_module("network", this->network);
-}
-
-TCNFullNetworkWithPReLU::TCNFullNetworkWithPReLU(
-    const std::vector<unsigned int> &nr_channels_per_layer,
-    unsigned int kernel_size, double prelu_init, double dropout)
-    : TCNFullNetwork(kernel_size) {
-  this->network = torch::nn::Sequential();
-  unsigned int dilation = 1u;
-  for (unsigned int i = 1u; i < nr_channels_per_layer.size(); i++) {
-    this->network->push_back(TCNResidualBlockWithPReLU(
-        /*in_channels=*/nr_channels_per_layer[i - 1u],
-        /*out_channels=*/nr_channels_per_layer[i], kernel_size, dilation,
-        prelu_init, dropout));
-    dilation <<= 1u;
-  }
-  this->register_module("network", this->network);
+torch::Tensor TCNFullNetwork::forward(const torch::Tensor &x) {
+  return this->tcn_sequence->forward(x);
 }
 } // namespace ai_pass_selector

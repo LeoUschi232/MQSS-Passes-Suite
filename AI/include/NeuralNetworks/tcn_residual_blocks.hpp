@@ -17,5 +17,4 @@ public:
   torch::Tensor forward(const torch::Tensor &x);
 };
 } // namespace ai_pass_selector
-
 #endif // TCN_RESIDUAL_BLOCK_HPP
