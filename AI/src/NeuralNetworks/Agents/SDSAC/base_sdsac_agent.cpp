@@ -5,6 +5,7 @@
 
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/agent_utils.hpp"
+#include "NeuralNetworks/layers_and_wrappers.hpp"
 
 // Torch includes
 #include "torch/torch.h"
@@ -141,7 +142,8 @@ BaseSDSACAgent::get_loss(
   torch::Tensor expectation_Q2 =
       action_probs_next.dot(Q2_avg_next - alpha_log_action_probs_next);
   torch::Tensor y =
-      (reward + this->discount_factor * 0.5 * (expectation_Q1 + expectation_Q2))
+      (reward +
+       this->discount_factor * torch::average(expectation_Q1, expectation_Q2))
           .detach();
   torch::Tensor clip_value_Q1 =
       torch::clamp(Q1_main[action_index] - Q1_avg[action_index],
@@ -157,7 +159,7 @@ BaseSDSACAgent::get_loss(
       torch::tensor(action_probs.size(0), GLOBAL_TENSOR_OPTIONS).log();
   return {action_probs.dot(this->sdsac_temperature_alpha.detach() *
                                log_action_probs -
-                           torch::mean(Q1_main, Q2_main).detach()) +
+                           torch::average(Q1_main, Q2_main)) +
               0.5 * this->sdsac_penalty_beta *
                   (old_entropy - new_entropy).square(),
           torch::max((Q1_main[action_index] - y).square(),

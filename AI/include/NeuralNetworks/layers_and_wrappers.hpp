@@ -4,6 +4,10 @@
 // Torch includes
 #include "torch/torch.h"
 
+namespace torch {
+Tensor average(const Tensor &a, const Tensor &b);
+} // namespace torch
+
 namespace torch::nn {
 class WeightNormConv1dImpl final : public Module {
   /// WeightNorm Parameters

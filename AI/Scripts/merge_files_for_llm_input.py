@@ -18,6 +18,7 @@ The only problems could be with logic e.g. .detach() present when inappropriate,
 Try to find errors, report about error, if any.
 """
 files_to_join = [
+    "layers_and_wrappers.cpp",
     "base_actor_critic.hpp",
     "base_actor_critic.cpp",
     "base_sdsac_agent.hpp",

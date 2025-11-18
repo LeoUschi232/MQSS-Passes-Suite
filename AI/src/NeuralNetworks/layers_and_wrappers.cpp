@@ -1,8 +1,14 @@
 #include "NeuralNetworks/layers_and_wrappers.hpp"
 
-// Torch includes
+// Utils includes
 #include "Utils/tensor_utils.hpp"
+
+// Torch includes
 #include "torch/torch.h"
+
+namespace torch {
+Tensor average(const Tensor &a, const Tensor &b) { return 0.5 * (a + b); }
+} // namespace torch
 
 namespace torch::nn {
 WeightNormConv1dImpl::WeightNormConv1dImpl(int32_t in_channels,
@@ -46,8 +52,6 @@ Tensor WeightNormConv1dImpl::forward(const Tensor &input) {
   return conv1d(input, this->weight_g * (this->weight_v / the_norm), this->bias,
                 this->stride, this->padding, this->dilation);
 }
-
-
 
 Functional TransposeContiguous(int32_t dim0, int32_t dim1) {
   return Functional([dim0, dim1](const Tensor &x) {
