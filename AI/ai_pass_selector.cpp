@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "a3c-mq28-tcnrelu"},
+      {"agent", "a3c-mq28-tcn"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
