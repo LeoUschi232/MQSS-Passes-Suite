@@ -14,16 +14,10 @@
 namespace ai_pass_selector {
 /// SDSAC = Stable Discrete Soft Actor-Critic
 /// TCN = Temporal Convolutional Network
-/// RELU = Activation Functions are set to ReLU
-/// PRELU = Activation Functions are set to PReLU
 /// LSTM = Long Short-Term Memory
-/// HMPP = High Memory Plus Projection
-/// BMNP = Balanced Memory No Projection
 /// HYBRID = Hybrid of TCN and LSTM
-DECLARE_SDSAC_AGENT(SDSAC_TCN_RELU)
-DECLARE_SDSAC_AGENT(SDSAC_TCN_PRELU)
-DECLARE_SDSAC_AGENT(SDSAC_LSTM_HMPP)
-DECLARE_SDSAC_AGENT(SDSAC_LSTM_BMNP)
+DECLARE_SDSAC_AGENT(SDSAC_TCN)
+DECLARE_SDSAC_AGENT(SDSAC_LSTM)
 DECLARE_SDSAC_AGENT(SDSAC_HYBRID)
 } // namespace ai_pass_selector
 

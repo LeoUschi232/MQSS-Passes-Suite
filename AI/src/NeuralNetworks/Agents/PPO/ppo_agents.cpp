@@ -33,7 +33,6 @@ PPO_LSTM::PPO_LSTM(unsigned int max_qubits) : BasePPOAgent(max_qubits) {
 }
 
 PPO_HYBRID::PPO_HYBRID(unsigned int max_qubits) : BasePPOAgent(max_qubits) {
-  // Nr trainable parameters: unknown
   const unsigned int nr_residual_blocks =
       std::ceil(std::log2(HYBRID_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 3u;

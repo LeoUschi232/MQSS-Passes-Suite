@@ -16,7 +16,6 @@
 namespace ai_pass_selector {
 A3C_TCN::A3C_TCN(unsigned int max_qubits, bool is_boss)
     : BaseA3CAgent(max_qubits, is_boss) {
-  // Nr trainable parameters: unknown
   const unsigned int nr_residual_blocks =
       std::ceil(std::log2(TCN_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 5u;
@@ -50,15 +49,15 @@ A3C_HYBRID::A3C_HYBRID(unsigned int max_qubits, bool is_boss)
 }
 
 std::unique_ptr<BaseA3CAgent> A3C_TCN::clone() const {
-  return std::make_unique<A3C_TCN>(this->max_qubits, /*is_boss=*/false);
+  return std::make_unique<A3C_TCN>(this->max_qubits, false);
 }
 
 std::unique_ptr<BaseA3CAgent> A3C_LSTM::clone() const {
-  return std::make_unique<A3C_LSTM>(this->max_qubits, /*is_boss=*/false);
+  return std::make_unique<A3C_LSTM>(this->max_qubits, false);
 }
 
 std::unique_ptr<BaseA3CAgent> A3C_HYBRID::clone() const {
-  return std::make_unique<A3C_HYBRID>(this->max_qubits, /*is_boss=*/false);
+  return std::make_unique<A3C_HYBRID>(this->max_qubits, false);
 }
 
 std::string A3C_TCN::agentName() const {
