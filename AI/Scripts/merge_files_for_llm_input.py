@@ -1,4 +1,5 @@
-from os import getcwd
+from os import getcwd, walk
+from os.path import join
 
 dir_list = getcwd().split("/")
 while True:
@@ -9,8 +10,7 @@ while True:
 include_dir = "/".join(dir_list + ["AI", "include"])
 src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
-final_text = """
-Consider the following subset of files of the project.
+prefix = """Consider the following subset of files of the project.
 Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
@@ -23,8 +23,20 @@ files_to_join = [
     "sdsac_trainer.hpp",
     "sdsac_trainer.cpp",
 ]
-# TODO: Recusrively go through all files in includes and src and check for matching filesnames.
-# For file in files -> add full filepath to final_text, then ":\n\n", then file content.
+filepaths = []
+for root, _, files in walk(include_dir):
+    for file in files:
+        if file in files_to_join:
+            filepaths.append(join(root, file))
+for root, _, files in walk(src_dir):
+    for file in files:
+        if file in files_to_join:
+            filepaths.append(join(root, file))
 with open(output_filepath, "w") as output_file:
-    output_file.write(final_text)
+    output_file.write(prefix)
+    for filepath in filepaths:
+        output_file.write(f"\n{filepath}:\n\n")
+        with open(filepath) as input_file:
+            output_file.write(input_file.read())
+            output_file.write("\n")
 print("Done.")

@@ -1,0 +1,986 @@
+Consider the following subset of files of the project.
+Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
+The code builds and runs.
+The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/include/NeuralNetworks/Agents/base_actor_critic.hpp:
+
+#ifndef BASE_ACTOR_CRITIC_HPP
+#define BASE_ACTOR_CRITIC_HPP
+
+// Agents includes
+#include "NeuralNetworks/Agents/abstract_agent.hpp"
+
+// Torch includes
+#include "torch/torch.h"
+
+// Standard library includes
+#include <memory>
+#include <mutex>
+
+namespace fs = std::filesystem;
+
+namespace ai_pass_selector {
+
+enum class OptimizerType : int;
+
+class BaseActorCritic : public AbstractAgent {
+protected:
+  /// Attributes on configuration
+  OptimizerType actor_optimizer_type{};
+  OptimizerType critic_optimizer_type{};
+  double actor_learning_rate = 0.0;
+  double critic_learning_rate = 0.0;
+  torch::Device device = torch::kCPU;
+  double discount_factor = 0.0;
+  double gae_hyperparameter = 0.0;
+  double entropy_coefficient = 0.0;
+
+  /// Global Attributes
+  torch::nn::Sequential actor = nullptr;
+  torch::nn::Sequential critic = nullptr;
+  std::shared_ptr<torch::optim::Optimizer> actor_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Optimizer> critic_optimizer = nullptr;
+
+  /// Mutex for thread safety
+  std::unique_ptr<std::mutex> model_mutex = std::make_unique<std::mutex>();
+
+public:
+  /// Constructors
+  explicit BaseActorCritic(unsigned int max_qubits);
+
+  /// Destructor
+  ~BaseActorCritic() override = default;
+
+  /// Copy and move constructors and assignment operators
+  BaseActorCritic(const BaseActorCritic &other) noexcept = delete;
+
+  BaseActorCritic(BaseActorCritic &&other) noexcept = default;
+
+  BaseActorCritic &operator=(const BaseActorCritic &other) noexcept = delete;
+
+  BaseActorCritic &operator=(BaseActorCritic &&other) noexcept = default;
+
+  /// Diagnostics
+  void check_params(double tiny = 1e-12, double big = 1e6) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// Standard Actor-Critic methods
+  /**
+   * @param observation
+   * @return
+   */
+  virtual unsigned int select_greedy_action(const torch::Tensor &observation);
+
+  /**
+   * Computes advantages using Generalized Advantage Estimation.
+   * @param rewards
+   * @param state_values
+   * @return
+   */
+  torch::Tensor compute_advantages(const torch::Tensor &rewards,
+                                   const torch::Tensor &state_values);
+
+  /**
+   * Computes rewards-to-go:
+   * G_t = gamma^(-t) * sum_{t'=t}^{T} gamma^(t') * R_{t'}
+   * @param rewards
+   * @return
+   */
+  torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
+
+  /**
+   * Computes the Kullback-Leibler divergence D_KL(P||Q) between two policies.
+   * D_KL(P||Q) = sum_i(P(i)*(log(P(i))-log(Q(i))))
+   * @param policy_p
+   * @param policy_q
+   * @return
+   */
+  torch::Tensor compute_KL_divergence(const torch::Tensor &policy_p,
+                                      const torch::Tensor &policy_q) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+  /**
+   * @param circuit_path
+   * @return
+   */
+  std::vector<std::function<std::unique_ptr<mlir::Pass>()>>
+  select_passes_for_circuit(const fs::path &circuit_path) override;
+
+  /// Saving and Loading
+  virtual void save_model() const;
+  void load_model() override;
+};
+} // namespace ai_pass_selector
+
+#endif // BASE_ACTOR_CRITIC_HPP
+
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/include/NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp:
+
+#ifndef BASE_SDSAC_AGENT_HPP
+#define BASE_SDSAC_AGENT_HPP
+
+// Torch includes
+#include "torch/torch.h"
+
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/base_actor_critic.hpp"
+
+// Standard library includes
+#include <memory>
+namespace fs = std::filesystem;
+
+namespace ai_pass_selector {
+enum class OptimizerType : int;
+
+class BaseSDSACAgent : public BaseActorCritic {
+protected:
+  /// SDSAC specific attributes
+  torch::Tensor sdsac_temperature_alpha = torch::tensor(0.0);
+  double sdsac_shared_learning_rate = 0.0;
+  double sdsac_smoothing_tau = 0.0;
+  double sdsac_penalty_beta = 0.0;
+  double sdsac_clip_c = 0.0;
+  double sdsac_entropy_target_weight = 0.0;
+
+  /// SDSAC Additional Critics
+  torch::nn::Sequential critic_Q2_main{nullptr};
+  torch::nn::Sequential critic_Q1_avg{nullptr};
+  torch::nn::Sequential critic_Q2_avg{nullptr};
+  std::shared_ptr<torch::optim::Optimizer> critic_Q1_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Optimizer> critic_Q2_optimizer = nullptr;
+  std::shared_ptr<torch::optim::Adam> alpha_optimizer = nullptr;
+
+public:
+  /// Constructors
+  explicit BaseSDSACAgent(unsigned int max_qubits);
+
+  /// Destructor
+  ~BaseSDSACAgent() override = default;
+
+  /// Copy and move constructors and assignment operators
+  BaseSDSACAgent(const BaseSDSACAgent &other) noexcept = delete;
+
+  BaseSDSACAgent(BaseSDSACAgent &&other) noexcept = default;
+
+  BaseSDSACAgent &operator=(const BaseSDSACAgent &other) noexcept = delete;
+
+  BaseSDSACAgent &operator=(BaseSDSACAgent &&other) noexcept = delete;
+
+  /**
+   * @param actor
+   * @param critic_Q1_main
+   * @param critic_Q2_main
+   * @param critic_Q1_avg
+   * @param critic_Q2_avg
+   * @return
+   */
+  bool initialize(const torch::nn::Sequential &actor,
+                  const torch::nn::Sequential &critic_Q1_main,
+                  const torch::nn::Sequential &critic_Q2_main,
+                  const torch::nn::Sequential &critic_Q1_avg,
+                  const torch::nn::Sequential &critic_Q2_avg);
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// SDSAC quadruple-critic methods
+
+  /**
+   * @param observation
+   * @return [policy, Q1_main, Q2_main, Q1_avg, Q2_avg]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+             torch::Tensor>
+  forward(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return [policy, Q1_avg, Q2_avg]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+  forward_only_Q_avg(const torch::Tensor &observation);
+
+  /**
+   * @param observation
+   * @return [action_index, entropy]
+   */
+  std::pair<torch::Tensor, torch::Tensor>
+  select_action(const torch::Tensor &observation);
+
+  /**
+   * @return [actor_loss, critic_Q1_loss, critic_Q2_loss,
+   * optional_temperature_alpha_loss]
+   */
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  get_loss(const torch::Tensor &reward,            // Shape []
+           const torch::Tensor &action_probs_next, // Shape [NR_PASSES]
+           const torch::Tensor &Q1_avg_next,       // Shape [NR_PASSES]
+           const torch::Tensor &Q2_avg_next,       // Shape [NR_PASSES]
+           const torch::Tensor &Q1_main,           // Shape [NR_PASSES]
+           const torch::Tensor &Q2_main,           // Shape [NR_PASSES]
+           const torch::Tensor &Q1_avg,            // Shape [NR_PASSES]
+           const torch::Tensor &Q2_avg,            // Shape [NR_PASSES]
+           const torch::Tensor &action,            // Shape []
+           const torch::Tensor &action_probs,      // Shape [NR_PASSES]
+           const torch::Tensor &old_entropy,       // Shape []
+           const torch::Tensor &new_entropy,       // Shape []
+           bool bootstrap_next_state               // No shape
+  );
+
+  /**
+   *
+   * @param actor_loss
+   * @param critic_Q1_loss
+   * @param critic_Q2_loss
+   * @param temperature_alpha_loss
+   */
+  void update_parameters(const torch::Tensor &actor_loss,
+                         const torch::Tensor &critic_Q1_loss,
+                         const torch::Tensor &critic_Q2_loss,
+                         const torch::Tensor &temperature_alpha_loss) const;
+  //////////////////////////////////////////////////////////////////////////////
+
+  /// Saving and Loading
+  void save_model() const override;
+  void load_model() override;
+};
+
+} // namespace ai_pass_selector
+
+#endif // BASE_SDSAC_AGENT_HPP
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/include/NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp:
+
+#ifndef SDSAC_TRAINER_HPP
+#define SDSAC_TRAINER_HPP
+
+// Agents includes
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
+
+// Torch includes
+#include "torch/torch.h"
+
+namespace ai_pass_selector {
+struct SDSAC_EpisodeRollout {
+  std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
+  torch::Tensor actions;                   // [T]
+  torch::Tensor rewards;                   // [T]
+  torch::Tensor entropies;                 // [T]
+  bool bootstrap_last_state = false;       // No shape
+};
+
+/**
+ *
+ * @param agent
+ * @param dataset
+ * @return
+ */
+std::unordered_map<std::string, std::string>
+train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
+            const std::string &dataset);
+} // namespace ai_pass_selector
+
+#endif // SDSAC_TRAINER_HPP
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/src/NeuralNetworks/Agents/base_actor_critic.cpp:
+
+#include "NeuralNetworks/Agents/base_actor_critic.hpp"
+
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+
+// Torch includes
+#include "torch/torch.h"
+
+// Utils includes
+#include "Utils/info_utils.hpp"
+#include "Utils/passes_utils.hpp"
+#include "Utils/tensor_utils.hpp"
+
+// Standard library includes
+#include <cmath>
+#include <memory>
+#include <tuple>
+
+namespace ai_pass_selector {
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
+BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
+    : AbstractAgent(max_qubits) {
+  this->device = GLOBAL_PARAMS["device"].to_device_type();
+  this->actor_learning_rate = GLOBAL_PARAMS["actor_learning_rate"].to_double();
+  this->critic_learning_rate =
+      GLOBAL_PARAMS["critic_learning_rate"].to_double();
+  this->actor_optimizer_type =
+      static_cast<OptimizerType>(GLOBAL_PARAMS["actor_optimizer_idx"].to_int());
+  this->critic_optimizer_type = static_cast<OptimizerType>(
+      GLOBAL_PARAMS["critic_optimizer_idx"].to_int());
+  this->discount_factor = GLOBAL_PARAMS["discount_factor"].to_double();
+  this->gae_hyperparameter = GLOBAL_PARAMS["gae_hyperparameter"].to_double();
+  this->entropy_coefficient = GLOBAL_PARAMS["entropy_coefficient"].to_double();
+}
+
+unsigned int
+BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
+  return this->actor->forward(observation.to(this->device).to(torch::kFloat32))
+      .argmax(/*dim=*/-1)
+      .to(torch::kInt32)
+      .detach()
+      .item<int>();
+}
+
+torch::Tensor BaseActorCritic::compute_advantages(
+    const torch::Tensor &rewards,     // Shape [T]
+    const torch::Tensor &state_values // Shape [T+1]
+) {
+  // Let T = final timestep of an episode.
+  // An episode generates T rewards from R_1 to R_T.
+  // An episode generates T+1 states from S_0 to S_T.
+  int T = rewards.size(0);
+  torch::Tensor advantages = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
+
+  // Compute the advantages using Generalized Advantage Estimation.
+  // Temporal Difference is a method used in Reinforcement Learning to estimate
+  // the value function of a state based on the difference between the immediate
+  // reward obtained from a current state and the estimated value of the next
+  // state.
+  torch::Tensor A_gae = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
+  for (int t = T - 1; t >= 0; t--) {
+    // Temporal Difference Error of V(s) with discount gamma is:
+    // delta_t = r_t + gamma * V(s_{t+1}) - V(s_t)
+    // Barto & Sutton Reinforcement Learning page 121, equation (6.5)
+    torch::Tensor delta_t = rewards[t] - state_values[t] +
+                            this->discount_factor * state_values[t + 1];
+
+    // The generalized advantage estimation defined by Schulman et al is:
+    // A_gae = sum_{l=0}^{\infty} (gamma * lamda)^l * delta_{t+l}
+    A_gae = this->discount_factor * this->gae_hyperparameter * A_gae + delta_t;
+    advantages[t] = A_gae;
+  }
+  return advantages;
+}
+torch::Tensor
+BaseActorCritic::compute_rewards_to_go(const torch::Tensor &rewards) {
+  // Let T = final timestep of an episode.
+  // An episode generates T rewards from R_1 to R_T.
+  int T = rewards.size(0);
+  if (T <= 0) {
+    return torch::tensor({}, rewards.options());
+  }
+  torch::Tensor rewards_to_go = torch::zeros({T}, GLOBAL_TENSOR_OPTIONS);
+  rewards_to_go[T - 1] = rewards[T - 1];
+  for (int t = T - 2; t >= 0; t--) {
+    rewards_to_go[t] =
+        rewards[t] + this->discount_factor * rewards_to_go[t + 1];
+  }
+  return rewards_to_go;
+}
+
+torch::Tensor
+BaseActorCritic::compute_KL_divergence(const torch::Tensor &policy_p,
+                                       const torch::Tensor &policy_q) const {
+  return (policy_p * (policy_p.log() - policy_q.log())).sum(-1);
+}
+
+void BaseActorCritic::check_params(double tiny, double big) const {
+  auto check = [&](const char *tag, const torch::nn::Sequential &network) {
+    size_t total = 0, bad = 0; //
+    for (torch::OrderedDict<std::string, torch::Tensor>::Item &keyvalue :
+         network->named_parameters(/*recurse=*/true)) {
+      const std::string &name = keyvalue.key();
+      const torch::Tensor &value = keyvalue.value();
+      total += value.numel();
+      bool has_nan = value.isnan().any().item<bool>();
+      bool has_inf = value.isinf().any().item<bool>();
+      double abs_max = value.abs().max().item<double>();
+      double abs_min_not_zero = 0.0;
+      {
+        torch::Tensor abs_value = value.abs();
+        torch::Tensor flat = abs_value.view({-1});
+        if (torch::Tensor non_zero = flat.index({flat.gt(0)});
+            non_zero.numel() > 0) {
+          abs_min_not_zero = non_zero.min().item<double>();
+        }
+      }
+      if (has_nan || has_inf || abs_max > big ||
+          (abs_min_not_zero > 0.0 && abs_min_not_zero < tiny)) {
+        ++bad;
+        std::cout << "[PARAM] " << tag << "." << name << " nan=" << has_nan
+                  << " inf=" << has_inf << " abs_max=" << abs_max
+                  << " abs_min_not_zero=" << abs_min_not_zero
+                  << " shape=" << value.sizes() << "\n";
+      }
+    }
+    std::cout << "[SUMMARY] " << tag << " total_params=" << total
+              << " suspicious=" << bad << "\n";
+  };
+  if (this->actor) {
+    check(/*tag=*/"actor", this->actor);
+  }
+  if (this->critic) {
+    check(/*tag=*/"critic", this->critic);
+  }
+}
+
+std::vector<std::function<std::unique_ptr<Pass>()>>
+BaseActorCritic::select_passes_for_circuit(const fs::path &circuit_path) {
+  QuantumCircuitEnvironment environment(this->max_qubits);
+  if (!environment.register_quantum_circuit(circuit_path)) {
+    std::cerr << "Failed to register quantum circuit: " << circuit_path
+              << std::endl;
+    return {};
+  }
+  std::vector<std::function<std::unique_ptr<Pass>()>> selected_passes;
+  bool keep_going = true;
+  while (keep_going) {
+    unsigned int action_index = this->select_greedy_action(
+        environment.get_observation_as_torch_tensor());
+    auto [_, terminated, truncated] = environment.step(action_index);
+    selected_passes.push_back(PASS_FUNCTIONS[action_index]);
+    keep_going = !terminated && !truncated;
+  }
+  return selected_passes;
+}
+
+void BaseActorCritic::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  torch::save(this->actor, actor_path.string());
+  torch::save(this->critic, critic_path.string());
+}
+
+void BaseActorCritic::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path =
+      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
+    return;
+  }
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->critic, critic_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
+  std::cout << "Loaded model: " << name << std::endl;
+}
+
+} // namespace ai_pass_selector
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/src/NeuralNetworks/Agents/SDSAC/sdsac_trainer.cpp:
+
+#include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
+
+// Environment includes
+#include "Environment/Wrappers/normalize_reward.hpp"
+
+// Utils includes
+#include "Utils/info_utils.hpp"
+#include "Utils/progress_bar.hpp"
+
+// Standard library includes
+#include <csignal>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+extern sig_atomic_t interrupted;
+extern void signal_handler(int signal);
+
+namespace ai_pass_selector {
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
+std::unordered_map<std::string, std::string>
+train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
+            const std::string &dataset) {
+  // Default values
+  unsigned int max_qubits = agent->getMaxQubits();
+  unsigned int nr_episodes = GLOBAL_PARAMS["nr_episodes"].to_int();
+  unsigned int max_steps_per_episode =
+      GLOBAL_PARAMS["max_steps_per_episode"].to_int();
+  unsigned int save_agent_every_ith_episode =
+      GLOBAL_PARAMS["save_agent_every_ith_episode"].to_int();
+  bool save_agent_after_training =
+      GLOBAL_PARAMS["save_agent_after_training"].to_bool();
+  torch::Device device = GLOBAL_PARAMS["device"].to_device_type();
+  if (nr_episodes <= 0 || max_steps_per_episode <= 0) {
+    std::cerr << "Nothing to train." << std::endl;
+    return {};
+  }
+  auto optional_statistics = get_precomputed_dataset_statistics(dataset);
+  if (!optional_statistics.has_value()) {
+    std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
+              << std::endl;
+    return {};
+  }
+  auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
+  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
+  int64_t T = max_steps_per_episode;
+  std::cout << "Beginning training." << std::endl;
+  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
+  SDSAC_EpisodeRollout rollout_old;
+  double previous_episode_reward = 0.0;
+  unsigned int previous_nr_qubits = 0u;
+  unsigned int previous_nr_gates = 0u;
+  for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
+       episode_idx++) {
+    if (interrupted) {
+      break;
+    }
+    if (save_agent_every_ith_episode > 0 &&
+        episode_idx % save_agent_every_ith_episode == 0) {
+      agent->save_model();
+      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                     /*display_message=*/"Saving Agent.");
+    }
+    updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
+                   /*display_message=*/"Resetting Enviornment.");
+
+    try {
+      //////////////////////////////////////////////////////////////////////////
+      /// Inner loop 1: Rollout A
+      double total_episode_reward = 0.0;
+      environment.reset();
+      auto [nr_qubits, nr_gates] = environment.size();
+
+      SDSAC_EpisodeRollout rollout_new;
+      std::vector<torch::Tensor> actions_vector;
+      std::vector<torch::Tensor> rewards_vector;
+      std::vector<torch::Tensor> entropies_vector;
+      rollout_new.observations.reserve(T + 1);
+      actions_vector.reserve(T);
+      rewards_vector.reserve(T);
+      entropies_vector.reserve(T);
+
+      bool truncated_episode = false;
+      unsigned int update_step;
+      {
+        torch::NoGradGuard no_grad;
+        for (update_step = 0u; update_step < max_steps_per_episode;
+             update_step++) {
+          updateProgresses({{episode_idx, nr_episodes},
+                            {update_step + 1, max_steps_per_episode}},
+                           /*display_message=*/"Rollout A | Reward: " +
+                               std::to_string(total_episode_reward) +
+                               " | Nr qubits: " + std::to_string(nr_qubits) +
+                               " | Nr gates: " + std::to_string(nr_gates));
+          if (interrupted) {
+            std::cout << "Caught Ctrl+C Interruption in SDSAC training."
+                      << std::endl;
+            break;
+          }
+          // TODO: do loop A
+          torch::Tensor observation =
+              environment.get_observation_as_torch_tensor();
+          auto [action, entropy] = agent->select_action(observation);
+          rollout_new.observations.push_back(observation);
+          actions_vector.push_back(action.detach());
+          entropies_vector.push_back(entropy.detach());
+          auto [reward, terminated, truncated] =
+              environment.step(action.item<int>());
+          rewards_vector.push_back(
+              torch::tensor(reward, GLOBAL_TENSOR_OPTIONS));
+          total_episode_reward += reward;
+          if (truncated) {
+            truncated_episode = true;
+            break;
+          }
+          if (terminated) {
+            break;
+          }
+        }
+      }
+      torch::Tensor observation = environment.get_observation_as_torch_tensor();
+      rollout_new.observations.push_back(observation);
+      if (!truncated_episode && update_step >= max_steps_per_episode) {
+        truncated_episode = true;
+      }
+      rollout_new.actions = torch::stack(actions_vector).to(device);
+      rollout_new.rewards = torch::stack(rewards_vector).to(device);
+      rollout_new.entropies = torch::stack(entropies_vector).to(device);
+      rollout_new.bootstrap_last_state = truncated_episode;
+
+      //////////////////////////////////////////////////////////////////////////
+      /// Inner loop 2: Rollout B
+      // Observations is length T+1.
+      unsigned int steps_in_episode = rollout_old.observations.size();
+      // Must reduce to T to match actions, log_action_probs, and rewards.
+      if (steps_in_episode-- <= 1u) {
+        // Empty rollout, probably first episode, skip update.
+        rollout_old = std::move(rollout_new);
+        previous_episode_reward = total_episode_reward;
+        previous_nr_qubits = nr_qubits;
+        previous_nr_gates = nr_gates;
+        continue;
+      }
+      for (update_step = 0u; update_step < steps_in_episode; update_step++) {
+        updateProgresses(
+            {{episode_idx, nr_episodes}, {update_step + 1, steps_in_episode}},
+            /*display_message=*/"Rollout B | Reward: " +
+                std::to_string(previous_episode_reward) +
+                " | Nr qubits: " + std::to_string(previous_nr_qubits) +
+                " | Nr gates: " + std::to_string(previous_nr_gates));
+        if (interrupted) {
+          std::cout << "Caught Ctrl+C Interruption in SDSAC training."
+                    << std::endl;
+          break;
+        }
+        auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] = agent->forward(
+            /*observation=*/rollout_old.observations[update_step]);
+        torch::Tensor action_probs_next;
+        torch::Tensor Q1_avg_next;
+        torch::Tensor Q2_avg_next;
+        bool bootstrap_next_state = update_step + 1u < steps_in_episode ||
+                                    rollout_old.bootstrap_last_state;
+        if (bootstrap_next_state) {
+          std::tie(action_probs_next, Q1_avg_next, Q2_avg_next) =
+              agent->forward_only_Q_avg(
+                  /*observation=*/rollout_old.observations[update_step + 1u]);
+        }
+        auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
+              optional_temperature_alpha_loss] =
+            agent->get_loss(
+                /*reward=*/rollout_old.rewards[update_step],
+                /*action_probs_next=*/action_probs_next.detach(),
+                /*Q1_avg_next=*/Q1_avg_next.detach(),
+                /*Q2_avg_next=*/Q2_avg_next.detach(),
+                /*Q1_main=*/Q1_main,
+                /*Q2_main=*/Q2_main,
+                /*Q1_avg=*/Q1_avg.detach(),
+                /*Q2_avg=*/Q2_avg.detach(),
+                /*action=*/rollout_old.actions[update_step],
+                /*action_probs=*/action_probs,
+                /*old_entropy=*/rollout_old.entropies[update_step].detach(),
+                /*new_entropy=*/
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1),
+                /*bootstrap_next_state=*/bootstrap_next_state);
+        agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
+                                 optional_temperature_alpha_loss);
+      }
+      rollout_old = std::move(rollout_new);
+      previous_episode_reward = total_episode_reward;
+      previous_nr_qubits = nr_qubits;
+      previous_nr_gates = nr_gates;
+    } catch (const std::exception &error) {
+      std::cerr << "Error in Episode " << episode_idx << ":\n"
+                << error.what() << std::endl;
+      agent->load_model();
+      if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
+        interrupted = 1;
+        break;
+      }
+    }
+  }
+  if (!interrupted) {
+    std::cout << "\nTraining finished." << std::endl;
+  }
+  if (save_agent_after_training) {
+    agent->save_model();
+    std::cout << "Saved: " << agent->agentName() << std::endl;
+  }
+  return {};
+}
+
+} // namespace ai_pass_selector
+
+
+/home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/src/NeuralNetworks/Agents/SDSAC/base_sdsac_agent.cpp:
+
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
+
+// Environment includes
+#include "Environment/quantum_circuit_environment.hpp"
+
+// Neural-Networks includes
+#include "NeuralNetworks/Agents/agent_utils.hpp"
+
+// Torch includes
+#include "torch/torch.h"
+
+// Utils includes
+#include "Utils/info_utils.hpp"
+#include "Utils/passes_utils.hpp"
+
+// Standard library includes
+#include <memory>
+#include <utility>
+
+namespace ai_pass_selector {
+extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
+
+BaseSDSACAgent::BaseSDSACAgent(unsigned int max_qubits)
+    : BaseActorCritic(max_qubits) {
+  this->sdsac_temperature_alpha =
+      torch::tensor(GLOBAL_PARAMS["sdsac_temperature_alpha"].to_double())
+          .to(torch::kFloat32)
+          .to(this->device)
+          .set_requires_grad(true);
+  this->sdsac_shared_learning_rate =
+      GLOBAL_PARAMS["sdsac_shared_learning_rate"].to_double();
+  this->sdsac_smoothing_tau = GLOBAL_PARAMS["sdsac_smoothing_tau"].to_double();
+  this->sdsac_penalty_beta = GLOBAL_PARAMS["sdsac_penalty_beta"].to_double();
+  this->sdsac_clip_c = GLOBAL_PARAMS["sdsac_clip_c"].to_double();
+  this->sdsac_entropy_target_weight =
+      GLOBAL_PARAMS["sdsac_entropy_target_weight"].to_double();
+}
+
+bool BaseSDSACAgent::initialize(const torch::nn::Sequential &actor,
+                                const torch::nn::Sequential &critic_Q1_main,
+                                const torch::nn::Sequential &critic_Q2_main,
+                                const torch::nn::Sequential &critic_Q1_avg,
+                                const torch::nn::Sequential &critic_Q2_avg) {
+  try {
+    this->actor = actor;
+    this->critic = critic_Q1_main;
+    this->critic_Q2_main = critic_Q2_main;
+    this->critic_Q1_avg = critic_Q1_avg;
+    this->critic_Q2_avg = critic_Q2_avg;
+    // Load the model before putting it to the device to avoid device
+    // scheduling issus.
+    this->load_model();
+    this->register_module("actor", this->actor);
+    this->register_module("critic", this->critic);
+    this->register_module("critic_Q2_main", this->critic_Q2_main);
+    this->register_module("critic_Q1_avg", this->critic_Q1_avg);
+    this->register_module("critic_Q2_avg", this->critic_Q2_avg);
+    this->actor->to(this->device);
+    // The main critic is critic_V_main.
+    this->critic->to(this->device);
+    this->critic_Q2_main->to(this->device);
+    this->critic_Q1_avg->to(this->device);
+    this->critic_Q2_avg->to(this->device);
+    this->actor_optimizer = std::shared_ptr(
+        std::move(makeOptimizer(this->actor_optimizer_type, this->actor,
+                                this->sdsac_shared_learning_rate)));
+    this->critic_Q1_optimizer = std::shared_ptr(
+        std::move(makeOptimizer(this->critic_optimizer_type, this->critic,
+                                this->sdsac_shared_learning_rate)));
+    this->critic_Q2_optimizer = std::shared_ptr(std::move(
+        makeOptimizer(this->critic_optimizer_type, this->critic_Q2_main,
+                      this->sdsac_shared_learning_rate)));
+    this->alpha_optimizer =
+        std::make_shared<torch::optim::Adam>(torch::optim::Adam(
+            /*params=*/{this->sdsac_temperature_alpha},
+            /*defaults=*/torch::optim::AdamOptions(
+                this->sdsac_shared_learning_rate)));
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
+  return true;
+}
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,
+           torch::Tensor>
+BaseSDSACAgent::forward(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
+  return {this->actor->forward(x), this->critic->forward(x),
+          this->critic_Q2_main->forward(x), this->critic_Q1_avg->forward(x),
+          this->critic_Q2_avg->forward(x)};
+}
+
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
+BaseSDSACAgent::forward_only_Q_avg(const torch::Tensor &observation) {
+  torch::Tensor x = observation.to(torch::kFloat32).to(this->device);
+  return {this->actor->forward(x), this->critic_Q1_avg->forward(x),
+          this->critic_Q2_avg->forward(x)};
+}
+
+std::pair<torch::Tensor, torch::Tensor>
+BaseSDSACAgent::select_action(const torch::Tensor &observation) {
+  auto x = observation.to(this->device).to(torch::kFloat32);
+  auto action_probs = this->actor->forward(x);
+  if ((action_probs < 0).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains x<0.");
+  }
+  if (torch::isinf(action_probs).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains Inf.");
+  }
+  if (torch::isnan(action_probs).any().item<bool>()) {
+    throw std::runtime_error("SDSAC action_probs contains NaN.");
+  }
+  return {
+      action_probs.multinomial(/*num_samples=*/1).squeeze(-1), // Shape []
+      -(action_probs * action_probs.log())
+           .sum(/*dim=*/-1)
+           .squeeze(-1) // Shape []
+  };
+}
+
+/// [actor_loss, critic_Q1_loss, critic_Q2_loss,
+/// optional_temperature_alpha_loss]
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+BaseSDSACAgent::get_loss(
+    const torch::Tensor &reward,            // Shape []
+    const torch::Tensor &action_probs_next, // Shape [NR_PASSES]
+    const torch::Tensor &Q1_avg_next,       // Shape [NR_PASSES]
+    const torch::Tensor &Q2_avg_next,       // Shape [NR_PASSES]
+    const torch::Tensor &Q1_main,           // Shape [NR_PASSES]
+    const torch::Tensor &Q2_main,           // Shape [NR_PASSES]
+    const torch::Tensor &Q1_avg,            // Shape [NR_PASSES]
+    const torch::Tensor &Q2_avg,            // Shape [NR_PASSES]
+    const torch::Tensor &action,            // Shape []
+    const torch::Tensor &action_probs,      // Shape [NR_PASSES]
+    const torch::Tensor &old_entropy,       // Shape []
+    const torch::Tensor &new_entropy,       // Shape []
+    bool bootstrap_next_state               // No shape
+) {
+  int32_t action_index = action.item<int32_t>();
+  torch::Tensor expectation_Q1;
+  torch::Tensor expectation_Q2;
+  if (bootstrap_next_state) {
+    torch::Tensor log_action_probs_next = action_probs_next.log().detach();
+    expectation_Q1 = action_probs_next.dot(
+        Q1_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+    expectation_Q2 = action_probs_next.dot(
+        Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+  } else {
+    expectation_Q1 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
+    expectation_Q2 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
+  }
+  torch::Tensor y = reward + this->discount_factor * 0.5 *
+                                 (expectation_Q1 + expectation_Q2).detach();
+  torch::Tensor clip_value_Q1 =
+      torch::clamp(/*self=*/Q1_main[action_index] - Q1_avg[action_index],
+                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
+  torch::Tensor clip_value_Q2 =
+      torch::clamp(/*self=*/Q2_main[action_index] - Q2_avg[action_index],
+                   /*min=*/-this->sdsac_clip_c, /*max=*/this->sdsac_clip_c);
+  torch::Tensor log_action_probs = action_probs.log();
+  torch::Tensor target_entropy =
+      this->sdsac_entropy_target_weight *
+      torch::tensor(action_probs.size(0), GLOBAL_TENSOR_OPTIONS).log();
+  return {/*actor_loss=*/action_probs.dot(
+              this->sdsac_temperature_alpha.detach() * log_action_probs -
+              torch::min(Q1_main, Q2_main).detach()) +
+              0.5 * this->sdsac_penalty_beta *
+                  (old_entropy - new_entropy).pow(2),
+          /*critic_Q1_loss=*/
+          torch::max((Q1_main[action_index] - y).pow(2),
+                     (Q1_avg[action_index] + clip_value_Q1 - y).pow(2)),
+          /*critic_Q2_loss=*/
+          torch::max((Q2_main[action_index] - y).pow(2),
+                     (Q2_avg[action_index] + clip_value_Q2 - y).pow(2)),
+          /*alpha_loss=*/-this->sdsac_temperature_alpha *
+              action_probs.dot(log_action_probs + target_entropy).detach()};
+}
+
+void BaseSDSACAgent::update_parameters(
+    const torch::Tensor &actor_loss, const torch::Tensor &critic_Q1_loss,
+    const torch::Tensor &critic_Q2_loss,
+    const torch::Tensor &temperature_alpha_loss) const {
+  std::lock_guard lock(*this->model_mutex);
+  this->actor_optimizer->zero_grad();
+  actor_loss.backward();
+  this->actor_optimizer->step();
+  this->critic_Q1_optimizer->zero_grad();
+  critic_Q1_loss.backward();
+  this->critic_Q1_optimizer->step();
+  this->critic_Q2_optimizer->zero_grad();
+  critic_Q2_loss.backward();
+  this->critic_Q2_optimizer->step();
+  {
+    torch::NoGradGuard no_grad_guard;
+    for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
+         this->critic->named_parameters(/*recurse=*/true)) {
+      const std::string &name = pair.key();
+      torch::Tensor param_main = pair.value();
+      torch::Tensor param_avg =
+          this->critic_Q1_avg->named_parameters(/*recurse=*/true)[name];
+      param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
+      param_avg.add_(this->sdsac_smoothing_tau * param_main);
+    }
+    for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
+         this->critic_Q2_main->named_parameters(/*recurse=*/true)) {
+      const std::string &name = pair.key();
+      torch::Tensor param_main = pair.value();
+      torch::Tensor param_avg =
+          this->critic_Q2_avg->named_parameters(/*recurse=*/true)[name];
+      param_avg.mul_(1.0 - this->sdsac_smoothing_tau);
+      param_avg.add_(this->sdsac_smoothing_tau * param_main);
+    }
+  }
+  this->alpha_optimizer->zero_grad();
+  temperature_alpha_loss.backward();
+  this->alpha_optimizer->step();
+}
+
+void BaseSDSACAgent::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_Q1_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
+  fs::path critic_Q2_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
+  fs::path critic_Q1_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
+  fs::path critic_Q2_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
+  torch::save(this->actor, actor_path.string());
+  torch::save(this->critic, critic_Q1_main_path.string());
+  torch::save(this->critic_Q2_main, critic_Q2_main_path.string());
+  torch::save(this->critic_Q1_avg, critic_Q1_avg_path.string());
+  torch::save(this->critic_Q2_avg, critic_Q2_avg_path.string());
+}
+
+void BaseSDSACAgent::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_Q1_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_main.pt");
+  fs::path critic_Q2_main_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_main.pt");
+  fs::path critic_Q1_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q1_avg.pt");
+  fs::path critic_Q2_avg_path =
+      fs::path(AI_AGENTS_DIR) / (name + "-critic_Q2_avg.pt");
+  if (!fs::exists(actor_path) || !fs::exists(critic_Q1_main_path) ||
+      !fs::exists(critic_Q2_main_path) || !fs::exists(critic_Q1_avg_path) ||
+      !fs::exists(critic_Q2_avg_path)) {
+    return;
+  }
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->critic, critic_Q1_main_path.string(), this->device);
+    torch::load(this->critic_Q2_main, critic_Q2_main_path.string(),
+                this->device);
+    torch::load(this->critic_Q1_avg, critic_Q1_avg_path.string(), this->device);
+    torch::load(this->critic_Q2_avg, critic_Q2_avg_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
+  std::cout << "Loaded model: " << name << std::endl;
+}
+} // namespace ai_pass_selector
