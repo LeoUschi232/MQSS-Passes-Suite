@@ -4,9 +4,6 @@
 // Torch includes
 #include "torch/torch.h"
 
-// Standard library includes
-#include <optional>
-
 namespace ai_pass_selector {
 // For TCN/Hybrid architectures the depth, and with it the maximum receptive
 // field, should be dependant on the maximum number of qubits in the circuits.

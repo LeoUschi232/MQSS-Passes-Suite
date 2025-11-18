@@ -1,44 +1,30 @@
 #include "NeuralNetworks/remapped_normalized_lstm.hpp"
 
-// Neural Networks includes
-#include "NeuralNetworks/layers_and_wrappers.hpp"
-
 // Torch includes
 #include "torch/torch.h"
 
 namespace ai_pass_selector {
-RemappedNormalizedLSTMImpl::RemappedNormalizedLSTMImpl(unsigned int input_size,
-                                                       unsigned int hidden_size,
-                                                       bool bidirectional,
-                                                       unsigned int proj_size)
-    : remapper_normalizer(torch::nn::Sequential(  // Input: [N, IRS]
-          torch::nn::TransposeContiguous(0u, 1u), // -> [IRS, N]
-          torch::nn::Conv1d(input_size, input_size,
-                            /*kernel_size=*/1),   // -> [IRS, N]
-          torch::nn::TransposeContiguous(0u, 1u), // -> [N, IRS]
-          torch::nn::LayerNorm(torch::nn::LayerNormOptions(
-              /*normalized_shape*/ {input_size})), // -> [N, IRS]
-          torch::nn::ReLU()                        // -> [N, IRS]
-          )),
-      my_lstm(
+SingleOutputLSTMImpl::SingleOutputLSTMImpl(unsigned int input_size,
+                                           unsigned int hidden_size,
+                                           unsigned int proj_size)
+    : my_lstm( // Input: [N, C_in]
           0u < proj_size && proj_size < hidden_size
               ? torch::nn::LSTM(torch::nn::LSTMOptions(input_size, hidden_size)
-                                    .bidirectional(bidirectional)
-                                    .proj_size(proj_size))
+                                    .bidirectional(true)
+                                    .proj_size(proj_size)) // -> [N, 2*P]
               : torch::nn::LSTM(torch::nn::LSTMOptions(input_size, hidden_size)
-                                    .bidirectional(bidirectional))) {
-  this->register_module("remapper_normalizer", this->remapper_normalizer);
+                                    .bidirectional(true)) // -> [N, 2*H]
+      ) {
   this->register_module("my_lstm", this->my_lstm);
   this->my_lstm->flatten_parameters();
 }
 
-torch::Tensor RemappedNormalizedLSTMImpl::forward(torch::Tensor x) {
+torch::Tensor SingleOutputLSTMImpl::forward(const torch::Tensor &x) {
   if (this->first_forward) {
     this->my_lstm->flatten_parameters();
     this->first_forward = false;
   }
-  auto [y, _] = this->my_lstm->forward(
-      this->remapper_normalizer->forward(x).unsqueeze(/*dim=*/1));
-  return y.squeeze(/*dim=*/1);
+  auto [y, _] = this->my_lstm->forward(x.unsqueeze(1));
+  return y.squeeze(1);
 }
 } // namespace ai_pass_selector

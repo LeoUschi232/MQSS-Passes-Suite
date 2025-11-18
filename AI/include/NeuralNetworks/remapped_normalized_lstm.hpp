@@ -13,17 +13,16 @@ namespace ai_pass_selector {
  * This function MUST be placed right after an LSTM in a nn::Sequential.
  * @return The actual output tensor of the LSTM.
  */
-class RemappedNormalizedLSTMImpl final : public torch::nn::Module {
-  torch::nn::Sequential remapper_normalizer{nullptr};
+class SingleOutputLSTMImpl final : public torch::nn::Module {
   torch::nn::LSTM my_lstm{nullptr};
   bool first_forward = true;
 
 public:
-  RemappedNormalizedLSTMImpl(unsigned int input_size, unsigned int hidden_size,
-                             bool bidirectional, unsigned int proj_size = 0);
-  torch::Tensor forward(torch::Tensor x);
+  SingleOutputLSTMImpl(unsigned int input_size, unsigned int hidden_size,
+                       unsigned int proj_size = 0);
+  torch::Tensor forward(const torch::Tensor &x);
 };
-TORCH_MODULE(RemappedNormalizedLSTM);
+TORCH_MODULE(SingleOutputLSTM);
 
 } // namespace ai_pass_selector
 
