@@ -12,6 +12,7 @@ src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
 prefix = """Consider the following subset of files of the project.
 Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
+Also fuck bootrap, I want always bootstrap even if an episode terminates. So don't complain about bootrap.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
 Try to find errors, report about error, if any.
@@ -19,10 +20,10 @@ Try to find errors, report about error, if any.
 files_to_join = [
     "base_actor_critic.hpp",
     "base_actor_critic.cpp",
-    "base_acer_agent.hpp",
-    "base_acer_agent.cpp",
-    "acer_trainer.hpp",
-    "acer_trainer.cpp",
+    "base_sdsac_agent.hpp",
+    "base_sdsac_agent.cpp",
+    "sdsac_trainer.hpp",
+    "sdsac_trainer.cpp",
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
