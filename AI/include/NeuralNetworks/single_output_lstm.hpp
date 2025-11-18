@@ -1,10 +1,10 @@
-#ifndef REMAPPED_NORMALIZED_LSTM_HPP
-#define REMAPPED_NORMALIZED_LSTM_HPP
+#ifndef SINGLE_OUTPUT_LSTM_HPP
+#define SINGLE_OUTPUT_LSTM_HPP
 
 // Torch includes
 #include "torch/torch.h"
 
-namespace ai_pass_selector {
+namespace torch::nn {
 /**
  * The LSTM in libtorch returns a std::tuple<Tensor, std::tuple<Tensor,
  * Tensor>> where only the first tensor is the actual output of the LSTM. The
@@ -13,17 +13,17 @@ namespace ai_pass_selector {
  * This function MUST be placed right after an LSTM in a nn::Sequential.
  * @return The actual output tensor of the LSTM.
  */
-class SingleOutputLSTMImpl final : public torch::nn::Module {
-  torch::nn::LSTM my_lstm{nullptr};
+class SingleOutputLSTMImpl final : public Module {
+  LSTM my_lstm{nullptr};
   bool first_forward = true;
 
 public:
   SingleOutputLSTMImpl(unsigned int input_size, unsigned int hidden_size,
                        unsigned int proj_size = 0);
-  torch::Tensor forward(const torch::Tensor &x);
+  Tensor forward(const Tensor &x);
 };
 TORCH_MODULE(SingleOutputLSTM);
 
-} // namespace ai_pass_selector
+} // namespace torch::nn
 
-#endif // REMAPPED_NORMALIZED_LSTM_HPP
+#endif // SINGLE_OUTPUT_LSTM_HPP
