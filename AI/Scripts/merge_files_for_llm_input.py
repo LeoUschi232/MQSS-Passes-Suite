@@ -14,6 +14,7 @@ prefix = """Consider the following subset of files of the project.
 Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
+Try to find errors, report about error, if any.
 """
 files_to_join = [
     "base_actor_critic.hpp",
