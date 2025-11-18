@@ -132,22 +132,14 @@ BaseSDSACAgent::get_loss(
     const torch::Tensor &action,            // Shape []
     const torch::Tensor &action_probs,      // Shape [NR_PASSES]
     const torch::Tensor &old_entropy,       // Shape []
-    const torch::Tensor &new_entropy,       // Shape []
-    bool bootstrap_next_state               // No shape
+    const torch::Tensor &new_entropy      // Shape []
 ) {
   int32_t action_index = action.item<int32_t>();
-  torch::Tensor expectation_Q1;
-  torch::Tensor expectation_Q2;
-  if (bootstrap_next_state) {
-    torch::Tensor log_action_probs_next = action_probs_next.log().detach();
-    expectation_Q1 = action_probs_next.dot(
-        Q1_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
-    expectation_Q2 = action_probs_next.dot(
-        Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
-  } else {
-    expectation_Q1 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
-    expectation_Q2 = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
-  }
+  torch::Tensor log_action_probs_next = action_probs_next.log().detach();
+  torch::Tensor expectation_Q1 = action_probs_next.dot(
+      Q1_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
+  torch::Tensor expectation_Q2 = action_probs_next.dot(
+      Q2_avg_next - this->sdsac_temperature_alpha * log_action_probs_next);
   torch::Tensor y = reward + this->discount_factor * 0.5 *
                                  (expectation_Q1 + expectation_Q2).detach();
   torch::Tensor clip_value_Q1 =

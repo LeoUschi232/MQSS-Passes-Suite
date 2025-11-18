@@ -103,12 +103,10 @@ public:
            const torch::Tensor &action,            // Shape []
            const torch::Tensor &action_probs,      // Shape [NR_PASSES]
            const torch::Tensor &old_entropy,       // Shape []
-           const torch::Tensor &new_entropy,       // Shape []
-           bool bootstrap_next_state               // No shape
+           const torch::Tensor &new_entropy        // Shape []
   );
 
   /**
-   *
    * @param actor_loss
    * @param critic_Q1_loss
    * @param critic_Q2_loss

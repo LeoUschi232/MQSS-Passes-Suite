@@ -5,6 +5,7 @@
 
 // Utils includes
 #include "Utils/info_utils.hpp"
+#include "Utils/passes_utils.hpp"
 #include "Utils/progress_bar.hpp"
 
 // Standard library includes
@@ -134,6 +135,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       auto action_probs_next = torch::Tensor();
       auto Q1_avg_next = torch::Tensor();
       auto Q2_avg_next = torch::Tensor();
+      bool first_iteration = true;
       for (update_step = steps_in_episode; update_step >= 0; update_step--) {
         updateProgress(
             episode_idx, nr_episodes,
@@ -146,15 +148,17 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                     << std::endl;
           break;
         }
+        if (first_iteration) {
+          auto [action_probs, Q1_avg, Q2_avg] =
+              agent->forward_only_Q_avg(rollout_old.observations[update_step]);
+          action_probs_next = action_probs.detach();
+          Q1_avg_next = Q1_avg.detach();
+          Q2_avg_next = Q2_avg.detach();
+          first_iteration = false;
+          continue;
+        }
         auto [action_probs, Q1_main, Q2_main, Q1_avg, Q2_avg] =
             agent->forward(rollout_old.observations[update_step]);
-        bool bootstrap_next_state = update_step + 1u < steps_in_episode ||
-                                    rollout_old.bootstrap_last_state;
-        if (bootstrap_next_state) {
-          std::tie(action_probs_next, Q1_avg_next, Q2_avg_next) =
-              agent->forward_only_Q_avg(
-                  rollout_old.observations[update_step + 1u]);
-        }
         auto [actor_loss, critic_Q1_loss, critic_Q2_loss,
               optional_temperature_alpha_loss] =
             agent->get_loss(
@@ -170,10 +174,12 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
                 /*action_probs=*/action_probs,
                 /*old_entropy=*/rollout_old.entropies[update_step].detach(),
                 /*new_entropy=*/
-                -(action_probs * action_probs.log()).sum(-1).squeeze(-1),
-                /*bootstrap_next_state=*/bootstrap_next_state);
+                -(action_probs * action_probs.log()).sum(-1).squeeze(-1));
         agent->update_parameters(actor_loss, critic_Q1_loss, critic_Q2_loss,
                                  optional_temperature_alpha_loss);
+        action_probs_next = action_probs.detach();
+        Q1_avg_next = Q1_avg.detach();
+        Q2_avg_next = Q2_avg.detach();
       }
       rollout_old = std::move(rollout_new);
       previous_episode_reward = total_episode_reward;
