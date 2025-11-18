@@ -1,5 +1,8 @@
 #include "NeuralNetworks/tcn_residual_blocks.hpp"
 
+// Neural-Network includes
+#include "NeuralNetworks/layers_and_wrappers.hpp"
+
 // Torch includes
 #include "torch/torch.h"
 

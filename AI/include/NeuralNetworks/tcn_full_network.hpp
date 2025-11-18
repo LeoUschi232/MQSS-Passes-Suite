@@ -7,10 +7,12 @@
 namespace ai_pass_selector {
 class TCNFullNetwork : public torch::nn::Module {
 protected:
-  torch::nn::Sequential network{nullptr};
+  torch::nn::Sequential tcn_sequence{nullptr};
 
 public:
-  explicit TCNFullNetwork(unsigned int kernel_size);
+  explicit TCNFullNetwork(unsigned int nr_channels,
+                          unsigned int nr_residual_blocks,
+                          unsigned int kernel_size, double dropout = 0.2);
   torch::Tensor forward(const torch::Tensor &x);
 };
 class TCNFullNetworkWithReLU final : public TCNFullNetwork {
@@ -23,18 +25,5 @@ public:
       const std::vector<unsigned int> &nr_channels_per_layer,
       unsigned int kernel_size = 5u, double dropout = 0.2);
 };
-class TCNFullNetworkWithPReLU final : public TCNFullNetwork {
-public:
-  explicit TCNFullNetworkWithPReLU(unsigned int nr_channels,
-                                   unsigned int nr_residual_blocks = 12u,
-                                   unsigned int kernel_size = 5u,
-                                   double prelu_init = 0.1,
-                                   double dropout = 0.2);
-  explicit TCNFullNetworkWithPReLU(
-      const std::vector<unsigned int> &nr_channels_per_layer,
-      unsigned int kernel_size = 5u, double prelu_init = 0.1,
-      double dropout = 0.2);
-};
-
 } // namespace ai_pass_selector
 #endif // TCN_FULL_NETWORK_HPP
