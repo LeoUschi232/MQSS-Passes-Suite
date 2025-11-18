@@ -49,22 +49,18 @@ SDSAC_HYBRID::SDSAC_HYBRID(unsigned int max_qubits)
   constexpr unsigned int lstm_hidden_size_multiplier = 3u;
   constexpr unsigned int lstm_projection_size_multiplier = 3u;
   this->initialize(
-      /*actor=*/make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
-                                  lstm_hidden_size_multiplier,
-                                  lstm_projection_size_multiplier),
-      /*critic_Q1_main=*/
+      make_hybrid_actor(max_qubits, nr_residual_blocks, kernel_size,
+                        lstm_hidden_size_multiplier,
+                        lstm_projection_size_multiplier),
       make_hybrid_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                               lstm_hidden_size_multiplier,
                               lstm_projection_size_multiplier),
-      /*critic_Q2_main=*/
       make_hybrid_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                               lstm_hidden_size_multiplier,
                               lstm_projection_size_multiplier),
-      /*critic_Q1_avg=*/
       make_hybrid_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                               lstm_hidden_size_multiplier,
                               lstm_projection_size_multiplier),
-      /*critic_Q2_avg=*/
       make_hybrid_Q_estimator(max_qubits, nr_residual_blocks, kernel_size,
                               lstm_hidden_size_multiplier,
                               lstm_projection_size_multiplier));
