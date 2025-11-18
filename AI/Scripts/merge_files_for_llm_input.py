@@ -19,10 +19,10 @@ Try to find errors, report about error, if any.
 files_to_join = [
     "base_actor_critic.hpp",
     "base_actor_critic.cpp",
-    "base_sdsac_agent.hpp",
-    "base_sdsac_agent.cpp",
-    "sdsac_trainer.hpp",
-    "sdsac_trainer.cpp",
+    "base_acer_agent.hpp",
+    "base_acer_agent.cpp",
+    "acer_trainer.hpp",
+    "acer_trainer.cpp",
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
