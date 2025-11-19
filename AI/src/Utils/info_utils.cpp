@@ -2,7 +2,9 @@
 
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
-#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/ACER/acer_agents.hpp"
+#include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Support includes
@@ -41,6 +43,13 @@ std::vector<std::string> split_string(const std::string &str, char delimiter) {
     parts.push_back(item);
   }
   return parts;
+}
+
+std::string cut_to_newline(std::string str) {
+  if (const auto pos = str.find('\n'); pos != std::string::npos) {
+    str.resize(pos);
+  }
+  return str;
 }
 
 std::optional<fs::path> search_circuit(const fs::path &circuit_path) {
@@ -203,37 +212,59 @@ void print_dataset_info(const std::string &dataset_name) {
 }
 
 void print_agent_info(const std::string &agent_name) {
-  unsigned int nr_parameters = 0;
+  std::unique_ptr<BaseActorCritic> agent = nullptr;
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
     case AgentClass::A3C: {
-      std::unique_ptr<BaseA3CAgent> agent;
-      if (attributes.extras == "tcnrelu") {
-        agent = std::make_unique<A3C_TCN_RELU>(attributes.max_qubits);
-      } else if (attributes.extras == "tcnprelu") {
-        agent = std::make_unique<A3C_TCN_PRELU>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmhmpp") {
-        agent = std::make_unique<A3C_LSTM_HMPP>(attributes.max_qubits);
-      } else if (attributes.extras == "lstmbmnp") {
-        agent = std::make_unique<A3C_LSTM_BMNP>(attributes.max_qubits);
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<A3C_TCN>(attributes.max_qubits);
+      } else if (attributes.extras == "lstm") {
+        agent = std::make_unique<A3C_LSTM>(attributes.max_qubits);
       } else if (attributes.extras == "hybrid") {
         agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
-      } else {
-        std::cerr << "No such A3C agent: " << agent_name << std::endl;
-        return;
       }
-      nr_parameters = count_nr_trainable_parameters(*agent);
+      break;
+    }
+    case AgentClass::PPO: {
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<PPO_TCN>(attributes.max_qubits);
+      } else if (attributes.extras == "lstm") {
+        agent = std::make_unique<PPO_LSTM>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<PPO_HYBRID>(attributes.max_qubits);
+      }
+      break;
+    }
+    case AgentClass::SDSAC: {
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<SDSAC_TCN>(attributes.max_qubits);
+      } else if (attributes.extras == "lstm") {
+        agent = std::make_unique<SDSAC_LSTM>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<SDSAC_HYBRID>(attributes.max_qubits);
+      }
+      break;
+    }
+    case AgentClass::ACER: {
+      if (attributes.extras == "tcn") {
+        agent = std::make_unique<ACER_TCN>(attributes.max_qubits);
+      } else if (attributes.extras == "lstm") {
+        agent = std::make_unique<ACER_LSTM>(attributes.max_qubits);
+      } else if (attributes.extras == "hybrid") {
+        agent = std::make_unique<ACER_HYBRID>(attributes.max_qubits);
+      }
       break;
     }
     default:
-      std::cerr << "No such agent yet: " << agent_name << std::endl;
+      std::cerr << "No such agent: " << agent_name << std::endl;
       return;
     }
-  } catch (const std::runtime_error &e) {
-    std::cerr << "\n" << e.what() << std::endl;
+  } catch (const std::runtime_error &error) {
+    std::cerr << "\n" << error.what() << std::endl;
     return;
   }
+  unsigned int nr_parameters = count_nr_trainable_parameters(*agent);
   std::cout << "\nAgent name: " << agent_name << "\n"
             << "Agent nr trainable parameters: " << nr_parameters << std::endl;
 }

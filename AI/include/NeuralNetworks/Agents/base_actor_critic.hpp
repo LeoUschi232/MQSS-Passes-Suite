@@ -10,8 +10,6 @@
 // Standard library includes
 #include <memory>
 #include <mutex>
-#include <tuple>
-#include <utility>
 
 namespace fs = std::filesystem;
 
@@ -44,15 +42,6 @@ public:
   /// Constructors
   explicit BaseActorCritic(unsigned int max_qubits);
 
-  /**
-   *
-   * @param actor
-   * @param critic
-   * @return
-   */
-  virtual bool initialize(const torch::nn::Sequential &actor,
-                          const torch::nn::Sequential &critic);
-
   /// Destructor
   ~BaseActorCritic() override = default;
 
@@ -70,35 +59,11 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
   /// Standard Actor-Critic methods
-
   /**
-   * @param observation
-   * @return [action_probs, state_value]
-   */
-  virtual std::pair<torch::Tensor, torch::Tensor>
-  forward(const torch::Tensor &observation);
-
-  /**
-   * Critic-only pass for bootstrapping.
-   * @param observation
-   * @return state_value
-   */
-  virtual torch::Tensor get_value(const torch::Tensor &observation);
-
-  /**
-   *
-   * @param observation
-   * @return [action, log_action_probs, state_value, entropy]
-   */
-  virtual std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
-  select_action(const torch::Tensor &observation);
-
-  /**
-   *
    * @param observation
    * @return
    */
-  unsigned int select_greedy_action(const torch::Tensor &observation);
+  virtual unsigned int select_greedy_action(const torch::Tensor &observation);
 
   /**
    * Computes advantages using Generalized Advantage Estimation.
@@ -118,15 +83,17 @@ public:
   torch::Tensor compute_rewards_to_go(const torch::Tensor &rewards);
 
   /**
-   *
-   * @param actor_loss
-   * @param critic_loss
+   * Computes the Kullback-Leibler divergence D_KL(P||Q) between two policies.
+   * D_KL(P||Q) = sum_i(P(i)*(log(P(i))-log(Q(i))))
+   * @param policy_p
+   * @param policy_q
+   * @return
    */
-  virtual void update_parameters(const torch::Tensor &actor_loss,
-                                 const torch::Tensor &critic_loss) const;
+  torch::Tensor compute_KL_divergence(const torch::Tensor &policy_p,
+                                      const torch::Tensor &policy_q) const;
+
   //////////////////////////////////////////////////////////////////////////////
   /**
-   *
    * @param circuit_path
    * @return
    */

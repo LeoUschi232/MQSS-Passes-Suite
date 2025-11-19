@@ -114,7 +114,7 @@ public:
   /// Short functions
   void clear(bool hard = true);
   bool validate();
-  virtual void reset();
+  virtual void reset(std::optional<int> seed = std::nullopt);
   std::pair<unsigned int, unsigned int> size() const;
 
   /**
@@ -159,8 +159,7 @@ public:
    * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
    * the current circuit.
    */
-  torch::Tensor get_observation_as_torch_tensor(
-      std::optional<torch::TensorOptions> main_options = std::nullopt);
+  torch::Tensor get_observation_as_torch_tensor();
 
   /**
    *

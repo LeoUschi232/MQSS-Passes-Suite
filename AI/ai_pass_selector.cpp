@@ -109,6 +109,9 @@ int main(int argc, char **argv) {
   auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
   auto circuit = std::string(GLOBAL_PARAMS["circuit"]);
   auto output = std::string(GLOBAL_PARAMS["output"]);
+  GLOBAL_TENSOR_OPTIONS = torch::TensorOptions()
+                              .device(GLOBAL_PARAMS["device"].to_device_type())
+                              .dtype(torch::kFloat32);
 
   if (info) {
     std::cout << "Parameters:" << std::endl;
@@ -163,14 +166,14 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "ppo-mq28-tcnrelu"},
+      {"agent", "a3c-mq28-tcn"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
       {"nr_asynchronous_agents", 1},
       {"a3c_max_async_steps", 100000},
-      {"nr_episodes", 100000},
+      {"nr_episodes", 1000000},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
       {"max_steps_same_action", 8},
@@ -182,10 +185,18 @@ void load_default_params() {
       {"actor_optimizer_idx", static_cast<int>(OptimizerType::Adam)},
       {"actor_learning_rate", 1e-3},
       {"critic_learning_rate", 5e-3},
-      {"sac_shared_learning_rate", 3e-4},
+      {"sdsac_shared_learning_rate", 3e-4},
       {"ppo_epsilon", 0.2},
-      {"sac_temperature_alpha", 0.1},
-      {"sac_smoothing_tau", 0.005},
+      {"sdsac_temperature_alpha", 0.1},
+      {"sdsac_smoothing_tau", 0.005},
+      {"sdsac_penasdlty_beta", 0.5},
+      {"sdsac_clip_c", 0.5},
+      {"sdsac_entropy_target_weight", 0.98},
+      {"acer_max_nr_trajectories", 500},
+      {"acer_ratio_of_replay", 8},
+      {"acer_truncation_threshold_c", 10.0},
+      {"acer_soft_update_alpha", 0.99},
+      {"acer_trust_region_delta", 1.0},
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},

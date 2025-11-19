@@ -26,7 +26,7 @@ public:
   ~NormalizeReward() override = default;
 
   /// Reset environment and reward normalization state
-  void reset() override;
+  void reset(std::optional<int> seed = std::nullopt) override;
 
   /// Copy and Move constructors and assignments
   NormalizeReward(const NormalizeReward &other) = delete;

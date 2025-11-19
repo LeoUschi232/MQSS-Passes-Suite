@@ -4,6 +4,10 @@
 // Torch includes
 #include "torch/torch.h"
 
+namespace torch {
+Tensor average(const Tensor &a, const Tensor &b);
+} // namespace torch
+
 namespace torch::nn {
 class WeightNormConv1dImpl final : public Module {
   /// WeightNorm Parameters
@@ -36,24 +40,6 @@ public:
 };
 
 TORCH_MODULE(WeightNormConv1d);
-
-/**
- * The LSTM in libtorch returns a std::tuple<Tensor, std::tuple<Tensor,
- * Tensor>> where only the first tensor is the actual output of the LSTM. The
- * other two tensors are the hidden and cell states, which we do not need.
- * This functional extracts only the first tensor from the tuple.
- * This function MUST be placed right after an LSTM in a nn::Sequential.
- * @return The actual output tensor of the LSTM.
- */
-class FilterLSTMImpl final : public Module {
-  LSTM my_lstm{nullptr};
-
-public:
-  FilterLSTMImpl(unsigned int input_size, unsigned int hidden_size,
-                 bool bidirectional, unsigned int proj_size = 0);
-  Tensor forward(Tensor x);
-};
-TORCH_MODULE(FilterLSTM);
 
 /**
  * Instruction tensor will have shape [N, IRS]

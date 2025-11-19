@@ -6,8 +6,12 @@
 // Agents includes
 #include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
 #include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/ACER/acer_trainer.hpp"
+#include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
+#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Utils includes
@@ -60,6 +64,26 @@ train(const std::string &agent_name, const std::string &dataset) {
       }
       agent->load_model();
       training_results = train_ppo(agent, dataset);
+      break;
+    }
+    case AgentClass::SDSAC: {
+      std::unique_ptr<BaseSDSACAgent> agent(
+          dynamic_cast<BaseSDSACAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BaseSDSACAgent");
+      }
+      agent->load_model();
+      training_results = train_sdsac(agent, dataset);
+      break;
+    }
+    case AgentClass::ACER: {
+      std::unique_ptr<BaseACERAgent> agent(
+          dynamic_cast<BaseACERAgent *>(abstract_agent.release()));
+      if (!agent) {
+        throw std::runtime_error("Failed to cast to BaseACERAgent");
+      }
+      agent->load_model();
+      training_results = train_acer(agent, dataset);
       break;
     }
     default:

@@ -6,7 +6,7 @@
 
 namespace ai_pass_selector {
 
-struct EpisodeRollout {
+struct PPO_EpisodeRollout {
   std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
   torch::Tensor actions;                   // [T]
   torch::Tensor log_action_probs;          // [T]
@@ -23,7 +23,6 @@ struct EpisodeRollout {
 std::unordered_map<std::string, std::string>
 train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
           const std::string &dataset);
-
 } // namespace ai_pass_selector
 
 #endif // PPO_TRAINER_HPP

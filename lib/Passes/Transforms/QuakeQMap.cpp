@@ -242,11 +242,13 @@ public:
       override {
     this->wasApplied->store(false);
     // Getting the function
-    auto circuit = getOperation();
+    FuncOp circuit = getOperation();
     // Get the function name
     StringRef funcName = circuit.getName();
-    if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) == std::string::npos)
-      return; // do nothing if the function is not cudaq kernel
+    if (funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) ==
+        std::string::npos) {
+      return;
+    } // do nothing if the function is not cudaq kernel
 
     this->wasApplied->store(true);
 

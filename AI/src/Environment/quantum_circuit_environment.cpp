@@ -37,6 +37,7 @@ namespace fs = std::filesystem;
 
 namespace ai_pass_selector {
 extern std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+extern torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
     : max_qubits(std::max(GLOBAL_MIN_NR_QUBITS, max_qubits)) {
@@ -98,7 +99,7 @@ void QuantumCircuitEnvironment::clear(bool hard) {
   this->truncated = false;
 }
 
-void QuantumCircuitEnvironment::reset() {
+void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
   this->clear(/*hard=*/false);
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
@@ -107,14 +108,18 @@ void QuantumCircuitEnvironment::reset() {
   if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     // The QuantumCircuit object validates itself on construction, so no need
     // for extra validation.
+    RandomizerOptions randomizer_options = {
+        .max_nr_qubits = static_cast<int>(this->max_qubits),
+        .weight_min_multiplier_for_unoccurring_gates = 0.1,
+        .probability_additionals_controls = 0.01,
+        .probability_max_qubits = this->probability_max_qubits};
+    if (seed.has_value()) {
+      randomizer_options.seed = seed.value();
+    }
     this->circuit = random_quantum_circuit_from_embedded_statistics(
         /*cholesky_params=*/qubits_cholesky_params.value(),
         /*gates_weights=*/gates_weights.value(),
-        /*randomizer_options=*/
-        {.max_nr_qubits = static_cast<int>(this->max_qubits),
-         .weight_min_multiplier_for_unoccurring_gates = 0.1,
-         .probability_additionals_controls = 0.01,
-         .probability_max_qubits = this->probability_max_qubits});
+        /*randomizer_options=*/randomizer_options);
     this->validate();
     return;
   }
@@ -430,13 +435,7 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
   return observation;
 }
 
-torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
-    std::optional<torch::TensorOptions> main_options) {
-  torch::TensorOptions cpu_options =
-      torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
-  torch::TensorOptions final_options = main_options.value_or(
-      torch::TensorOptions().dtype(torch::kFloat32).device(this->device));
-
+torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor() {
   InstructionsTensor<float> observation = this->get_observation();
   if (GLOBAL_PARAMS["print_diagnostics"].to_bool()) {
     check_tensor(observation);
@@ -445,11 +444,14 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor(
   unsigned int IRS = observation.shape[1];
   if (N < GLOBAL_MIN_NR_GATES || IRS < MIN_IRS) {
     return torch::zeros({GLOBAL_MIN_NR_GATES, std::max(IRS, MIN_IRS)},
-                        final_options);
+                        GLOBAL_TENSOR_OPTIONS);
   }
   torch::Tensor tensor = torch::from_blob(
-      /*data=*/observation.raw(), /*sizes=*/{N, IRS}, /*options=*/cpu_options);
-  return tensor.to(final_options.device(), /*type_meta=*/final_options.dtype(),
+      /*data=*/observation.raw(), /*sizes=*/{N, IRS},
+      /*options=*/
+      torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
+  return tensor.to(GLOBAL_TENSOR_OPTIONS.device(),
+                   /*type_meta=*/GLOBAL_TENSOR_OPTIONS.dtype(),
                    /*non_blocking=*/false, /*copy=*/true);
 }
 

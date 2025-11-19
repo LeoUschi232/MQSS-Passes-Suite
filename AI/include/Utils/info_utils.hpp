@@ -24,7 +24,9 @@ inline std::mt19937 &qc_rng() {
   static std::mt19937 rng_engine{std::random_device{}()};
   return rng_engine;
 }
-inline void seed_qc_rng(uint32_t seed) { qc_rng().seed(seed); }
+inline void seed_qc_rng(uint32_t seed) {
+  qc_rng().seed(seed);
+}
 inline double random01() {
   thread_local std::uniform_real_distribution dist01(0.0, 1.0);
   return dist01(qc_rng());
@@ -36,6 +38,13 @@ inline float randomAngle() {
 inline int randomInt(int start, int end) {
   std::uniform_int_distribution distInt(start, end - 1);
   return distInt(qc_rng());
+}
+inline int randomPoisson(double mean) {
+  if (mean <= 0.0) {
+    return 0;
+  }
+  std::poisson_distribution distPoisson(mean);
+  return std::max(0, distPoisson(qc_rng()));
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// All no-nonsense quantum circuit should have at least 2 qubits and 2 gates.
@@ -185,9 +194,9 @@ struct PassSelectorRuntimeParam {
   explicit operator torch::DeviceType() const { return to_device_type(); }
 };
 inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
+inline torch::TensorOptions GLOBAL_TENSOR_OPTIONS;
 
 /**
- *
  * @param a
  * @param b
  * @param atol
@@ -196,12 +205,18 @@ inline std::unordered_map<std::string, PassSelectorRuntimeParam> GLOBAL_PARAMS;
 bool isclose(double a, double b, double atol = 1e-12);
 
 /**
- *
  * @param str
  * @param delimiter
  * @return
  */
 std::vector<std::string> split_string(const std::string &str, char delimiter);
+
+/**
+ * Returns the string passed as argument cut to the next newline.
+ * @param str String to cut.
+ * @return The cut string.
+ */
+std::string cut_to_newline(std::string str);
 
 /**
  * Given a circuit name or its full filepath, search for the circuit and
@@ -212,20 +227,17 @@ std::vector<std::string> split_string(const std::string &str, char delimiter);
 std::optional<fs::path> search_circuit(const fs::path &circuit_path);
 
 /**
- *
  * @param circuit_path
  */
 void print_circuit_info(fs::path circuit_path);
 
 /**
- *
  * @param dataset_name
  * @return
  */
 std::vector<fs::path> get_dataset_files(const std::string &dataset_name);
 
 /**
- *
  * @param dataset_name
  * @return
  */
@@ -233,13 +245,11 @@ std::optional<std::vector<std::pair<std::string, std::string>>>
 get_dataset_info(const std::string &dataset_name);
 
 /**
- *
  * @param dataset_name
  */
 void print_dataset_info(const std::string &dataset_name);
 
 /**
- *
  * @param agent_name
  */
 void print_agent_info(const std::string &agent_name);
