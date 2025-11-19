@@ -165,22 +165,26 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
-      updateProgress(episode_idx, nr_episodes,
-                     "Reward: " + std::to_string(total_episode_reward) +
-                         " | Nr qubits: " + std::to_string(nr_qubits) +
-                         " | Nr gates: " + std::to_string(nr_gates) +
-                         " | Computing losses.");
-      auto [actor_gradients, critic_loss] =
-          agent->compute_losses_and_accumulate_gradients(
-              /*k=*/static_cast<int>(original_policies.size()),
-              /*rewards=*/torch::stack(rewards).to(device),
-              /*Q_ret=*/Q_ret.to(device),
-              /*policies_main=*/torch::stack(policies_main).to(device),
-              /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
-              /*Q_values_list=*/torch::stack(Q_values_list).to(device),
-              /*original_policies=*/
-              torch::stack(original_policies).detach().to(device),
-              /*action_indices=*/action_indices);
+      for (int i = static_cast<int>(rewards.size()) - 1; i >= 0; i--) {
+        updateProgress(episode_idx, nr_episodes,
+                       std::to_string(i) + "->0 | Reward: " +
+                           std::to_string(total_episode_reward) +
+                           " | Nr qubits: " + std::to_string(nr_qubits) +
+                           " | Nr gates: " + std::to_string(nr_gates) +
+                           " | Computing losses.");
+        auto [actor_gradients, critic_loss, new_Q_ret] =
+            agent->compute_losses_and_accumulate_gradients(
+                /*reward=*/rewards[i].to(device),
+                /*Q_ret=*/Q_ret.to(device),
+                /*policy_main=*/policies_main[i].to(device),
+                /*policy_avg=*/policies_avg[i].detach().to(device),
+                /*Q_values=*/Q_values_list[i].to(device),
+                /*original_policy=*/
+                original_policies[i].to(device),
+                /*action_indices=*/action_indices[i]);
+        Q_ret = new_Q_ret.detach();
+      }
+
       updateProgress(episode_idx, nr_episodes,
                      "Reward: " + std::to_string(total_episode_reward) +
                          " | Nr qubits: " + std::to_string(nr_qubits) +

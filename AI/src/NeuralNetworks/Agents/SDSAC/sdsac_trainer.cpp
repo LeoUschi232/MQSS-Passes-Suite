@@ -139,7 +139,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       for (update_step = steps_in_episode; update_step >= 0; update_step--) {
         updateProgress(
             episode_idx, nr_episodes,
-            std::to_string(update_step) + " | Rollout B | Reward: " +
+            std::to_string(update_step) + "->0 | Rollout B | Reward: " +
                 std::to_string(previous_episode_reward) +
                 " | Nr qubits: " + std::to_string(previous_nr_qubits) +
                 " | Nr gates: " + std::to_string(previous_nr_gates));
