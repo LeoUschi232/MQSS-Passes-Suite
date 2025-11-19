@@ -66,14 +66,12 @@ BaseACERAgent::forward(const torch::Tensor &observation) {
 
 torch::Tensor BaseACERAgent::get_value_main(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  return this->actor->forward(x).dot(this->critic->forward(x)).unsqueeze(-1);
+  return this->actor->forward(x).dot(this->critic->forward(x));
 }
 
 torch::Tensor BaseACERAgent::get_value_avg(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  return this->actor_avg->forward(x)
-      .dot(this->critic->forward(x))
-      .unsqueeze(-1);
+  return this->actor_avg->forward(x).dot(this->critic->forward(x));
 }
 
 torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
@@ -86,7 +84,7 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   if (torch::isnan(action_probs).any().item<bool>()) {
     throw std::runtime_error("ACER action_probs contains NaN.");
   }
-  return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
+  return action_probs.multinomial(1).squeeze(-1);
 }
 
 std::pair<torch::Tensor, torch::Tensor>
@@ -100,8 +98,7 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
     const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
     const std::vector<unsigned int> &action_indices // Shape [k]
 ) {
-  std::vector<torch::Tensor> actor_parameters =
-      this->actor->parameters(/*recurse=*/true);
+  std::vector<torch::Tensor> actor_parameters = this->actor->parameters(true);
   torch::Tensor final_critic_loss;
   torch::Tensor final_actor_gradients;
   bool first_iteration = true;
@@ -128,26 +125,18 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
         * policies_main[i].log()            // logf(a|φθ(xi))
         * (Q_values_list[i] - Vi).detach(); // (Qθv(xi,a)−Vi)
     torch::Tensor g_scalar = g_summand_top + g_summand_bottom.sum();
-    // Technically the ACER trainer should detach the exponentially moving
-    // average policy, but we are detaching it here again just to be sure.
     torch::Tensor k_scalar = this->compute_KL_divergence(
-        /*policy_p=*/policies_avg[i].detach(),
-        /*policy_q=*/policies_main[i]); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
-    // Turn g_scalar and k_scalar into g_vector and k_vector using
-    // differentiation like in the ACER algorithm paper.
-    torch::autograd::variable_list g_gradients = torch::autograd::grad(
-        /*outputs=*/{g_scalar}, /*inputs=*/actor_parameters,
-        /*grad_outputs=*/{},
-        /*retain_graph=*/true);
+        policies_avg[i],
+        policies_main[i]); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
+    torch::autograd::variable_list g_gradients =
+        torch::autograd::grad({g_scalar}, actor_parameters, {});
     std::vector<torch::Tensor> g_flattened;
     for (const torch::Tensor &g_gradient : g_gradients) {
       g_flattened.push_back(g_gradient.contiguous().view(-1));
     }
     torch::Tensor g_vector = torch::cat(g_flattened);
-    torch::autograd::variable_list k_gradients = torch::autograd::grad(
-        /*outputs=*/{k_scalar}, /*inputs=*/actor_parameters,
-        /*grad_outputs=*/{},
-        /*retain_graph=*/true);
+    torch::autograd::variable_list k_gradients =
+        torch::autograd::grad({g_scalar}, actor_parameters, {});
     std::vector<torch::Tensor> k_flattened;
     for (const torch::Tensor &k_gradient : k_gradients) {
       k_flattened.push_back(k_gradient.contiguous().view(-1));
@@ -183,18 +172,14 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
 void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
                                       const torch::Tensor &critic_loss) {
   this->actor_optimizer->zero_grad();
-  std::vector<torch::Tensor> actor_parameters =
-      this->actor->parameters(/*recurse=*/true);
-  // Assign adjusted gradients back to actor parameters
+  std::vector<torch::Tensor> actor_parameters = this->actor->parameters(true);
   unsigned int offset = 0;
   for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
        param_idx++) {
     torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
     unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
     torch::Tensor gradient_slice =
-        actor_gradients
-            .slice(/*dim=*/0, /*start=*/offset,
-                   /*end=*/offset + nr_trainable_parameters)
+        actor_gradients.slice(0, offset, offset + nr_trainable_parameters)
             .reshape(actor_parameter_tensor.sizes());
     if (actor_parameter_tensor.grad().defined()) {
       actor_parameter_tensor.mutable_grad() += gradient_slice;
@@ -210,11 +195,10 @@ void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
   {
     torch::NoGradGuard no_grad_guard;
     for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
-         this->actor->named_parameters(/*recurse=*/true)) {
+         this->actor->named_parameters(true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
-      torch::Tensor param_avg =
-          this->actor_avg->named_parameters(/*recurse=*/true)[name];
+      torch::Tensor param_avg = this->actor_avg->named_parameters(true)[name];
       param_avg.mul_(this->acer_soft_update_alpha);
       param_avg.add_((1.0 - this->acer_soft_update_alpha) * param_main);
     }

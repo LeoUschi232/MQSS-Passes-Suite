@@ -15,7 +15,7 @@ Assume actors output softmax, not logits, the input is unbatched, so no extra [B
 Also fuck bootrap, I want always bootstrap even if an episode terminates. So don't complain about bootstrap.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
-Try to find errors, report about error, if any.
+Try to find errors, report about errors, if any.
 """
 files_to_join = [
     "layers_and_wrappers.cpp",
@@ -24,7 +24,7 @@ files_to_join = [
     "base_acer_agent.hpp",
     "base_acer_agent.cpp",
     "acer_trainer.hpp",
-    "acer_trainer.cpp",
+    "acer_trainer.cpp"
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
