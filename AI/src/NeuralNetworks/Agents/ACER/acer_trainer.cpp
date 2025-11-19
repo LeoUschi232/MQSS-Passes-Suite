@@ -165,6 +165,9 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
+      torch::Tensor final_critic_loss;
+      torch::Tensor final_actor_gradients;
+      bool first_iteration = true;
       for (int i = static_cast<int>(rewards.size()) - 1; i >= 0; i--) {
         updateProgress(episode_idx, nr_episodes,
                        std::to_string(i) + "->0 | Reward: " +
@@ -183,14 +186,21 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
                 original_policies[i].to(device),
                 /*action_indices=*/action_indices[i]);
         Q_ret = new_Q_ret.detach();
+        if (first_iteration) {
+          final_actor_gradients = actor_gradients;
+          final_critic_loss = critic_loss;
+          first_iteration = false;
+        } else {
+          final_actor_gradients += actor_gradients;
+          final_critic_loss += critic_loss;
+        }
       }
-
       updateProgress(episode_idx, nr_episodes,
                      "Reward: " + std::to_string(total_episode_reward) +
                          " | Nr qubits: " + std::to_string(nr_qubits) +
                          " | Nr gates: " + std::to_string(nr_gates) +
                          " | Updating parameters.");
-      agent->update_parameters(actor_gradients, critic_loss);
+      agent->update_parameters(final_actor_gradients, final_critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {
           unsigned int remove_index = randomInt(0u, replay_buffer.size());
