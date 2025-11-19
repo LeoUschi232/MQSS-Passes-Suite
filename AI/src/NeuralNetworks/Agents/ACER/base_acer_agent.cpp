@@ -89,7 +89,7 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseACERAgent::compute_losses_and_accumulate_gradients(
-    int k,                                          // Shape []
+    int k,                                          // Nr taken steps
     const torch::Tensor &rewards,                   // Shape [k]
     torch::Tensor Q_ret,                            // Shape []
     const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]

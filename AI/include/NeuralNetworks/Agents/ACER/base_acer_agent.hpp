@@ -103,7 +103,7 @@ public:
       const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
       const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
       const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
-      const torch::Tensor &original_policies,         // Shape [k]
+      const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
       const std::vector<unsigned int> &action_indices // Shape [k]
   );
 
