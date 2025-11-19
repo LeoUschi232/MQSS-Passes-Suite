@@ -2,13 +2,9 @@
 
 // Neural-Networks includes
 #include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
-#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
-#include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
-#include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
-#include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
-#include "NeuralNetworks/Agents/SDSAC/base_sdsac_agent.hpp"
 #include "NeuralNetworks/Agents/ACER/acer_agents.hpp"
-#include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
+#include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
+#include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Support includes
@@ -216,7 +212,6 @@ void print_dataset_info(const std::string &dataset_name) {
 }
 
 void print_agent_info(const std::string &agent_name) {
-  unsigned int nr_parameters = 0;
   std::unique_ptr<BaseActorCritic> agent = nullptr;
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
@@ -265,10 +260,11 @@ void print_agent_info(const std::string &agent_name) {
       std::cerr << "No such agent: " << agent_name << std::endl;
       return;
     }
-  } catch (const std::runtime_error &e) {
-    std::cerr << "\n" << e.what() << std::endl;
+  } catch (const std::runtime_error &error) {
+    std::cerr << "\n" << error.what() << std::endl;
     return;
   }
+  unsigned int nr_parameters = count_nr_trainable_parameters(*agent);
   std::cout << "\nAgent name: " << agent_name << "\n"
             << "Agent nr trainable parameters: " << nr_parameters << std::endl;
 }
