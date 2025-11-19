@@ -214,5 +214,38 @@ BaseACERAgent::select_greedy_action(const torch::Tensor &observation) {
       .detach()
       .item<int>();
 }
+void BaseACERAgent::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  torch::save(this->actor_avg, actor_path.string());
+  torch::save(this->critic, critic_path.string());
+}
 
+void BaseACERAgent::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  if (!fs::exists(actor_path) || !fs::exists(critic_path)) {
+    return;
+  }
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->actor_avg, actor_path.string(), this->device);
+    torch::load(this->critic, critic_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
+  std::cout << "Loaded model: " << name << std::endl;
+}
 } // namespace ai_pass_selector

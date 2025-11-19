@@ -116,7 +116,6 @@ public:
                          const torch::Tensor &critic_Q2_loss,
                          const torch::Tensor &temperature_alpha_loss) const;
   //////////////////////////////////////////////////////////////////////////////
-
   /// Saving and Loading
   void save_model() const override;
   void load_model() override;

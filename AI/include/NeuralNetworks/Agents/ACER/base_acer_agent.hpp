@@ -115,6 +115,9 @@ public:
   void update_parameters(const torch::Tensor &actor_gradients,
                          const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
+  /// Saving and Loading
+  void save_model() const override;
+  void load_model() override;
 };
 } // namespace ai_pass_selector
 
