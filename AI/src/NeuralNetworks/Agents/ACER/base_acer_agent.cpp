@@ -129,7 +129,7 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
   }
   torch::Tensor g_vector = torch::cat(g_flattened);
   torch::autograd::variable_list k_gradients =
-      torch::autograd::grad({g_scalar}, actor_parameters, {});
+      torch::autograd::grad({k_scalar}, actor_parameters, {});
   std::vector<torch::Tensor> k_flattened;
   for (const torch::Tensor &k_gradient : k_gradients) {
     k_flattened.push_back(k_gradient.contiguous().view(-1));

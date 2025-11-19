@@ -1,9 +1,8 @@
 Consider the following subset of files of the project.
 Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
-Also fuck bootrap, I want always bootstrap even if an episode terminates. So don't complain about bootstrap.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
-Try to find errors, report about error, if any.
+Try to find errors, report about errors, if any.
 
 /home/leouscin/Documents/TUM_Studium/SEM_11/MQSS-Passes-Suite/AI/include/NeuralNetworks/Agents/base_actor_critic.hpp:
 
@@ -238,26 +237,24 @@ public:
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
   /**
-   * @param k
-   * @param rewards
+   * @param reward
    * @param Q_ret
-   * @param policies_main
-   * @param policies_avg
-   * @param Q_values_list
-   * @param original_policies
-   * @param action_indices
-   * @return [actor_gradients, critic_loss]
+   * @param policy_main
+   * @param policy_avg
+   * @param Q_values
+   * @param original_policy
+   * @param action_index
+   * @return [actor_gradients, critic_loss], new_Q_ret
    */
-  std::pair<torch::Tensor, torch::Tensor>
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
   compute_losses_and_accumulate_gradients(
-      int k,                                          // Nr taken steps
-      const torch::Tensor &rewards,                   // Shape [k]
-      torch::Tensor Q_ret,                            // Shape []
-      const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
-      const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
-      const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
-      const torch::Tensor &original_policies,         // Shape [k]
-      const std::vector<unsigned int> &action_indices // Shape [k]
+      const torch::Tensor &reward,          // Shape []
+      torch::Tensor Q_ret,                  // Shape []
+      const torch::Tensor &policy_main,     // Shape [NR_PASSES]
+      const torch::Tensor &policy_avg,      // Shape [NR_PASSES]
+      const torch::Tensor &Q_values,        // Shape [NR_PASSES]
+      const torch::Tensor &original_policy, // Shape [NR_PASSES]
+      unsigned int action_index             // Shape []
   );
 
   /**
@@ -268,6 +265,9 @@ public:
   void update_parameters(const torch::Tensor &actor_gradients,
                          const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
+  /// Saving and Loading
+  void save_model() const override;
+  void load_model() override;
 };
 } // namespace ai_pass_selector
 
@@ -447,7 +447,7 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
   return this->actor->forward(observation.to(this->device).to(torch::kFloat32))
-      .argmax(/*dim=*/-1)
+      .argmax(-1)
       .to(torch::kInt32)
       .detach()
       .item<int>();
@@ -508,9 +508,9 @@ BaseActorCritic::compute_KL_divergence(const torch::Tensor &policy_p,
 
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
-    size_t total = 0, bad = 0; //
+    size_t total = 0, bad = 0;
     for (torch::OrderedDict<std::string, torch::Tensor>::Item &keyvalue :
-         network->named_parameters(/*recurse=*/true)) {
+         network->named_parameters(true)) {
       const std::string &name = keyvalue.key();
       const torch::Tensor &value = keyvalue.value();
       total += value.numel();
@@ -539,10 +539,10 @@ void BaseActorCritic::check_params(double tiny, double big) const {
               << " suspicious=" << bad << "\n";
   };
   if (this->actor) {
-    check(/*tag=*/"actor", this->actor);
+    check("actor", this->actor);
   }
   if (this->critic) {
-    check(/*tag=*/"critic", this->critic);
+    check("critic", this->critic);
   }
 }
 
@@ -573,10 +573,8 @@ void BaseActorCritic::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  fs::path actor_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   torch::save(this->actor, actor_path.string());
   torch::save(this->critic, critic_path.string());
 }
@@ -587,10 +585,8 @@ void BaseActorCritic::load_model() {
   if (name.empty()) {
     return;
   }
-  fs::path actor_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }
@@ -666,7 +662,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
   NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
   std::cout << "Beginning training." << std::endl;
-  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
+  updateProgress(0, nr_episodes, "Beginning training");
   //////////////////////////////////////////////////////////////////////////////
   /// Algorithm 1 ACER for discrete actions (master algorithm)
   std::vector<ACER_Trajectory> replay_buffer;
@@ -679,8 +675,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     }
     if (episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
-      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                     /*display_message=*/"Saving Agent.");
+      updateProgress(episode_idx, nr_episodes, "Saving Agent.");
     }
     std::string reset_string = "Resetting Enviornment.";
     bool on_policy = true;
@@ -694,8 +689,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       on_policy = false;
       off_policy_episodes_left--;
     }
-    updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                   /*display_message=*/reset_string);
+    updateProgress(episode_idx, nr_episodes, reset_string);
     int environment_seed = std::random_device{}();
     std::vector<ACER_TrajectoryElement> trajectory_elements;
     if (!on_policy && replay_buffer.empty()) {
@@ -736,8 +730,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
         }
         updateProgresses(
             {{episode_idx, nr_episodes}, {step_idx + 1, max_steps_per_episode}},
-            /*display_message=*/"Reward: " +
-                std::to_string(total_episode_reward) +
+            "Reward: " + std::to_string(total_episode_reward) +
                 " | Nr qubits: " + std::to_string(nr_qubits) +
                 " | Nr gates: " + std::to_string(nr_gates) + " | Stepping.");
         torch::Tensor observation =
@@ -748,14 +741,11 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
           torch::Tensor action = agent->select_action(policy_main);
           action_index = action.item<int>();
           assert(trajectory_elements.size() == step_idx);
-          trajectory_elements.push_back(
-              {/*action_index=*/action_index,
-               /*action_probs=*/policy_main.detach()});
+          trajectory_elements.push_back({action_index, policy_main.detach()});
         } else {
           action_index = trajectory_elements[step_idx].action_index;
         }
-        auto [reward, terminated, truncated] =
-            environment.step(/*action=*/action_index);
+        auto [reward, terminated, truncated] = environment.step(action_index);
         original_policies.push_back(trajectory_elements[step_idx].action_probs);
         policies_main.push_back(policy_main);
         policies_avg.push_back(policy_avg.detach());
@@ -781,39 +771,49 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
             environment.get_observation_as_torch_tensor();
         Q_ret = agent->get_value_main(observation);
       }
-      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                     /*display_message=*/"Reward: " +
-                         std::to_string(total_episode_reward) +
-                         " | Nr qubits: " + std::to_string(nr_qubits) +
-                         " | Nr gates: " + std::to_string(nr_gates) +
-                         " | Computing losses.");
-      auto [actor_gradients, critic_loss] =
-          agent->compute_losses_and_accumulate_gradients(
-              /*k=*/static_cast<int>(original_policies.size()),
-              /*rewards=*/torch::stack(rewards).to(device),
-              /*Q_ret=*/Q_ret.to(device),
-              /*policies_main=*/torch::stack(policies_main).to(device),
-              /*policies_avg=*/torch::stack(policies_avg).detach().to(device),
-              /*Q_values_list=*/torch::stack(Q_values_list).to(device),
-              /*original_policies=*/
-              torch::stack(original_policies).detach().to(device),
-              /*action_indices=*/action_indices);
-      updateProgress(/*current=*/episode_idx, /*total=*/nr_episodes,
-                     /*display_message=*/"Reward: " +
-                         std::to_string(total_episode_reward) +
+      torch::Tensor final_critic_loss;
+      torch::Tensor final_actor_gradients;
+      bool first_iteration = true;
+      for (int i = static_cast<int>(rewards.size()) - 1; i >= 0; i--) {
+        updateProgress(episode_idx, nr_episodes,
+                       std::to_string(i) + "->0 | Reward: " +
+                           std::to_string(total_episode_reward) +
+                           " | Nr qubits: " + std::to_string(nr_qubits) +
+                           " | Nr gates: " + std::to_string(nr_gates) +
+                           " | Computing losses.");
+        auto [actor_gradients, critic_loss, new_Q_ret] =
+            agent->compute_losses_and_accumulate_gradients(
+                /*reward=*/rewards[i].to(device),
+                /*Q_ret=*/Q_ret.to(device),
+                /*policy_main=*/policies_main[i].to(device),
+                /*policy_avg=*/policies_avg[i].detach().to(device),
+                /*Q_values=*/Q_values_list[i].to(device),
+                /*original_policy=*/
+                original_policies[i].to(device),
+                /*action_indices=*/action_indices[i]);
+        Q_ret = new_Q_ret.detach();
+        if (first_iteration) {
+          final_actor_gradients = actor_gradients;
+          final_critic_loss = critic_loss;
+          first_iteration = false;
+        } else {
+          final_actor_gradients += actor_gradients;
+          final_critic_loss += critic_loss;
+        }
+      }
+      updateProgress(episode_idx, nr_episodes,
+                     "Reward: " + std::to_string(total_episode_reward) +
                          " | Nr qubits: " + std::to_string(nr_qubits) +
                          " | Nr gates: " + std::to_string(nr_gates) +
                          " | Updating parameters.");
-      agent->update_parameters(actor_gradients, critic_loss);
+      agent->update_parameters(final_actor_gradients, final_critic_loss);
       if (on_policy) {
         if (replay_buffer.size() >= acer_max_nr_trajectories) {
           unsigned int remove_index = randomInt(0u, replay_buffer.size());
-          replay_buffer.erase(/*position=*/replay_buffer.begin() +
-                              remove_index);
+          replay_buffer.erase(replay_buffer.begin() + remove_index);
         }
         replay_buffer.push_back(
-            {/*environment_reset_seed=*/environment_seed,
-             /*trajectory_elements=*/std::move(trajectory_elements)});
+            {environment_seed, std::move(trajectory_elements)});
       }
     } catch (const std::exception &error) {
       std::cerr << "Error in Episode " << episode_idx << ":\n"
@@ -910,14 +910,12 @@ BaseACERAgent::forward(const torch::Tensor &observation) {
 
 torch::Tensor BaseACERAgent::get_value_main(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  return this->actor->forward(x).dot(this->critic->forward(x)).unsqueeze(-1);
+  return this->actor->forward(x).dot(this->critic->forward(x));
 }
 
 torch::Tensor BaseACERAgent::get_value_avg(const torch::Tensor &observation) {
   torch::Tensor x = observation.to(this->device).to(torch::kFloat32);
-  return this->actor_avg->forward(x)
-      .dot(this->critic->forward(x))
-      .unsqueeze(-1);
+  return this->actor_avg->forward(x).dot(this->critic->forward(x));
 }
 
 torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
@@ -930,115 +928,84 @@ torch::Tensor BaseACERAgent::select_action(const torch::Tensor &action_probs) {
   if (torch::isnan(action_probs).any().item<bool>()) {
     throw std::runtime_error("ACER action_probs contains NaN.");
   }
-  return action_probs.multinomial(/*num_samples=*/1).squeeze(-1); // Shape []
+  return action_probs.multinomial(1).squeeze(-1);
 }
 
-std::pair<torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
 BaseACERAgent::compute_losses_and_accumulate_gradients(
-    int k,                                          // Shape []
-    const torch::Tensor &rewards,                   // Shape [k]
-    torch::Tensor Q_ret,                            // Shape []
-    const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
-    const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
-    const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
-    const torch::Tensor &original_policies,         // Shape [k, NR_PASSES]
-    const std::vector<unsigned int> &action_indices // Shape [k]
+    const torch::Tensor &reward,          // Shape []
+    torch::Tensor Q_ret,                  // Shape []
+    const torch::Tensor &policy_main,     // Shape [NR_PASSES]
+    const torch::Tensor &policy_avg,      // Shape [NR_PASSES]
+    const torch::Tensor &Q_values,        // Shape [NR_PASSES]
+    const torch::Tensor &original_policy, // Shape [NR_PASSES]
+    unsigned int action_index             // Shape []
 ) {
-  std::vector<torch::Tensor> actor_parameters =
-      this->actor->parameters(/*recurse=*/true);
-  torch::Tensor final_critic_loss;
-  torch::Tensor final_actor_gradients;
-  bool first_iteration = true;
-  for (int i = k - 1; i >= 0; i--) {
-    Q_ret = (rewards[i] + this->discount_factor * Q_ret).detach();
-    torch::Tensor Vi = Q_values_list[i].dot(policies_main[i]).detach();
-    unsigned int action_index = action_indices[i];
-    ////////////////////////////////////////////////////////////////////////////
-    /// 1. Computing quantities needed for trust region updating
-    torch::Tensor importance_weights =
-        policies_main[i] /
-        (original_policies[i] + DIVISION_BY_ZERO_BLOCK); // ρi(a)
-    torch::Tensor truncated_importance_weights = torch::min(
-        this->acer_truncation_threshold_c, importance_weights); // min{c,ρi(a)}
-    torch::Tensor g_summand_top =
-        truncated_importance_weights[action_index].detach() // min{c,ρi(ai)}
-        * policies_main[i][action_index].log()              // logf(ai|φθ(xi))
-        * (Q_ret - Vi).detach();                            // (Qret − Vi)
-    torch::Tensor g_summand_bottom =
-        (1.0 - this->acer_truncation_threshold_c / importance_weights)
-            .clamp_min(0.0)
-            .detach()                       // max(0,[1-c/ρi(a)])
-        * policies_main[i].detach()         // f(a|φθ(xi))
-        * policies_main[i].log()            // logf(a|φθ(xi))
-        * (Q_values_list[i] - Vi).detach(); // (Qθv(xi,a)−Vi)
-    torch::Tensor g_scalar = g_summand_top + g_summand_bottom.sum();
-    // Technically the ACER trainer should detach the exponentially moving
-    // average policy, but we are detaching it here again just to be sure.
-    torch::Tensor k_scalar = this->compute_KL_divergence(
-        /*policy_p=*/policies_avg[i].detach(),
-        /*policy_q=*/policies_main[i]); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
-    // Turn g_scalar and k_scalar into g_vector and k_vector using
-    // differentiation like in the ACER algorithm paper.
-    torch::autograd::variable_list g_gradients = torch::autograd::grad(
-        /*outputs=*/{g_scalar}, /*inputs=*/actor_parameters,
-        /*grad_outputs=*/{},
-        /*retain_graph=*/true);
-    std::vector<torch::Tensor> g_flattened;
-    for (const torch::Tensor &g_gradient : g_gradients) {
-      g_flattened.push_back(g_gradient.contiguous().view(-1));
-    }
-    torch::Tensor g_vector = torch::cat(g_flattened);
-    torch::autograd::variable_list k_gradients = torch::autograd::grad(
-        /*outputs=*/{k_scalar}, /*inputs=*/actor_parameters,
-        /*grad_outputs=*/{},
-        /*retain_graph=*/true);
-    std::vector<torch::Tensor> k_flattened;
-    for (const torch::Tensor &k_gradient : k_gradients) {
-      k_flattened.push_back(k_gradient.contiguous().view(-1));
-    }
-    torch::Tensor k_vector = torch::cat(k_flattened);
-    ////////////////////////////////////////////////////////////////////////////
-    /// 2. Accumulating gradients with regard to θ and θv
-    torch::Tensor actor_gradients =
-        -g_vector // g
-        + std::max(0.0f,
-                   ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
-                    (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
-                       .item<float>()) // max{0,(kTg−δ)/(‖k‖^2)}
-              * k_vector;              // k
-    torch::Tensor critic_loss =
-        (Q_ret - Q_values_list[i][action_index]).square();
-    if (first_iteration) {
-      final_actor_gradients = actor_gradients;
-      final_critic_loss = critic_loss;
-      first_iteration = false;
-    } else {
-      final_actor_gradients += actor_gradients;
-      final_critic_loss += critic_loss;
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    /// 3. Update Retrace target
-    Q_ret = Vi + truncated_importance_weights[action_index] *
-                     (Q_ret - Q_values_list[i][action_index]);
+  std::vector<torch::Tensor> actor_parameters = this->actor->parameters(true);
+  Q_ret = (reward + this->discount_factor * Q_ret).detach();
+  torch::Tensor Vi = Q_values.dot(policy_main).detach();
+  ////////////////////////////////////////////////////////////////////////////
+  /// 1. Computing quantities needed for trust region updating
+  torch::Tensor importance_weights =
+      policy_main / (original_policy + DIVISION_BY_ZERO_BLOCK); // ρi(a)
+  torch::Tensor truncated_importance_weights = torch::min(
+      this->acer_truncation_threshold_c, importance_weights); // min{c,ρi(a)}
+  torch::Tensor g_summand_top =
+      truncated_importance_weights[action_index].detach() // min{c,ρi(ai)}
+      * policy_main[action_index].log()                   // logf(ai|φθ(xi))
+      * (Q_ret - Vi).detach();                            // (Qret − Vi)
+  torch::Tensor g_summand_bottom =
+      (1.0 - this->acer_truncation_threshold_c / importance_weights)
+          .clamp_min(0.0)
+          .detach()               // max(0,[1-c/ρi(a)])
+      * policy_main.detach()      // f(a|φθ(xi))
+      * policy_main.log()         // logf(a|φθ(xi))
+      * (Q_values - Vi).detach(); // (Qθv(xi,a)−Vi)
+  torch::Tensor g_scalar = g_summand_top + g_summand_bottom.sum();
+  torch::Tensor k_scalar =
+      this->compute_KL_divergence(policy_avg,
+                                  policy_main); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
+  torch::autograd::variable_list g_gradients =
+      torch::autograd::grad({g_scalar}, actor_parameters, {});
+  std::vector<torch::Tensor> g_flattened;
+  for (const torch::Tensor &g_gradient : g_gradients) {
+    g_flattened.push_back(g_gradient.contiguous().view(-1));
   }
-  return {final_actor_gradients, final_critic_loss};
+  torch::Tensor g_vector = torch::cat(g_flattened);
+  torch::autograd::variable_list k_gradients =
+      torch::autograd::grad({k_scalar}, actor_parameters, {});
+  std::vector<torch::Tensor> k_flattened;
+  for (const torch::Tensor &k_gradient : k_gradients) {
+    k_flattened.push_back(k_gradient.contiguous().view(-1));
+  }
+  torch::Tensor k_vector = torch::cat(k_flattened);
+  ////////////////////////////////////////////////////////////////////////////
+  /// 2. Accumulating gradients with regard to θ and θv
+  /// g-max{0,(kTg−δ)/(‖k‖^2)}k
+  /// (Qret-Qθv(xi,a))^2
+  /// 3. Update Retrace target
+  /// ρi(Qret−Qθv(xi,ai))+Vi
+  return {-g_vector +
+              ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
+               (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
+                      .clamp_max(0.0) *
+                  k_vector,
+          (Q_ret - Q_values[action_index]).square(),
+          Vi + truncated_importance_weights[action_index] *
+                   (Q_ret - Q_values[action_index])};
 }
 
 void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
                                       const torch::Tensor &critic_loss) {
   this->actor_optimizer->zero_grad();
-  std::vector<torch::Tensor> actor_parameters =
-      this->actor->parameters(/*recurse=*/true);
-  // Assign adjusted gradients back to actor parameters
+  std::vector<torch::Tensor> actor_parameters = this->actor->parameters(true);
   unsigned int offset = 0;
   for (unsigned int param_idx = 0; param_idx < actor_parameters.size();
        param_idx++) {
     torch::Tensor &actor_parameter_tensor = actor_parameters[param_idx];
     unsigned int nr_trainable_parameters = actor_parameter_tensor.numel();
     torch::Tensor gradient_slice =
-        actor_gradients
-            .slice(/*dim=*/0, /*start=*/offset,
-                   /*end=*/offset + nr_trainable_parameters)
+        actor_gradients.slice(0, offset, offset + nr_trainable_parameters)
             .reshape(actor_parameter_tensor.sizes());
     if (actor_parameter_tensor.grad().defined()) {
       actor_parameter_tensor.mutable_grad() += gradient_slice;
@@ -1054,11 +1021,10 @@ void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
   {
     torch::NoGradGuard no_grad_guard;
     for (const torch::OrderedDict<std::string, torch::Tensor>::Item &pair :
-         this->actor->named_parameters(/*recurse=*/true)) {
+         this->actor->named_parameters(true)) {
       const std::string &name = pair.key();
       torch::Tensor param_main = pair.value();
-      torch::Tensor param_avg =
-          this->actor_avg->named_parameters(/*recurse=*/true)[name];
+      torch::Tensor param_avg = this->actor_avg->named_parameters(true)[name];
       param_avg.mul_(this->acer_soft_update_alpha);
       param_avg.add_((1.0 - this->acer_soft_update_alpha) * param_main);
     }
@@ -1074,6 +1040,39 @@ BaseACERAgent::select_greedy_action(const torch::Tensor &observation) {
       .detach()
       .item<int>();
 }
+void BaseACERAgent::save_model() const {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    std::cerr << "No agent to save." << std::endl;
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  torch::save(this->actor_avg, actor_path.string());
+  torch::save(this->critic, critic_path.string());
+}
 
+void BaseACERAgent::load_model() {
+  std::lock_guard lock(*this->model_mutex);
+  std::string name = this->agentName();
+  if (name.empty()) {
+    return;
+  }
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
+  if (!fs::exists(actor_path) || !fs::exists(critic_path)) {
+    return;
+  }
+  try {
+    torch::load(this->actor, actor_path.string(), this->device);
+    torch::load(this->actor_avg, actor_path.string(), this->device);
+    torch::load(this->critic, critic_path.string(), this->device);
+  } catch (const std::exception &) {
+    std::cerr << "Failed to load model for agent: " << name << std::endl;
+    return;
+  }
+  std::cout << "Loaded model: " << name << std::endl;
+}
 } // namespace ai_pass_selector
 
