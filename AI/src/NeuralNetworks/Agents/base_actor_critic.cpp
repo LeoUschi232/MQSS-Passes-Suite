@@ -41,7 +41,7 @@ BaseActorCritic::BaseActorCritic(unsigned int max_qubits)
 unsigned int
 BaseActorCritic::select_greedy_action(const torch::Tensor &observation) {
   return this->actor->forward(observation.to(this->device).to(torch::kFloat32))
-      .argmax(/*dim=*/-1)
+      .argmax(-1)
       .to(torch::kInt32)
       .detach()
       .item<int>();
@@ -102,9 +102,9 @@ BaseActorCritic::compute_KL_divergence(const torch::Tensor &policy_p,
 
 void BaseActorCritic::check_params(double tiny, double big) const {
   auto check = [&](const char *tag, const torch::nn::Sequential &network) {
-    size_t total = 0, bad = 0; //
+    size_t total = 0, bad = 0;
     for (torch::OrderedDict<std::string, torch::Tensor>::Item &keyvalue :
-         network->named_parameters(/*recurse=*/true)) {
+         network->named_parameters(true)) {
       const std::string &name = keyvalue.key();
       const torch::Tensor &value = keyvalue.value();
       total += value.numel();
@@ -133,10 +133,10 @@ void BaseActorCritic::check_params(double tiny, double big) const {
               << " suspicious=" << bad << "\n";
   };
   if (this->actor) {
-    check(/*tag=*/"actor", this->actor);
+    check("actor", this->actor);
   }
   if (this->critic) {
-    check(/*tag=*/"critic", this->critic);
+    check("critic", this->critic);
   }
 }
 
@@ -167,10 +167,8 @@ void BaseActorCritic::save_model() const {
     std::cerr << "No agent to save." << std::endl;
     return;
   }
-  fs::path actor_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   torch::save(this->actor, actor_path.string());
   torch::save(this->critic, critic_path.string());
 }
@@ -181,10 +179,8 @@ void BaseActorCritic::load_model() {
   if (name.empty()) {
     return;
   }
-  fs::path actor_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-actor.pt");
-  fs::path critic_path =
-      fs::path(/*source=*/AI_AGENTS_DIR) / (name + "-critic.pt");
+  fs::path actor_path = fs::path(AI_AGENTS_DIR) / (name + "-actor.pt");
+  fs::path critic_path = fs::path(AI_AGENTS_DIR) / (name + "-critic.pt");
   if (!fs::exists(critic_path) || !fs::exists(actor_path)) {
     return;
   }

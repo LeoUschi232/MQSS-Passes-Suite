@@ -85,26 +85,24 @@ public:
   unsigned int select_greedy_action(const torch::Tensor &observation) override;
 
   /**
-   * @param k
-   * @param rewards
+   * @param reward
    * @param Q_ret
-   * @param policies_main
-   * @param policies_avg
-   * @param Q_values_list
-   * @param original_policies
-   * @param action_indices
-   * @return [actor_gradients, critic_loss]
+   * @param policy_main
+   * @param policy_avg
+   * @param Q_values
+   * @param original_policy
+   * @param action_index
+   * @return [actor_gradients, critic_loss], new_Q_ret
    */
-  std::pair<torch::Tensor, torch::Tensor>
+  std::tuple<torch::Tensor, torch::Tensor, torch::Tensor>
   compute_losses_and_accumulate_gradients(
-      int k,                                          // Nr taken steps
-      const torch::Tensor &rewards,                   // Shape [k]
-      torch::Tensor Q_ret,                            // Shape []
-      const torch::Tensor &policies_main,             // Shape [k, NR_PASSES]
-      const torch::Tensor &policies_avg,              // Shape [k, NR_PASSES]
-      const torch::Tensor &Q_values_list,             // Shape [k, NR_PASSES]
-      const torch::Tensor &original_policies,         // Shape [k]
-      const std::vector<unsigned int> &action_indices // Shape [k]
+      const torch::Tensor &reward,          // Shape []
+      torch::Tensor Q_ret,                  // Shape []
+      const torch::Tensor &policy_main,     // Shape [NR_PASSES]
+      const torch::Tensor &policy_avg,      // Shape [NR_PASSES]
+      const torch::Tensor &Q_values,        // Shape [NR_PASSES]
+      const torch::Tensor &original_policy, // Shape [NR_PASSES]
+      unsigned int action_index             // Shape []
   );
 
   /**
@@ -115,6 +113,9 @@ public:
   void update_parameters(const torch::Tensor &actor_gradients,
                          const torch::Tensor &critic_loss);
   //////////////////////////////////////////////////////////////////////////////
+  /// Saving and Loading
+  void save_model() const override;
+  void load_model() override;
 };
 } // namespace ai_pass_selector
 
