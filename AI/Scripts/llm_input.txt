@@ -981,18 +981,16 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
   torch::Tensor k_vector = torch::cat(k_flattened);
   ////////////////////////////////////////////////////////////////////////////
   /// 2. Accumulating gradients with regard to θ and θv
-  /// g-max{0,(kTg−δ)/(‖k‖^2)}k
-  /// (Qret-Qθv(xi,a))^2
   /// 3. Update Retrace target
-  /// ρi(Qret−Qθv(xi,ai))+Vi
   return {-g_vector +
               ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
                (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
-                      .clamp_max(0.0) *
-                  k_vector,
-          (Q_ret - Q_values[action_index]).square(),
+                      .clamp_min(0.0) *
+                  k_vector, // g-max{0,(kTg−δ)/(‖k‖^2)}k
+          (Q_ret - Q_values[action_index]).square(), // (Qret-Qθv(xi,a))^2
           Vi + truncated_importance_weights[action_index] *
-                   (Q_ret - Q_values[action_index])};
+                   (Q_ret - Q_values[action_index]) // ρi(Qret−Qθv(xi,ai))+Vi
+  };
 }
 
 void BaseACERAgent::update_parameters(const torch::Tensor &actor_gradients,
