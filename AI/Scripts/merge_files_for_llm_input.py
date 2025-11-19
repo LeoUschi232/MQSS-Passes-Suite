@@ -12,7 +12,6 @@ src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
 prefix = """Consider the following subset of files of the project.
 Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
-Also fuck bootrap, I want always bootstrap even if an episode terminates. So don't complain about bootstrap.
 The code builds and runs.
 The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
 Try to find errors, report about errors, if any.
