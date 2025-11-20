@@ -166,13 +166,11 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "a3c-mq28-tcn"},
+      {"agent", "a2c-mq28-tcn"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
-      {"nr_asynchronous_agents", 1},
-      {"a3c_max_async_steps", 100000},
       {"nr_episodes", 1000000},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
