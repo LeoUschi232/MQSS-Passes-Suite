@@ -63,14 +63,12 @@ struct RandomizerOptions {
 };
 
 /**
- *
  * @param idx
  * @return
  */
 static GateSpec gateSpecFromIndex(unsigned int idx);
 
 /**
- *
  * @param nr_targets
  * @param nr_controls
  * @param nr_qubits
@@ -82,14 +80,12 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
                                      unsigned int nr_qubits);
 
 /**
- *
  * @param baseGate
  * @return
  */
 std::vector<float> makeAngles(GateSymbol baseGate);
 
 /**
- *
  * @param cholesky_params
  * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
  */
@@ -98,7 +94,6 @@ sample_nr_qubits_gates_operations_measurements(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params);
 
 /**
- *
  * @param cholesky_params
  * @param randomizer_options
  * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
@@ -109,7 +104,6 @@ get_nr_qubits_gates_operations_measurements(
     const RandomizerOptions &randomizer_options);
 
 /**
- *
  * @param multiplier
  * @param subset_size
  * @param gates_weights
@@ -119,7 +113,6 @@ void adjust_gates_weights(
     std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
 /**
- *
  * @param cholesky_params
  * @param gates_weights
  * @param randomizer_options
@@ -133,7 +126,6 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
         .probability_additionals_controls = 0.01});
 
 /**
- *
  * @param statistics_yaml_file_path
  * @param randomizer_options
  * @return

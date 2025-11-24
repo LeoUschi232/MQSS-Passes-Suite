@@ -51,10 +51,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   this->max_steps_same_action = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int()),
       MIN_NR_STEPS);
-  if (double weight = GLOBAL_PARAMS["nr_gates_reduction_weight"].to_double();
-      0.0 <= weight && weight <= 1.0) {
-    this->nr_gates_reduction_weight = weight;
-  }
+
   probability_max_qubits = GLOBAL_PARAMS["probability_max_qubits"].to_double();
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
@@ -97,6 +94,8 @@ void QuantumCircuitEnvironment::clear(bool hard) {
   this->last_action = -1;
   this->terminated = false;
   this->truncated = false;
+  this->original_nr_gates = 0.0f;
+  this->original_depth = 0.0f;
 }
 
 void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
@@ -156,7 +155,7 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   default:;
   }
   if (circuit_validity != CircuitValidity::Valid) {
-    this->clear(/*hard=*/false);
+    this->clear(false);
     return false;
   }
   // Register the circuit path and module only if the circuit is valid.
