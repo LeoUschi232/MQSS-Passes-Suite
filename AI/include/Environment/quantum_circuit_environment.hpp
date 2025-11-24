@@ -147,7 +147,7 @@ public:
   /**
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * @return Blob Tensor of 1-axis shape {N×IRS} containing the observation of
+   * @return Blob Tensor of 1-dimensional shape {N×IRS} containing the observation of
    * the current circuit.
    */
   InstructionsTensor<float> get_observation();
@@ -155,7 +155,7 @@ public:
   /**
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
+   * @return Torch Tensor of 2-dimensional shape [N, IRS] containing the observation of
    * the current circuit.
    */
   torch::Tensor get_observation_as_torch_tensor();
