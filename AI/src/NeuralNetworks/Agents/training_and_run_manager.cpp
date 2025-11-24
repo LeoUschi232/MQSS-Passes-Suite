@@ -162,8 +162,8 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     return {};
   }
   nlohmann::ordered_json optimizations = nlohmann::ordered_json::object();
-  double avg_nr_gates_reduction = 0.0;
-  double avg_depth_reduction = 0.0;
+  double average_nr_gates_reduction = 0.0;
+  double average_depth_reduction = 0.0;
   unsigned int progress = 0u;
   for (auto circuit_path : files) {
     std::string circuit_name = circuit_path.stem().string();
@@ -192,15 +192,17 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
     optimizations[circuit_name]["depth_reduction"] = depth_reduction;
     optimizations[circuit_name]["selected_passes"] = pass_names;
-    avg_nr_gates_reduction += nr_gates_reduction;
-    avg_depth_reduction += depth_reduction;
+    average_nr_gates_reduction += nr_gates_reduction;
+    average_depth_reduction += depth_reduction;
   }
   std::cout << std::endl;
-  avg_nr_gates_reduction /= nr_files;
-  avg_depth_reduction /= nr_files;
+  average_nr_gates_reduction /= nr_files;
+  average_depth_reduction /= nr_files;
   nlohmann::ordered_json json_file;
   json_file["dataset"] = dataset_name;
   json_file["agent"] = agent_name;
+  json_file["average_nr_gates_reduction"] = average_nr_gates_reduction;
+  json_file["average_depth_reduction"] = average_depth_reduction;
   json_file["circuit_optimizations"] = optimizations;
   fs::path filepath =
       fs::path(AI_DATASET_DIR) / "Evaluations" /
@@ -209,8 +211,9 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
   std::ofstream output_stream(filepath);
   output_stream << json_file.dump(4);
   output_stream.close();
-  return {{"avg_nr_gates_reduction", std::to_string(avg_nr_gates_reduction)},
-          {"avg_depth_reduction", std::to_string(avg_depth_reduction)}};
+  return {{"average_nr_gates_reduction",
+           std::to_string(average_nr_gates_reduction)},
+          {"average_depth_reduction", std::to_string(average_depth_reduction)}};
 }
 
 } // namespace ai_pass_selector
