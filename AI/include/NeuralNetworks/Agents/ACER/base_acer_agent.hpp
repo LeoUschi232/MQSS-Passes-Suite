@@ -106,7 +106,6 @@ public:
   );
 
   /**
-   *
    * @param actor_gradients
    * @param critic_loss
    */

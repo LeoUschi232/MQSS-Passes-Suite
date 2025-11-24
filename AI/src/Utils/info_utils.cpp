@@ -1,7 +1,7 @@
 #include "Utils/info_utils.hpp"
 
 // Neural-Networks includes
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/A2C/a2c_agents.hpp"
 #include "NeuralNetworks/Agents/ACER/acer_agents.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
 #include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
@@ -216,13 +216,13 @@ void print_agent_info(const std::string &agent_name) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case AgentClass::A3C: {
+    case AgentClass::A2C: {
       if (attributes.extras == "tcn") {
-        agent = std::make_unique<A3C_TCN>(attributes.max_qubits);
+        agent = std::make_unique<A2C_TCN>(attributes.max_qubits);
       } else if (attributes.extras == "lstm") {
-        agent = std::make_unique<A3C_LSTM>(attributes.max_qubits);
+        agent = std::make_unique<A2C_LSTM>(attributes.max_qubits);
       } else if (attributes.extras == "hybrid") {
-        agent = std::make_unique<A3C_HYBRID>(attributes.max_qubits);
+        agent = std::make_unique<A2C_HYBRID>(attributes.max_qubits);
       }
       break;
     }

@@ -4,7 +4,7 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Neural-Networks includes
-#include "NeuralNetworks/Agents/A3C/a3c_agents.hpp"
+#include "NeuralNetworks/Agents/A2C/a2c_agents.hpp"
 #include "NeuralNetworks/Agents/ACER/acer_agents.hpp"
 #include "NeuralNetworks/Agents/PPO/ppo_agents.hpp"
 #include "NeuralNetworks/Agents/SDSAC/sdsac_agents.hpp"
@@ -70,17 +70,17 @@ AbstractAgent::getAgent(const std::string &agent_name) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case AgentClass::A3C: {
+    case AgentClass::A2C: {
       if (attributes.extras == "tcn") {
-        return std::make_unique<A3C_TCN>(attributes.max_qubits);
+        return std::make_unique<A2C_TCN>(attributes.max_qubits);
       }
       if (attributes.extras == "lstm") {
-        return std::make_unique<A3C_LSTM>(attributes.max_qubits);
+        return std::make_unique<A2C_LSTM>(attributes.max_qubits);
       }
       if (attributes.extras == "hybrid") {
-        return std::make_unique<A3C_HYBRID>(attributes.max_qubits);
+        return std::make_unique<A2C_HYBRID>(attributes.max_qubits);
       }
-      std::cerr << "No such A3C agent: " << agent_name << std::endl;
+      std::cerr << "No such A2C agent: " << agent_name << std::endl;
       return {};
     }
     case AgentClass::PPO: {

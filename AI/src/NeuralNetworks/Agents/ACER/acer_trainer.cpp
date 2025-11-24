@@ -1,7 +1,6 @@
 #include "NeuralNetworks/Agents/ACER/acer_trainer.hpp"
 
 // Environment includes
-#include "Environment/Wrappers/normalize_reward.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
@@ -53,7 +52,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  QuantumCircuitEnvironment environment(max_qubits);
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
   std::cout << "Beginning training." << std::endl;
   updateProgress(0, nr_episodes, "Beginning training");

@@ -4,8 +4,8 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
-#include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
-#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/A2C/a2c_trainer.hpp"
+#include "NeuralNetworks/Agents/A2C/base_a2c_agent.hpp"
 #include "NeuralNetworks/Agents/ACER/acer_trainer.hpp"
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
@@ -38,22 +38,14 @@ train(const std::string &agent_name, const std::string &dataset) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case AgentClass::A3C: {
-      std::unique_ptr<BaseA3CAgent> agent(
-          dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
+    case AgentClass::A2C: {
+      std::unique_ptr<BaseA2CAgent> agent(
+          dynamic_cast<BaseA2CAgent *>(abstract_agent.release()));
       if (!agent) {
-        throw std::runtime_error("Failed to cast to BaseA3CAgent");
+        throw std::runtime_error("Failed to cast to BaseA2CAgent");
       }
       agent->load_model();
-      unsigned int nr_asynchronous_agents =
-          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
-      if (nr_asynchronous_agents <= 1u) {
-        std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
-                  << std::endl;
-        training_results = train_a2c(agent, dataset);
-      } else {
-        training_results = train_a3c(agent, dataset);
-      }
+      training_results = train_a2c(agent, dataset);
       break;
     }
     case AgentClass::PPO: {

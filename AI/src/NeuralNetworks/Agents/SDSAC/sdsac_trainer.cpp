@@ -1,7 +1,7 @@
 #include "NeuralNetworks/Agents/SDSAC/sdsac_trainer.hpp"
 
 // Environment includes
-#include "Environment/Wrappers/normalize_reward.hpp"
+#include "Environment/quantum_circuit_environment.hpp"
 
 // Utils includes
 #include "Utils/info_utils.hpp"
@@ -44,7 +44,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  QuantumCircuitEnvironment environment(max_qubits);
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;
