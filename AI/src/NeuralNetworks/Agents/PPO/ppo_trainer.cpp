@@ -1,7 +1,6 @@
 #include "NeuralNetworks/Agents/PPO/ppo_trainer.hpp"
 
 // Environment includes
-#include "Environment/Wrappers/normalize_reward.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
@@ -47,7 +46,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  QuantumCircuitEnvironment environment(max_qubits);
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
   int64_t T = max_steps_per_episode;
   std::cout << "Beginning training." << std::endl;

@@ -51,10 +51,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   this->max_steps_same_action = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int()),
       MIN_NR_STEPS);
-  if (double weight = GLOBAL_PARAMS["nr_gates_reduction_weight"].to_double();
-      0.0 <= weight && weight <= 1.0) {
-    this->nr_gates_reduction_weight = weight;
-  }
+
   probability_max_qubits = GLOBAL_PARAMS["probability_max_qubits"].to_double();
   // Do not worry about not having a circuit because the method
   // register_quantum_circuit will handle empty strings.
@@ -97,15 +94,15 @@ void QuantumCircuitEnvironment::clear(bool hard) {
   this->last_action = -1;
   this->terminated = false;
   this->truncated = false;
+  this->original_nr_gates = 0.0f;
+  this->original_depth = 0.0f;
 }
 
 void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
-  this->clear(/*hard=*/false);
+  this->clear(false);
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
-    return;
-  }
-  if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
+  } else if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     // The QuantumCircuit object validates itself on construction, so no need
     // for extra validation.
     RandomizerOptions randomizer_options = {
@@ -117,14 +114,15 @@ void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
       randomizer_options.seed = seed.value();
     }
     this->circuit = random_quantum_circuit_from_embedded_statistics(
-        /*cholesky_params=*/qubits_cholesky_params.value(),
-        /*gates_weights=*/gates_weights.value(),
-        /*randomizer_options=*/randomizer_options);
+        qubits_cholesky_params.value(), gates_weights.value(),
+        randomizer_options);
     this->validate();
-    return;
+  } else {
+    std::cerr << "No circuit or randomization parameters provided to reset."
+              << std::endl;
   }
-  std::cerr << "No circuit or randomization parameters provided to reset."
-            << std::endl;
+  this->original_nr_gates = this->circuit.getNrGates();
+  this->original_depth = this->circuit.getDepth();
 }
 
 bool QuantumCircuitEnvironment::register_quantum_circuit(
@@ -156,7 +154,7 @@ bool QuantumCircuitEnvironment::register_quantum_circuit(
   default:;
   }
   if (circuit_validity != CircuitValidity::Valid) {
-    this->clear(/*hard=*/false);
+    this->clear(false);
     return false;
   }
   // Register the circuit path and module only if the circuit is valid.
@@ -313,9 +311,9 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   auto [succeeded, wasApplied] = this->circuit.run_pass(action);
   float reward = 0.0f;
   if (succeeded && wasApplied) {
-    reward = previous_depth - this->circuit.getDepth() +
-             this->nr_gates_reduction_weight *
-                 (previous_nr_gates - this->circuit.getNrGates());
+    reward = (previous_nr_gates - this->circuit.getNrGates()) /
+                 this->original_nr_gates +
+             (previous_depth - this->circuit.getDepth()) / this->original_depth;
     this->latest_observation = std::nullopt;
   }
 
