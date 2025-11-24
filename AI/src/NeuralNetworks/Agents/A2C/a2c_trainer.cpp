@@ -4,7 +4,6 @@
 #include "NeuralNetworks/Agents/agent_utils.hpp"
 
 // Environment includes
-#include "Environment/Wrappers/normalize_reward.hpp"
 #include "Environment/quantum_circuit_environment.hpp"
 #include "Environment/statistics_for_rqcg.hpp"
 
@@ -54,12 +53,12 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
     return {};
   }
   auto [qubits_cholesky_params, gates_weights] = optional_statistics.value();
-  NormalizeReward environment(QuantumCircuitEnvironment{max_qubits});
+  QuantumCircuitEnvironment environment(max_qubits);
   environment.register_randomizer_params(qubits_cholesky_params, gates_weights);
   int64_t T = max_steps_per_episode;
 
   std::cout << "Beginning training." << std::endl;
-  updateProgress(0, nr_episodes, /*display_message=*/"Beginning training");
+  updateProgress(0, nr_episodes, "Beginning training");
   for (unsigned int episode_idx = 1; episode_idx <= nr_episodes;
        episode_idx++) {
     if (interrupted) {
@@ -69,11 +68,9 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
 
     if (episode_idx % save_agent_every_ith_episode == 0) {
       agent->save_model();
-      updateProgress(episode_idx, nr_episodes,
-                     /*display_message=*/"Saving Agent.");
+      updateProgress(episode_idx, nr_episodes, "Saving Agent.");
     }
-    updateProgress(episode_idx, nr_episodes,
-                   /*display_message=*/"Resetting Enviornment.");
+    updateProgress(episode_idx, nr_episodes, "Resetting Enviornment.");
     try {
       double total_episode_reward = 0.0;
       environment.reset();
@@ -92,8 +89,7 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
            update_step++) {
         updateProgresses({{episode_idx, nr_episodes},
                           {update_step + 1, max_steps_per_episode}},
-                         /*display_message=*/"Reward: " +
-                             std::to_string(total_episode_reward) +
+                         "Reward: " + std::to_string(total_episode_reward) +
                              " | Nr qubits: " + std::to_string(nr_qubits) +
                              " | Nr gates: " + std::to_string(nr_gates) +
                              " | Running step.");
@@ -148,8 +144,7 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
           /*entropy=*/torch::stack(episode_entropies_vector));
       updateProgresses({{episode_idx, nr_episodes},
                         {max_steps_per_episode, max_steps_per_episode}},
-                       /*display_message=*/main_message +
-                           " | Updating params.");
+                       main_message + " | Updating params.");
       agent->update_parameters(actor_loss, critic_loss);
     } catch (const std::exception &error) {
       std::cerr << "Error in Episode " << episode_idx << ":\n"
