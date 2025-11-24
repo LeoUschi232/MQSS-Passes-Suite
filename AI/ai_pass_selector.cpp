@@ -31,14 +31,16 @@ void signal_handler(int signal) {
 }
 
 void print_help() {
-  std::cout << "\nUsage: ./ai_pass_selector_torch [Parameters]"
-               "\nAssign parameters space-seperated liuke this: <key>=<value>"
-               "\nParameter names, types and default/current values:"
+  std::cout << "\n\tUsage: ./ai_pass_selector_torch [Parameters]"
+               "\n\n\tAssign parameters space-seperated like this:"
+               "\n\t\t<key>=<value>"
+               "\n\n\tParameter names, types and default/current values:"
             << std::endl;
   for (auto &[key, value] : GLOBAL_PARAMS) {
-    std::cout << key << ": " << value.to_string() << " (" << value.type_name()
-              << ")" << std::endl;
+    std::cout << "\t\t" << key << ": " << value.type_name() << " ("
+              << value.to_string() << ")" << std::endl;
   }
+  std::cout << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
     }
     std::vector<std::string> key_value = split_string(args[i], '=');
     if (key_value.size() != 2) {
-      std::cerr << "Malformatted argument: " << args[i] << std::endl;
+      std::cerr << "\tMalformatted argument: " << args[i] << std::endl;
       print_help();
       return 0;
     }

@@ -1,56 +1,56 @@
 {
     "dataset_name": "Chemistry",
-    "agent": "a3c-mq28-tcnrelu",
+    "agent": "a2c-mq28-tcn",
     "circuit_optimizations": {
-        "H2N-like_631g_JW": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 0,
-            "depth_reduction": 0
-        },
-        "O2-triplet_631gstar_BK": {
-            "nr_qubits": 18,
-            "nr_gates_reduction": 122,
-            "depth_reduction": 34
-        },
-        "CO2-lin_sto6g_parity": {
-            "nr_qubits": 18,
-            "nr_gates_reduction": 168,
-            "depth_reduction": 0
-        },
-        "CH4-tetra_321g_parity": {
-            "nr_qubits": 10,
-            "nr_gates_reduction": 24,
-            "depth_reduction": 0
-        },
-        "HCO-plus-lin_sto6g_JW": {
-            "nr_qubits": 12,
-            "nr_gates_reduction": 0,
-            "depth_reduction": 0
-        },
-        "CH3Cl_631gstar_JW": {
+        "HOF-bent_321g_parity": {
             "nr_qubits": 16,
-            "nr_gates_reduction": 0,
+            "nr_gates_reduction": 120,
             "depth_reduction": 0
         },
-        "N2-eq_sto3g_BK": {
-            "nr_qubits": 12,
-            "nr_gates_reduction": 4,
+        "HOCl-lin_631g_BK": {
+            "nr_qubits": 16,
+            "nr_gates_reduction": 8,
             "depth_reduction": 0
         },
-        "CNO-chain_sto3g_JW": {
-            "nr_qubits": 18,
-            "nr_gates_reduction": 0,
-            "depth_reduction": 0
-        },
-        "LiH-eq_321g_BK": {
+        "H3-plus-tri_6311g_BK": {
             "nr_qubits": 8,
             "nr_gates_reduction": 0,
             "depth_reduction": 0
         },
-        "CNO-chain_6311g_BK": {
-            "nr_qubits": 18,
-            "nr_gates_reduction": 136,
-            "depth_reduction": 39
+        "HCN-lin_sto3g_JW": {
+            "nr_qubits": 12,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
+        },
+        "CH2O-min_321g_JW": {
+            "nr_qubits": 14,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
+        },
+        "CF3-like_6311g_BK": {
+            "nr_qubits": 28,
+            "nr_gates_reduction": 104,
+            "depth_reduction": 10
+        },
+        "PH3-trigonal_631gdstar_BK": {
+            "nr_qubits": 10,
+            "nr_gates_reduction": 20,
+            "depth_reduction": 2
+        },
+        "C3H6-propene_sto3g_parity": {
+            "nr_qubits": 20,
+            "nr_gates_reduction": 224,
+            "depth_reduction": 0
+        },
+        "C3H6-propene_sto6g_JW": {
+            "nr_qubits": 20,
+            "nr_gates_reduction": 0,
+            "depth_reduction": 0
+        },
+        "C2H4-planar_321g_parity": {
+            "nr_qubits": 14,
+            "nr_gates_reduction": 80,
+            "depth_reduction": 0
         }
     }
 }

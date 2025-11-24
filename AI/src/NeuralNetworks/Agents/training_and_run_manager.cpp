@@ -169,13 +169,28 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     std::string circuit_name = circuit_path.stem().string();
     updateProgress(++progress, nr_files,
                    "Evaluating " + agent_name + " on " + circuit_name);
+
+    QuantumCircuitEnvironment qc_environment(agent->getMaxQubits());
+    if (!qc_environment.register_quantum_circuit(circuit_path)) {
+      std::cerr << "Failed to register quantum circuit: " << circuit_path
+                << std::endl;
+      return {};
+    }
+    std::unordered_map<std::string, unsigned int> original_info =
+        qc_environment.get_circuit_info();
+    optimizations[circuit_name]["nr_qubits"] = original_info["nr_qubits"];
+    optimizations[circuit_name]["original_nr_gates"] =
+        original_info["nr_gates"];
+    optimizations[circuit_name]["original_depth"] = original_info["depth"];
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
         agent->select_passes_for_circuit(circuit_path);
-    auto [quantum_circuit, nr_gates_reduction, depth_reduction, _] =
+    auto [quantum_circuit, nr_gates_reduction, depth_reduction, pass_names] =
         agent->run_on_circuit(circuit_path, pass_functions);
-    optimizations[circuit_name]["nr_qubits"] = quantum_circuit.getNrQubits();
+    optimizations[circuit_name]["optimized_nr_gates"] = quantum_circuit.getNrGates();
+    optimizations[circuit_name]["optimized_depth"] = quantum_circuit.getDepth();
     optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
     optimizations[circuit_name]["depth_reduction"] = depth_reduction;
+    optimizations[circuit_name]["selected_passes"] = pass_names;
     avg_nr_gates_reduction += nr_gates_reduction;
     avg_depth_reduction += depth_reduction;
   }
@@ -191,7 +206,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
       (dataset_name + "_evaluation_" +
        (sampled ? "sample" + std::to_string(nr_files) : "full") + ".json");
   std::ofstream output_stream(filepath);
-  output_stream << json_file.dump(/*ident=*/4);
+  output_stream << json_file.dump(4);
   output_stream.close();
   return {{"avg_nr_gates_reduction", std::to_string(avg_nr_gates_reduction)},
           {"avg_depth_reduction", std::to_string(avg_depth_reduction)}};

@@ -285,8 +285,8 @@ QuantumCircuitEnvironment::get_circuit_info() const {
     std::cerr << "No circuit registered in the environment." << std::endl;
     return {};
   }
-  return {{"qubits", this->circuit.getNrQubits()},
-          {"gates", this->circuit.getNrGates()},
+  return {{"nr_qubits", this->circuit.getNrQubits()},
+          {"nr_gates", this->circuit.getNrGates()},
           {"depth", this->circuit.getDepth()}};
 }
 
