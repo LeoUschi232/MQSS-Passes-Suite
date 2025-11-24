@@ -124,7 +124,7 @@ void load_default_params() {
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
-      {"nr_episodes", 1000000},
+      {"nr_episodes", 1000001},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
       {"max_steps_same_action", 8},
@@ -151,7 +151,7 @@ void load_default_params() {
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},
-      {"stop_training_on_error", true},
+      {"stop_training_on_error", false},
       {"print_diagnostics", false},
       {"probability_max_qubits", 0.4},
       {"evaluation_sample", 10}};
