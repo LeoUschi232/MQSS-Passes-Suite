@@ -45,15 +45,7 @@ train(const std::string &agent_name, const std::string &dataset) {
         throw std::runtime_error("Failed to cast to BaseA2CAgent");
       }
       agent->load_model();
-      unsigned int nr_asynchronous_agents =
-          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
-      if (nr_asynchronous_agents <= 1u) {
-        std::cout << "Only 1 asnc A2C agent => Defaulting to A2C training."
-                  << std::endl;
-        training_results = train_a2c(agent, dataset);
-      } else {
-        training_results = train_a2c(agent, dataset);
-      }
+      training_results = train_a2c(agent, dataset);
       break;
     }
     case AgentClass::PPO: {
