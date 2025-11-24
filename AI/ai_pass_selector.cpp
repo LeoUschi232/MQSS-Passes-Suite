@@ -29,31 +29,34 @@ void signal_handler(int signal) {
     interrupted = 1;
   }
 }
+
+void print_help() {
+  std::cout << "\nUsage: ./ai_pass_selector_torch [Parameters]"
+               "\nAssign parameters space-seperated liuke this: <key>=<value>"
+               "\nParameter names, types and default/current values:"
+            << std::endl;
+  for (auto &[key, value] : GLOBAL_PARAMS) {
+    std::cout << key << ": " << value.to_string() << " (" << value.type_name()
+              << ")" << std::endl;
+  }
+}
+
 int main(int argc, char **argv) {
   load_default_params();
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
-
-  unsigned int i = 0;
-  while (i < n) {
+  for (unsigned int i = 0; i < n; i++) {
     if (args[i] == "-h" || args[i] == "--help") {
-      std::cout
-          << "\nUsage: ./ai_pass_selector_torch [Parameters]"
-             "\nAssign parameters space-seperated liuke this: <key>=<value>"
-             "\nParameter names, types and default values:"
-          << std::endl;
-      for (auto &[key, value] : GLOBAL_PARAMS) {
-        std::cout << key << ": " << value.to_string() << " ("
-                  << value.type_name() << ")" << std::endl;
-      }
+      print_help();
       return 0;
     }
     std::vector<std::string> key_value = split_string(args[i], '=');
     if (key_value.size() != 2) {
-      std::cerr << "Malformatted GLOBAL_PARAMS: " << args[i] << std::endl;
+      std::cerr << "Malformatted argument: " << args[i] << std::endl;
+      print_help();
+      return 0;
     }
     GLOBAL_PARAMS[key_value[0]] = key_value[1];
-    i++;
   }
   auto agent = std::string(GLOBAL_PARAMS["agent"]);
   auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
