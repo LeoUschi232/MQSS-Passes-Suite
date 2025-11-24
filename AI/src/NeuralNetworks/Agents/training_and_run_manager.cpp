@@ -186,7 +186,8 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
         agent->select_passes_for_circuit(circuit_path);
     auto [quantum_circuit, nr_gates_reduction, depth_reduction, pass_names] =
         agent->run_on_circuit(circuit_path, pass_functions);
-    optimizations[circuit_name]["optimized_nr_gates"] = quantum_circuit.getNrGates();
+    optimizations[circuit_name]["optimized_nr_gates"] =
+        quantum_circuit.getNrGates();
     optimizations[circuit_name]["optimized_depth"] = quantum_circuit.getDepth();
     optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
     optimizations[circuit_name]["depth_reduction"] = depth_reduction;
@@ -198,12 +199,12 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
   avg_nr_gates_reduction /= nr_files;
   avg_depth_reduction /= nr_files;
   nlohmann::ordered_json json_file;
-  json_file["dataset_name"] = dataset_name;
+  json_file["dataset"] = dataset_name;
   json_file["agent"] = agent_name;
   json_file["circuit_optimizations"] = optimizations;
   fs::path filepath =
       fs::path(AI_DATASET_DIR) / "Evaluations" /
-      (dataset_name + "_evaluation_" +
+      ("Evaluation_" + dataset_name + "_" + agent->agentName() + "_" +
        (sampled ? "sample" + std::to_string(nr_files) : "full") + ".json");
   std::ofstream output_stream(filepath);
   output_stream << json_file.dump(4);

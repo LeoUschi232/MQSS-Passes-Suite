@@ -103,7 +103,6 @@ int main(int argc, char **argv) {
           GLOBAL_PARAMS["evaluation_sample"].to_int() > 0) {
         max_circuits = GLOBAL_PARAMS["evaluation_sample"].to_int();
       }
-
       std::unordered_map<std::string, std::string> metrics =
           evaluate(agent, dataset, max_circuits);
       for (const auto &[key, value] : metrics) {
