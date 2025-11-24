@@ -162,8 +162,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     return {};
   }
   nlohmann::ordered_json optimizations = nlohmann::ordered_json::object();
-  nlohmann::ordered_json pass_selection_amounts =
-      nlohmann::ordered_json::object();
+  std::unordered_map<std::string, unsigned int> pass_selection_amounts;
   double average_nr_gates_reduction = 0.0;
   double average_depth_reduction = 0.0;
   unsigned int progress = 0u;
@@ -196,13 +195,7 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     optimizations[circuit_name]["selected_passes"] = pass_names;
 
     for (const std::string &pass_name : pass_names) {
-      // TODO: Help here, apparently has_key doesn't exist.
-      if (pass_selection_amounts.contains(pass_name)) {
-        pass_selection_amounts[pass_name] =
-            pass_selection_amounts[pass_name].get<unsigned int>() + 1u;
-      } else {
-        pass_selection_amounts[pass_name] = 1u;
-      }
+      pass_selection_amounts[pass_name]++;
     }
 
     average_nr_gates_reduction += nr_gates_reduction;

@@ -6922,11 +6922,8 @@
             "nr_gates_reduction": 0,
             "depth_reduction": 0,
             "selected_passes": [
-                "HHToId",
                 "HCxHToCz",
-                "HHToId",
                 "HCxHToCz",
-                "HHToId",
                 "HCxHToCz",
                 "HCxHToCz",
                 "HCxHToCz",
@@ -6934,10 +6931,23 @@
                 "HCxHToCz",
                 "HHToId",
                 "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
                 "HHToId",
                 "HCxHToCz",
                 "HCxHToCz",
                 "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HHToId",
+                "HCxHToCz",
+                "HCxHToCz",
+                "HHToId",
                 "HCxHToCz",
                 "HCxHToCz",
                 "HCxHToCz",
@@ -32525,5 +32535,9 @@
                 "HHToId"
             ]
         }
+    },
+    "pass_selection_amounts": {
+        "HHToId": 15344,
+        "HCxHToCz": 159
     }
 }

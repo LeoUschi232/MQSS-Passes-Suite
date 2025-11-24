@@ -122,7 +122,7 @@ void load_default_params() {
   GLOBAL_PARAMS = {
       {"agent", "a2c-mq28-tcn"},
       {"dataset", "Chemistry"},
-      {"evaluate", false},
+      {"evaluate", true},
       {"circuit", ""},
       {"output", ""},
       {"nr_episodes", 1000001},
@@ -155,5 +155,5 @@ void load_default_params() {
       {"stop_training_on_error", false},
       {"print_diagnostics", false},
       {"probability_max_qubits", 0.4},
-      {"evaluation_sample", 10}};
+      {"evaluation_sample", 0}};
 }

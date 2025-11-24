@@ -32512,5 +32512,8 @@
                 "HZToXH"
             ]
         }
+    },
+    "pass_selection_amounts": {
+        "HZToXH": 15480
     }
 }

@@ -32704,5 +32704,10 @@
                 "CxCxToId"
             ]
         }
+    },
+    "pass_selection_amounts": {
+        "CxCxToId": 11500,
+        "HHToId": 4092,
+        "HYToYH": 80
     }
 }
