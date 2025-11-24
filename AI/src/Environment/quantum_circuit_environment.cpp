@@ -99,12 +99,10 @@ void QuantumCircuitEnvironment::clear(bool hard) {
 }
 
 void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
-  this->clear(/*hard=*/false);
+  this->clear(false);
   if (!this->circuit_path.empty()) {
     this->register_quantum_circuit(this->circuit_path);
-    return;
-  }
-  if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
+  } else if (qubits_cholesky_params.has_value() && gates_weights.has_value()) {
     // The QuantumCircuit object validates itself on construction, so no need
     // for extra validation.
     RandomizerOptions randomizer_options = {
@@ -116,14 +114,15 @@ void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
       randomizer_options.seed = seed.value();
     }
     this->circuit = random_quantum_circuit_from_embedded_statistics(
-        /*cholesky_params=*/qubits_cholesky_params.value(),
-        /*gates_weights=*/gates_weights.value(),
-        /*randomizer_options=*/randomizer_options);
+        qubits_cholesky_params.value(), gates_weights.value(),
+        randomizer_options);
     this->validate();
-    return;
+  } else {
+    std::cerr << "No circuit or randomization parameters provided to reset."
+              << std::endl;
   }
-  std::cerr << "No circuit or randomization parameters provided to reset."
-            << std::endl;
+  this->original_nr_gates = this->circuit.getNrGates();
+  this->original_depth = this->circuit.getDepth();
 }
 
 bool QuantumCircuitEnvironment::register_quantum_circuit(
@@ -312,9 +311,9 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   auto [succeeded, wasApplied] = this->circuit.run_pass(action);
   float reward = 0.0f;
   if (succeeded && wasApplied) {
-    reward = previous_depth - this->circuit.getDepth() +
-             this->nr_gates_reduction_weight *
-                 (previous_nr_gates - this->circuit.getNrGates());
+    reward = (previous_nr_gates - this->circuit.getNrGates()) /
+                 this->original_nr_gates +
+             (previous_depth - this->circuit.getDepth()) / this->original_depth;
     this->latest_observation = std::nullopt;
   }
 
