@@ -194,7 +194,7 @@
 - __[Page 94]__ Bi-directional LSTMs extend the idea of LSTMs by having two LSTMs in each layer. One LSTM processes the
   sequence from left to right, and the other from right to left. The outputs of both LSTMs are then concatenated. This
   allows the network to have access to past and future contexts at the same time.
-- __[Page 112]__For both $PM_{2.5}$ and $PM_{10}$  concentrations, the TCN-LSTM model produced the highest $R^2$ values
+- __[Page 112]__ For both $PM_{2.5}$ and $PM_{10}$ concentrations, the TCN-LSTM model produced the highest $R^2$ values
   of all the tested models, indicating that the TCN-LSTM model achieved the closest agreement between the predicted and
   observed value. These results indicate that the TCN-LSTM model had the highest prediction accuracy among the four deep
   learning models considered: TCN-LSTM, CNN-LSTM, LSTM, and TCN.
@@ -218,33 +218,21 @@
 - __[Page 49]__ Weight normalization allows CrossQ to scale effectively. Through the addition of Weight Normalization,
   CrossQ+WN shows stable training and can stably scale with increasing UTD ratios. CrossQ benefits from the addition of
   WN, which results in stable training and scales well with higher UTD ratios.
-- __[Page 56]__ Deep Neural Networks (DNN) and Recurrent Neural Networks (RNN) are powerful models that were considered
+- __[Page 65]__ Deep Neural Networks (DNN) and Recurrent Neural Networks (RNN) are powerful models that were considered
   to be almost impossible to train using stochastic gradient descent with momentum. When stochastic gradient descent
   with momentum uses a well-designed random initialization and a particular type of slowly increasing schedule for the
   momentum parameter, it can train both DNNs and RNNs on datasets with long-term dependencies to levels of performance
   that were previously achievable only with Hessian-Free optimization.
-- __[Page 66]__ Algorithm 2. Actor–Critic with Experience Replay. Estimators mentioned in Steps 6 and 7 are based on the
-  samples in a database. Due to more exhaustive exploitation of information experience replay leads to faster learning
-  at the cost of additional computation.
-- __[Page 75]__ Prioritized Level Replay is a general framework for selectively sampling the next training level by
-  prioritizing those with higher estimated learning potential when revisited in the future. TD-errors effectively
-  estimate a level's future learning potential. Variation across levels implies that at each point of training, each
-  level likely holds different potential for an agent to learn about the structure shared across levels to improve
-  generalization.
-- __[Page 76]__ The only requirements are satisfied by almost any problem that can be framed as Procedural Content
-  Generation (PCG), including RL environments implemented as seeded simulator. PCG environment is any computational
-  process that, given a level identifier like a a random seed, generates a level, defined as an environment instance
-  exhibiting a unique configuration of its underlying factors of variation.
 - __[Page 99]__ Adam is an algorithm for first-order gradient-based optimization of stochastic objective functions,
   based on adaptive estimates of lower-order moments. The method is computationally efficient, has little memory
   requirements, is invariant to diagonal rescaling of the gradients, and is well suited for problems that are large in
   terms of data and/or parameters. The method is also appropriate for non-stationary objectives and problems with very
   noisy and/or sparse gradients.
-- __[Page 104]__ Adagrad outperforms SGD with Nesterov momentum by a large margin both with and without dropout noise.
+- __[Page 95]__ Adagrad outperforms SGD with Nesterov momentum by a large margin both with and without dropout noise.
   Adam converges as fast as Adagrad. Similar to Adagrad, Adam can take advantage of sparse features and obtain faster
   convergence rate than normal SGD with momentum. Although Adam convergence analysis does not apply to non-convex
   problems, Adam often outperforms other methods in such cases.
-- __[Page 106]__ Adam and Adagrad make rapid progress lowering the cost in the initial stage of the training. Adam and
+- __[Page 96]__ Adam and Adagrad make rapid progress lowering the cost in the initial stage of the training. Adam and
   SGD eventually converge considerably faster than Adagrad for CNNs. The second moment estimate $\hat{v}_t$ vanishes to
   zeros after a few epochs and is dominated by the $\epsilon$ in the Adam algorithm. The second moment estimate is
   therefore a poor approximation to the geometry of the cost function in CNNs comparing to fully connected networks.
@@ -253,8 +241,17 @@
 
 ### 7. [Reinforcement Learning Algorithms Set 2](ResearchPapers/07_ReinforcementLearningAlgorithmsSet2.pdf)
 
--
-
 ### 8. [Reinforcement Learning Algorithms Set 3](ResearchPapers/08_ReinforcementLearningAlgorithmsSet3.pdf)
 
--
+- __[Page 4]__ Algorithm 2. Actor–Critic with Experience Replay. Estimators mentioned in Steps 6 and 7 are based on the
+  samples in a database. Due to more exhaustive exploitation of information experience replay leads to faster learning
+  at the cost of additional computation.
+- __[Page 13]__ Prioritized Level Replay is a general framework for selectively sampling the next training level by
+  prioritizing those with higher estimated learning potential when revisited in the future. TD-errors effectively
+  estimate a level's future learning potential. Variation across levels implies that at each point of training, each
+  level likely holds different potential for an agent to learn about the structure shared across levels to improve
+  generalization.
+- __[Page 14]__ The only requirements are satisfied by almost any problem that can be framed as Procedural Content
+  Generation (PCG), including RL environments implemented as seeded simulator. PCG environment is any computational
+  process that, given a level identifier like a a random seed, generates a level, defined as an environment instance
+  exhibiting a unique configuration of its underlying factors of variation.
