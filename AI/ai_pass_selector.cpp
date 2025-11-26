@@ -31,7 +31,7 @@ void signal_handler(int signal) {
 }
 
 void print_help() {
-  std::cout << "\n\tUsage: ./ai_pass_selector_torch [Parameters]"
+  std::cout << "\n\tUsage: ./ai_pass_selector [Parameters]"
                "\n\n\tAssign parameters space-seperated like this:"
                "\n\t\t<key>=<value>"
                "\n\n\tParameter names, types and default/current values:"
@@ -87,10 +87,8 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (agent.empty()) {
-    if (circuit.empty()) {
-      return 0;
-    }
-    agent = select_best_agent(circuit);
+    std::cerr << "No agent provided." << std::endl;
+    return 1;
   }
 
   // If a circuit is provided, it is assumes the user only wants to run the

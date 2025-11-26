@@ -17,7 +17,11 @@ be built initially had been built.
 
 ### Running AI Pass Selector
 
-// TODO
+The [ai_pass_selector](../build/AI/ai_pass_selector) executable gets built
+to [MQSS-PASSES-SUITE/build/AI/ai_pass_selector](../build/AI/ai_pass_selector).
+Tun run it, simply go to [build/AI](../build/AI) by running `cd build/AI` from repo root, and execute it by running
+`./ai_pass_selector [Parameters]`.
+Run `./ai_pass_selector --help` or `./ai_pass_selector -h` to see whaat parameters are available for setting.
 
 ## Current State of Progress
 
@@ -25,8 +29,35 @@ be built initially had been built.
 
 #### Tensor Encoding of a Quantum Circuit
 
-// TODO
-// EVERYTHING IS UNBATCHED
+Every quantum circuit can be viewed as a list of instructions, that means quantum gates acting on qubits.
+An instruction is exactly defined by:
+
+1. __Gate identity__ f.e. _X_, _H_, _Sdg_, etc.
+2. __Qubits it acts on__ meaning both control and target qubits:
+3. __Optional parameters__ such as the angles of rotation and/or unitary gates.
+
+The tensor encoding the quantum circuit considers one such instruction as an element
+with _Instruction Representation Size_ (IRS) number of values.
+Here, $\mathrm{MAX\_QUBITS}$ is the maximum number of qubits a specific tensor can represent, the number of distinct
+usable gate identities in quake is $17$ and the maximum number of parameters a gate may have is $3$.
+An instruction representation element is constructed like this:
+
+1. First $\mathrm{MAX\_QUBITS}$ values encode the qubits the instruction acts on.
+    - If the instruction acts on qubit at index $i$ as a control qubits, the value at $i$ in the element is $-1$.
+    - If the instruction acts on qubit at index $i$ as a target qubits, the value at $i$ in the element is $+1$.
+    - If the instruction does not acto on qubit at index $i$, the value at $i$ in the element is $0$.
+2. The next 17 values are a signed-one-hot encoding of the gate.
+    - If the gate occurs as its usual type f.e. _X_, its corresponding index is set to $+1$.
+    - If the gate occurs as its adjoint type f.e. _Sdg_ as the adjoint of _S_, its corresponding index is set to $-1$.
+    - All other values are set to $0$.
+3. The final 3 values are set as the angles of the rotation/unitary gate in order of occurence in the gate construction
+   and left as $0.0$ if unused.
+
+Therefore IRS is always: $\mathrm{IRS}=\mathrm{MAX\_QUBITS}+20$.
+
+Finally the full quantum circuit is length-$N$ list of the above described instructions.
+The full tensor is just the concatenation of the instruction representation elements and has therefore the
+shape: $[N,\,\mathrm{IRS}]$.
 
 #### Random Quantum Circuit Generator
 
@@ -64,22 +95,22 @@ be built initially had been built.
 #### Q-Value Estimation $Q(s,a)$
 
 // TODO (Write something about how a Q-Estimator critic for discrete actions can be made to output something of
-// shape [nr_actions]) 
+// shape [nr_actions])
 // EVERYTHING IS UNBATCHED
 
 ### Reinforcement Learning Algorithms
 
 #### Advantage Actor-Critic (A2C)
 
-// TODO 
+// TODO
 
 #### Proximal Policy Optimization (PPO)
 
-// TODO 
+// TODO
 
 #### Stable Discrete Soft Actor-Critic (SDSAC)
 
-// TODO 
+// TODO
 
 #### Actor-Critic with Experience Replay (ACER)
 

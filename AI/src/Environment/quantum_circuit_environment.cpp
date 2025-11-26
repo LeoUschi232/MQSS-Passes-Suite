@@ -298,7 +298,7 @@ QuantumCircuitEnvironment::step(unsigned int action) {
   }
   if (++this->step_per_episode > this->max_steps_per_episode) {
     this->truncated = true;
-    return {0.0f, /*Terminated=*/false, /*Truncated=*/true};
+    return {0.0f, false, true};
   }
   if (!this->circuit.exists()) {
     throw std::runtime_error("No circuit registered in the environment.");
@@ -324,12 +324,12 @@ QuantumCircuitEnvironment::step(unsigned int action) {
     this->step_same_action = 0;
   } else if (++this->step_no_change > this->max_steps_no_change) {
     this->terminated = true;
-    return {reward, /*Terminated=*/true, /*Truncated=*/false};
+    return {reward, true, false};
   } else if (static_cast<int>(action) != this->last_action) {
     this->step_same_action = 0;
   } else if (++this->step_same_action > this->max_steps_same_action) {
     this->terminated = true;
-    return {reward, /*Terminated=*/true, /*Truncated=*/false};
+    return {reward, true, false};
   }
 
   this->last_action = static_cast<int>(action);
@@ -346,9 +346,9 @@ QuantumCircuitEnvironment::step(unsigned int action) {
               << "Nr qubits: " << this->circuit.getNrQubits() << "\n"
               << "Nr gates: " << this->circuit.getNrGates() << "\n"
               << "Depth: " << this->circuit.getDepth() << std::endl;
-    return {0.0f, /*Terminated=*/false, /*Truncated=*/false};
+    return {0.0f, false, false};
   }
-  return {reward, /*Terminated=*/false, /*Truncated=*/false};
+  return {reward, false, false};
 }
 
 InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
@@ -363,14 +363,14 @@ InstructionsTensor<float> QuantumCircuitEnvironment::get_observation() {
   if (!this->circuit.exists() || this->terminated) {
     // Changed to exclude this->truncated so that for truncated episodes, we
     // return the actual observation for bootstrapping.
-    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
+    observation.pad(GLOBAL_MIN_NR_GATES, 0.0f);
     return observation;
   }
   const unsigned int nr_gates = this->circuit.getNrGates();
   const unsigned int nr_qubits = this->circuit.getNrQubits();
   if (nr_gates < GLOBAL_MIN_NR_GATES || nr_qubits < GLOBAL_MIN_NR_QUBITS) {
     // Any valid normal circuit should have at least 2 instructions.
-    observation.pad(/*toNrInstructions=*/GLOBAL_MIN_NR_GATES, /*value=*/0.0f);
+    observation.pad(GLOBAL_MIN_NR_GATES, 0.0f);
     return observation;
   }
   observation.reserve(nr_gates);
@@ -445,18 +445,16 @@ torch::Tensor QuantumCircuitEnvironment::get_observation_as_torch_tensor() {
                         GLOBAL_TENSOR_OPTIONS);
   }
   torch::Tensor tensor = torch::from_blob(
-      /*data=*/observation.raw(), /*sizes=*/{N, IRS},
-      /*options=*/
+      observation.raw(), {N, IRS},
       torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
   return tensor.to(GLOBAL_TENSOR_OPTIONS.device(),
-                   /*type_meta=*/GLOBAL_TENSOR_OPTIONS.dtype(),
-                   /*non_blocking=*/false, /*copy=*/true);
+                   GLOBAL_TENSOR_OPTIONS.dtype(), false, true);
 }
 
 bool QuantumCircuitEnvironment::validate() {
   if (this->circuit.getNrQubits() > this->max_qubits ||
       !this->circuit.validate()) {
-    this->clear(/*hard=*/false);
+    this->clear(false);
     return false;
   }
   return true;
