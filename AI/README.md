@@ -203,7 +203,7 @@
   Carlo cross-validation of the time series tests the robustness of the model, and the results showed the high stability
   of the TCN-LSTM model.
 
-### 6. [Normalization, Optimization and Replay Schemes](ResearchPapers/06_NormalizationOptimizationAndReplaySchemes.pdf)
+### 6. [Normalization & Optimization Schemes](ResearchPapers/06_NormalizationAndOptimizationSchemes.pdf)
 
 - __[Page 3]__ Batch Normalization takes a step towards reducing internal covariate shift, and in doing so dramatically
   accelerates the training of deep neural nets. It accomplishes this via a normalization step that fixes the means and
@@ -249,4 +249,12 @@
   zeros after a few epochs and is dominated by the $\epsilon$ in the Adam algorithm. The second moment estimate is
   therefore a poor approximation to the geometry of the cost function in CNNs comparing to fully connected networks.
   Reducing the minibatch variance through the first moment is more important in CNNs and contributes to the speed-up. As
-  a result, Adagrad converges much slower than others. 
+  a result, Adagrad converges much slower than others.
+
+### 7. [Reinforcement Learning Algorithms Set 2](ResearchPapers/07_ReinforcementLearningAlgorithmsSet2.pdf)
+
+-
+
+### 8. [Reinforcement Learning Algorithms Set 3](ResearchPapers/08_ReinforcementLearningAlgorithmsSet3.pdf)
+
+-
