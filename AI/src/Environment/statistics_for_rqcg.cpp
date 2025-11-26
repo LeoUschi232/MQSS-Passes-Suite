@@ -24,6 +24,7 @@ using llvm::isa;
 
 // Standard library includes
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <unordered_set>
@@ -382,6 +383,107 @@ extract_dataset_statistics(const std::string &dataset_name) {
   return std::make_pair(cholesky_params, gates_weights);
 }
 
+void print_dataset_statistics(const std::string &dataset_name) {
+  auto dataset_statistics = extract_dataset_statistics(dataset_name);
+  if (!dataset_statistics.has_value()) {
+    std::cerr << "Dataset \"" << dataset_name
+              << "\" either does not exist or has weak statistics."
+              << std::endl;
+    return;
+  }
+  fs::path statistics_yaml_file =
+      fs::path(RQCG_STATISTICS_DIR) / (dataset_name + "Statistics.yaml");
+  auto [cholesky_params, gates_weights] = dataset_statistics.value();
+  std::ostringstream oss;
+  oss << "dataset_name: \"" << dataset_name << "\"\n"
+      << "cholesky_params:\n"
+      << "  mean_qubits: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeanQubits)] << "\n"
+      << "  mean_gates: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeanGates)] << "\n"
+      << "  mean_operations: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeanOperations)] << "\n"
+      << "  mean_measurements: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeanMeasurements)] << "\n"
+      << "  qubits_L11: "
+      << cholesky_params[to_index(CholeskyParamIndex::QubitsL11)] << "\n"
+      << "  gates_L21: "
+      << cholesky_params[to_index(CholeskyParamIndex::GatesL21)] << "\n"
+      << "  gates_L22: "
+      << cholesky_params[to_index(CholeskyParamIndex::GatesL22)] << "\n"
+      << "  operations_L21: "
+      << cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] << "\n"
+      << "  operations_L22: "
+      << cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] << "\n"
+      << "  measurements_L21: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] << "\n"
+      << "  measurements_L22: "
+      << cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] << "\n"
+      << "gates_weights:\n"
+      << "  X: " << gates_weights[to_index(GateWeightIndex::X)] << "\n"
+      << "  CX: " << gates_weights[to_index(GateWeightIndex::CX)] << "\n"
+      << "  CCX: " << gates_weights[to_index(GateWeightIndex::CCX)] << "\n"
+      << "  C3plus_X: " << gates_weights[to_index(GateWeightIndex::C3PlusX)]
+      << "\n"
+      << "  Y: " << gates_weights[to_index(GateWeightIndex::Y)] << "\n"
+      << "  controlled_Y: "
+      << gates_weights[to_index(GateWeightIndex::ControlledY)] << "\n"
+      << "  Z: " << gates_weights[to_index(GateWeightIndex::Z)] << "\n"
+      << "  controlled_Z: "
+      << gates_weights[to_index(GateWeightIndex::ControlledZ)] << "\n"
+      << "  H: " << gates_weights[to_index(GateWeightIndex::H)] << "\n"
+      << "  controlled_H: "
+      << gates_weights[to_index(GateWeightIndex::ControlledH)] << "\n"
+      << "  S: " << gates_weights[to_index(GateWeightIndex::S)] << "\n"
+      << "  controlled_S: "
+      << gates_weights[to_index(GateWeightIndex::ControlledS)] << "\n"
+      << "  SDG: " << gates_weights[to_index(GateWeightIndex::SDG)] << "\n"
+      << "  controlled_SDG: "
+      << gates_weights[to_index(GateWeightIndex::ControlledSDG)] << "\n"
+      << "  T: " << gates_weights[to_index(GateWeightIndex::T)] << "\n"
+      << "  controlled_T: "
+      << gates_weights[to_index(GateWeightIndex::ControlledT)] << "\n"
+      << "  TDG: " << gates_weights[to_index(GateWeightIndex::TDG)] << "\n"
+      << "  controlled_TDG: "
+      << gates_weights[to_index(GateWeightIndex::ControlledTDG)] << "\n"
+      << "  RX: " << gates_weights[to_index(GateWeightIndex::RX)] << "\n"
+      << "  controlled_RX: "
+      << gates_weights[to_index(GateWeightIndex::ControlledRX)] << "\n"
+      << "  RY: " << gates_weights[to_index(GateWeightIndex::RY)] << "\n"
+      << "  controlled_RY: "
+      << gates_weights[to_index(GateWeightIndex::ControlledRY)] << "\n"
+      << "  RZ: " << gates_weights[to_index(GateWeightIndex::RZ)] << "\n"
+      << "  controlled_RZ: "
+      << gates_weights[to_index(GateWeightIndex::ControlledRZ)] << "\n"
+      << "  SWAP: " << gates_weights[to_index(GateWeightIndex::SWAP)] << "\n"
+      << "  controlled_SWAP: "
+      << gates_weights[to_index(GateWeightIndex::ControlledSWAP)] << "\n"
+      << "  R1: " << gates_weights[to_index(GateWeightIndex::R1)] << "\n"
+      << "  controlled_R1: "
+      << gates_weights[to_index(GateWeightIndex::ControlledR1)] << "\n"
+      << "  U2: " << gates_weights[to_index(GateWeightIndex::U2)] << "\n"
+      << "  controlled_U2: "
+      << gates_weights[to_index(GateWeightIndex::ControlledU2)] << "\n"
+      << "  U3: " << gates_weights[to_index(GateWeightIndex::U3)] << "\n"
+      << "  controlled_U3: "
+      << gates_weights[to_index(GateWeightIndex::ControlledU3)] << "\n"
+      << "  PHASED_RX: " << gates_weights[to_index(GateWeightIndex::PhasedRX)]
+      << "\n"
+      << "  controlled_PHASED_RX: "
+      << gates_weights[to_index(GateWeightIndex::ControlledPhasedRX)] << "\n"
+      << "  MX: " << gates_weights[to_index(GateWeightIndex::MX)] << "\n"
+      << "  MY: " << gates_weights[to_index(GateWeightIndex::MY)] << "\n"
+      << "  MZ: " << gates_weights[to_index(GateWeightIndex::MZ)] << "\n";
+  const std::string content = oss.str();
+  std::cout << content << std::endl;
+  std::ofstream output_file_stream(statistics_yaml_file);
+  if (!output_file_stream) {
+    std::cerr << "Failed to open statistics file: " << statistics_yaml_file
+              << std::endl;
+    return;
+  }
+  output_file_stream << content;
+}
 
 std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
