@@ -94,7 +94,7 @@ void print_dataset_statistics(const std::string &dataset_name);
 
 /**
  * @param statistics_yaml_file
- * @return
+ * @return [cholesky_params, gates_weights]
  */
 std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
@@ -102,7 +102,7 @@ get_dataset_statistics_from_yaml_file(const fs::path &statistics_yaml_file);
 
 /**
  * @param dataset_name
- * @return
+ * @return [cholesky_params, gates_weights]
  */
 std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>

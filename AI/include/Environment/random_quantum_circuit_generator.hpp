@@ -126,12 +126,12 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
         .probability_additionals_controls = 0.01});
 
 /**
- * @param statistics_yaml_file_path
+ * @param statistics_yaml_file
  * @param randomizer_options
  * @return
  */
 QuantumCircuit random_quantum_circuit_from_yaml_statistics(
-    const fs::path &statistics_yaml_file_path,
+    const fs::path &statistics_yaml_file,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
         .probability_additionals_controls = 0.01});

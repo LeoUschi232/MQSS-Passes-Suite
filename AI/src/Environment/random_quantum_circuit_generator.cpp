@@ -409,10 +409,12 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
 }
 
 QuantumCircuit random_quantum_circuit_from_yaml_statistics(
-    const fs::path &statistics_yaml_file_path,
+    const fs::path &statistics_yaml_file,
     const RandomizerOptions &randomizer_options) {
-
-
+  // Unsafe value() access on purpose.
+  // The code is supposed to throw an error if the yaml file does not exist.
+  auto [cholesky_params, gates_weights] =
+      get_dataset_statistics_from_yaml_file(statistics_yaml_file).value();
   return random_quantum_circuit_from_embedded_statistics(
       cholesky_params, gates_weights, randomizer_options);
 }
