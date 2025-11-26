@@ -1,17 +1,7 @@
 # AI Pass Selector
 
 ## TODO List
-
-This list is unordered regarding priority.
-
- Task                                            | Description                                                                                                                                                                                        
--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Implement Experience Replay                     | Implement Experience Replay into the A3C agent.                                                                                                                                                    
- Implement ACER                                  | Implement the Actor-Critic with Experience Replay (ACER) algorithm using convolutional and/or LSTM designs.                                                                                        
- Implement ACKTR                                 | Implement the Actor-Critic using Kronecker-Factored Trust Region (ACKTR) algorithm using convolutional and/or LSTM designs.                                                                        
- Implement PPO agent                             | Implement the Proximal Policy Optimization (PPO) algorithm using convolutional and/or LSTM designs.                                                                                                
- Implement Prioritized Level Replay              | Research the Prioritized Level Replay technique and implement it in the current agents.                                                                                                            
- Implement CrossQ                                | Research the CrossQ algorithm and implement it in the current agents.                                                                                                                              
+                                                                                                                       
 
 ## Research Paper Notes
 

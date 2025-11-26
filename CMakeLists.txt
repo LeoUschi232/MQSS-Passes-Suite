@@ -45,18 +45,15 @@ include(AddLLVM)
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
 
 # ############### ADDITIONAL PACKAGES #######################################
-# Tell where to search for Find<package>.cmake files
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
-# set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
-# QInfo package find_package(qinfo REQUIRED)
 find_package(Z3 REQUIRED)
-
 find_package(mqt-qcec REQUIRED)
+
 # Find the QMAP package
 set(CMAKE_CXX_STANDARD 17)
 set(MQT_QMAP_TESTS OFF)
 find_package(mqt-qmap REQUIRED)
+
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
 # ###################### CUDAQ settings ###################################
