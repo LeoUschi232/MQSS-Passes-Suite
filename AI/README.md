@@ -61,7 +61,14 @@ shape: $[N,\,\mathrm{IRS}]$.
 
 #### Random Quantum Circuit Generator
 
-// TODO
+The random quantum circuit generator used during training to generate quantum circuits randomly to circumvent the
+necessity of having a dataset for training and the associated risk of everfitting requires 2 sets of numerical
+attributes to run: a test dataset's cholesky params and gates weights.
+To see an example of how these sets of attribues look, you can view the `yaml` files
+in [StatisticsForRQCG](include/Environment/StatisticsForRQCG)
+like [ChemistryStatistics.yaml](include/Environment/StatisticsForRQCG/ChemistryStatistics.yaml)
+or [MQTBenchStatistics.yaml](include/Environment/StatisticsForRQCG/MQTBenchStatistics.yaml).
+These attribute sets of a dataset can 
 
 ### Neural Network Architectures
 
