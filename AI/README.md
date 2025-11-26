@@ -42,35 +42,35 @@
 
 ### 2. [Reinforcement Learning Basics](ResearchPapers/02_ReinforcementLearningBasics.pdf)
 
-- The additional concept that we need is discounting. The agent tries to select actions so that the sum of the
-  discounted rewards it receives over the future is maximized. $\gamma$ is a parameter, $0\leq\gamma\leq1$, called the
-  discount rate. __[Page 10]__
-- The value function of a state $s$ under a policy $\pi$, denoted $v_\pi(s)$, is the expected return when starting
-  in $s$ and following $\pi$ thereafter. For Markov Decision Processes, we can define $v_\pi$ formally. Similarly, we
-  define the value of taking action $a$ in state $s$ under a policy $\pi$, denoted $q_\pi(s,a)$, as the expected return
-  starting from $s$, taking the action $a$, and thereafter following policy $\pi$. We call $q_\pi$ the action-value
-  function for policy $\pi$. __[Page 13]__
-- The quantity in brackets in the Temporal-Difference update is a sort of error, measuring the difference between the
-  estimated value of $S_t$ and the better estimate $R_{t+1}+\gamma V(S_{t+1})$. This quantity, called the
-  Temporal-Difference error $\delta_t$, arises in various forms throughout reinforcement learning. __[Page 27]__
-- Illustrate the architecture of a deep convolutional network. This instance was designed to recognize hand-written
-  characters. It consists of alternating convolutional and subsampling layers, followed by several fully connected final
-  layers. Each convolutional layer produces a number of feature maps- __[Page 75]__
-- The $\mathrm{TD}(\lambda)$ algorithm can be understood as one particular way of averaging $n$-step updates. This
-  average contains all the $n$-step updates, each weighted proportionally to $\lambda^{n-1}$, where $\lambda\in[0,1]$,
-  and is normalized by a factor of $\lambda-1$ to ensure that the weights sum to $1$. The resulting update is toward a
-  return, called the $\lambda$-return. __[Page 87]__
-- Asynchronous Advantage Actor-Critic is a classic policy gradient method with the special focus on parallel training.
-  In $\mathrm{A3C}$, the critics learn the state-value function $V_w(s)$, while multiple actors are trained in parallel
-  and get synced with global parameters from time to time. __[Page 132]__
-- Each policy $\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a distribution over
-  action $\pi(a|s,g)$. __[Page 141]__
-- Our policies are trained with PPO using the clipped surrogate objective. We maintain two networks, one for the
-  policy $\pi_\theta(a|s,g)$ and another for the value function $V_\psi(s,g)$. __[Page 142]__
-- Algorithm 1: Proximal Policy Optimization summarizes the common learning procedure used to train all policies. Policy
-  updates are performed after a batch of $m=4096$ samples has been collected. Minibatches of size $n=256$ are then
-  sampled from the data for each gradient step. A discount factor $\gamma=0.95$ is used for all motions. $\lambda=0.95$
-  is used for both $\mathrm{TD}(\lambda)$ and $\mathrm{GAE}(\gamma,\lambda)$. __[Page 152]__
+- __[Page 10]__ The additional concept that we need is discounting. The agent tries to select actions so that the sum of
+  the discounted rewards it receives over the future is maximized. $\gamma$ is a parameter, $0\leq\gamma\leq1$, called
+  the discount rate.
+- _[Page 13]__ The value function of a state $s$ under a policy $\pi$, denoted $v_\pi(s)$, is the expected return when
+  starting in $s$ and following $\pi$ thereafter. For Markov Decision Processes, we can define $v_\pi$ formally.
+  Similarly, we define the value of taking action $a$ in state $s$ under a policy $\pi$, denoted $q_\pi(s,a)$, as the
+  expected return starting from $s$, taking the action $a$, and thereafter following policy $\pi$. We call $q_\pi$ the
+  action-value function for policy $\pi$. _
+- __[Page 27]__ The quantity in brackets in the Temporal-Difference update is a sort of error, measuring the difference
+  between the estimated value of $S_t$ and the better estimate $R_{t+1}+\gamma V(S_{t+1})$. This quantity, called the
+  Temporal-Difference error $\delta_t$, arises in various forms throughout reinforcement learning.
+- __[Page 75]__ Illustrate the architecture of a deep convolutional network. This instance was designed to recognize
+  hand-written characters. It consists of alternating convolutional and subsampling layers, followed by several fully
+  connected final layers. Each convolutional layer produces a number of feature maps.
+- __[Page 87]__ The $\mathrm{TD}(\lambda)$ algorithm can be understood as one particular way of averaging $n$-step
+  updates. This average contains all the $n$-step updates, each weighted proportionally to $\lambda^{n-1}$,
+  where $\lambda\in[0,1]$, and is normalized by a factor of $\lambda-1$ to ensure that the weights sum to $1$. The
+  resulting update is toward a return, called the $\lambda$-return.
+- __[Page 132]__ Asynchronous Advantage Actor-Critic is a classic policy gradient method with the special focus on
+  parallel training. In $\mathrm{A3C}$, the critics learn the state-value function $V_w(s)$, while multiple actors are
+  trained in parallel and get synced with global parameters from time to time.
+- __[Page 141]__ Each policy $\pi$ is represented by a neural network that maps a given state $s$ and goal $g$ to a
+  distribution over action $\pi(a|s,g)$.
+- __[Page 142]__ Our policies are trained with PPO using the clipped surrogate objective. We maintain two networks, one
+  for the policy $\pi_\theta(a|s,g)$ and another for the value function $V_\psi(s,g)$.
+- __[Page 152]__ Algorithm 1: Proximal Policy Optimization summarizes the common learning procedure used to train all
+  policies. Policy updates are performed after a batch of $m=4096$ samples has been collected. Minibatches of
+  size $n=256$ are then sampled from the data for each gradient step. A discount factor $\gamma=0.95$ is used for all
+  motions. $\lambda=0.95$ is used for both $\mathrm{TD}(\lambda)$ and $\mathrm{GAE}(\gamma,\lambda)$.
 
 ### 3. [Reinforcement Learning Algorithms Set 1](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf)
 
@@ -93,9 +93,6 @@
 - __[Page 42]__ The algorithm, which we call asynchronous advantage actor-critic (A3C), maintains a
   policy $\pi(a_t|s_t,\theta$ and an estimate of the value function $V(s_t|\theta_v)$. As with the value-based methods
   we rely on parallel actor-learners and accumulated updates for improving training stability.
-- __[Page 159]__ <span style="font-variant: small-caps; font-size:15px;">Stable-Baselines3</span> contains the following
-  state-of-the-art on-policy and off-policy algorithms, commonly used as experimental baselines: A2C, PPO, DDPG, SAC,
-  TD3, HER, and DQN.
 - __[Page 103]__ Compare PPO to several previous algorithms. On continuous control tasks, it performs better than the
   algorithms we compare against. On Atari, it performs significantly better in terms of sample complexity than A2C and
   similarly to ACER.
@@ -111,6 +108,9 @@
   of gradient steps, termed update-to-data (UTD) ratio. In addition, Dropout Q functions improved the computational
   efficiency of REDQ while maintaining the same sample efficiency by replacing its ensemble of critics with dropout.
   REDQ and DroQ represent the state-of-the-art in terms of sample efficiency in Deep RL for continuous control.
+- __[Page 159]__ <span style="font-variant: small-caps; font-size:15px;">Stable-Baselines3</span> contains the following
+  state-of-the-art on-policy and off-policy algorithms, commonly used as experimental baselines: A2C, PPO, DDPG, SAC,
+  TD3, HER, and DQN.
 
 ### 4. [RNN & LSTM for Sequences: Variants, Evaluations and Applications](ResearchPapers/04_RNNandLSTMforSequencesVariantsEvaluationsAndApplications.pdf)
 
