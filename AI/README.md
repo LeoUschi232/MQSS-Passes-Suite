@@ -241,6 +241,17 @@
 
 ### 7. [Reinforcement Learning Algorithms Set 2](ResearchPapers/07_ReinforcementLearningAlgorithmsSet2.pdf)
 
+- __[Page 53]__ Use dropout for model uncertainty injection instead of the large ensemble. Specifically, the dropout
+  Q-function that is a Q-function equipped with dropout and layer normalization, and DroQ, a variant of REDQ that uses a
+  small ensemble of dropout Q-functions.
+- __[Page 54]__ Dropout Q-function implementation: Dropout function is implemented by modifying REDQ. The modification
+  is adding dropout and layer normalization. "Weight" is a weight layer and "ReLU" is the activation layer of rectified
+  linear units.
+- __[Page 82]__ By adjusting the number of randomly selected Q-functions for in-target minimization, REDQ can control
+  the average Q-function bias. In comparison with standard ensemble averaging and with SAC with a higher
+  Update-To-Data (UTD) ratio, REDQ has much lower std of Q-function bias while maintaining an average bias that is
+  negative but close to zero throughout most of training, resulting in significantly better learning performance.
+
 ### 8. [Reinforcement Learning Algorithms Set 3](ResearchPapers/08_ReinforcementLearningAlgorithmsSet3.pdf)
 
 - __[Page 4]__ Algorithm 2. Actor–Critic with Experience Replay. Estimators mentioned in Steps 6 and 7 are based on the
