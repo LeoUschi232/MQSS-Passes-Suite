@@ -1,6 +1,99 @@
 # AI Pass Selector
 
-## TODO List
+## Build & Usage
+
+### Building the project
+
+The top-level `MQSS-Passes-Suite` repository containes two scripts for building the
+project: [build_initial.sh](../build_initial.sh) and [rebuild.sh](../rebuild.sh).
+If you have succesfully and correctly built the [docker container](../.devcontainer/dockerContainer.Dockerfile) for this
+project or installed all necessary dependencies into `~/.local` and adjusted `~/.bashrc` in case you mean to run this on
+the LRZ GPU where building a docker container is not permitted, you should be able to succesfully run
+the [build_initial.sh](../build_initial.sh) script to initially build all additional dependencies
+into  [build/_deps](../build/_deps).
+Afterward you should no longer need to run [build_initial.sh](../build_initial.sh) to perform a first-time build but
+default to instead running [rebuild.sh](../rebuild.sh) for a faster build which assumes deps of the project which had to
+be built initially had been built.
+
+### Running AI Pass Selector
+
+// TODO
+
+## Current State of Progress
+
+### Quantum Circuits for Training
+
+#### Tensor Encoding of a Quantum Circuit
+
+// TODO
+// EVERYTHING IS UNBATCHED
+
+#### Random Quantum Circuit Generator
+
+// TODO
+
+### Neural Network Architectures
+
+#### Temporal Convolutional Networks
+
+// TODO
+// EVERYTHING IS UNBATCHED
+
+#### Long-Short-Term Memory Cells
+
+// TODO
+// EVERYTHING IS UNBATCHED
+
+#### Hybrid Architecture
+
+// TODO
+// EVERYTHING IS UNBATCHED
+
+### Networks outputs
+
+#### Actor Policy $\vec{\pi}(s|a)$
+
+// TODO
+// EVERYTHING IS UNBATCHED
+
+#### State Value Function $V(s)$
+
+// TODO (Write something about how the normal critic is supposed to output the state value V of shape [] (scalar))
+// EVERYTHING IS UNBATCHED
+
+#### Q-Value Estimation $Q(s,a)$
+
+// TODO (Write something about how a Q-Estimator critic for discrete actions can be made to output something of
+// shape [nr_actions]) 
+// EVERYTHING IS UNBATCHED
+
+### Reinforcement Learning Algorithms
+
+#### Advantage Actor-Critic (A2C)
+
+// TODO 
+
+#### Proximal Policy Optimization (PPO)
+
+// TODO 
+
+#### Stable Discrete Soft Actor-Critic (SDSAC)
+
+// TODO 
+
+#### Actor-Critic with Experience Replay (ACER)
+
+// TODO
+
+### Evaluation Datasets
+
+#### Chemistry
+
+// TODO
+
+#### MQTBench
+
+// TODO
 
 ## Research Paper Notes
 

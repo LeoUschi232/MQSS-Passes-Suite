@@ -91,12 +91,6 @@ makeOptimizer(OptimizerType optimizerType,
               const torch::nn::Sequential &agentModel, double learningRate);
 
 /**
- * @param circuit
- * @return
- */
-std::string select_best_agent(const std::string &circuit);
-
-/**
  * @param network
  * @return
  */
