@@ -68,7 +68,16 @@ To see an example of how these sets of attribues look, you can view the `yaml` f
 in [StatisticsForRQCG](include/Environment/StatisticsForRQCG)
 like [ChemistryStatistics.yaml](include/Environment/StatisticsForRQCG/ChemistryStatistics.yaml)
 or [MQTBenchStatistics.yaml](include/Environment/StatisticsForRQCG/MQTBenchStatistics.yaml).
-These attribute sets of a dataset can 
+
+These attribute sets of a dataset can be computed using existing functions.
+For that, create a dataset with quake `.qke` circuits and place it inside [AI/Datasets/Quake](Datasets/Quake).
+Then run `./ai_pass_selector dataset=<your-dataset-name> info=true` from the [build/AI](../build/AI) folder.
+The console should print the dataset's statistics which you can copy-paste into a corresponding `yaml` file in
+the [StatisticsForRQCG](include/Environment/StatisticsForRQCG) folder.
+You can also hard-code the statistics values into appropriate arrays in
+the [statistics_for_rqcg.hpp](include/Environment/statistics_for_rqcg.hpp) file.
+
+Once ready, agents should be trainable using the statistics of the selecteed dataset.
 
 ### Neural Network Architectures
 

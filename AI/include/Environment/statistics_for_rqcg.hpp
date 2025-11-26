@@ -93,12 +93,20 @@ extract_dataset_statistics(const std::string &dataset_name);
 void print_dataset_statistics(const std::string &dataset_name);
 
 /**
+ * @param statistics_yaml_file
+ * @return
+ */
+std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+                        std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
+get_dataset_statistics_from_yaml_file(const fs::path &statistics_yaml_file);
+
+/**
  * @param dataset_name
  * @return
  */
 std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
                         std::array<unsigned int, GATES_WEIGHTS_SIZE>>>
-get_precomputed_dataset_statistics(const std::string &dataset_name);
+get_dataset_statistics_from_dataset_name(const std::string &dataset_name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Dataset statistics embedded as available C++ data.

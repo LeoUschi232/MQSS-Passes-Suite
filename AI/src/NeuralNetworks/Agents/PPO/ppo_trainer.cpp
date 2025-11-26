@@ -39,7 +39,7 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
     std::cerr << "Nothing to train." << std::endl;
     return {};
   }
-  auto optional_statistics = get_precomputed_dataset_statistics(dataset);
+  auto optional_statistics = get_dataset_statistics_from_dataset_name(dataset);
   if (!optional_statistics.has_value()) {
     std::cerr << "Dataset " + dataset + " doesn't have statistics for training."
               << std::endl;
