@@ -61,30 +61,31 @@ shape: $[N,\,\mathrm{IRS}]$.
 
 #### Random Quantum Circuit Generator
 
-The random quantum circuit generator used during training to generate quantum circuits randomly to circumvent the
-necessity of having a dataset for training and the associated risk of everfitting requires 2 sets of numerical
-attributes to run: a test dataset's cholesky params and gates weights.
+The random quantum circuit generator, used for training to circumvent the necessity of having a training dataset and the
+associated risk of overfitting, requires 2 sets of numerical attributes: a test dataset's cholesky params and gates
+weights.
 To see an example of how these sets of attribues look, you can view the `yaml` files
 in [StatisticsForRQCG](include/Environment/StatisticsForRQCG)
 like [ChemistryStatistics.yaml](include/Environment/StatisticsForRQCG/ChemistryStatistics.yaml)
 or [MQTBenchStatistics.yaml](include/Environment/StatisticsForRQCG/MQTBenchStatistics.yaml).
-
-These attribute sets of a dataset can be computed using existing functions.
-For that, create a dataset with quake `.qke` circuits and place it inside [AI/Datasets/Quake](Datasets/Quake).
+These attribute sets can be computed using existing functions.
+To do that, create a dataset with quake `.qke` circuits and place it in [AI/Datasets/Quake](Datasets/Quake).
 Then run `./ai_pass_selector dataset=<your-dataset-name> info=true` from the [build/AI](../build/AI) folder.
 The console should print the dataset's statistics which you can copy-paste into a corresponding `yaml` file in
 the [StatisticsForRQCG](include/Environment/StatisticsForRQCG) folder.
-You can also hard-code the statistics values into appropriate arrays in
-the [statistics_for_rqcg.hpp](include/Environment/statistics_for_rqcg.hpp) file.
+This will create a `<your-dataset-name>Statistics.yaml` file in
+the [StatisticsForRQCG](include/Environment/StatisticsForRQCG) folder and henceforth will allow you to train an agent
+with the statistics of your dataset.
 
-Once ready, agents should be trainable using the statistics of the selecteed dataset.
 
 ### Neural Network Architectures
 
 #### Temporal Convolutional Networks
 
-// TODO
-// EVERYTHING IS UNBATCHED
+The original design of the Temporal Convolutional Network architecture is described
+in [An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf).
+
+
 
 #### Long-Short-Term Memory Cells
 

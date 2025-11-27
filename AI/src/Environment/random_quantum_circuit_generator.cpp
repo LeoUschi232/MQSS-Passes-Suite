@@ -304,7 +304,7 @@ void adjust_gates_weights(
   }
 }
 
-QuantumCircuit random_quantum_circuit_from_embedded_statistics(
+QuantumCircuit random_quantum_circuit_from_statistics_arrays(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options) {
@@ -408,14 +408,14 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
           nr_gates, get_max_depth(depths)};
 }
 
-QuantumCircuit random_quantum_circuit_from_yaml_statistics(
+QuantumCircuit random_quantum_circuit_from_statistics_yaml_file(
     const fs::path &statistics_yaml_file,
     const RandomizerOptions &randomizer_options) {
   // Unsafe value() access on purpose.
   // The code is supposed to throw an error if the yaml file does not exist.
   auto [cholesky_params, gates_weights] =
       get_dataset_statistics_from_yaml_file(statistics_yaml_file).value();
-  return random_quantum_circuit_from_embedded_statistics(
+  return random_quantum_circuit_from_statistics_arrays(
       cholesky_params, gates_weights, randomizer_options);
 }
 

@@ -118,7 +118,7 @@ void adjust_gates_weights(
  * @param randomizer_options
  * @return
  */
-QuantumCircuit random_quantum_circuit_from_embedded_statistics(
+QuantumCircuit random_quantum_circuit_from_statistics_arrays(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
@@ -130,7 +130,7 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
  * @param randomizer_options
  * @return
  */
-QuantumCircuit random_quantum_circuit_from_yaml_statistics(
+QuantumCircuit random_quantum_circuit_from_statistics_yaml_file(
     const fs::path &statistics_yaml_file,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
