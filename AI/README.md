@@ -161,10 +161,14 @@ file [agent_architectures.cpp](src/NeuralNetworks/agent_architectures.cpp).
 
 ### Networks outputs
 
-#### Actor Policy $\vec{\pi}(s|a)$
+#### Actor Policy $\vec{\pi}(a|s)$
 
-// TODO
-// EVERYTHING IS UNBATCHED
+All used agents follow an Actor-Critic structure.
+This means each agent contains ar least 1 actor and at least 1 critic network, all of which are independant of one
+another, that means they share no trainable parameters.
+The actor network outputs a policy $\vec{\pi}(a|s)$ over actions.
+The available actions and their number are given by the _PASS\_FUNCTIONS_ and _NR\_PASSES_ constants
+in [passes_utils.hpp](include/Utils/passes_utils.hpp).
 
 #### State Value Function $V(s)$
 
