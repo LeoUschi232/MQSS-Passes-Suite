@@ -109,17 +109,46 @@ In this project the TCN architecture is slightly modified.
    $$
    \vec{o}=\mathrm{LayerNorm}\left(\vec{x}+\mathcal{F}\left(\vec{x}\right)\right)
    $$
-   
 
-#### Long-Short-Term Memory Cells
+The other aspects of the TCN architecture were left exactly as in the original paper.
 
-// TODO
-// EVERYTHING IS UNBATCHED
+#### Long Short-Term Memory Cells
+
+General design and function of Long Short-Term Memory (LSTM) cells are described
+in [Long Short-Term Memory](ResearchPapers/04_RNNandLSTMforSequencesVariantsEvaluationsAndApplications.pdf)
+and [Recurrent Neural Networks and Long Short-Term Memory Networks: Tutorial and Survey](ResearchPapers/04_RNNandLSTMforSequencesVariantsEvaluationsAndApplications.pdf).
+The important attribute of LSTM cells that makes them attractive for processing the quantum circuit observation is that
+they can process a variable-length sequence of elements and retain information about previously seen elements while
+viewing the next one.
+
+LSTM cells can be made to process the input sequence bidirectionally, that means front to back and back to front and
+concatenate both outputs to produce a bidirectionally processed output.
+In this project LSTM cells will be used only with the `bidirectional` setting set to `true` because just as described
+for the TCN above, we do not require the processing of the sequence to be causal.
+The LSTM cells are plug-and-play layers in the PyTorch library, relieving the user from having to implement them, or
+even understand in detail how they work.
+How to use the PyTorch implementation of LSTM cells in one's neural network is described in
+the [PyTorch LSTM Documentation](https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html).
+
+Examples of how LSTM are used in Reinforcement Learning projects where a 1-dimensional sequence of elements must be
+mapped to a static-size output are described
+in [Language Understanding for Text-based Games using Deep Reinforcement Learning](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf)
+and [Counting to Explore and Generalize in Text-based Games](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf).
+In this project an additional layer normalization layer over the output element size is applied after the LSTM layer and
+before the adaptive average pooling layer.
 
 #### Hybrid Architecture
 
-// TODO
-// EVERYTHING IS UNBATCHED
+The authors
+of [Deep learning coupled model based on TCN-LSTM for particulate matter concentration prediction](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf)
+suggested a combined TCN-LSTM architecture for processing 1-dimensional sequences of elements and reported slightly
+better performance compared to other models in their study.
+This TCN-LSTM concatenation is called "Hybrid" in this work and sequentially combines the 2 neural network architectures
+described above.
+
+Libtorch implementations of all used neural network architectures can be viewed in the
+file [agent_architectures.cpp](src/NeuralNetworks/agent_architectures.cpp).
+
 
 ### Networks outputs
 

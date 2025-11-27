@@ -85,7 +85,7 @@ make_LSTM_critic(unsigned int max_qubits, unsigned int hidden_size_multiplier,
       torch::nn::AdaptiveAvgPool1d(1u),                           // -> [2*P, 1]
       torch::nn::Flatten(torch::nn::FlattenOptions().start_dim(0)), // -> [2*P]
       torch::nn::Linear(2 * P, 1),                                  // -> [1]
-      torch::nn::Squeeze(/*dim=*/0)                                 // -> []
+      torch::nn::Squeeze(0)                                         // -> []
   );
 }
 torch::nn::Sequential
