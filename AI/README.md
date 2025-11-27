@@ -235,13 +235,20 @@ This dataset can be created using the script [create_chemistry_dataset.py](Scrip
 The quantum circuits willl initially by written in QASM, but can be translated into QUAKE by moving the constructed
 dataset into [AI/Datasets/Qasm](Datasets/Qasm) and running `./convert_qasm_dataset_to_quake Chemistry` from
 the [build/AI](../build/AI) folder.
-This dataset contains a grand total of $1548$ circuits with $\mathrm{MAX\_QUBITS}=28$, a maximum gate count
+The Chemistry dataset contains a grand total of $1548$ circuits with $\mathrm{MAX\_QUBITS}=28$, a maximum gate count
 of $2188$ and maximum depth of $1234$.
 
 #### MQTBench
 
 The MQTBench dataset is described
 in [MQT Bench: Benchmarking Software and Design Automation Tools for Quantum Computing](ResearchPapers/01_OptimizingQuantumComputing.pdf).
+It has been downloaded from
+the [previous version of the official MQTBench library](https://www.cda.cit.tum.de/mqtbench/) and baked into this
+project.
+The MQTBench dataset is available in its original QASM for in [AI/Datasets/Qasm/MQTBench](Datasets/Qasm/MQTBench) as
+well as transformed into QUAKE in [AI/Datasets/Quake/MQTBench](Datasets/Quake/MQTBench).
+The MQTBench dataset contains a grand total of $1943$ circuits with $\mathrm{MAX\_QUBITS}=130$, a maximum gate count
+of $98338$ and maximum depth of $89139$.
 
 
 ## Research Paper Notes
