@@ -161,25 +161,50 @@ file [agent_architectures.cpp](src/NeuralNetworks/agent_architectures.cpp).
 
 ### Networks outputs
 
-#### Actor Policy $\vec{\pi}(a|s)$
+#### Actor Policy $\pi(a|s)$
 
 All used agents follow an Actor-Critic structure.
 This means each agent contains ar least 1 actor and at least 1 critic network, all of which are independant of one
 another, that means they share no trainable parameters.
-The actor network outputs a policy $\vec{\pi}(a|s)$ over actions.
-The available actions and their number are given by the _PASS\_FUNCTIONS_ and _NR\_PASSES_ constants
+The actor network outputs a policy $\vec{\pi}(s)$ over actions.
+The available actions and their count are given by `PASS_FUNCTIONS` and `NR_PASSES`
 in [passes_utils.hpp](include/Utils/passes_utils.hpp).
-
-#### State Value Function $V(s)$
-
-// TODO (Write something about how the normal critic is supposed to output the state value V of shape [] (scalar))
-// EVERYTHING IS UNBATCHED
+The policy $\vec{\pi}(s)$ is a `NR_PASSES`-dimensional vector containing the actor's belief about the probabilities
+which action is the best to execute next.
+Because it's a probability distribution all values are in the interval $[0,1]$ and sum up to $1$.
+With $\mathcal{S}\widehat{=}$Observation Space and $\mathcal{A}\widehat{=}$Action space,
+so $|\mathcal{A}|=\mathrm{NR\_PASSES}$
+$$
+\begin{aligned}
+\mathcal{S}&\widehat{=}\text{State/Observation Space} \\
+\mathcal{A}&\widehat{=}\text{Action Space} \\
+|\mathcal{A}|&=\mathrm{NR\_PASSES} \\
+\forall s\in\mathcal{S}:
+&\left\{
+\forall a\in\mathcal{A}: 0\leq\pi(a|s)\leq 1
+\,\land\,
+\sum_{a\in\mathcal{A}}\pi(a|s)=1
+\right\}
+\end{aligned}
+$$
 
 #### Q-Value Estimation $Q(s,a)$
 
-// TODO (Write something about how a Q-Estimator critic for discrete actions can be made to output something of
-// shape [nr_actions])
-// EVERYTHING IS UNBATCHED
+A Q-estimating critic in the discrete action setting is a critic which learns to output a Q-value vector $\vec{Q}(s)$ of
+dimension $|\mathcal{A}|$.
+Each element $Q(s,a)$ of this critic's output vector is a scalar describing how desirable it is to perform the
+action $a$ in the state $s$.
+
+#### State Value Function $V(s)$
+
+The normal critic in an Actor-Critic agent learns to output a state-value function $V(s)$.
+Given some observation $s$, the state-value function's output $V(s)$ is a scalar describing how desirable it is to be in
+the state $s$.
+Alternatively to having a critic network learning to approximate the state-value function, it can be computed as the
+dot-product of the policy $\vec{\pi}(s)$ and the Q-value estimation $\vec{Q}(s)$:
+$$
+V(s)=\vec{\pi}(s)\cdot\vec{Q}(s)=\sum_{a\in\mathcal{A}}\pi(a|s)Q(s,a)
+$$
 
 ### Reinforcement Learning Algorithms
 
