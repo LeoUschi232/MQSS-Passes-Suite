@@ -23,7 +23,17 @@ Tun run it, simply go to [build/AI](../build/AI) by running `cd build/AI` from r
 `./ai_pass_selector [Parameters]`.
 Run `./ai_pass_selector --help` or `./ai_pass_selector -h` to see whaat parameters are available for setting.
 
-// TODO: Describe agent naming structure: <rl-algorithm>_<max-qubits>_<nn-architecture>
+Agents are referenced by a three-part, dash-separated name of the form
+`<rl-algorithm>-mq<max-qubits>-<nn-architecture>`.
+
+- `<rl-algorithm>` is the reinforcement learning algorithm the agent was trained using.
+  Currently the supported tokens for that value are: `a2c` for Advantage Actor-Critic, `ppo` for Proximal Policy
+  Optimization, `sdsac` for Stable Discrete Soft Actor-Critic and `acer` for Actor-Critic with Experience Replay.
+- `<max-qubits>` is an $\mathrm{int}$ which captures the maximum number of qubits in a givne circuit the model was
+  trained to handle.
+- `<nn-architecture>` selects the neural-network architecture of the agent with the currently available ones being:
+  `tcn` for Temporal Convolutional Network, "lstm" for Long Short-Term Memory, and "hybrid" which is a TCN-LSTM
+  combination.
 
 ## Current State of Progress
 
@@ -148,7 +158,6 @@ described above.
 
 Libtorch implementations of all used neural network architectures can be viewed in the
 file [agent_architectures.cpp](src/NeuralNetworks/agent_architectures.cpp).
-
 
 ### Networks outputs
 

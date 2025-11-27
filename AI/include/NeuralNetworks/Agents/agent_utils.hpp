@@ -21,8 +21,7 @@ enum class AgentClass : int {
   A2C = 1,
   PPO = 2,
   SDSAC = 3,
-  ACER = 4,
-  CROSSQ = 5
+  ACER = 4
 };
 
 enum class OptimizerType : int {
@@ -49,15 +48,13 @@ const std::unordered_map<std::string, AgentClass> AGENT_NAME_TO_CLASS = {
     {"a2c", AgentClass::A2C},
     {"ppo", AgentClass::PPO},
     {"acer", AgentClass::ACER},
-    {"sdsac", AgentClass::SDSAC},
-    {"crossq", AgentClass::CROSSQ}};
+    {"sdsac", AgentClass::SDSAC}};
 
 const std::unordered_map<AgentClass, std::string, EnumClassHash>
     AGENT_CLASS_TO_NAME = {{AgentClass::A2C, "a2c"},
                            {AgentClass::PPO, "ppo"},
                            {AgentClass::ACER, "acer"},
-                           {AgentClass::SDSAC, "sdsac"},
-                           {AgentClass::CROSSQ, "crossq"}};
+                           {AgentClass::SDSAC, "sdsac"}};
 
 /// Optimizers
 const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
