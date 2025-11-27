@@ -23,6 +23,8 @@ Tun run it, simply go to [build/AI](../build/AI) by running `cd build/AI` from r
 `./ai_pass_selector [Parameters]`.
 Run `./ai_pass_selector --help` or `./ai_pass_selector -h` to see whaat parameters are available for setting.
 
+// TODO: Describe agent naming structure: <rl-algorithm>_<max-qubits>_<nn-architecture>
+
 ## Current State of Progress
 
 ### Quantum Circuits for Training
@@ -77,15 +79,37 @@ This will create a `<your-dataset-name>Statistics.yaml` file in
 the [StatisticsForRQCG](include/Environment/StatisticsForRQCG) folder and henceforth will allow you to train an agent
 with the statistics of your dataset.
 
-
 ### Neural Network Architectures
 
 #### Temporal Convolutional Networks
 
-The original design of the Temporal Convolutional Network architecture is described
+The original design of the Temporal Convolutional Network (TCN) architecture is described
 in [An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling](ResearchPapers/05_NeuralNetworkArchitecturesForSequencesOfElementsTCNandLSTM.pdf).
+In this project the TCN architecture is slightly modified.
 
-
+1. The convolutions in the original TCN architecture are causal, meaning that there is no information leakage from
+   future to past. To achieve this, the TCN uses causal convolutions, where an output at time $t$ is convolved only with
+   elements from time $t$ and earlier in the previous layer. Here causality is not necessary, since the agent should see
+   the entire quantum circuit at the same time. Therefore the chomping layer procedure making the convolutions causal is
+   not added.
+2. The TCN employs a generic residual block in place of a convolutional layer at each TCN layer. Given the
+   input $\vec{x}$, the residual block performs a series of transformations $\mathcal{F}$ on the input, adds them onto
+   the identity mapping and applies the activation on the sum. Using $\mathrm{ReLU}$ as the activation, the output of a
+   residual block is therefore:
+   $$
+   \vec{o}=\mathrm{ReLU}\left(\vec{x}+\mathcal{F}\left(\vec{x}\right)\right)
+   $$
+   Unfortunately leaving it this way lead to exploding gradients in the actor network despite weight normalization in
+   the transformation $\mathcal{F}$. This resulted in exploding values and finally $\mathrm{NaNs}$ in the policy
+   function after as few as $3$ episodes. Additionally applying $\mathrm{ReLU}$ activation on the very first input
+   sequence, being the encoded quantum circuit observation, would drop all negative values and make the network loose
+   informatiopn about control qubits or adjoint gates, unless the very first transformation sequence $\mathcal{F}$ can
+   remap that information to positive values. To adress both issues the $\mathrm{ReLU}$ activation layer was replaced
+   with a layer normalization layer, leading to the modified resdiual block output function:
+   $$
+   \vec{o}=\mathrm{LayerNorm}\left(\vec{x}+\mathcal{F}\left(\vec{x}\right)\right)
+   $$
+   
 
 #### Long-Short-Term Memory Cells
 
