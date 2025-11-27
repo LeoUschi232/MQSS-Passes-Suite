@@ -228,11 +228,21 @@ $$
 
 #### Chemistry
 
-// TODO
+The Chemistry dataset is this project's unique dataset which utilizes python packages `qiskit`, `qiskit_nature`, and
+`PySCF` to construct small quantum circuits for quantum chemistry simulations of various molecules in different bases
+using different mappers.
+This dataset can be created using the script [create_chemistry_dataset.py](Scripts/create_chemistry_dataset.py).
+The quantum circuits willl initially by written in QASM, but can be translated into QUAKE by moving the constructed
+dataset into [AI/Datasets/Qasm](Datasets/Qasm) and running `./convert_qasm_dataset_to_quake Chemistry` from
+the [build/AI](../build/AI) folder.
+This dataset contains a grand total of $1548$ circuits with $\mathrm{MAX\_QUBITS}=28$, a maximum gate count
+of $2188$ and maximum depth of $1234$.
 
 #### MQTBench
 
-// TODO
+The MQTBench dataset is described
+in [MQT Bench: Benchmarking Software and Design Automation Tools for Quantum Computing](ResearchPapers/01_OptimizingQuantumComputing.pdf).
+
 
 ## Research Paper Notes
 

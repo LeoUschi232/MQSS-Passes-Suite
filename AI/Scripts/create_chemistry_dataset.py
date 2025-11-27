@@ -1,9 +1,9 @@
 # Qiskit Nature imports
-from qiskit_nature.units import DistanceUnit
-from qiskit_nature.second_q.drivers import PySCFDriver
-from qiskit_nature.second_q.transformers import FreezeCoreTransformer
 from qiskit_nature.second_q.mappers import JordanWignerMapper, BravyiKitaevMapper, ParityMapper
+from qiskit_nature.second_q.transformers import FreezeCoreTransformer
 from qiskit_nature.second_q.circuit.library import HartreeFock, UCC
+from qiskit_nature.second_q.drivers import PySCFDriver
+from qiskit_nature.units import DistanceUnit
 
 # Qiskit imports
 from qiskit.circuit.library import get_standard_gate_name_mapping
@@ -35,7 +35,7 @@ def choose_k_and_particles(n_so, n_alpha, n_beta, k_target):
         # Too tiny to do anything meaningful.
         return None
 
-    # Start with your target but cannot exceed available orbitals.
+    # Start with target but cannot exceed available orbitals.
     k = min([k_target, n_so])
 
     # If k is not strictly larger than the max spin count, try to bump k.
