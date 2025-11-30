@@ -89,6 +89,26 @@ This will create a `<your-dataset-name>Statistics.yaml` file in
 the [StatisticsForRQCG](include/Environment/StatisticsForRQCG) folder and henceforth will allow you to train an agent
 with the statistics of your dataset.
 
+#### Quantum Circuit Environment
+
+The environment, here called the `QuantumCircuitEnvironment` declared
+in [quantum_circuit_environment.hpp](include/Environment/quantum_circuit_environment.hpp) and defined
+in [quantum_circuit_environment.cpp](src/Environment/quantum_circuit_environment.cpp), aquires
+an initial quantum circuit and defines Reinforcement-Learning specific operations on that quantum circuit.
+Most importantly:
+
+1. The environment provides a function `get_observation` to parse the underlying quantum circuit to create a tensor
+   according to the encoding described above, that can be fed into an AI agent as the input.
+2. The environment provides a `step` function which takes as argument an index of the action from the discrete action
+   space $\mathcal{A}$, and executes the optimization pass at the corresponding index in `PASS_FUNCTIONS`
+   in [passes_utils.hpp](include/Utils/passes_utils.hpp) on the underlying quantum circuit. It then computes a
+   reward $r_t$ for the chosen action and whether the training episode should terminate.
+
+The environment can terminate an episode according to a predefined termination condition, in this case if a certain pass
+has been selected to often in a row without making changes, or truncate an episode if some predefined maximum allowed
+number of steps has been reached.
+An episode can have at most some $T_\mathrm{max}$ number of steps and the reward at step $t$ is indexed as $r_t$.
+
 ### Neural Network Architectures
 
 #### Temporal Convolutional Networks
@@ -159,7 +179,7 @@ described above.
 Libtorch implementations of all used neural network architectures can be viewed in the
 file [agent_architectures.cpp](src/NeuralNetworks/agent_architectures.cpp).
 
-### Networks outputs
+### Values and Functions in Training
 
 #### Actor Policy $\pi(a|s)$
 
@@ -172,8 +192,7 @@ in [passes_utils.hpp](include/Utils/passes_utils.hpp).
 The policy $\vec{\pi}(s)$ is a `NR_PASSES`-dimensional vector containing the actor's belief about the probabilities
 which action is the best to execute next.
 Because it's a probability distribution all values are in the interval $[0,1]$ and sum up to $1$.
-With $\mathcal{S}\widehat{=}$Observation Space and $\mathcal{A}\widehat{=}$Action space,
-so $|\mathcal{A}|=\mathrm{NR\_PASSES}$
+
 $$
 \begin{aligned}
 \mathcal{S}&\widehat{=}\text{State/Observation Space} \\
@@ -202,25 +221,49 @@ Given some observation $s$, the state-value function's output $V(s)$ is a scalar
 the state $s$.
 Alternatively to having a critic network learning to approximate the state-value function, it can be computed as the
 dot-product of the policy $\vec{\pi}(s)$ and the Q-value estimation $\vec{Q}(s)$:
+
 $$
 V(s)=\vec{\pi}(s)\cdot\vec{Q}(s)=\sum_{a\in\mathcal{A}}\pi(a|s)Q(s,a)
 $$
 
+#### Reward-to-go $R_t$
+
+Assume an episode of training occured over $T\leq T_\mathrm{max}$ amount of time steps.
+Thus the agent achieved some trajectory of $T$ rewards $r_t$ for $t\in\mathbb{N},\,t\in[1,T]$.
+Given a real-numbered training hyperparameter called **discount factor** $\gamma\in(0,1]$, a training step's
+Reward-to-go is defined as:
+
+$$
+R_t=\sum_{t'=t}^{T}\gamma^{t'-t}r_t
+$$
+
 ### Reinforcement Learning Algorithms
 
-#### Advantage Actor-Critic (A2C)
+#### Advantage Actor-Critic
+
+The Advantage Actor-Critic (A2C) is a reinforcement learning algorithm, in other words, an algorithm which defines how
+to construct the losses of the involved neural networks and/or how to update their trainable parameters using the reward
+that an action on the environment achieves and the output of the neural networks themselves.
+An reinforcement learning algorithm is not to be confused with the neural network model architecture.
+A2C was first proposed in 2016 as its asynchronous version: the Asynchronous Advantage Actor-Critic (A3C), with multiple
+actors all training independantly to reduce bias, in the
+paper [Asynchronous Methods for Deep Reinforcement Learning](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
+The A3C algorithm can also be used with only 1 actor resulting in A2C which still works and sometimes performs even
+better than A3C.
+In 2018 in the
+paper [High-Dimensional Continuous Control Using Generalized Advantage Estimation](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf)
+the Generalized Advantage Estimation (GAE) was proposed as an alternative to using the unmodified rewards-to-go to compute the
+losses of the actor and the critic in the A2C algorithm.
+
+#### Proximal Policy Optimization
 
 // TODO
 
-#### Proximal Policy Optimization (PPO)
+#### Stable Discrete Soft Actor-Critic
 
 // TODO
 
-#### Stable Discrete Soft Actor-Critic (SDSAC)
-
-// TODO
-
-#### Actor-Critic with Experience Replay (ACER)
+#### Actor-Critic with Experience Replay
 
 // TODO
 
@@ -249,7 +292,6 @@ The MQTBench dataset is available in its original QASM for in [AI/Datasets/Qasm/
 well as transformed into QUAKE in [AI/Datasets/Quake/MQTBench](Datasets/Quake/MQTBench).
 The MQTBench dataset contains a grand total of $1943$ circuits with $\mathrm{MAX\_QUBITS}=130$, a maximum gate count
 of $98338$ and maximum depth of $89139$.
-
 
 ## Research Paper Notes
 
@@ -294,7 +336,7 @@ of $98338$ and maximum depth of $89139$.
 - __[Page 10]__ The additional concept that we need is discounting. The agent tries to select actions so that the sum of
   the discounted rewards it receives over the future is maximized. $\gamma$ is a parameter, $0\leq\gamma\leq1$, called
   the discount rate.
-- _[Page 13]__ The value function of a state $s$ under a policy $\pi$, denoted $v_\pi(s)$, is the expected return when
+- __[Page 13]__ The value function of a state $s$ under a policy $\pi$, denoted $v_\pi(s)$, is the expected return when
   starting in $s$ and following $\pi$ thereafter. For Markov Decision Processes, we can define $v_\pi$ formally.
   Similarly, we define the value of taking action $a$ in state $s$ under a policy $\pi$, denoted $q_\pi(s,a)$, as the
   expected return starting from $s$, taking the action $a$, and thereafter following policy $\pi$. We call $q_\pi$ the
