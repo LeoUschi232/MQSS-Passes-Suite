@@ -245,23 +245,45 @@ The Advantage Actor-Critic (A2C) is a reinforcement learning algorithm, in other
 to construct the losses of the involved neural networks and/or how to update their trainable parameters using the reward
 that an action on the environment achieves and the output of the neural networks themselves.
 An reinforcement learning algorithm is not to be confused with the neural network model architecture.
-A2C was first proposed in 2016 as its asynchronous version: the Asynchronous Advantage Actor-Critic (A3C), with multiple
+A2C was first proposed as its asynchronous version: the Asynchronous Advantage Actor-Critic (A3C), with multiple
 actors all training independantly to reduce bias, in the
 paper [Asynchronous Methods for Deep Reinforcement Learning](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
 The A3C algorithm can also be used with only 1 actor resulting in A2C which still works and sometimes performs even
 better than A3C.
-In 2018 in the
+Some time later in the
 paper [High-Dimensional Continuous Control Using Generalized Advantage Estimation](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf)
-the Generalized Advantage Estimation (GAE) was proposed as an alternative to using the unmodified rewards-to-go to compute the
-losses of the actor and the critic in the A2C algorithm.
+the Generalized Advantage Estimation (GAE) was proposed as an alternative to using the unmodified rewards-to-go to
+compute the losses of the actor and the critic in the A2C algorithm.
+A2C is one of the most basic and easiest to implement algorithms in reinforcement learning.
 
 #### Proximal Policy Optimization
 
-// TODO
+Proximal Policy Optimization (PPO) came out in 2017 in the
+paper [Proximal Policy Optimization Algorithms](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf) and builds on
+prior work done on A2C and the Trust Region Policy Optimization (TRPO) algorithm.
+Just like A2C, PPO uses the concept of the advantage $A(s,a)$ to compute the losses of the actor and the critic, albait
+using a different loss function.
+The novel procedure in the TRPO and PPO algorithms is to use the old policy from a previously played
+episode $\pi_\mathrm{old}(a|s)$ to update the current policy $\pi(a|s)$ in such a way that the current policy does not
+diverge too far from the previous policy during the update.
+This is supposed to reduce the magnitude of the updates to the policy function to prevent it from suddenly jumping to
+some very undesirable policy.
 
 #### Stable Discrete Soft Actor-Critic
 
-// TODO
+The Soft-Actor Critic (SAC) algorithm was proposed originally exclusively for continuous action spaces in the
+paper [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
+Being only for continuous action spaces makes it inapropriate for this project, since the action space here is a
+discrete one.
+However, multiple attempts were performed to adapt the SAC to discrete action spaces, the most recent one of which:
+Stable
+Discrete Soft-Actor Critic (SD-SAC) from the
+paper [Revisiting Discrete Soft Actor-Critic](ResearchPapers/08_ReinforcementLearningAlgorithmsSet3.pdf),
+has been implemented here.
+This actor-critic reinforcement learning algorithm uses a Q-value estimating critic unlike A2C and PPO which use
+standard state-value function estimating critic.
+The difference between standard critics and Q-estimating critics is described in the section on values and functions in
+training.
 
 #### Actor-Critic with Experience Replay
 
