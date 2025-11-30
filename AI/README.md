@@ -35,7 +35,7 @@ Agents are referenced by a three-part, dash-separated name of the form
   `tcn` for Temporal Convolutional Network, "lstm" for Long Short-Term Memory, and "hybrid" which is a TCN-LSTM
   combination.
 
-## Current State of Progress
+## How it works
 
 ### Quantum Circuits for Training
 
@@ -282,11 +282,10 @@ actors all training independantly to reduce bias, in the
 paper [Asynchronous Methods for Deep Reinforcement Learning](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
 The A3C algorithm can also be used with only 1 actor resulting in A2C which still works and sometimes performs even
 better than A3C.
-Some time later in the
-paper [High-Dimensional Continuous Control Using Generalized Advantage Estimation](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf)
-the Generalized Advantage Estimation (GAE) was proposed as an alternative to using the unmodified rewards-to-go to
-compute the losses of the actor and the critic in the A2C algorithm.
+The Generalized Advantage Estimation (GAE) can be used as an alternative to the unmodified rewards-to-go to compute the
+losses of the actor and the critic in the A2C algorithm.
 A2C is one of the most basic and easiest to implement algorithms in reinforcement learning.
+Its implementation is in: [a2c_trainer.cpp](src/NeuralNetworks/Agents/A2C/a2c_trainer.cpp).
 
 #### Proximal Policy Optimization
 
@@ -303,6 +302,7 @@ some very undesirable policy.
 To not confuse it with ACER, it is important to note that this algorithm only keeps a trajectory of the 1 previously
 seen episode, then uses the policy from that previous episode to compute the loss for the current episode.
 This algorithm does not keep a buffer of multiple previously played episodes.
+Its implementation is in: [ppo_trainer.cpp](src/NeuralNetworks/Agents/PPO/ppo_trainer.cpp).
 
 #### Stable Discrete Soft Actor-Critic
 
@@ -319,6 +319,7 @@ This actor-critic reinforcement learning algorithm uses a Q-value estimating cri
 standard state-value function estimating critic.
 The difference between standard critics and Q-estimating critics is described in the section on values and functions in
 training.
+The implementation of SD-SAC is in: [sdsac_trainer.cpp](src/NeuralNetworks/Agents/SDSAC/sdsac_trainer.cpp).
 
 #### Actor-Critic with Experience Replay
 
@@ -330,6 +331,7 @@ trajectories, then replay those episodes with the current policy, resulting in p
 The old and new episode trajectories are then used to perform trust-region updates to the actor.
 Just like the SD-SAC, the ACER uses Q-value estimating critics instead of standard critics.
 ACER is the most complicated reinforcement learning algorithm of the 4 implemented here.
+Its implementation is in: [acer_trainer.cpp](src/NeuralNetworks/Agents/ACER/acer_trainer.cpp).
 
 ### Evaluation Datasets
 
