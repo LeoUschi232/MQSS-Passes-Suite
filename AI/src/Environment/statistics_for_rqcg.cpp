@@ -501,10 +501,10 @@ get_dataset_statistics_from_yaml_file(const fs::path &statistics_yaml_file) {
     return std::nullopt;
   }
   YAML::Node statistics = YAML::LoadFile(statistics_yaml_file.string());
-  const YAML::Node &yaml_qubits_cholesky_params =
-      statistics["qubits_cholesky_params"];
+  const YAML::Node &yaml_cholesky_params =
+      statistics["cholesky_params"];
   const YAML::Node &yaml_gates_weights = statistics["gates_weights"];
-  if (!yaml_qubits_cholesky_params || !yaml_gates_weights) {
+  if (!yaml_cholesky_params || !yaml_gates_weights) {
     throw std::runtime_error("YAML missing required sections.");
   }
   auto get_double = [](const YAML::Node &node, const char *key) -> double {
@@ -522,27 +522,27 @@ get_dataset_statistics_from_yaml_file(const fs::path &statistics_yaml_file) {
   };
   std::array<double, CHOLESKY_PARAMS_SIZE> cholesky_params = {};
   cholesky_params[to_index(CholeskyParamIndex::MeanQubits)] =
-      get_double(yaml_qubits_cholesky_params, "mean_qubits");
+      get_double(yaml_cholesky_params, "mean_qubits");
   cholesky_params[to_index(CholeskyParamIndex::MeanGates)] =
-      get_double(yaml_qubits_cholesky_params, "mean_gates");
+      get_double(yaml_cholesky_params, "mean_gates");
   cholesky_params[to_index(CholeskyParamIndex::MeanOperations)] =
-      get_double(yaml_qubits_cholesky_params, "mean_operations");
+      get_double(yaml_cholesky_params, "mean_operations");
   cholesky_params[to_index(CholeskyParamIndex::MeanMeasurements)] =
-      get_double(yaml_qubits_cholesky_params, "mean_measurements");
+      get_double(yaml_cholesky_params, "mean_measurements");
   cholesky_params[to_index(CholeskyParamIndex::QubitsL11)] =
-      get_double(yaml_qubits_cholesky_params, "qubits_L11");
+      get_double(yaml_cholesky_params, "qubits_L11");
   cholesky_params[to_index(CholeskyParamIndex::GatesL21)] =
-      get_double(yaml_qubits_cholesky_params, "gates_L21");
+      get_double(yaml_cholesky_params, "gates_L21");
   cholesky_params[to_index(CholeskyParamIndex::GatesL22)] =
-      get_double(yaml_qubits_cholesky_params, "gates_L22");
+      get_double(yaml_cholesky_params, "gates_L22");
   cholesky_params[to_index(CholeskyParamIndex::OperationsL21)] =
-      get_double(yaml_qubits_cholesky_params, "operations_L21");
+      get_double(yaml_cholesky_params, "operations_L21");
   cholesky_params[to_index(CholeskyParamIndex::OperationsL22)] =
-      get_double(yaml_qubits_cholesky_params, "operations_L22");
+      get_double(yaml_cholesky_params, "operations_L22");
   cholesky_params[to_index(CholeskyParamIndex::MeasurementsL21)] =
-      get_double(yaml_qubits_cholesky_params, "measurements_L21");
+      get_double(yaml_cholesky_params, "measurements_L21");
   cholesky_params[to_index(CholeskyParamIndex::MeasurementsL22)] =
-      get_double(yaml_qubits_cholesky_params, "measurements_L22");
+      get_double(yaml_cholesky_params, "measurements_L22");
   std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights{};
   gates_weights[to_index(GateWeightIndex::X)] =
       get_unsigned(yaml_gates_weights, "X");
