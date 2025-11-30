@@ -237,6 +237,38 @@ $$
 R_t=\sum_{t'=t}^{T}\gamma^{t'-t}r_t
 $$
 
+#### Advantage $A(s,a)$
+
+The advantage of actions $a$ in state $s$ is officially defined as:
+
+$$
+A(s,a)=Q(s,a)-V(s)
+$$
+
+However if the Q-value and state-value of a state and action are unknown, the advantage must be estimated using network
+outputs and rewards.
+The most prominent algorithm for estimating the advantage is the Generalized Advantage Estimation (GAE) proposed
+in [High-Dimensional Continuous Control Using Generalized Advantage Estimation](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
+With an additional real-valued hyperparameter called **GAE hyperparameter** $\lambda\in[0,1]$, and the state-value
+estimation of the standard critic, the advantage at time step $t$ computed use GAE is:
+
+$$
+A(s_t,a_t)=\sum_{t'=t}^{T}(\gamma\lambda)^{t'-t}\left(
+r_{t'}+\gamma V\left(s_{t'+1}\right)-V\left(s_{t'}\right)
+\right)
+$$
+
+As a result, two interesting edge-cases emerge:
+
+$$
+\begin{aligned}
+\lambda=0:\quad
+&A(s_t,a_t)=r_{t}+\gamma V\left(s_{t+1}\right)-V\left(s_{t}\right) \\
+\lambda=1:\quad
+&A(s_t,a_t)=-V\left(s_{t}\right)+\sum_{t'=t}^{T}\gamma^{t'-t}r_{t'}
+\end{aligned}
+$$
+
 ### Reinforcement Learning Algorithms
 
 #### Advantage Actor-Critic
@@ -268,6 +300,9 @@ episode $\pi_\mathrm{old}(a|s)$ to update the current policy $\pi(a|s)$ in such 
 diverge too far from the previous policy during the update.
 This is supposed to reduce the magnitude of the updates to the policy function to prevent it from suddenly jumping to
 some very undesirable policy.
+To not confuse it with ACER, it is important to note that this algorithm only keeps a trajectory of the 1 previously
+seen episode, then uses the policy from that previous episode to compute the loss for the current episode.
+This algorithm does not keep a buffer of multiple previously played episodes.
 
 #### Stable Discrete Soft Actor-Critic
 
@@ -287,7 +322,14 @@ training.
 
 #### Actor-Critic with Experience Replay
 
-// TODO
+The final algorithm implemented in this project is Actor-Critic with Experience Replay (ACER).
+ACER was first proposed
+in [Sample Efficient Actor-Critic with Experience Replay](ResearchPapers/03_ReinforcementLearningAlgorithmsSet1.pdf).
+The main idea is too keep a replay memory $\mathcal{D}$ of previously played episodes and the performed action
+trajectories, then replay those episodes with the current policy, resulting in possibly new action trajectories.
+The old and new episode trajectories are then used to perform trust-region updates to the actor.
+Just like the SD-SAC, the ACER uses Q-value estimating critics instead of standard critics.
+ACER is the most complicated reinforcement learning algorithm of the 4 implemented here.
 
 ### Evaluation Datasets
 
