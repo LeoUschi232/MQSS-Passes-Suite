@@ -65,9 +65,7 @@ class NormalizeReward(gym.Wrapper[ObsType, ActType, ObsType, ActType], gym.utils
     def update_running_mean(self, setting: bool):
         self._update_running_mean = setting
 
-    def step(
-            self, action: ActType
-    ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, action: ActType) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
         obs, reward, terminated, truncated, info = super().step(action)
         self.discounted_reward = self.discounted_reward * self.gamma * (1 - terminated) + float(reward)
         if self._update_running_mean:

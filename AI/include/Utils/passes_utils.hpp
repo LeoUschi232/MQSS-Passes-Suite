@@ -91,7 +91,6 @@ const std::vector<std::function<std::unique_ptr<Pass>()>> PASS_FUNCTIONS = {
 const unsigned int NR_PASSES = PASS_FUNCTIONS.size();
 
 /**
- *
  * @param index
  * @return
  */
