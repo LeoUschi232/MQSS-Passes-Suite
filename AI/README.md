@@ -35,7 +35,7 @@ Agents are referenced by a three-part, dash-separated name of the form
   `tcn` for Temporal Convolutional Network, "lstm" for Long Short-Term Memory, and "hybrid" which is a TCN-LSTM
   combination.
 
-## How it works
+## Project Concepts
 
 ### Quantum Circuits for Training
 
@@ -358,6 +358,15 @@ The MQTBench dataset is available in its original QASM for in [AI/Datasets/Qasm/
 well as transformed into QUAKE in [AI/Datasets/Quake/MQTBench](Datasets/Quake/MQTBench).
 The MQTBench dataset contains a grand total of $1943$ circuits with $\mathrm{MAX\_QUBITS}=130$, a maximum gate count
 of $98338$ and maximum depth of $89139$.
+
+### Current Status
+
+With $3$ neural networks implemented to process 1-dimensional sequences of elements and $4$ reinforcement learning
+algorithms implemented to train them, gives $3\cdot4=12$ trainable agents per dataset statistics.
+Currently 12 agents with `MAX_QUBITS` set to $28$ have been trained using the Chemistry dataset statistics to select
+passes.
+MQTBench dataset statistics still cause difficulties in training due to the large circuits and corresponding extremely
+large observation tensors consuming huge chunks of memory.
 
 ## Research Paper Notes
 
