@@ -51,7 +51,7 @@ QuantumCircuitEnvironment::QuantumCircuitEnvironment(unsigned int max_qubits)
   this->max_steps_same_action = std::max(
       static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int()),
       MIN_NR_STEPS);
-  this->training_max_nr_gates =
+  this->training_max_nr_gates =static_cast<unsigned>(GLOBAL_PARAMS["max_steps_same_action"].to_int())
 
   probability_max_qubits = GLOBAL_PARAMS["probability_max_qubits"].to_double();
   // Do not worry about not having a circuit because the method
