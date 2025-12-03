@@ -58,7 +58,7 @@ protected:
   /// Attributes for circuit
   std::optional<InstructionsTensor<float>> latest_observation = std::nullopt;
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
-  unsigned int
+  unsigned int training_max_nr_gates = 0u;
   fs::path circuit_path = "";
   QuantumCircuit circuit{};
 
