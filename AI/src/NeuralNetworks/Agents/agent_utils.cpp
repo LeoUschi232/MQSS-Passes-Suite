@@ -67,10 +67,6 @@ makeOptimizer(OptimizerType optimizerType,
   }
 }
 
-std::string select_best_agent(const std::string &circuit) {
-  throw std::runtime_error("Not implemented yet.");
-}
-
 unsigned int count_nr_trainable_parameters(const torch::nn::Module &network) {
   unsigned int total = 0;
   for (const torch::Tensor &param : network.parameters(/*recurse=*/true)) {

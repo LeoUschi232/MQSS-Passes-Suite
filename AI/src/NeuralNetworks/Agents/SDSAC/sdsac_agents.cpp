@@ -76,7 +76,7 @@ std::string SDSAC_TCN::agentName() const {
 std::string SDSAC_LSTM::agentName() const {
   std::string size_string = "mq" + std::to_string(this->max_qubits);
   std::ostringstream oss;
-  oss << "sdsac-" << size_string << "-lsmt";
+  oss << "sdsac-" << size_string << "-lstm";
   return oss.str();
 }
 

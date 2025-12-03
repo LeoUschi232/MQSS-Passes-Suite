@@ -58,9 +58,9 @@ protected:
   /// Attributes for circuit
   std::optional<InstructionsTensor<float>> latest_observation = std::nullopt;
   unsigned int max_qubits = GLOBAL_MIN_NR_QUBITS;
+  unsigned int training_max_nr_gates = 0u;
   fs::path circuit_path = "";
   QuantumCircuit circuit{};
-  double nr_gates_reduction_weight = 1.0;
 
   /// Attributes for episode
   unsigned int max_steps_per_episode = MIN_NR_STEPS;
@@ -72,6 +72,8 @@ protected:
   int last_action = -1;
   bool terminated = false;
   bool truncated = false;
+  float original_nr_gates = 0.0f;
+  float original_depth = 0.0f;
 
   /// Attributes for randomizer
   std::optional<std::array<double, CHOLESKY_PARAMS_SIZE>>
@@ -108,7 +110,8 @@ public:
   /// Getters
   unsigned int getMaxQubits() const;
   fs::path getCircuitPath() const;
-  std::optional<std::pair<std::array<double, 11>, std::array<unsigned, 37>>>
+  std::optional<std::pair<std::array<double, CHOLESKY_PARAMS_SIZE>,
+                          std::array<unsigned, GATES_WEIGHTS_SIZE>>>
   getRegisteredRandomizerParams() const;
 
   /// Short functions
@@ -118,19 +121,17 @@ public:
   std::pair<unsigned int, unsigned int> size() const;
 
   /**
-   *
-   * @return
+   * Returns whether circuit is valid and what kind of invalid if not.
+   * @return [CircuitValidity]
    */
   CircuitValidity get_advanced_circuit_validity();
 
   /**
-   *
    * @param circuit_path
    */
   bool register_quantum_circuit(const fs::path &circuit_path);
 
   /**
-   *
    * @param cholesky_params
    * @param gates_weights
    */
@@ -139,15 +140,15 @@ public:
       const std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
   /**
-   *
-   * @return
+   * Returns the circuit info.
+   * @return [qubits, gates, depth]
    */
   std::unordered_map<std::string, unsigned int> get_circuit_info() const;
 
   /**
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * @return Blob Tensor of 1-axis shape {N×IRS} containing the observation of
+   * @return Blob Tensor of 1-dimensional shape {N×IRS} containing the observation of
    * the current circuit.
    */
   InstructionsTensor<float> get_observation();
@@ -155,21 +156,18 @@ public:
   /**
    * N = Nr of instructions in the quantum circuit
    * IRS = Instruction Representation Size
-   * @param main_options
-   * @return Torch Tensor of 1-axis shape [N, IRS] containing the observation of
+   * @return Torch Tensor of 2-dimensional shape [N, IRS] containing the observation of
    * the current circuit.
    */
   torch::Tensor get_observation_as_torch_tensor();
 
   /**
-   *
    * @param action
    * @return [Reward, Terminated, Truncated]
    */
   virtual std::tuple<float, bool, bool> step(unsigned int action);
 
   /**
-   *
    * @param op
    * @return
    */

@@ -24,9 +24,7 @@ inline std::mt19937 &qc_rng() {
   static std::mt19937 rng_engine{std::random_device{}()};
   return rng_engine;
 }
-inline void seed_qc_rng(uint32_t seed) {
-  qc_rng().seed(seed);
-}
+inline void seed_qc_rng(uint32_t seed) { qc_rng().seed(seed); }
 inline double random01() {
   thread_local std::uniform_real_distribution dist01(0.0, 1.0);
   return dist01(qc_rng());
@@ -64,6 +62,26 @@ struct PassSelectorRuntimeParam {
   PassSelectorRuntimeParam(std::string s) : value(std::move(s)) {}
   PassSelectorRuntimeParam(const char *s) : value(std::string(s)) {}
   PassSelectorRuntimeParam(torch::DeviceType device) : value(device) {}
+
+  /// Type name for printing
+  std::string type_name() const {
+    if (is_int()) {
+      return "int";
+    }
+    if (is_double()) {
+      return "double";
+    }
+    if (is_bool()) {
+      return "bool";
+    }
+    if (is_string()) {
+      return "string";
+    }
+    if (is_device_type()) {
+      return "torch::DeviceType";
+    }
+    return "unknown";
+  }
 
   /// Convenience Checks
   bool is_int() const { return std::holds_alternative<int>(value); }

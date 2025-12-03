@@ -4,8 +4,8 @@
 #include "Environment/quantum_circuit_environment.hpp"
 
 // Agents includes
-#include "NeuralNetworks/Agents/A3C/a3c_trainer.hpp"
-#include "NeuralNetworks/Agents/A3C/base_a3c_agent.hpp"
+#include "NeuralNetworks/Agents/A2C/a2c_trainer.hpp"
+#include "NeuralNetworks/Agents/A2C/base_a2c_agent.hpp"
 #include "NeuralNetworks/Agents/ACER/acer_trainer.hpp"
 #include "NeuralNetworks/Agents/ACER/base_acer_agent.hpp"
 #include "NeuralNetworks/Agents/PPO/base_ppo_agent.hpp"
@@ -38,22 +38,14 @@ train(const std::string &agent_name, const std::string &dataset) {
   try {
     switch (AgentAttributes attributes = parseAgentName(agent_name);
             attributes.agent_class) {
-    case AgentClass::A3C: {
-      std::unique_ptr<BaseA3CAgent> agent(
-          dynamic_cast<BaseA3CAgent *>(abstract_agent.release()));
+    case AgentClass::A2C: {
+      std::unique_ptr<BaseA2CAgent> agent(
+          dynamic_cast<BaseA2CAgent *>(abstract_agent.release()));
       if (!agent) {
-        throw std::runtime_error("Failed to cast to BaseA3CAgent");
+        throw std::runtime_error("Failed to cast to BaseA2CAgent");
       }
       agent->load_model();
-      unsigned int nr_asynchronous_agents =
-          GLOBAL_PARAMS["nr_asynchronous_agents"].to_int();
-      if (nr_asynchronous_agents <= 1u) {
-        std::cout << "Only 1 asnc A3C agent => Defaulting to A2C training."
-                  << std::endl;
-        training_results = train_a2c(agent, dataset);
-      } else {
-        training_results = train_a3c(agent, dataset);
-      }
+      training_results = train_a2c(agent, dataset);
       break;
     }
     case AgentClass::PPO: {
@@ -170,39 +162,65 @@ evaluate(const std::string &agent_name, const std::string &dataset_name,
     return {};
   }
   nlohmann::ordered_json optimizations = nlohmann::ordered_json::object();
-  double avg_nr_gates_reduction = 0.0;
-  double avg_depth_reduction = 0.0;
+  std::unordered_map<std::string, unsigned int> pass_selection_amounts;
+  double average_nr_gates_reduction = 0.0;
+  double average_depth_reduction = 0.0;
   unsigned int progress = 0u;
   for (auto circuit_path : files) {
     std::string circuit_name = circuit_path.stem().string();
     updateProgress(++progress, nr_files,
                    "Evaluating " + agent_name + " on " + circuit_name);
+
+    QuantumCircuitEnvironment qc_environment(agent->getMaxQubits());
+    if (!qc_environment.register_quantum_circuit(circuit_path)) {
+      std::cerr << "Failed to register quantum circuit: " << circuit_path
+                << std::endl;
+      return {};
+    }
+    std::unordered_map<std::string, unsigned int> original_info =
+        qc_environment.get_circuit_info();
+    optimizations[circuit_name]["nr_qubits"] = original_info["nr_qubits"];
+    optimizations[circuit_name]["original_nr_gates"] =
+        original_info["nr_gates"];
+    optimizations[circuit_name]["original_depth"] = original_info["depth"];
     std::vector<std::function<std::unique_ptr<Pass>()>> pass_functions =
         agent->select_passes_for_circuit(circuit_path);
-    auto [quantum_circuit, nr_gates_reduction, depth_reduction, _] =
+    auto [quantum_circuit, nr_gates_reduction, depth_reduction, pass_names] =
         agent->run_on_circuit(circuit_path, pass_functions);
-    optimizations[circuit_name]["nr_qubits"] = quantum_circuit.getNrQubits();
+    optimizations[circuit_name]["optimized_nr_gates"] =
+        quantum_circuit.getNrGates();
+    optimizations[circuit_name]["optimized_depth"] = quantum_circuit.getDepth();
     optimizations[circuit_name]["nr_gates_reduction"] = nr_gates_reduction;
     optimizations[circuit_name]["depth_reduction"] = depth_reduction;
-    avg_nr_gates_reduction += nr_gates_reduction;
-    avg_depth_reduction += depth_reduction;
+    optimizations[circuit_name]["selected_passes"] = pass_names;
+
+    for (const std::string &pass_name : pass_names) {
+      pass_selection_amounts[pass_name]++;
+    }
+
+    average_nr_gates_reduction += nr_gates_reduction;
+    average_depth_reduction += depth_reduction;
   }
   std::cout << std::endl;
-  avg_nr_gates_reduction /= nr_files;
-  avg_depth_reduction /= nr_files;
+  average_nr_gates_reduction /= nr_files;
+  average_depth_reduction /= nr_files;
   nlohmann::ordered_json json_file;
-  json_file["dataset_name"] = dataset_name;
+  json_file["dataset"] = dataset_name;
   json_file["agent"] = agent_name;
+  json_file["average_nr_gates_reduction"] = average_nr_gates_reduction;
+  json_file["average_depth_reduction"] = average_depth_reduction;
   json_file["circuit_optimizations"] = optimizations;
+  json_file["pass_selection_amounts"] = pass_selection_amounts;
   fs::path filepath =
       fs::path(AI_DATASET_DIR) / "Evaluations" /
-      (dataset_name + "_evaluation_" +
+      ("Evaluation_" + dataset_name + "_" + agent->agentName() + "_" +
        (sampled ? "sample" + std::to_string(nr_files) : "full") + ".json");
   std::ofstream output_stream(filepath);
-  output_stream << json_file.dump(/*ident=*/4);
+  output_stream << json_file.dump(4);
   output_stream.close();
-  return {{"avg_nr_gates_reduction", std::to_string(avg_nr_gates_reduction)},
-          {"avg_depth_reduction", std::to_string(avg_depth_reduction)}};
+  return {{"average_nr_gates_reduction",
+           std::to_string(average_nr_gates_reduction)},
+          {"average_depth_reduction", std::to_string(average_depth_reduction)}};
 }
 
 } // namespace ai_pass_selector

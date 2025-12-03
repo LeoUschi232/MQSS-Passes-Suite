@@ -18,11 +18,10 @@ using namespace mqss::opt;
 
 namespace ai_pass_selector {
 enum class AgentClass : int {
-  A3C = 1,
+  A2C = 1,
   PPO = 2,
   SDSAC = 3,
-  ACER = 4,
-  CROSSQ = 5
+  ACER = 4
 };
 
 enum class OptimizerType : int {
@@ -46,18 +45,16 @@ struct AgentAttributes {
 };
 
 const std::unordered_map<std::string, AgentClass> AGENT_NAME_TO_CLASS = {
-    {"a3c", AgentClass::A3C},
+    {"a2c", AgentClass::A2C},
     {"ppo", AgentClass::PPO},
     {"acer", AgentClass::ACER},
-    {"sdsac", AgentClass::SDSAC},
-    {"crossq", AgentClass::CROSSQ}};
+    {"sdsac", AgentClass::SDSAC}};
 
 const std::unordered_map<AgentClass, std::string, EnumClassHash>
-    AGENT_CLASS_TO_NAME = {{AgentClass::A3C, "a3c"},
+    AGENT_CLASS_TO_NAME = {{AgentClass::A2C, "a2c"},
                            {AgentClass::PPO, "ppo"},
                            {AgentClass::ACER, "acer"},
-                           {AgentClass::SDSAC, "sdsac"},
-                           {AgentClass::CROSSQ, "crossq"}};
+                           {AgentClass::SDSAC, "sdsac"}};
 
 /// Optimizers
 const std::unordered_map<std::string, OptimizerType> OPTIMIZER_NAME_TO_TYPE = {
@@ -89,12 +86,6 @@ AgentAttributes parseAgentName(const std::string &agent_name);
 std::unique_ptr<torch::optim::Optimizer>
 makeOptimizer(OptimizerType optimizerType,
               const torch::nn::Sequential &agentModel, double learningRate);
-
-/**
- * @param circuit
- * @return
- */
-std::string select_best_agent(const std::string &circuit);
 
 /**
  * @param network

@@ -96,10 +96,10 @@ int createAndConvertOneRandomCircuitToTikz(int index) {
       ("Latex/Randomtest/randomtest" + std::to_string(index) + ".tikz");
   const fs::path quake_to_tikz_tool_path =
       fs::path(MQSS_BUILD_DIR) / "tools/quake-to-tikz";
-
-  QuantumCircuit circuit = random_quantum_circuit_from_embedded_statistics(
-      RANDOMTEST_PREEMPTIVE_QUBITS_CHOLSEKY_PARAMS,
-      RANDOMTEST_PREEMPTIVE_GATES_WEIGHTS);
+  const fs::path statistics_yaml_file =
+      fs::path(RQCG_STATISTICS_DIR) / "RandomtestStatistics.yaml";
+  QuantumCircuit circuit =
+      random_quantum_circuit_from_statistics_yaml_file(statistics_yaml_file);
   if (int rc = write_to_file(&circuit, quake_qke_circuit_filepath); rc != 0) {
     return -1;
   }

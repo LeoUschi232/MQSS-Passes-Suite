@@ -144,7 +144,7 @@ QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
     MLIRContext &context = *this->context_ptr.get();
     mlir::PassManager pass_manager(&context);
     pass_manager.addPass(std::move(pass_ptr));
-    if (mlir::failed(/*result=*/pass_manager.run(this->circuit_module))) {
+    if (mlir::failed(pass_manager.run(this->circuit_module))) {
       std::cerr << "Pass failed internally." << std::endl;
       this->recompute();
       return {false, false};
@@ -155,7 +155,7 @@ QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
     return {false, true};
   }
 
-  if (!was_applied_ptr || /*pass_was_applied=*/was_applied_ptr->load()) {
+  if (!was_applied_ptr || was_applied_ptr->load()) {
     return {this->recompute(), true};
   }
   // Pass did not apply any changes.

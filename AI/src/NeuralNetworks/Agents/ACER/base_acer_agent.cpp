@@ -121,15 +121,17 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
   torch::Tensor k_scalar =
       this->compute_KL_divergence(policy_avg,
                                   policy_main); // DKL[f(·|φθa(xi))‖f(·|φθ(xi))]
+  // Retain graph must be set to true so that the network of the actor can be
+  // reused to compute k_vector.
   torch::autograd::variable_list g_gradients =
-      torch::autograd::grad({g_scalar}, actor_parameters, {});
+      torch::autograd::grad({g_scalar}, actor_parameters, {}, true);
   std::vector<torch::Tensor> g_flattened;
   for (const torch::Tensor &g_gradient : g_gradients) {
     g_flattened.push_back(g_gradient.contiguous().view(-1));
   }
   torch::Tensor g_vector = torch::cat(g_flattened);
   torch::autograd::variable_list k_gradients =
-      torch::autograd::grad({k_scalar}, actor_parameters, {});
+      torch::autograd::grad({k_scalar}, actor_parameters, {}, true);
   std::vector<torch::Tensor> k_flattened;
   for (const torch::Tensor &k_gradient : k_gradients) {
     k_flattened.push_back(k_gradient.contiguous().view(-1));
@@ -138,14 +140,14 @@ BaseACERAgent::compute_losses_and_accumulate_gradients(
   ////////////////////////////////////////////////////////////////////////////
   /// 2. Accumulating gradients with regard to θ and θv
   /// 3. Update Retrace target
-  return {-g_vector +
-              ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
-               (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
-                      .clamp_min(0.0) *
-                  k_vector, // g-max{0,(kTg−δ)/(‖k‖^2)}k
-          (Q_ret - Q_values[action_index]).square(), // (Qret-Qθv(xi,a))^2
-          Vi + truncated_importance_weights[action_index] *
-                   (Q_ret - Q_values[action_index]) // ρi(Qret−Qθv(xi,ai))+Vi
+  return {
+      -g_vector + ((k_vector.dot(g_vector) - this->acer_trust_region_delta) /
+                   (k_vector.square().sum() + DIVISION_BY_ZERO_BLOCK))
+                          .clamp_min(0.0) *
+                      k_vector,                  // g-max{0,(kTg−δ)/(‖k‖^2)}k
+      (Q_ret - Q_values[action_index]).square(), // (Qret-Qθv(xi,a))^2
+      Vi + truncated_importance_weights[action_index] *
+               (Q_ret - Q_values[action_index]) // ρi(Qret−Qθv(xi,ai))+Vi
   };
 }
 

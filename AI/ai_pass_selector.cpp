@@ -31,79 +31,34 @@ void signal_handler(int signal) {
 }
 
 void print_help() {
-  std::cout
-      << "\nUsage: ./ai_pass_selector_torch [options]\n"
-         "Options:\n"
-         "  -h, --help                    Show this help message\n"
-         "  -a, --agent <name>            Agent to train/use, if not provided, "
-         "defaults to most appropriate for circuit.\n"
-         "  -d, --dataset <name>          Dataset name, agent will train on "
-         "this dataset if provided.\n"
-         "-e, --evaluate                  Evaluate the agent instead of "
-         "training it.\n"
-         "  -c, --circuit <file>          Quake circuit file, agent will be "
-         "used on this circuit.\n"
-         "  -o, --output <file_path>      Circuit file path to output the "
-         "optimized circuit if using the passes.\n"
-         "  -i, --info                    Print info of provided arguments.\n"
-         "Other parameters:\n"
-         "  <key>=<value>                 Parameters for "
-         "agent/environment/training, will be loaded with default values if "
-         "nor provided.\n\n";
+  std::cout << "\n\tUsage: ./ai_pass_selector [Parameters]"
+               "\n\n\tAssign parameters space-seperated like this:"
+               "\n\t\t<key>=<value>"
+               "\n\n\tParameter names, types and default/current values:"
+            << std::endl;
+  for (auto &[key, value] : GLOBAL_PARAMS) {
+    std::cout << "\t\t" << key << ": " << value.type_name() << " ("
+              << value.to_string() << ")" << std::endl;
+  }
+  std::cout << std::endl;
 }
 
 int main(int argc, char **argv) {
-  bool info = false;
   load_default_params();
   std::vector<std::string> args(argv + 1, argv + argc);
   unsigned int n = args.size();
-
-  unsigned int i = 0;
-  while (i < n) {
+  for (unsigned int i = 0; i < n; i++) {
     if (args[i] == "-h" || args[i] == "--help") {
       print_help();
       return 0;
     }
-    if (args[i] == "-a" || args[i] == "--agent") {
-      if (++i < n) {
-        GLOBAL_PARAMS["agent"] = args[i];
-      } else {
-        std::cerr << "No agent provided." << std::endl;
-        return 1;
-      }
-    } else if (args[i] == "-d" || args[i] == "--dataset") {
-      if (++i < n) {
-        GLOBAL_PARAMS["dataset"] = args[i];
-      } else {
-        std::cerr << "No dataset provided." << std::endl;
-        return 1;
-      }
-    } else if (args[i] == "-e" || args[i] == "--evaluate") {
-      GLOBAL_PARAMS["evaluate"] = true;
-    } else if (args[i] == "-c" || args[i] == "--circuit") {
-      if (++i < n) {
-        GLOBAL_PARAMS["circuit"] = args[i];
-      } else {
-        std::cerr << "No circuit provided." << std::endl;
-        return 1;
-      }
-    } else if (args[i] == "-o" || args[i] == "--output") {
-      if (++i < n) {
-        GLOBAL_PARAMS["output"] = args[i];
-      } else {
-        std::cerr << "No output provided." << std::endl;
-        return 1;
-      }
-    } else if (args[i] == "-i" || args[i] == "--info") {
-      info = true;
-    } else {
-      std::vector<std::string> key_value = split_string(args[i], '=');
-      if (key_value.size() != 2) {
-        std::cerr << "Malformatted GLOBAL_PARAMS: " << args[i] << std::endl;
-      }
-      GLOBAL_PARAMS[key_value[0]] = key_value[1];
+    std::vector<std::string> key_value = split_string(args[i], '=');
+    if (key_value.size() != 2) {
+      std::cerr << "\tMalformatted argument: " << args[i] << std::endl;
+      print_help();
+      return 0;
     }
-    i++;
+    GLOBAL_PARAMS[key_value[0]] = key_value[1];
   }
   auto agent = std::string(GLOBAL_PARAMS["agent"]);
   auto dataset = std::string(GLOBAL_PARAMS["dataset"]);
@@ -113,7 +68,7 @@ int main(int argc, char **argv) {
                               .device(GLOBAL_PARAMS["device"].to_device_type())
                               .dtype(torch::kFloat32);
 
-  if (info) {
+  if (GLOBAL_PARAMS["info"].to_bool()) {
     std::cout << "Parameters:" << std::endl;
     for (auto [key, value] : GLOBAL_PARAMS) {
       std::cout << "  " << key << ": " << value.to_string() << std::endl;
@@ -132,10 +87,8 @@ int main(int argc, char **argv) {
     return 0;
   }
   if (agent.empty()) {
-    if (circuit.empty()) {
-      return 0;
-    }
-    agent = select_best_agent(circuit);
+    std::cerr << "No agent provided." << std::endl;
+    return 1;
   }
 
   // If a circuit is provided, it is assumes the user only wants to run the
@@ -148,7 +101,6 @@ int main(int argc, char **argv) {
           GLOBAL_PARAMS["evaluation_sample"].to_int() > 0) {
         max_circuits = GLOBAL_PARAMS["evaluation_sample"].to_int();
       }
-
       std::unordered_map<std::string, std::string> metrics =
           evaluate(agent, dataset, max_circuits);
       for (const auto &[key, value] : metrics) {
@@ -166,14 +118,12 @@ int main(int argc, char **argv) {
 
 void load_default_params() {
   GLOBAL_PARAMS = {
-      {"agent", "a3c-mq28-tcn"},
+      {"agent", "a2c-mq28-tcn"},
       {"dataset", "Chemistry"},
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
-      {"nr_asynchronous_agents", 1},
-      {"a3c_max_async_steps", 100000},
-      {"nr_episodes", 1000000},
+      {"nr_episodes", 1000001},
       {"max_steps_per_episode", 256},
       {"max_steps_no_change", 32},
       {"max_steps_same_action", 8},
@@ -200,9 +150,9 @@ void load_default_params() {
       {"print_param_info", false},
       {"save_agent_after_training", true},
       {"save_agent_every_ith_episode", 10},
-      {"stop_training_on_error", true},
+      {"stop_training_on_error", false},
       {"print_diagnostics", false},
       {"probability_max_qubits", 0.4},
-      {"nr_gates_reduction_weight", 0.15},
-      {"evaluation_sample", 10}};
+      {"training_max_nr_gates", 5000},
+      {"evaluation_sample", 0}};
 }

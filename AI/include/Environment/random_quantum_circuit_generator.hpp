@@ -63,14 +63,12 @@ struct RandomizerOptions {
 };
 
 /**
- *
  * @param idx
  * @return
  */
 static GateSpec gateSpecFromIndex(unsigned int idx);
 
 /**
- *
  * @param nr_targets
  * @param nr_controls
  * @param nr_qubits
@@ -82,14 +80,12 @@ sample_distinct_targets_and_controls(unsigned int nr_targets,
                                      unsigned int nr_qubits);
 
 /**
- *
  * @param baseGate
  * @return
  */
 std::vector<float> makeAngles(GateSymbol baseGate);
 
 /**
- *
  * @param cholesky_params
  * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
  */
@@ -98,7 +94,6 @@ sample_nr_qubits_gates_operations_measurements(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params);
 
 /**
- *
  * @param cholesky_params
  * @param randomizer_options
  * @return [nr_qubits, nr_gates, nr_operations, nr_measurements]
@@ -109,7 +104,6 @@ get_nr_qubits_gates_operations_measurements(
     const RandomizerOptions &randomizer_options);
 
 /**
- *
  * @param multiplier
  * @param subset_size
  * @param gates_weights
@@ -119,13 +113,12 @@ void adjust_gates_weights(
     std::array<unsigned int, GATES_WEIGHTS_SIZE> &gates_weights);
 
 /**
- *
  * @param cholesky_params
  * @param gates_weights
  * @param randomizer_options
  * @return
  */
-QuantumCircuit random_quantum_circuit_from_embedded_statistics(
+QuantumCircuit random_quantum_circuit_from_statistics_arrays(
     const std::array<double, CHOLESKY_PARAMS_SIZE> &cholesky_params,
     std::array<unsigned int, GATES_WEIGHTS_SIZE> gates_weights,
     const RandomizerOptions &randomizer_options = {
@@ -133,13 +126,12 @@ QuantumCircuit random_quantum_circuit_from_embedded_statistics(
         .probability_additionals_controls = 0.01});
 
 /**
- *
- * @param statistics_yaml_file_path
+ * @param statistics_yaml_file
  * @param randomizer_options
  * @return
  */
-QuantumCircuit random_quantum_circuit_from_yaml_statistics(
-    const fs::path &statistics_yaml_file_path,
+QuantumCircuit random_quantum_circuit_from_statistics_yaml_file(
+    const fs::path &statistics_yaml_file,
     const RandomizerOptions &randomizer_options = {
         .weight_min_multiplier_for_unoccurring_gates = 0.1,
         .probability_additionals_controls = 0.01});

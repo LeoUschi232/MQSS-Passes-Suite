@@ -54,7 +54,6 @@ public:
   static std::unique_ptr<AbstractAgent> getAgent(const std::string &agent_name);
 
   /**
-   *
    * @param circuit_path
    * @return
    */
@@ -62,7 +61,6 @@ public:
   select_passes_for_circuit(const fs::path &circuit_path) = 0;
 
   /**
-   *
    * @param circuit_path
    * @param pass_functions
    * @return [optimized_circuit, gates_reduction, depth_reduction, pass_names]
