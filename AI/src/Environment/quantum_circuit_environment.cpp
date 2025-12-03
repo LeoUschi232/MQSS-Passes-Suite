@@ -113,7 +113,7 @@ void QuantumCircuitEnvironment::reset(std::optional<int> seed) {
     if (seed.has_value()) {
       randomizer_options.seed = seed.value();
     }
-if (this->
+if (this->training
     this->circuit = random_quantum_circuit_from_statistics_arrays(
         qubits_cholesky_params.value(), gates_weights.value(),
         randomizer_options);
