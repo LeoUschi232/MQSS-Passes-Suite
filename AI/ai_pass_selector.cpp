@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 void load_default_params() {
   GLOBAL_PARAMS = {
       {"agent", "a2c-mq28-tcn"},
-      {"dataset", "Chemistry"},
+      {"dataset", "MQTBench"},
       {"evaluate", false},
       {"circuit", ""},
       {"output", ""},
