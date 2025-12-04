@@ -185,7 +185,7 @@ train_sdsac(const std::unique_ptr<BaseSDSACAgent> &agent,
       previous_nr_gates = nr_gates;
     } catch (const std::exception &error) {
       std::cerr << "Error in Episode " << episode_idx << ":\n"
-                << error.what() << std::endl;
+                << error_no_stacktrace(error) << std::endl;
       agent->load_model();
       if (GLOBAL_PARAMS["stop_training_on_error"].to_bool()) {
         interrupted = 1;

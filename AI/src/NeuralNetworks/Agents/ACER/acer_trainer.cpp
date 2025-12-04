@@ -210,7 +210,7 @@ train_acer(const std::unique_ptr<BaseACERAgent> &agent,
       }
     } catch (const std::exception &error) {
       std::cerr << "Error in Episode " << episode_idx << ":\n"
-                << error.what() << std::endl;
+                << error_no_stacktrace(error) << std::endl;
       agent->load_model();
       if (stop_training_on_error) {
         interrupted = 1;

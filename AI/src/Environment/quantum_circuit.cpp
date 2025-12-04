@@ -150,7 +150,7 @@ QuantumCircuit::run_pass(std::unique_ptr<Pass> &pass_ptr) {
       return {false, false};
     }
   } catch ([[maybe_unused]] const std::runtime_error &error) {
-    std::cerr << "Pass threw: " << error.what() << std::endl;
+    std::cerr << "Pass threw: " << error_no_stacktrace(error) << std::endl;
     this->recompute();
     return {false, true};
   }

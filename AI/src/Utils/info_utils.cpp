@@ -45,11 +45,13 @@ std::vector<std::string> split_string(const std::string &str, char delimiter) {
   return parts;
 }
 
-std::string cut_to_newline(std::string str) {
-  if (const auto pos = str.find('\n'); pos != std::string::npos) {
-    str.resize(pos);
+std::string error_no_stacktrace(const std::exception &error) {
+  std::string error_msg = error.what();
+  if (const unsigned int pos = error_msg.find("frame #0:");
+      pos != std::string::npos) {
+    error_msg.resize(pos);
   }
-  return str;
+  return error_msg;
 }
 
 std::optional<fs::path> search_circuit(const fs::path &circuit_path) {
@@ -261,7 +263,7 @@ void print_agent_info(const std::string &agent_name) {
       return;
     }
   } catch (const std::runtime_error &error) {
-    std::cerr << "\n" << error.what() << std::endl;
+    std::cerr << "\n" << error_no_stacktrace(error) << std::endl;
     return;
   }
   unsigned int nr_parameters = count_nr_trainable_parameters(*agent);
