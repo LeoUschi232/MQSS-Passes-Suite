@@ -230,11 +230,10 @@ bool isclose(double a, double b, double atol = 1e-12);
 std::vector<std::string> split_string(const std::string &str, char delimiter);
 
 /**
- * Returns the string passed as argument cut to the next newline.
- * @param str String to cut.
- * @return The cut string.
+ * @param error
+ * @return
  */
-std::string cut_to_newline(std::string str);
+std::string error_no_stacktrace(const std::exception &error);
 
 /**
  * Given a circuit name or its full filepath, search for the circuit and

@@ -382,7 +382,7 @@ QuantumCircuit random_quantum_circuit_from_statistics_arrays(
 
     } catch (const std::runtime_error &error) {
       std::cerr << "\n"
-                << error.what()
+                << error_no_stacktrace(error)
                 << "\nGate: " << SUPPORTED_GATES[static_cast<int>(baseGate)]
                 << std::endl;
     }
