@@ -347,6 +347,8 @@ the [build/AI](../build/AI) folder.
 The Chemistry dataset contains a grand total of $1548$ circuits with $\mathrm{MAX\_QUBITS}=28$, a maximum gate count
 of $2188$ and maximum depth of $1234$.
 
+TODO Make 3x4 table of evaluations. 
+
 #### MQTBench
 
 The MQTBench dataset is described
