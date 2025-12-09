@@ -48,7 +48,7 @@ An instruction is exactly defined by:
 2. __Qubits it acts on__ meaning both control and target qubits:
 3. __Optional parameters__ such as the angles of rotation and/or unitary gates.
 
-The tensor encoding the quantum circuit considers one such instruction as an element
+The tensor encoding of the quantum circuit considers one such instruction as an element
 with _Instruction Representation Size_ (IRS) number of values.
 Here, $\mathrm{MAX\_QUBITS}$ is the maximum number of qubits a specific tensor can represent, the number of distinct
 usable gate identities in quake is $17$ and the maximum number of parameters a gate may have is $3$.
