@@ -28,7 +28,7 @@ public:
     return "Decomposition pass of two-qubits cnot by H, Cz, and H";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto cxOp = dyn_cast_or_null<quake::XOp>(*op);

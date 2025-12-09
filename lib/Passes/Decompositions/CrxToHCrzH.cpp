@@ -27,7 +27,7 @@ public:
     return "Decomposition pass of crx by h, crz and h";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto crxOp = dyn_cast_or_null<quake::RxOp>(*op);

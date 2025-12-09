@@ -28,7 +28,7 @@ public:
     return "Decomposition pass of Cz by H, Cx, and H";
   }
 
-  void operationsOnQuantumKernel(func::FuncOp kernel) override {
+  void operationsOnQuantumKernel(FuncOp kernel) override {
     this->wasApplied->store(false);
     kernel.walk([&](Operation *op) {
       auto czOp = dyn_cast_or_null<quake::ZOp>(*op);
