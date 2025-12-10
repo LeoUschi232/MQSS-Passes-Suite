@@ -10,11 +10,14 @@ while True:
 include_dir = "/".join(dir_list + ["AI", "include"])
 src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
-prefix = """Consider the following subset of files of the project.
-Assume actors output softmax, not logits, the input is unbatched, so no extra [B,...] dimension and all includes are implicitly correct.
-The code builds and runs.
-The only problems could be with logic e.g. .detach() present when inappropriate, absent when appropriate, wrong/bad tensor arithmetic.
-Try to find errors, report about errors, if any.
+prefix = """
+Consider the following files of a C++ project:
+"""
+suffix = """
+I want to create an image of a single residual block as in this implementation.
+For that I would like for you to implement as minmal as possible implementation of a neural network using pytorch with the same architecture as the C++ code provides
+such that using some function like e.g. rochviz, I can then create a concept image for a research paper of what one residual block looks like.
+For the weightnorm i had to implement a custom weightnorm in libtorch BUT when writing the code in pytorch use the weight-norm provided by pytorch, do NOT implement your own weight-norm.
 """
 files_to_join = [
     "layers_and_wrappers.hpp",
@@ -37,9 +40,12 @@ for root, _, files in walk(src_dir):
             filepaths.append(join(root, file))
 with open(output_filepath, "w") as output_file:
     output_file.write(prefix)
+    output_file.write("\n```\n")
     for filepath in filepaths:
         output_file.write(f"\n{filepath}:\n\n")
         with open(filepath) as input_file:
             output_file.write(input_file.read())
             output_file.write("\n")
+    output_file.write("\n```\n")
+    output_file.write(suffix)
 print("Done.")
