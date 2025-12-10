@@ -17,13 +17,14 @@ The only problems could be with logic e.g. .detach() present when inappropriate,
 Try to find errors, report about errors, if any.
 """
 files_to_join = [
+    "layers_and_wrappers.hpp",
     "layers_and_wrappers.cpp",
-    "base_actor_critic.hpp",
-    "base_actor_critic.cpp",
-    "base_acer_agent.hpp",
-    "base_acer_agent.cpp",
-    "acer_trainer.hpp",
-    "acer_trainer.cpp"
+    "tcn_network.hpp",
+    "tcn_network.cpp",
+    "single_output_lstm.hpp",
+    "single_output_lstm.cpp",
+    "agent_architectures.hpp",
+    "agent_architectures.cpp",
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
