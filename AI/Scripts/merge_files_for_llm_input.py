@@ -11,6 +11,7 @@ include_dir = "/".join(dir_list + ["AI", "include"])
 src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
 prefix = """
+YOU ARE AN EXPERT MACHINE LEARNING ENGINEER!
 Consider the following files of a C++ project:
 """
 suffix = """
