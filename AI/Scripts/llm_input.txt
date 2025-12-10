@@ -645,3 +645,4 @@ Tensor SingleOutputLSTMImpl::forward(const Tensor &x) {
 I want to create an image of a single residual block as in this implementation.
 For that I would like for you to implement as minmal as possible implementation of a neural network using pytorch with the same architecture as the C++ code provides
 such that using some function like e.g. rochviz, I can then create a concept image for a research paper of what one residual block looks like.
+For the weightnorm i had to implement a custom weightnorm in libtorch BUT when writing the code in pytorch use the weight-norm provided by pytorch, do NOT implement your own weight-norm.
