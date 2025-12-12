@@ -109,7 +109,7 @@ BaseA2CAgent::select_action(const torch::Tensor &observation) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseA2CAgent::get_losses(const torch::Tensor &log_action_probs, // Shape [T]
-                         const torch::Tensor &state_values,     // Shape []
+                         const torch::Tensor &state_values,     // Shape [T]
                          const torch::Tensor &final_state_value,     // Shape []
                          const torch::Tensor &rewards,          // Shape [T]
                          const torch::Tensor &entropy           // Shape [T]
