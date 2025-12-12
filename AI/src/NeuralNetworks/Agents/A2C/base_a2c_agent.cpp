@@ -30,7 +30,7 @@ bool BaseA2CAgent::initialize(const torch::nn::Sequential &actor,
     this->critic = critic;
     // Load the model before putting it to the device to avoid device
     // scheduling issus.
-      this->load_model();
+    this->load_model();
     this->register_module("actor", this->actor);
     this->register_module("critic", this->critic);
     this->actor->to(this->device);
@@ -78,8 +78,7 @@ BaseA2CAgent::select_action(const torch::Tensor &observation) {
   // action_probs ~ [NR_PASSES]
   // X.multinomial(num_samples=1) ~ [1]
   // X.squeeze(dim=-1) ~ []
-  const torch::Tensor action_index_unsqueezed =
-      action_probs.multinomial(1);
+  const torch::Tensor action_index_unsqueezed = action_probs.multinomial(1);
   const torch::Tensor action_index = action_index_unsqueezed.squeeze(-1);
 
   // For advantage compute log π(a_t|s_t) for the sampled actions.
@@ -91,8 +90,7 @@ BaseA2CAgent::select_action(const torch::Tensor &observation) {
   // X.squeeze(dim=-1) ~ []
   const torch::Tensor unsqueezed_log_action_probs = action_probs.log();
   const torch::Tensor log_action_prob =
-      unsqueezed_log_action_probs
-          .gather(-1,action_index_unsqueezed)
+      unsqueezed_log_action_probs.gather(-1, action_index_unsqueezed)
           .squeeze(-1);
 
   // Entropy formula H = -sum_{x}(p(x)*log(p(x)))
@@ -111,14 +109,20 @@ BaseA2CAgent::select_action(const torch::Tensor &observation) {
 
 std::pair<torch::Tensor, torch::Tensor>
 BaseA2CAgent::get_losses(const torch::Tensor &log_action_probs, // Shape [T]
-                         const torch::Tensor &state_values,     // Shape [T+1]
+                         const torch::Tensor &state_values,     // Shape []
+                         const torch::Tensor &final_state_value,     // Shape []
                          const torch::Tensor &rewards,          // Shape [T]
                          const torch::Tensor &entropy           // Shape [T]
 ) {
-  torch::Tensor advantages = this->compute_advantages(rewards, state_values);
-  return {/*actor_loss=*/-(log_action_probs * advantages.detach()).mean() -
+  // Advantages are detached from all states throughout the GAE computation graph.
+  // This is because critic losses should have fixed-target returns and only
+  // consider values of its own timestep.
+  torch::Tensor advantages = this->compute_advantages(rewards, state_values, final_state_value);
+  return {/*actor_loss=*/-(log_action_probs * advantages).mean() -
               this->entropy_coefficient * entropy.mean(),
-          /*critic_loss=*/advantages.pow(2).mean()};
+          /*critic_loss=*/(state_values - state_values.detach() - advantages)
+              .pow(2)
+              .mean()};
 }
 
 void BaseA2CAgent::update_parameters(const torch::Tensor &actor_loss,

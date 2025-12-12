@@ -10,25 +10,17 @@ while True:
 include_dir = "/".join(dir_list + ["AI", "include"])
 src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
-prefix = """
-YOU ARE AN EXPERT MACHINE LEARNING ENGINEER!
-Consider the following files of a C++ project:
-"""
-suffix = """
-I want to create an image of a single residual block as in this implementation.
-For that I would like for you to implement as minmal as possible implementation of a neural network using pytorch with the same architecture as the C++ code provides
-such that using some function like e.g. rochviz, I can then create a concept image for a research paper of what one residual block looks like.
-For the weightnorm I had to implement a custom weightnorm in libtorch BUT when writing the code in pytorch use the weight-norm provided by pytorch, do NOT implement your own weight-norm.
-"""
+prefix = """"""
+suffix = """"""
 files_to_join = [
-    "layers_and_wrappers.hpp",
-    "layers_and_wrappers.cpp",
-    "tcn_network.hpp",
-    "tcn_network.cpp",
-    "single_output_lstm.hpp",
-    "single_output_lstm.cpp",
-    "agent_architectures.hpp",
-    "agent_architectures.cpp",
+    "abstract_agent.hpp",
+    "abstract_agent.cpp",
+    "base_actor_critic.hpp",
+    "base_actor_critic.cpp",
+    "base_a2c_agent.hpp",
+    "base_a2c_agent.cpp",
+    "a2c_trainer.hpp",
+    "a2c_trainer.cpp",
 ]
 filepaths = []
 for root, _, files in walk(include_dir):

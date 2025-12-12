@@ -62,14 +62,18 @@ public:
   /**
    * @param log_action_probs
    * @param state_values
+   * @param final_state_value
    * @param rewards
    * @param entropy
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &log_action_probs,
-             const torch::Tensor &state_values, const torch::Tensor &rewards,
-             const torch::Tensor &entropy);
+  get_losses(const torch::Tensor &log_action_probs, // Shape [T]
+             const torch::Tensor &state_values, // Shape [T]
+             const torch::Tensor &final_state_value, // Shape []
+             const torch::Tensor &rewards, // Shape [T]
+             const torch::Tensor &entropy // Shape [T]
+    );
 
   /**
    * @param actor_loss

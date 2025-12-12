@@ -77,10 +77,11 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
       auto [nr_qubits, nr_gates] = environment.size();
       std::vector<torch::Tensor> episode_log_probs_vector;
       std::vector<torch::Tensor> episode_values_vector;
+      torch::Tensor final_state_value = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
       std::vector<torch::Tensor> episode_rewards_vector;
       std::vector<torch::Tensor> episode_entropies_vector;
       episode_log_probs_vector.reserve(T);
-      episode_values_vector.reserve(T + 1);
+      episode_values_vector.reserve(T);
       episode_rewards_vector.reserve(T);
       episode_entropies_vector.reserve(T);
 
@@ -124,11 +125,8 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
       // Bootstrap value
       if (add_bootstrap) {
         torch::NoGradGuard _;
-        episode_values_vector.push_back(
-            agent->get_value(environment.get_observation_as_torch_tensor()));
-      } else {
-        episode_values_vector.push_back(
-            torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
+        final_state_value =
+            agent->get_value(environment.get_observation_as_torch_tensor());
       }
       std::string main_message =
           "Reward: " + std::to_string(total_episode_reward) +
@@ -140,6 +138,7 @@ train_a2c(const std::unique_ptr<BaseA2CAgent> &agent,
       auto [actor_loss, critic_loss] = agent->get_losses(
           /*log_action_probs=*/torch::stack(episode_log_probs_vector),
           /*state_values=*/torch::stack(episode_values_vector),
+          /*final_state_value=*/final_state_value,
           /*rewards=*/torch::stack(episode_rewards_vector),
           /*entropy=*/torch::stack(episode_entropies_vector));
       updateProgresses({{episode_idx, nr_episodes},

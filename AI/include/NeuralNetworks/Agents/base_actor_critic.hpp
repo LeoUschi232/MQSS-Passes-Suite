@@ -67,12 +67,16 @@ public:
 
   /**
    * Computes advantages using Generalized Advantage Estimation.
+   * WARNING: The computec advantages as detached from the tensor graph!
    * @param rewards
    * @param state_values
-   * @return
+   * @return Detached advantages.
    */
-  torch::Tensor compute_advantages(const torch::Tensor &rewards,
-                                   const torch::Tensor &state_values);
+  torch::Tensor compute_advantages(
+    const torch::Tensor &rewards,     // Shape [T]
+    const torch::Tensor &state_values, // Shape [T]
+    const torch::Tensor &final_state_value // Shape []
+  );
 
   /**
    * Computes rewards-to-go:
