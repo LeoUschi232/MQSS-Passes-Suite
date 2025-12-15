@@ -20,7 +20,7 @@ files_to_join = [
     "base_a2c_agent.hpp",
     "base_a2c_agent.cpp",
     "a2c_trainer.hpp",
-    "a2c_trainer.cpp",
+    "a2c_trainer.cpp"
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
