@@ -145,8 +145,8 @@ void BaseActorCritic::check_params(double tiny, double big) const {
 }
 
 void BaseActorCritic::print_nr_trainable_parameters() const {
-  unsigned int actor_nr_parameters = count_nr_trainable_parameters(this->actor);
-  unsigned int critic_nr_parameters = count_nr_trainable_parameters(this->critic);
+  unsigned int actor_nr_parameters = count_nr_trainable_parameters(*this->actor);
+  unsigned int critic_nr_parameters = count_nr_trainable_parameters(*this->critic);
   std::cout << "Nr actor parameters: " << std::to_string(actor_nr_parameters) << "\n"
    << "Nr critic parameters: " << std::to_string(critic_nr_parameters) << std::endl;
 }
