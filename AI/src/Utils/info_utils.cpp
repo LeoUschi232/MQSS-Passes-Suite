@@ -266,9 +266,8 @@ void print_agent_info(const std::string &agent_name) {
     std::cerr << "\n" << error_no_stacktrace(error) << std::endl;
     return;
   }
-  unsigned int nr_parameters = count_nr_trainable_parameters(*agent);
-  std::cout << "\nAgent name: " << agent_name << "\n"
-            << "Agent nr trainable parameters: " << nr_parameters << std::endl;
+  std::cout << "\nAgent name: " << agent_name << std::endl;
+  agent->print_nr_trainable_parameters();
 }
 
 } // namespace ai_pass_selector

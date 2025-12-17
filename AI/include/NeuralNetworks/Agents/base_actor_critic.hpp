@@ -57,6 +57,8 @@ public:
   /// Diagnostics
   void check_params(double tiny = 1e-12, double big = 1e6) const;
 
+  void print_nr_trainable_parameters() const;
+
   //////////////////////////////////////////////////////////////////////////////
   /// Standard Actor-Critic methods
   /**
@@ -67,7 +69,7 @@ public:
 
   /**
    * Computes advantages using Generalized Advantage Estimation.
-   * WARNING: The computec advantages as detached from the tensor graph!
+   * WARNING: The compute advantages as detached from the tensor graph!
    * @param rewards
    * @param state_values
    * @return Detached advantages.
