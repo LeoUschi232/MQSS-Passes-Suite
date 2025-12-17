@@ -130,11 +130,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         torch::Tensor observation =
             environment.get_observation_as_torch_tensor();
         rollout_new.observations.push_back(observation);
+        rollout_new.final_state_value = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
         if (add_bootstrap_new || update_step >= max_steps_per_episode) {
-          state_values_vector.push_back(agent->get_value(observation));
-        } else {
-          state_values_vector.push_back(
-              torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
+          rollout_new.final_state_value = agent->get_value(observation);
         }
       }
 
@@ -178,11 +176,9 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
         state_values_vector.push_back(state_value);
         entropies_vector.push_back(entropy);
       }
+      torch::Tensor final_state_value = torch::zeros({}, GLOBAL_TENSOR_OPTIONS);
       if (add_bootstrap_old) {
-        state_values_vector.push_back(
-            agent->get_value(rollout_old.observations.back()));
-      } else {
-        state_values_vector.push_back(torch::zeros({}, GLOBAL_TENSOR_OPTIONS));
+        final_state_value = agent->get_value(rollout_old.observations.back());
       }
 
       //////////////////////////////////////////////////////////////////////////
@@ -198,10 +194,13 @@ train_ppo(const std::unique_ptr<BasePPOAgent> &agent,
               device),
           /*old_state_values=*/
           rollout_old.state_values.detach().to(device),
+          /*old_final_state_value=*/
+          rollout_old.final_state_value.detach().to(device),
           /*new_log_action_probs=*/
           torch::stack(log_action_probs_vector).to(device),
           /*new_state_values=*/
           torch::stack(state_values_vector).to(device),
+          /*new_final_state_value=*/final_state_value,
           /*rewards=*/rollout_old.rewards.to(device),
           /*entropy=*/torch::stack(entropies_vector).to(device));
 

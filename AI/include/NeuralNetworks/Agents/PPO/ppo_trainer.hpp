@@ -10,12 +10,12 @@ struct PPO_EpisodeRollout {
   std::vector<torch::Tensor> observations; // [T+1, N_t, IRS]
   torch::Tensor actions;                   // [T]
   torch::Tensor log_action_probs;          // [T]
-  torch::Tensor state_values;              // [T+1]
+  torch::Tensor state_values;              // [T]
+  torch::Tensor final_state_value;         // []
   torch::Tensor rewards;                   // [T]
 };
 
 /**
- *
  * @param agent
  * @param dataset
  * @return
