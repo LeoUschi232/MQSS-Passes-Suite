@@ -1,0 +1,625 @@
+\section{Reinforcement Learning}
+\label{sec:reinforcement-learning}
+
+\subsection{Basics and Value Definitions}
+\label{subsec:basics-and-value-definitions}
+
+\subsubsection{Environment Step}
+\label{subsubsec:environment-step}
+
+An action \(a\) is sampled according to the probability distribution given as the actor's policy \(\Vec{\pi}(s)\) which will be explained in section \ref{subsubsec:actor-policy-pi}.
+In this case \(a\) is just the index of the optimization pass is some predefined list of used passes.
+The environment—here called the \texttt{QuantumCircuitEnvironment}—defines Reinforcement-Learning specific operations on a given quantum circuit.
+Most importantly, the environment provides a function \texttt{get\_observation} to parse the underlying quantum circuit to create the tensor according to the encoding described above.
+The environment also provides a \texttt{step} function which takes as argument the action \(a\), and executes the optimization pass at the corresponding index in the list of passes on the underlying quantum circuit.
+It then computes a reward \(r_t\) for the chosen action and whether the training episode should terminate.
+Because this work only considers backend-independent optimizations, the reward \(r_t\) is the sum of the decreases in gate count and depth at time step \(t\) relative to the original quantum circuit.
+\begin{equation}
+    r_t=\frac{\texttt{NR\_GATES}(t-1)-\texttt{NR\_GATES}(t)}{\texttt{NR\_GATES}(0)}
+    +\frac{\texttt{DEPTH}(t-1)-\texttt{DEPTH}(t)}{\texttt{DEPTH}(0)}
+    \label{eq:environment-reward-definition}
+\end{equation}
+
+The normalization by the original sizes is performed to keep reward maginitude consistent across quantum circuits of varying lengths.
+The environment's termination condition is the selection of the same pass consecutively despite the pass not making changes to the quantum circuit.
+An episode can also be truncated if the number of steps during an episode exceeds some predefined value \(T_\mathrm{max}\).
+Both thresholds are hyperparameters of training provided along all other hyperparameters in the appendix section~\ref{sec:ai-training-hyperparameters}.
+
+\subsubsection{Actor Policy \(\pi(a|s)\)}
+\label{subsubsec:actor-policy-pi}
+
+All used agents follow an Actor-Critic structure.
+This means each agent contains at least \(1\) actor and at least \(1\) critic network, all of which are independent of one another, meaning they share no trainable parameters.
+The actor network outputs a policy \(\Vec{\pi}(s)\) over actions, where \(s\in\mathcal{S}\) is the current state given as the quantum circuit tensor for the state space \(\mathcal{S}\).
+The action space \(\mathcal{A}\) is discrete and at the time of writing has size \(|\mathcal{A}|=\texttt{NR\_PASSES}=65\).
+The policy \(\Vec{\pi}(s)\) is a \texttt{NR\_PASSES}-dimensional vector containing the actor's estimated probabilities for the optimality of each available action \(a\in\mathcal{A}\).
+Because it's a probability distribution all values lie in the interval \([0,1]\) and sum up to \(1\).
+\begin{equation}
+    \forall s\in\mathcal{S}:
+    \left\{
+        \forall a\in\mathcal{A}: 0\leq\pi(a|s)\leq 1
+        \,\land\,
+        \sum_{a\in\mathcal{A}}\pi(a|s)=1
+    \right\}
+    \label{eq:actor-policy-definition}
+\end{equation}
+
+The optimal policy \(\Vec{\pi}^{\,*}(s)\) is the theoretical policy which, for every state \(s\in\mathcal{S}\), assigns the highest probability to the action \(a\in\mathcal{A}\)
+that leads to the maximum expected cumulative discounted future reward.
+The formal definition is:
+\begin{equation}
+    \Vec{\pi}^{\,*}(s)
+    =\mathop{\mathrm{argmax}}_{\Vec{\pi}}
+    \mathop{\mathbb{E}}_{a_t\sim\Vec{\pi}}
+    \left[
+        \left.
+            \sum_{t=0}^{\infty}\gamma^{t} r_{t}
+        \right|
+        s_0=s
+    \right]
+    \label{eq:optimal-policy-definition}
+\end{equation}
+
+The goal of reinforcement learning is to train the actor's output policy \(\Vec{\pi}(s)\) to approximate the optimal policy \(\Vec{\pi}^{\,*}(s)\).
+\cite{07_BartoSuttonReinforcementLearning}
+
+\subsubsection{State Value \(V(s)\)}
+\label{subsubsec:state-value}
+
+The state value \(V_{\Vec{\pi}}(s)\) is a scalar describing how desirable it is to be in the state \(s\) while using the policy \(\Vec{\pi}\).
+Formally it is the expected value of the cumulative discounted future reward starting from state \(s\) and following the policy \(\Vec{\pi}\) thereafter.
+The true state value \(V^*(s)\) is a scalar describing how desirable it is actually to be in the state \(s\).
+Formally it is the state value under the optimal policy \(V_{\Vec{\pi}^{\,*}}(s)\).
+They are defined as:
+\begin{equation}
+    \begin{aligned}
+        V_{\Vec{\pi}}(s)
+        &=\mathop{\mathbb{E}}_{
+            \substack{
+                a_t\sim\Vec{\pi} \\
+                t\geq0
+            }}
+        \left[
+            \left.
+                \sum_{t=0}^{\infty}
+                \gamma^t r_{t}
+            \right|
+            s_0=s
+        \right] \\
+        V^*(s)
+        =V_{\Vec{\pi}^{\,*}}(s)
+        &=\mathop{\mathrm{max}}_{\Vec{\pi}}
+        \mathop{\mathbb{E}}_{
+            \substack{
+                a_t\sim\Vec{\pi} \\
+                t\geq0
+            }}
+        \left[
+            \left.
+                \sum_{t=0}^{\infty}\gamma^{t} r_{t}
+            \right|
+            s_0=s
+        \right]
+    \end{aligned}
+    \label{eq:state-value-definition}
+\end{equation}
+\citeright{07_BartoSuttonReinforcementLearning}
+
+The standard critic learns to approximate \(V_{\Vec{\pi}}(s)\) with its output \(V(s)\).
+
+\subsubsection{Q-Value \(Q(s,a)\)}
+\label{subsubsec:q-value}
+
+The Q-value \(Q_{\Vec{\pi}}(s,a)\) of a policy \(\Vec{\pi}\) is a scalar describing how desirable it is to perform the action \(a\) in the state \(s\) using the policy \(\Vec{\pi}\).
+Formally it is the expected value of the cumulative discounted future reward starting from state \(s\), taking action \(a\), and thereafter following the policy \(\Vec{\pi}\).
+The true Q-value \(Q^*(s,a)\) is a scalar describing how desirable it is actually to perform the action \(a\) in the state \(s\).
+Formally it is the Q-value under the optimal policy \(Q_{\Vec{\pi}^{\,*}}(s,a)\).
+They are defined as:
+\begin{equation}
+    \begin{aligned}
+        Q_{\Vec{\pi}}(s,a)
+        &=\mathop{\mathbb{E}}_{
+            \substack{
+                a_t\sim\Vec{\pi} \\
+                t\geq1
+            }}
+        \left[
+            \left.
+                \sum_{t=0}^{\infty}
+                \gamma^t r_{t}
+            \right|
+            s_0=s,a_0=a
+        \right]  \\
+        Q^*(s,a)
+        =Q_{\Vec{\pi}^{\,*}}(s,a)
+        &=\mathop{\mathbb{E}}_{
+            \substack{
+                a_t\sim\Vec{\pi}^{\,*} \\
+                t\geq1
+            }}
+        \left[
+            \left.
+                \sum_{t=0}^{\infty}
+                \gamma^t r_{t}
+            \right|
+            s_0=s,a_0=a
+        \right]
+    \end{aligned}
+    \label{eq:q-value-definition}
+\end{equation}
+\citeright{07_BartoSuttonReinforcementLearning}
+
+The Q-value can also be used to compute the state value.
+\begin{equation}
+    V_{\Vec{\pi}}(s)
+    =\mathop{\mathbb{E}}_{a\sim\Vec{\pi}}
+    \left[
+        Q_{\Vec{\pi}}(s,a)
+    \right]
+    =\Vec{\pi}(s)\cdot\Vec{Q}_{\Vec{\pi}}(s)
+    =\sum_{a\in\mathcal{A}}\pi(a|s)Q_{\Vec{\pi}}(s,a)
+    \label{eq:state-value-computation-from-policy-and-q-value}
+\end{equation}
+
+A Q-estimating critic learns to approximate \(Q_{\Vec{\pi}}(s,a)\) with its output \(Q(s,a)\).
+In the discrete action setting the critic outputs a Q-value vector \(\Vec{Q}(s)\) of dimension \(|\mathcal{A}|\).
+Each element \(Q(s,a)\) is the critic's estimation of \(Q_{\Vec{\pi}}(s,a)\).
+
+\subsubsection{Reward-to-go \(R_t\)}
+\label{subsubsec:reward-to-go}
+
+Assuming an episode of training occurred over \(T\leq T_\mathrm{max}\) amount of time steps, the agent achieved some trajectory of \(T\) rewards \(r_t\) for \(t\in\mathbb{N},\,t\in[1,T]\).
+Using an additional real-numbered training hyperparameter called discount factor \(\gamma\in(0,1]\), a training step's Reward-to-go is defined as:
+\begin{equation}
+    R_t=\sum_{t'=t}^{T}\gamma^{t'-t}r_{t'}
+    \label{eq:reward-to-go-definition}
+\end{equation}
+\citeright{07_BartoSuttonReinforcementLearning}
+
+\subsubsection{Advantage \(A(a,s)\)}
+\label{subsubsec:advantage}
+
+The advantage of action \(a\) in state \(s\) is officially defined as:
+\begin{equation}
+    A(s,a)=Q(s,a)-V(s)
+    \label{eq:advantage-definition}
+\end{equation}
+
+However if the Q-value and state-value of a state and action are unknown, the advantage must be estimated using network outputs and rewards.
+The most prominent algorithm for estimating the advantage is the Generalized Advantage Estimation (GAE) proposed in \cite{08_GeneralizedAdvantageEstimation}.
+With an additional real-valued hyperparameter called GAE hyperparameter \(\lambda\in[0,1]\), and the state-value estimation of the standard critic \(V(s)\), the advantage at time step \(t\) computed using GAE is:
+\begin{equation}
+    A(s_t,a_t)
+    =\sum_{t'=t}^{T}(\gamma\lambda)^{t'-t}
+    \left(
+        r_{t'}+\gamma V\left(s_{t'+1}\right)-V\left(s_{t'}\right)
+    \right)
+    \label{eq:generalized-advantage-estimation}
+\end{equation}
+
+As a result, two interesting edge-cases emerge:
+\begin{equation}
+    \begin{aligned}
+        \lambda=0:\quad
+        &A(s_t,a_t)=r_{t}+\gamma V\left(s_{t+1}\right)-V\left(s_{t}\right) \\
+        \lambda=1:\quad
+        &A(s_t,a_t)=-V\left(s_{t}\right)+R_t
+    \end{aligned}
+    \label{eq:gae-edge-cases}
+\end{equation}
+\citeright{08_GeneralizedAdvantageEstimation}
+
+\subsection{Arithmetic and Algorithms}
+\label{subsubsec:arithmetic-and-algorithms}
+
+\subsubsection{Computing Loss and Gradients}
+\label{subsubsec:computing-loss-and-gradients}
+
+Most descriptions of RL algorithms abstract from the final implementation of the parameter update step.
+This is appropriate because the algorithms should only describe the process for loss and gradient computation independent of the used framework and written code.
+Despite that, here implementation details will be described using \texttt{libtorch} syntax
+because equivalencies between the mathematical equations and method calls in code strongly support comprehension of what is going on.
+
+In classical machine learning (ML) one has a dataset \(\mathcal{D}\) with tuples of elements and their labels \((d_i,l_i)\) where \(d_i\) is the \(i\)-th dataset element and \(l_i\) its label.
+Both dataset element \(d_i\) and label \(l_i\) must be mappable to some mathematical construct like vector or matrix
+\(
+(d_i,l_i)
+\xrightarrow{\text{Some function}}
+\left(\boldsymbol{x}_i,\boldsymbol{y}_i^{\,*}\right)
+\)
+such that \(\boldsymbol{x}_i\) can be fed as input to the AI agent which outputs \(\boldsymbol{y}_i\) that will be compared to the desired value \(\boldsymbol{y}_i^{\,*}\).
+The neural network is—in a very naive formulation—just some hyper-complicated mathematical function \(\boldsymbol{\mathcal{F}}_{\boldsymbol{\theta}}\)
+dependent on a large amount of modifiable parameters \(\boldsymbol{\theta}\), known as trainable parameters.
+They get modified during training to converge to values which will cause \(\boldsymbol{\mathcal{F}}_{\boldsymbol{\theta}}\) to become the approximating function:
+\begin{equation}
+    \forall(d_i,l_i)\in\mathcal{D}:\,
+    \boldsymbol{\mathcal{F}}_{\boldsymbol{\theta}}
+    \left(\boldsymbol{x}_i\right)
+    =\boldsymbol{y}_i
+    \approx\boldsymbol{y}_i^{\,*}
+    \label{eq:naive-neural-network-function-concept}
+\end{equation}
+
+To do that, one defines a loss function e.g. mean squared error (MSE) over a batch of data \(\mathcal{B}\subseteq\mathcal{D}\):
+\begin{equation}
+    L_{\mathrm{MSE}}
+    \left(\boldsymbol{\theta}\right)
+    =\frac{1}{|\mathcal{B}|}
+    \sum_{(d_i,l_i)\in\mathcal{B}}
+    \left|
+        \boldsymbol{y}_i-\boldsymbol{y}_i^{\,*}
+    \right|^2
+    =\frac{1}{|\mathcal{B}|}
+    \sum_{(d_i,l_i)\in\mathcal{B}}
+    \left|
+        \boldsymbol{\mathcal{F}}_{\boldsymbol{\theta}}
+        \left(\boldsymbol{x}_i\right)
+        -\boldsymbol{y}_i^{\,*}
+    \right|^2
+    \label{eq:mse-loss-in-classical-ml}
+\end{equation}
+
+The loss \(L\) is differentiated with regard to the network parameters \(\boldsymbol{\theta}\), and given some small learning rate \(\eta\),
+the parameters are updated in the direction of the negative gradient.
+\begin{equation}
+    \boldsymbol{\theta}
+    \longleftarrow
+    \boldsymbol{\theta}
+    -\eta\Vec{\nabla}_{\boldsymbol{\theta}}
+    L_{\mathrm{MSE}}\left(\boldsymbol{\theta}\right)
+    \label{eq:ml-parameter-update-using-loss-gradient}
+\end{equation}
+
+This may seem simple in theory, but a neural network can have millions of parameters configured in a very complex way making manual differentiation difficult.
+To assist the engineer, machine learning frameworks build a computational graph progressively as arithmetic operations are performed on the tensors.
+An autograd \cite{18_PytorchAutograd} function allows automatic differentiation with regard to the trainable parameters starting from the tensor on which
+the \texttt{backward} method is called and differentiating all the way back to the initial tensor in the graph.
+To make parameter updates modifiable, the \texttt{backward} method call doesn't apply the update itself.
+It merely computes the so-called gradients \(d\theta_i\) of the parameters, such that the update step can be performed
+using more advanced methods that take into account previous gradients, their velocities, accelerations and statistics of their changes.
+Methods to update trainable parameters \(\theta_i\) using their gradients \(d\theta_i\) are a whole other area of research, which will not be explained in this work.
+We use \(\mathrm{Adam}\) \cite{19_AdamOptimizer} for the gradient update step.
+The process is summarized in figure \ref{fig:process-of-computing-gradients-and-updating-parameters}.
+
+\begin{figure}[H]
+    \footnotesize
+    \[
+        \begin{aligned}
+            &\texttt{Sequential agent = Sequential(/*NN architecture*/);}
+            &&\widehat{=}
+            \text{Define the AI agent architecture.} \\
+            &\texttt{double lr = 5e-4;}
+            &&\widehat{=}
+            \text{Define a small learning rate }\eta\text{.} \\
+            &\texttt{Optimizer optimizer = Optimizer(agent->parameters(), lr);}
+            &&\widehat{=}
+            \text{Tell optimizer parameters and learning rate.} \\
+            &\texttt{Tensor loss = /*Compute loss of the agent.*/;}  \\
+            &\texttt{optimizer->zero\_grad();}
+            &&\widehat{=}
+            \forall(\theta_i,d\theta_{i,\mathrm{old}})\in\boldsymbol{\theta}:\,
+            (\theta_i,d\theta_{i,\mathrm{old}})\longrightarrow(\theta_i,0)  \\
+            &\texttt{loss.backward();}
+            &&\widehat{=}
+            \forall(\theta_i,0)\in\boldsymbol{\theta}:\,
+            (\theta_i,0)\longrightarrow
+            \left(
+                \theta_i,
+                \left(
+                    \Vec{\nabla}_{\boldsymbol{\theta}}
+                    L_{\mathrm{MSE}}\left(\boldsymbol{\theta}\right)
+                \right)_i
+            \right) \\
+            &\texttt{optimizer->step();}
+            &&\widehat{=}
+            \forall(\theta_i,d\theta_i)\in\boldsymbol{\theta}:\,
+            (\theta_i,d\theta_i)\longrightarrow
+            \left(\theta_i-\eta d\theta_i,d\theta_i\right)
+        \end{aligned}
+    \]
+    \caption{
+        Process of computing the gradients and updating the parameters.
+        Note that the simplified parameter update represents basic gradient descent, not full \(\mathrm{Adam}\) optimizer mechanics.
+        Also notice that the parameter update step does not zero-out the gradients.
+    }
+    \label{fig:process-of-computing-gradients-and-updating-parameters}
+\end{figure}
+
+In reinforcement learning, one does not have a labeled dataset which tells the agent what the outcome of its function should have been.
+Instead one only provides the reward as a metric of the agent output's quality.
+In essence a reinforcement learning algorithm is a description of the arithmetic to perform with the rewards \(r\)
+and network outputs \(\Vec{\pi}(s)\), \(\Vec{Q}(s)\), \(V(s)\) to compute the loss \(L\) to differentiate and compute gradients from.
+
+\subsubsection{Advantage Actor-Critic}
+\label{subsubsec:advantage-actor-critic}
+
+Advantage Actor-Critic (A2C) was first proposed as its asynchronous version A3C, where multiple actors train in parallel \cite{20_AdvantageActorCritic}.
+This work uses the synchronous variant A2C.
+While A2C predates GAE \cite{08_GeneralizedAdvantageEstimation}, modern implementations commonly use GAE to compute advantages.
+We denote the actor parameters by \(\boldsymbol{\phi}\) and the critic parameters by \(\boldsymbol{\theta}\), yielding
+\(\pi_{\boldsymbol{\phi}}(a|s)\) and \(V_{\boldsymbol{\theta}}(s)\).
+Remembering section \ref{subsec:tensors-during-training} every episode the agent builds an episode with \(T\) timesteps
+and retains information about the episode trajectory including action probabilities \(\Vec{\pi}_{\boldsymbol{\phi}}(s_t)\),
+state values \(V_{\boldsymbol{\theta}}(s_t)\), acquired rewards \(r_t\) and rewards-to-go \(R_t=r_t+\gamma R_{t+1}\).
+In the original A3C formulation, the actor and critic losses at step \(t\) are computed as:
+\begin{equation}
+    \begin{aligned}
+        L_{\mathrm{actor}}(\boldsymbol{\phi})
+        &=-\ln\left(\pi_{\boldsymbol{\phi}}(a_t|s_t)\right)
+        \left(R_t-V_{\boldsymbol{\theta}}(s_t)\right) \\
+        L_{\mathrm{critic}}(\boldsymbol{\theta})
+        &=\left(R_t-V_{\boldsymbol{\theta}}(s_t)\right)^2
+    \end{aligned}
+    \label{eq:a2c-naive-losses}
+\end{equation}
+\citeright{20_AdvantageActorCritic}
+
+When using GAE from equation \eqref{eq:generalized-advantage-estimation}, the term \(\left(R_t-V_{\boldsymbol{\theta}}(s_t)\right)\) is exchanged for the advantage \(A(s_t,a_t)\).
+Because the advantage \(A(s_t,a_t)\) is explicitly dependent on the state value estimation \(V_{\boldsymbol{\theta}}(s_t)\),
+it's actually implicitly dependent on the critic parameter \(\boldsymbol{\theta}\) and so the equations become:
+\begin{equation}
+    \begin{aligned}
+        A_{\boldsymbol{\theta}}(s_t,a_t)
+        &=\sum_{t'=t}^{T}(\gamma\lambda)^{t'-t}
+        \left(
+            r_{t'}+\gamma V_{\boldsymbol{\theta}}\left(s_{t'+1}\right)
+            -V_{\boldsymbol{\theta}}\left(s_{t'}\right)
+        \right) \\
+        L_{\mathrm{actor}}(\boldsymbol{\phi})
+        &=-\ln\left(\pi_{\boldsymbol{\phi}}(a_t|s_t)\right)
+        A_{\boldsymbol{\theta}}(s_t,a_t) \\
+        L_{\mathrm{critic}}(\boldsymbol{\theta})
+        &=\left(A_{\boldsymbol{\theta}}(s_t,a_t)\right)^2
+    \end{aligned}
+    \label{eq:a2c-losses-dependent-on-gae-critic-parameters}
+\end{equation}
+
+This is problematic because now according to equation \eqref{eq:a2c-losses-dependent-on-gae-critic-parameters},
+the actor loss is dependent on the critic parameters \(\boldsymbol{\theta}\) and the \texttt{backward} method does not discriminate which parameters belong to whom,
+but simply differentiates with regard to all trainable parameters in the tensor graph.
+To solve this problem for the actor loss, ML frameworks allow to call \texttt{detach} on computed tensors to detach them from the tensor graph to be used as constants.
+A similar issue arises for the critic loss.
+If the advantages are attached to the computation graph, gradients would flow through the advantages back to previous state values, leading to biased updates.
+To address this, the advantages must be computed using the current value estimates but treated as fixed constants during the loss computation.
+Simply detaching the advantages and computing \(L_{\mathrm{critic}}=(A(s_t,a_t))^2\) would result in a constant loss with zero gradients, preventing critic updates.
+To resolve this, recall
+\(
+A(s,a)=Q(s,a)-V(s)
+\Longleftrightarrow
+Q(s,a)=A(s,a)+V(s)
+\).
+This means we can compute the target \(Q(s,a)\) as a constant from detached advantages and state value estimates.
+Additionally the A2C algorithm gives the actor an entropy bonus to promote exploration.
+The entropy \(\mathcal{H}\) of a discrete probability distribution is defined as the negative expectation value of the logarithm of the probabilities.
+For the policy \(\Vec{\pi}_{\boldsymbol{\phi}}(s)\), the entropy is:
+\begin{equation}
+    \mathcal{H}_{\boldsymbol{\phi}}(s)
+    =-\sum_{a\in\mathcal{A}}
+    \pi_{\boldsymbol{\phi}}(a|s)\ln
+    \left(
+        \pi_{\boldsymbol{\phi}}(a|s)
+    \right)
+    \label{eq:entropy-from-action-probs-definition}
+\end{equation}
+
+By computing the targets using detached values and adding entropy weighted by an entropy significance parameter \(\alpha\in\real^+\), the actor and critic losses become:
+\begin{equation}
+    \begin{aligned}
+        A(s_t,a_t)
+        &=A_{\boldsymbol{\theta}}(s_t,a_t)\texttt{.detach()} \\
+        V(s_t)
+        &=V_{\boldsymbol{\theta}}(s_t)\texttt{.detach()} \\
+        L_{\mathrm{actor}}(\boldsymbol{\phi})
+        &=-\ln
+        \left(
+            \pi_{\boldsymbol{\phi}}(a_t|s_t)
+        \right)
+        A(s_t,a_t)
+        -\alpha\mathcal{H}_{\boldsymbol{\phi}}(s_t) \\
+        L_{\mathrm{critic}}(\boldsymbol{\theta})
+        &=\left(
+              V_{\boldsymbol{\theta}}(s_t)-A(s_t,a_t)-V(s_t)
+        \right)^2
+    \end{aligned}
+    \label{eq:a2c-losses-with-detached-tensors}
+\end{equation}
+
+
+The process is summarized in figure \ref{fig:process-of-detaching-tensors-to-be-used-as-constants}.
+\begin{figure}[H]
+    \footnotesize
+    \[
+        \begin{aligned}
+            &\texttt{Tensor action\_probs = /*Actor output at timestep t*/;}
+            &&\widehat{=}\Vec{\pi}_{\boldsymbol{\phi}}(s_t) \\
+            &\texttt{Tensor action\_index = action\_probs.multinomial(1);}
+            &&\widehat{=}
+            a_t\text{ sampled from }
+            \Vec{\pi}_{\boldsymbol{\phi}}(s_t) \\
+            &\texttt{Tensor log\_action\_probs = action\_probs.log();}
+            &&\widehat{=}\ln
+            \left(
+                \Vec{\pi}_{\boldsymbol{\phi}}(s_t)
+            \right) \\
+            &\texttt{Tensor log\_prob = log\_action\_probs.gather(action\_index);}
+            &&\widehat{=}\ln
+            \left(
+                \pi_{\boldsymbol{\phi}}(a_t|s_t)
+            \right) \\
+            &\texttt{Tensor value = /*Critic output at timestep t*/;}
+            &&\widehat{=}V_{\boldsymbol{\theta}}(s_t) \\
+            &\texttt{double entropy\_coeff = 0.01;}
+            &&\widehat{=}\text{Entropy coefficient }\alpha \\
+            &\texttt{Tensor entropy = -(action\_probs * log\_action\_probs).sum();}
+            &&\widehat{=}
+            \mathcal{H}_{\boldsymbol{\phi}}(s_t)
+            =-\sum_{a\in\mathcal{A}}
+            \pi_{\boldsymbol{\phi}}(a|s_t)\ln
+            \left(
+                \pi_{\boldsymbol{\phi}}(a|s_t)
+            \right) \\
+            &\texttt{Tensor advantage = /*Compute advantage using GAE.*/;}
+            &&\widehat{=}
+            A_{\boldsymbol{\theta}}(s_t,a_t) \\
+            &\texttt{advantage = advantage.detach();}
+            &&\widehat{=}A(s_t,a_t) \\
+            &\texttt{actor\_loss = -(log\_prob * advantage) - entropy\_coeff * entropy;}
+            &&\widehat{=}
+            L_{\mathrm{actor}}(\boldsymbol{\phi})
+            =-\ln\left(\pi_{\boldsymbol{\phi}}(a_t|s_t)\right)A(s_t,a_t)
+            -\alpha\mathcal{H}_{\boldsymbol{\phi}}(s_t) \\
+            &\texttt{critic\_loss = (value - advantage - value.detach()).square();}
+            &&\widehat{=}
+            L_{\mathrm{critic}}(\boldsymbol{\theta})
+            =\left(V_{\boldsymbol{\theta}}(s_t)-A(s_t,a_t)-V(s_t)\right)^2
+        \end{aligned}
+    \]
+    \caption{Process of detaching tensors to be used as constants.}
+    \label{fig:process-of-detaching-tensors-to-be-used-as-constants}
+\end{figure}
+
+The origin of the definition of the actor loss is the \(\mathrm{REINFORCE}\) algorithm in which the actor update is defined as:
+\begin{equation}
+    \boldsymbol{\phi}\longleftarrow\boldsymbol{\phi}
+    +\eta R_t\frac{
+        \Vec{\nabla}_{\boldsymbol{\phi}}
+        \pi_{\boldsymbol{\phi}}(a_t|s_t)
+    }{\pi_{\boldsymbol{\phi}}(a_t|s_t)}
+    \label{eq:reinforce-actor-update}
+\end{equation}
+
+\begin{fancyquote}
+    This update has an intuitive appeal.
+    Each increment is proportional to the product of a return \(R_t\) and a vector, the gradient of the probability of taking the action actually taken divided by the probability of taking that action.
+    The vector is the direction in parameter space that most increases the probability of repeating the action \(a_t\) on future visits to state \(s_t\).
+    The update increases the parameter vector in this direction proportional to the return, and inversely proportional to the action probability.
+    The former makes sense because it causes the parameter to move most in the directions that favor actions that yield the highest return.
+    The latter makes sense because otherwise actions that are selected frequently are at an advantage (the updates will be more often in their direction) and might win out even if they do not yield the highest return.
+    \cite{07_BartoSuttonReinforcementLearning}
+\end{fancyquote}
+
+Given the well known identity \(\nabla_x\ln(f(x))=\frac{\nabla_xf(x)}{f(x)}\), formulating the actor loss as
+\(
+\mathrm{L}(\boldsymbol{\phi})
+=-R_t\ln\left(\pi_{\boldsymbol{\phi}}(a_t|s_t)\right)
+\)
+and using it the same as in equation \eqref{eq:ml-parameter-update-using-loss-gradient} yields exactly equation \eqref{eq:reinforce-actor-update}.
+As described above, later formulations used \(\left(R_t-V(s_t)\right)\) and \(A(s_t,a_t)\) as the measures of performance.
+They are however all valid and it is up to the engineer to decide which return to use in their application.
+The critic loss is the mean squared error between the critic's state value estimate \(V_{\boldsymbol{\theta}}(s_t)\) and the target value,
+which again can vary depending on exact selection of algorithm.
+This work uses \(A(s_t,a_t)\) computed using Generalized Advantage Estimation (GAE) as described in equation \eqref{eq:a2c-losses-with-detached-tensors} with the entropy bonus
+because it is the most advanced return used in current Actor-Critic RL literature.
+
+The full A2C training algorithm is presented in algorithm \ref{alg:a2c-algorithm}.
+
+\begin{algorithm}[H]
+    \caption{Advantage Actor-Critic Training Algorithm}
+    \label{alg:a2c-algorithm}
+    \begin{algorithmic}
+        \State \textbf{Hyperparameters:} \(\gamma\), \(\lambda\), \(\alpha\)
+        \State \textbf{Model parameters:} \(\boldsymbol{\phi}\), \(\boldsymbol{\theta}\)
+        \State \textbf{Maximum episodes and steps:} \(M\), \(T_\mathrm{max}\)
+        \State \textbf{Learning rates:} \(\eta_\mathrm{actor}\), \(\eta_\mathrm{critic}\)
+        \State \textbf{Neural networks:} \(
+        \Vec{\pi}_{\boldsymbol{\phi}}:\mathcal{S}\longrightarrow [0,1]^{|\mathcal{A}|},\,
+        V_{\boldsymbol{\theta}}:\mathcal{S}\longrightarrow \real
+        \)
+        \State \textbf{Environment:} \texttt{environment} \Comment{Here quantum circuit enviornment.}
+        \For{episode from \(1\) to \(M\)}
+            \State \texttt{environment}.reset() \Comment{Create new quantum circuit from random generator.}
+            \State \(\boldsymbol{\Pi}\longleftarrow []\) \Comment{Initialize log probs buffer.}
+            \State \(\boldsymbol{V}\longleftarrow []\) \Comment{Initialize state values buffer.}
+            \State \(\boldsymbol{R}\longleftarrow []\) \Comment{Initialize rewards buffer.}
+            \State \(\boldsymbol{H}\longleftarrow []\) \Comment{Initialize entropies buffer.}
+            \For{\(t\) from \(1\) to \(T_\mathrm{max}\)}
+                \State \(s_t\longleftarrow\)\texttt{environment}.observation() \Comment{Tensor representation of the quantum circuit.}
+                \State Compute \(\Vec{\pi}_{\boldsymbol{\phi}}(s_t)\) from actor and  \(V_{\boldsymbol{\theta}}(s_t)\) from critic.
+                \State Sample \(a_t\sim\Vec{\pi}_{\boldsymbol{\phi}}(s_t)\).
+                \State \(
+                \boldsymbol{\Pi}\longleftarrow\boldsymbol{\Pi}\cup
+                \left\{
+                    \ln
+                    \left(
+                        \pi_{\boldsymbol{\phi}}(a_t|s_t)
+                    \right)
+                \right\}
+                \)
+                \State \(\boldsymbol{V}\longleftarrow\boldsymbol{V}\cup\{V_{\boldsymbol{\theta}}(s_t)\}\)
+                \State \(r_t,\,\mathrm{terminated},\,\mathrm{truncated}\) from \texttt{environment}.step(\(a_t\)) \Comment{Perform optimization pass indexed \(a_t\).}
+                \State \(\boldsymbol{R}\longleftarrow\boldsymbol{R}\cup\{r_t\}\)
+                \State \(
+                \boldsymbol{H}\longleftarrow\boldsymbol{H}\cup
+                \left\{
+                    -\sum_{a\in\mathcal{A}}
+                    \ln
+                    \left(
+                        \pi_{\boldsymbol{\phi}}(a|s_t)
+                    \right)
+                    \pi_{\boldsymbol{\phi}}(a|s_t)
+                \right\}
+                \)
+                \If{\(\mathrm{terminated}\) or \(\mathrm{truncated}\)}
+                    \State Break
+                \EndIf
+            \EndFor
+            \State Episode ended after \(T\) steps.
+            \If{\(\mathrm{truncated}\,(T=T_\mathrm{max})\)}
+                \State \(
+                s_{T+1}\longleftarrow\text{\texttt{environment}.observation()}
+                \) \Comment{Bootstrap value if the episode was truncated.}
+                \State \(\boldsymbol{V}\longleftarrow\boldsymbol{V}\cup\{V_{\boldsymbol{\theta}}(s_{T+1})\}\)
+            \Else
+                \State \(
+                \boldsymbol{V}\longleftarrow\boldsymbol{V}\cup\{0\}
+                \) \Comment{Episode terminated. Don't bootstrap value.}
+            \EndIf
+            \State \(\boldsymbol{A}\longleftarrow []\) \Comment{Initialize advantages buffer.}
+            \For{\(t\) from \(1\) to \(T\)}
+                \State \(
+                \boldsymbol{A}\longleftarrow \boldsymbol{A}\cup
+                \left\{
+                    \sum_{t'=t}^{T}(\gamma\lambda)^{t'-t}
+                    \left(
+                        r_{t'}+\gamma V\left(s_{t'+1}\right)-V\left(s_{t'}\right)
+                    \right)
+                \right\}
+                \) \Comment{\(r\) and \(V\) from buffers \(\boldsymbol{R}\) and \(\boldsymbol{V}\)}
+            \EndFor
+            \State \(
+            L_\mathrm{actor}(\boldsymbol{\phi})\longleftarrow
+            -\frac{1}{T}\sum_{t=1}^T
+            \left(
+                \ln
+                \left(
+                    \pi_{\boldsymbol{\phi}}(a_t|s_t)
+                \right)
+                A(s_t,a_t)
+                +\alpha\mathcal{H}_{\boldsymbol{\phi}}(s_t)
+            \right)
+            \) \Comment{\(\ln(\pi)\), \(A\), \(\mathcal{H}\) from buffers \(\boldsymbol{\Pi}\), \(\boldsymbol{A}\), \(\boldsymbol{H}\)}
+            \State \(
+            L_\mathrm{critic}(\boldsymbol{\theta})\longleftarrow
+            \frac{1}{T}\sum_{t=1}^T
+            \left(
+                V_{\boldsymbol{\theta}}(s_t)
+            -A(s_t,a_t)
+            -V(s_t)
+            \right)^2
+            \) \Comment{\(V\) and \(A\) from buffers \(\boldsymbol{V}\) and \(\boldsymbol{A}\)}
+            \State \(
+            \boldsymbol{\phi}\longleftarrow\boldsymbol{\phi}
+            -\eta_{\mathrm{actor}}\Vec{\nabla}L_\mathrm{actor}(\boldsymbol{\phi})
+            \) \Comment{Update actor parameters.}
+            \State \(
+            \boldsymbol{\theta}\longleftarrow\boldsymbol{\theta}
+            -\eta_{\mathrm{critic}}\Vec{\nabla}L_\mathrm{critic}(\boldsymbol{\theta})
+            \) \Comment{Update critic parameters.}
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Proximal Policy Optimization}
+\label{subsubsec:proximal-polcy-optimization}
+
+\todo[inline,color=red!40]{TODO: Write Proximal Policy Optimization algorithm.}

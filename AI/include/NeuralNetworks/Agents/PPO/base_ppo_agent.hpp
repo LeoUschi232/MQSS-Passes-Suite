@@ -74,21 +74,26 @@ public:
   select_action(const torch::Tensor &observation);
 
   /**
-   *
    * @param old_log_action_probs
    * @param old_state_values
+   * @param old_final_state_value
    * @param new_log_action_probs
    * @param new_state_values
+   * @param new_final_state_value
    * @param rewards
    * @param entropy
    * @return [actor_loss, critic_loss]
    */
   std::pair<torch::Tensor, torch::Tensor>
-  get_losses(const torch::Tensor &old_log_action_probs,
-             const torch::Tensor &old_state_values,
-             const torch::Tensor &new_log_action_probs,
-             const torch::Tensor &new_state_values,
-             const torch::Tensor &rewards, const torch::Tensor &entropy);
+  get_losses(const torch::Tensor &old_log_action_probs,  // [T]
+             const torch::Tensor &old_state_values,      // [T]
+             const torch::Tensor &old_final_state_value, // []
+             const torch::Tensor &new_log_action_probs,  // [T]
+             const torch::Tensor &new_state_values,      // [T]
+             const torch::Tensor &new_final_state_value, // []
+             const torch::Tensor &rewards,               // [T]
+             const torch::Tensor &entropy                // [T]
+  );
 
   /**
    * @param actor_loss

@@ -167,8 +167,8 @@ BaseSDSACAgent::get_loss(
                      (Q1_avg[action_index] + clip_value_Q1 - y).square()),
           torch::max((Q2_main[action_index] - y).square(),
                      (Q2_avg[action_index] + clip_value_Q2 - y).square()),
-          -this->sdsac_temperature_alpha *
-              action_probs.dot(log_action_probs + target_entropy).detach()};
+          this->sdsac_temperature_alpha *(
+              new_entropy.detach() - target_entropy).detach()};
 }
 
 void BaseSDSACAgent::update_parameters(

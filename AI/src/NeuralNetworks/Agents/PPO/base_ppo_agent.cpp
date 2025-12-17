@@ -119,16 +119,19 @@ BasePPOAgent::select_action(const torch::Tensor &observation) {
 }
 
 std::pair<torch::Tensor, torch::Tensor>
-BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs, // [T]
-                         const torch::Tensor &old_state_values,     // [T+1]
-                         const torch::Tensor &new_log_action_probs, // [T]
-                         const torch::Tensor &new_state_values,     // [T+1]
-                         const torch::Tensor &rewards,              // [T]
-                         const torch::Tensor &entropy               // [T]
+BasePPOAgent::get_losses(const torch::Tensor &old_log_action_probs,  // [T]
+                         const torch::Tensor &old_state_values,      // [T]
+                         const torch::Tensor &old_final_state_value, // []
+                         const torch::Tensor &new_log_action_probs,  // [T]
+                         const torch::Tensor &new_state_values,      // [T]
+                         const torch::Tensor &new_final_state_value, // []
+                         const torch::Tensor &rewards,               // [T]
+                         const torch::Tensor &entropy                // [T]
 ) {
   torch::Tensor ratio = torch::exp(new_log_action_probs - old_log_action_probs);
   torch::Tensor old_advantages =
-      this->compute_advantages(rewards, old_state_values).detach();
+      this->compute_advantages(rewards, old_state_values, old_final_state_value)
+          .detach();
   int64_t T = rewards.size(0);
   return {/*actor_loss=*/-torch::min(
               ratio * old_advantages,

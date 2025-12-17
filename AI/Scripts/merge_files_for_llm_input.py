@@ -10,17 +10,26 @@ while True:
 include_dir = "/".join(dir_list + ["AI", "include"])
 src_dir = "/".join(dir_list + ["AI", "src"])
 output_filepath = "/".join(dir_list + ["AI", "Scripts", "llm_input.txt"])
-prefix = """"""
+prefix = """
+YOU ARE AN EXPERT MACHINE LEARNING ENGINEER AND THESIS WRITER.
+Consider the following latex code:
+```
+
+```
+
+Write the TODO in the section on PPO according to my writing style above.
+Use the following code as reference:
+"""
 suffix = """"""
 files_to_join = [
     "abstract_agent.hpp",
     "abstract_agent.cpp",
     "base_actor_critic.hpp",
     "base_actor_critic.cpp",
-    "base_a2c_agent.hpp",
-    "base_a2c_agent.cpp",
-    "a2c_trainer.hpp",
-    "a2c_trainer.cpp"
+    "base_ppo_agent.hpp",
+    "base_ppo_agent.cpp",
+    "ppo_trainer.hpp",
+    "ppo_trainer.cpp"
 ]
 filepaths = []
 for root, _, files in walk(include_dir):
