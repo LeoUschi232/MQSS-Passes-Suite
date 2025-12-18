@@ -71,14 +71,12 @@ public:
   bool recompute();
 
   /**
-   *
    * @param pass_index
    * @return [Succeeded, Was Applied]
    */
   std::pair<bool, bool> run_pass(unsigned int pass_index);
 
   /**
-   *
    * @param pass_ptr
    * @return [Succeeded, Was Applied]
    */
@@ -86,7 +84,6 @@ public:
   run_pass(std::unique_ptr<mlir::Pass> &pass_ptr);
 
   /**
-   *
    * @param string_stream
    */
   void print(llvm::raw_string_ostream &string_stream) const;

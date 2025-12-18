@@ -33,11 +33,11 @@ struct GateSpec {
 struct RandomizerOptions {
   // If exists, will seed the random generator using this seed
   std::optional<int> seed = std::nullopt;
-  // IF >=2 the nr of this object will be at least this mean value
+  // If >=2 the nr of this object will be at least this min value
   mutable int min_nr_qubits = -1;
   mutable int min_nr_gates = -1;
   mutable int min_nr_operations = -1;
-  // If >=2 the nr of this object will be at most this mean value
+  // If >=2 the nr of this object will be at most this max value
   // max overrides min for all values
   mutable int max_nr_qubits = -1;
   mutable int max_nr_gates = -1;

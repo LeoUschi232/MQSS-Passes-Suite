@@ -139,7 +139,7 @@ void load_default_params() {
       {"ppo_epsilon", 0.2},
       {"sdsac_temperature_alpha", 0.1},
       {"sdsac_smoothing_tau", 0.005},
-      {"sdsac_penasdlty_beta", 0.5},
+      {"sdsac_penalty_beta", 0.5},
       {"sdsac_clip_c", 0.5},
       {"sdsac_entropy_target_weight", 0.98},
       {"acer_max_nr_trajectories", 500},

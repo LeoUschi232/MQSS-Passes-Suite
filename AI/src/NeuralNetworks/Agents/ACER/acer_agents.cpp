@@ -38,7 +38,7 @@ ACER_LSTM::ACER_LSTM(unsigned int max_qubits) : BaseACERAgent(max_qubits) {
 
 ACER_HYBRID::ACER_HYBRID(unsigned int max_qubits) : BaseACERAgent(max_qubits) {
   const unsigned int nr_residual_blocks =
-      std::ceil(std::log2(TCN_QUBIT_MAGIC * max_qubits));
+      std::ceil(std::log2(HYBRID_QUBIT_MAGIC * max_qubits));
   constexpr unsigned int kernel_size = 3u;
   constexpr unsigned int lstm_hidden_size_multiplier = 3u;
   constexpr unsigned int lstm_projection_size_multiplier = 3u;

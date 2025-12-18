@@ -86,7 +86,6 @@ struct RebuildSetup {
 };
 
 /**
- *
  * @param depths
  * @return
  */
@@ -120,7 +119,6 @@ std::vector<Value> anglesToValues(OpBuilder &builder, Location loc,
                                   llvm::ArrayRef<float> angles);
 
 /**
- *
  * @param rebuildSetup
  * @param gate
  * @param targets
@@ -129,7 +127,6 @@ static void insertMeasurements(RebuildSetup &rebuildSetup, GateSymbol gate,
                                ValueRange targets);
 
 /**
- *
  * @param rebuildSetup
  * @param gate
  * @param targetIndexes
